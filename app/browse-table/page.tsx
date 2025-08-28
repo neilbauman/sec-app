@@ -21,11 +21,11 @@ type Row = {
   indicator_name: string; indicator_description: string; ind_so: number;
 };
 
-// 🔵 Row background colors
+// 🎨 Softer complementary pastels
 const COLORS = {
-  pillar: 'rgb(204,182,173)',   // Pillar rows
-  theme:  'rgb(180,179,185)',   // Theme rows
-  sub:    'rgb(202,212,226)',   // Sub-theme summary rows
+  pillar: 'rgb(234,224,220)',  // light beige (from 204,182,173)
+  theme:  'rgb(220,220,230)',  // soft grey-lavender (from 180,179,185)
+  sub:    'rgb(232,238,247)',  // light pastel blue (from 202,212,226)
 };
 
 export default function BrowseTablePage() {
@@ -335,7 +335,7 @@ function renderInlineRows(
     const pDesc = lookups.pillarDescByCode.get(P.code) || '';
     const pDef = lookups.defaultIndByPillarCode.get(P.code);
 
-    // Pillar row → colored
+    // Pillar row → colored (soft)
     out.push(
       <tr key={`p-${P.code}`} style={{ background: COLORS.pillar, borderTop:'1px solid #e6e6e6' }}>
         <td style={td}>
@@ -356,7 +356,7 @@ function renderInlineRows(
       const tDesc = lookups.themeDescByCode.get(T.code) || '';
       const tDef = lookups.defaultIndByThemeCode.get(T.code);
 
-      // Theme row → colored
+      // Theme row → colored (soft)
       out.push(
         <tr key={`t-${P.code}-${T.code}`} style={{ background: COLORS.theme }}>
           <td style={td}></td>
@@ -375,7 +375,7 @@ function renderInlineRows(
         const sDesc = lookups.subDescByCode.get(S.code) || '';
         const sDef = lookups.defaultIndBySubCode.get(S.code);
 
-        // Sub-theme summary row → colored
+        // Sub-theme summary row → colored (soft)
         out.push(
           <tr key={`s-${P.code}-${T.code}-${S.code}-summary`} style={{ background: COLORS.sub }}>
             <td style={td}></td>
