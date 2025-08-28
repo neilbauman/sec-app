@@ -14,8 +14,7 @@
     "xlsx": "latest"
   },
   "type": "module"
-}
-{
+
   "devDependencies": {
     "typescript": "latest",
     "@types/react": "latest",
