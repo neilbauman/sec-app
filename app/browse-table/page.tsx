@@ -301,10 +301,19 @@ export default function BrowseTablePage() {
     if (!res.ok) alert('Delete failed'); else await reload();
   }
 
+  // NEW: clean cancel helper
+  function cancelEdit() {
+    setForm({});
+    setEditing(null);
+  }
+
+  // actions: add child under a row
   async function addChild() {
     if (!addingUnder) return;
     const { kind, id } = addingUnder;
+
     if (kind === 'pillar') {
+      // 1) Create the Theme under this Pillar
       const body = {
         pillar_id: id,
         code: addForm.code || '',
@@ -312,9 +321,43 @@ export default function BrowseTablePage() {
         description: addForm.description || '',
         sort_order: addForm.sort_order ? Number(addForm.sort_order) : null,
       };
-      const res = await fetch('/api/themes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-      if (!res.ok) alert('Add theme failed'); else await reload();
-    } else if (kind === 'theme') {
+      const res = await fetch('/api/themes', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) { alert('Add theme failed'); return; }
+      const newTheme = await res.json(); // { id, ... }
+
+      // 2) Optionally create a default Indicator for this Theme
+      const defName = (addForm.def_indicator_name || '').trim();
+      const defDesc = (addForm.def_indicator_description || '').trim();
+
+      if (defName) {
+        const iRes = await fetch('/api/indicators', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            name: defName,
+            description: defDesc || null,
+            is_default: true,
+            theme_id: newTheme.id,  // link to the new theme
+            sort_order: null,
+          })
+        });
+        if (!iRes.ok) {
+          // Theme created, but indicator failed
+          console.warn('Default indicator creation failed for new theme');
+          alert('Theme created, but default indicator failed to create');
+        }
+      }
+
+      await reload();
+      return;
+    }
+
+    if (kind === 'theme') {
+      // add sub-theme under theme id
       const body = {
         theme_id: id,
         code: addForm.code || '',
@@ -323,8 +366,13 @@ export default function BrowseTablePage() {
         sort_order: addForm.sort_order ? Number(addForm.sort_order) : null,
       };
       const res = await fetch('/api/subthemes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-      if (!res.ok) alert('Add sub-theme failed'); else await reload();
-    } else if (kind === 'sub') {
+      if (!res.ok) { alert('Add sub-theme failed'); return; }
+      await reload();
+      return;
+    }
+
+    if (kind === 'sub') {
+      // add standard under sub-theme id
       const body = {
         subtheme_id: id,
         code: addForm.code ? addForm.code : null,
@@ -333,14 +381,10 @@ export default function BrowseTablePage() {
         sort_order: addForm.sort_order ? Number(addForm.sort_order) : null,
       };
       const res = await fetch('/api/standards', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-      if (!res.ok) alert('Add standard failed'); else await reload();
+      if (!res.ok) { alert('Add standard failed'); return; }
+      await reload();
+      return;
     }
-  }
-
-  // NEW: clean cancel helper (fixes TS error)
-  function cancelEdit() {
-    setForm({});
-    setEditing(null);
   }
 
   const toggleP = (id: string) => setCollapsedP(m => ({ ...m, [id]: !m[id] }));
@@ -435,7 +479,7 @@ export default function BrowseTablePage() {
               form,
               setForm,
               saveEdit,
-              cancelEdit,   // << pass clean cancel
+              cancelEdit,
             })}
             {tree.length === 0 && !loading && (
               <tr><td style={{ padding:12 }} colSpan={editMode ? 7 : 6}>No matching rows.</td></tr>
@@ -472,7 +516,7 @@ function renderRows(args: {
   form: Record<string,string>,
   setForm: (s:Record<string,string>)=>void,
   saveEdit: ()=>Promise<void>,
-  cancelEdit: ()=>void, // << new
+  cancelEdit: ()=>void,
 }) {
   const out: ReactNode[] = [];
   const td: React.CSSProperties = { padding:'8px', whiteSpace:'nowrap', verticalAlign:'top' };
@@ -496,7 +540,7 @@ function renderRows(args: {
                 <button style={btnIcon} title="Edit pillar"
                         onClick={()=>args.beginEdit('pillar', P.pillar_id, { code:P.pillar_code, name:P.pillar_name, description:pDesc, sort_order:String(P.p_so === 999999 ? '' : P.p_so) })}>✏️</button>
                 <button style={btnIcon} title="Delete pillar" onClick={()=>args.del('pillar', P.pillar_id)}>🗑️</button>
-                <button style={btnIcon} title="Add theme" onClick={()=>{ args.setAddingUnder({ kind:'pillar', id:P.pillar_id }); args.setAddForm({ code:'', name:'', description:'', sort_order:'' }); }}>➕</button>
+                <button style={btnIcon} title="Add theme" onClick={()=>{ args.setAddingUnder({ kind:'pillar', id:P.pillar_id }); args.setAddForm({ code:'', name:'', description:'', sort_order:'', def_indicator_name:'', def_indicator_description:'' }); }}>➕</button>
               </span>
             )}
             {pEditing && (
@@ -533,7 +577,16 @@ function renderRows(args: {
             <b>New Theme under {P.pillar_name}</b>
             <InlineAddFields fields={['code','name','sort_order']} addForm={args.addForm} setAddForm={args.setAddForm} />
           </td>
-          <td style={tdWrap}><TextareaSmall name="description" form={args.addForm} setForm={args.setAddForm} /></td>
+          <td style={tdWrap}>
+            <TextareaSmall name="description" label="Theme Description" form={args.addForm} setForm={args.setAddForm} />
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed #ddd' }}>
+              <b>Default Indicator (for this Theme)</b>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:6 }}>
+                <InputSmall name="def_indicator_name" label="Indicator Name (optional)" form={args.addForm} setForm={args.setAddForm} />
+                <TextareaSmall name="def_indicator_description" label="Indicator Description (optional)" form={args.addForm} setForm={args.setAddForm} />
+              </div>
+            </div>
+          </td>
           <td style={td}>
             <button style={btnLink} onClick={args.addChild}>Add Theme</button>
             <button style={btnLink} onClick={()=>args.setAddingUnder(null)}>Cancel</button>
