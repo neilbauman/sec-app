@@ -1,5 +1,5 @@
 // Simple table view of the framework
-import { supabaseClient } from '@/lib/supabaseClient';
+import { supabaseClient } from '../lib/supabaseClient';
 
 export default async function Page() {
   // Read is allowed for everyone by our RLS policy
