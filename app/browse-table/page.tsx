@@ -13,9 +13,12 @@ type Indicator = {
 };
 
 type Row = {
-  pillar_code: string; pillar_name: string; pillar_statement: string;
-  theme_code: string; theme_name: string; theme_statement: string;
-  subtheme_code: string; subtheme_name: string; subtheme_statement: string;
+  // grouping keys
+  pillar_code: string; theme_code: string; subtheme_code: string;
+  // display
+  pillar_name: string; pillar_statement: string;
+  theme_name: string; theme_statement: string;
+  subtheme_name: string; subtheme_statement: string;
   standard_code: string; standard_statement: string; standard_notes: string;
   indicator_code: string; indicator_name: string; indicator_description: string; indicator_is_default: string;
 };
@@ -29,6 +32,16 @@ export default function BrowseTablePage() {
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string|null>(null);
+
+  // filters
+  const [fPillar, setFPillar] = useState<string>('');    // pillar_code
+  const [fTheme, setFTheme] = useState<string>('');      // theme_code
+  const [fSub, setFSub] = useState<string>('');          // subtheme_code
+
+  // collapses (store by code for stability)
+  const [collapsedP, setCollapsedP] = useState<Record<string, boolean>>({});
+  const [collapsedT, setCollapsedT] = useState<Record<string, boolean>>({});
+  const [collapsedS, setCollapsedS] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     (async () => {
@@ -51,7 +64,7 @@ export default function BrowseTablePage() {
     })();
   }, []);
 
-  // Index helpers
+  // lookups
   const pById = useMemo(() => Object.fromEntries(pillars.map(x => [x.id, x])), [pillars]);
   const tById = useMemo(() => Object.fromEntries(themes.map(x => [x.id, x])), [themes]);
   const sById = useMemo(() => Object.fromEntries(subs.map(x => [x.id, x])), [subs]);
@@ -66,12 +79,12 @@ export default function BrowseTablePage() {
     return m;
   }, [inds]);
 
-  // Build flat rows (one per Standard × Indicator; or one per Standard if no indicators)
-  const rows: Row[] = useMemo(() => {
+  // flat rows
+  const baseRows: Row[] = useMemo(() => {
     const out: Row[] = [];
     const sort = sortBy('sort_order','code');
-
     const stdsSorted = [...stds].sort(sort);
+
     for (const std of stdsSorted) {
       const sub = sById[std.subtheme_id];
       if (!sub) continue;
@@ -103,20 +116,51 @@ export default function BrowseTablePage() {
     return out;
   }, [stds, sById, tById, pById, indsByStandard]);
 
-  // Filter + sort
+  // filter options (codes), cascade
+  const pillarCodes = useMemo(
+    () => Array.from(new Set(baseRows.map(r => r.pillar_code))).filter(Boolean).sort(),
+    [baseRows]
+  );
+  const themeCodes = useMemo(() => {
+    const rows = fPillar ? baseRows.filter(r => r.pillar_code === fPillar) : baseRows;
+    return Array.from(new Set(rows.map(r => r.theme_code))).filter(Boolean).sort();
+  }, [baseRows, fPillar]);
+  const subthemeCodes = useMemo(() => {
+    let rows = baseRows;
+    if (fPillar) rows = rows.filter(r => r.pillar_code === fPillar);
+    if (fTheme) rows = rows.filter(r => r.theme_code === fTheme);
+    return Array.from(new Set(rows.map(r => r.subtheme_code))).filter(Boolean).sort();
+  }, [baseRows, fPillar, fTheme]);
+
+  // apply text + dropdown filters
   const qx = q.trim().toLowerCase();
   const filtered = useMemo(() => {
-    if (!qx) return rows;
-    return rows.filter(r =>
-      Object.values(r).some(v => String(v).toLowerCase().includes(qx))
-    );
-  }, [rows, qx]);
+    let rows = baseRows;
+    if (fPillar) rows = rows.filter(r => r.pillar_code === fPillar);
+    if (fTheme) rows = rows.filter(r => r.theme_code === fTheme);
+    if (fSub) rows = rows.filter(r => r.subtheme_code === fSub);
 
+    if (qx) {
+      rows = rows.filter(r =>
+        Object.values(r).some(v => String(v).toLowerCase().includes(qx))
+      );
+    }
+    return rows;
+  }, [baseRows, fPillar, fTheme, fSub, qx]);
+
+  // sort (default by pillar/theme/subtheme/standard_code)
   const [sortKey, setSortKey] = useState<keyof Row>('pillar_code');
   const [sortDir, setSortDir] = useState<'asc'|'desc'>('asc');
   const sorted = useMemo(() => {
     const arr = [...filtered];
     arr.sort((a,b) => {
+      // stable chained sort: pillar → theme → subtheme → selected
+      const chainA = [a.pillar_code, a.theme_code, a.subtheme_code];
+      const chainB = [b.pillar_code, b.theme_code, b.subtheme_code];
+      for (let i=0;i<3;i++) {
+        const cmp = chainA[i].localeCompare(chainB[i], undefined, { numeric: true, sensitivity: 'base' });
+        if (cmp !== 0) return cmp;
+      }
       const av = String(a[sortKey] ?? '');
       const bv = String(b[sortKey] ?? '');
       const cmp = av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
@@ -130,30 +174,49 @@ export default function BrowseTablePage() {
     else { setSortKey(k); setSortDir('asc'); }
   }
 
-  async function copyToClipboard() {
-    const header = Object.keys(sorted[0] || {});
-    const lines = [header.join('\t'), ...sorted.map(r => header.map(h => (r as any)[h]).join('\t'))];
-    await navigator.clipboard.writeText(lines.join('\n'));
-    alert('Copied table to clipboard (tab-separated).');
+  // expand/collapse helpers
+  function toggleP(code: string) { setCollapsedP(m => ({ ...m, [code]: !m[code] })); }
+  function toggleT(code: string) { setCollapsedT(m => ({ ...m, [code]: !m[code] })); }
+  function toggleS(code: string) { setCollapsedS(m => ({ ...m, [code]: !m[code] })); }
+  function expandAll() { setCollapsedP({}); setCollapsedT({}); setCollapsedS({}); }
+  function collapseAll() {
+    const p: Record<string, boolean> = {};
+    const t: Record<string, boolean> = {};
+    const s: Record<string, boolean> = {};
+    for (const r of sorted) { if (r.pillar_code) p[r.pillar_code] = true; if (r.theme_code) t[r.theme_code] = true; if (r.subtheme_code) s[r.subtheme_code] = true; }
+    setCollapsedP(p); setCollapsedT(t); setCollapsedS(s);
   }
 
+  // render
   return (
     <main style={{ padding: 24, maxWidth: '100%', margin: '0 auto' }}>
       <h1>Framework Table (read-only)</h1>
       <p style={{ opacity: 0.8, marginBottom: 8 }}>
-        Flat view of Pillar → Theme → Sub-theme → Standard → Indicator. Use search, sort headers, and export tools.
+        Flat view with collapsible groups and filters.
       </p>
 
-      <div style={{ display:'flex', gap:8, alignItems:'center', margin:'12px 0 16px', flexWrap:'wrap' }}>
+      <div style={{ display:'flex', gap:8, alignItems:'center', margin:'12px 0 12px', flexWrap:'wrap' }}>
         <input
           placeholder="Search everything…"
           value={q}
           onChange={e=>setQ(e.target.value)}
-          style={{ flex:'1 1 420px', minWidth: 220, padding:'10px 12px', border:'1px solid #ddd', borderRadius:8 }}
+          style={{ flex:'1 1 320px', minWidth: 220, padding:'10px 12px', border:'1px solid #ddd', borderRadius:8 }}
         />
+        <select value={fPillar} onChange={(e)=>{ setFPillar(e.target.value); setFTheme(''); setFSub(''); }} aria-label="Filter by Pillar">
+          <option value="">All Pillars</option>
+          {pillarCodes.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={fTheme} onChange={(e)=>{ setFTheme(e.target.value); setFSub(''); }} aria-label="Filter by Theme" disabled={!fPillar && themeCodes.length===0}>
+          <option value="">All Themes</option>
+          {themeCodes.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={fSub} onChange={(e)=>setFSub(e.target.value)} aria-label="Filter by Sub-theme" disabled={subthemeCodes.length===0}>
+          <option value="">All Sub-themes</option>
+          {subthemeCodes.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
         <a href="/api/export">Download CSV</a>
-        <button onClick={copyToClipboard}>Copy</button>
-        <button onClick={() => window.print()}>Print</button>
+        <button onClick={expandAll}>Expand all</button>
+        <button onClick={collapseAll}>Collapse all</button>
       </div>
 
       {loading && <p>Loading…</p>}
@@ -163,15 +226,9 @@ export default function BrowseTablePage() {
         <table style={{ width:'100%', borderCollapse:'collapse', fontSize: 14 }}>
           <thead>
             <TrHead>
-              <Th onClick={()=>onHeaderClick('pillar_code')} label="Pillar Code" curKey={sortKey} curDir={sortDir} k="pillar_code" />
-              <Th onClick={()=>onHeaderClick('pillar_name')} label="Pillar Name" curKey={sortKey} curDir={sortDir} k="pillar_name" />
-              <Th onClick={()=>onHeaderClick('pillar_statement')} label="Pillar Statement" curKey={sortKey} curDir={sortDir} k="pillar_statement" />
-              <Th onClick={()=>onHeaderClick('theme_code')} label="Theme Code" curKey={sortKey} curDir={sortDir} k="theme_code" />
-              <Th onClick={()=>onHeaderClick('theme_name')} label="Theme Name" curKey={sortKey} curDir={sortDir} k="theme_name" />
-              <Th onClick={()=>onHeaderClick('theme_statement')} label="Theme Statement" curKey={sortKey} curDir={sortDir} k="theme_statement" />
-              <Th onClick={()=>onHeaderClick('subtheme_code')} label="Sub-theme Code" curKey={sortKey} curDir={sortDir} k="subtheme_code" />
-              <Th onClick={()=>onHeaderClick('subtheme_name')} label="Sub-theme Name" curKey={sortKey} curDir={sortDir} k="subtheme_name" />
-              <Th onClick={()=>onHeaderClick('subtheme_statement')} label="Sub-theme Statement" curKey={sortKey} curDir={sortDir} k="subtheme_statement" />
+              <Th onClick={()=>onHeaderClick('pillar_code')} label="Pillar" curKey={sortKey} curDir={sortDir} k="pillar_code" />
+              <Th onClick={()=>onHeaderClick('theme_code')} label="Theme" curKey={sortKey} curDir={sortDir} k="theme_code" />
+              <Th onClick={()=>onHeaderClick('subtheme_code')} label="Sub-theme" curKey={sortKey} curDir={sortDir} k="subtheme_code" />
               <Th onClick={()=>onHeaderClick('standard_code')} label="Standard Code" curKey={sortKey} curDir={sortDir} k="standard_code" />
               <Th onClick={()=>onHeaderClick('standard_statement')} label="Standard Statement" curKey={sortKey} curDir={sortDir} k="standard_statement" />
               <Th onClick={()=>onHeaderClick('standard_notes')} label="Standard Notes" curKey={sortKey} curDir={sortDir} k="standard_notes" />
@@ -182,28 +239,10 @@ export default function BrowseTablePage() {
             </TrHead>
           </thead>
           <tbody>
-            {sorted.map((r, i) => (
-              <tr key={i} style={{ borderTop:'1px solid #f2f2f2' }}>
-                <td style={td}>{r.pillar_code}</td>
-                <td style={td}>{r.pillar_name}</td>
-                <td style={tdWrap}>{r.pillar_statement}</td>
-                <td style={td}>{r.theme_code}</td>
-                <td style={td}>{r.theme_name}</td>
-                <td style={tdWrap}>{r.theme_statement}</td>
-                <td style={td}>{r.subtheme_code}</td>
-                <td style={td}>{r.subtheme_name}</td>
-                <td style={tdWrap}>{r.subtheme_statement}</td>
-                <td style={td}>{r.standard_code}</td>
-                <td style={tdWrap}>{r.standard_statement}</td>
-                <td style={tdWrap}>{r.standard_notes}</td>
-                <td style={td}>{r.indicator_code}</td>
-                <td style={td}>{r.indicator_name}</td>
-                <td style={tdWrap}>{r.indicator_description}</td>
-                <td style={td}>{r.indicator_is_default}</td>
-              </tr>
-            ))}
+            {/* group rendering */}
+            {renderGroupedRows(sorted, { collapsedP, collapsedT, collapsedS }, { toggleP, toggleT, toggleS })}
             {sorted.length === 0 && !loading && (
-              <tr><td style={{ padding:12 }} colSpan={16}>No matching rows.</td></tr>
+              <tr><td style={{ padding:12 }} colSpan={10}>No matching rows.</td></tr>
             )}
           </tbody>
         </table>
@@ -212,6 +251,107 @@ export default function BrowseTablePage() {
   );
 }
 
+/* ---------- grouped rows renderer ---------- */
+function renderGroupedRows(
+  rows: Row[],
+  collapsed: { collapsedP: Record<string, boolean>, collapsedT: Record<string, boolean>, collapsedS: Record<string, boolean> },
+  toggles: { toggleP: (c:string)=>void, toggleT: (c:string)=>void, toggleS: (c:string)=>void }
+) {
+  const out: JSX.Element[] = [];
+  let curP = ''; let curT = ''; let curS = '';
+
+  for (let i=0;i<rows.length;i++) {
+    const r = rows[i];
+
+    // pillar header
+    if (r.pillar_code !== curP) {
+      curP = r.pillar_code; curT = ''; curS = '';
+      if (curP) {
+        const isCollapsed = !!collapsed.collapsedP[curP];
+        out.push(
+          <tr key={`p-${curP}`} style={{ background:'#f8fafc', borderTop:'1px solid #e6e6e6' }}>
+            <td colSpan={10} style={{ padding:'8px 10px', fontWeight:600 }}>
+              <button onClick={()=>toggles.toggleP(curP)} style={btnLink}>
+                {isCollapsed ? '▶' : '▼'} Pillar {curP}
+              </button>
+            </td>
+          </tr>
+        );
+        if (isCollapsed) {
+          // skip all rows until next pillar
+          while (i+1 < rows.length && rows[i+1].pillar_code === curP) i++;
+          continue;
+        }
+      }
+    }
+
+    // theme header
+    if (r.theme_code !== curT) {
+      curT = r.theme_code; curS = '';
+      if (curT) {
+        const isCollapsed = !!collapsed.collapsedT[curT];
+        out.push(
+          <tr key={`t-${curT}`} style={{ background:'#fbfcff' }}>
+            <td colSpan={10} style={{ padding:'6px 10px 6px 24px', fontWeight:600 }}>
+              <button onClick={()=>toggles.toggleT(curT)} style={btnLink}>
+                {isCollapsed ? '▶' : '▼'} Theme {curT}
+              </button>
+            </td>
+          </tr>
+        );
+        if (isCollapsed) {
+          while (i+1 < rows.length && rows[i+1].pillar_code === r.pillar_code && rows[i+1].theme_code === curT) i++;
+          continue;
+        }
+      }
+    }
+
+    // subtheme header
+    if (r.subtheme_code !== curS) {
+      curS = r.subtheme_code;
+      if (curS) {
+        const isCollapsed = !!collapsed.collapsedS[curS];
+        out.push(
+          <tr key={`s-${curS}`} style={{ background:'#ffffff' }}>
+            <td colSpan={10} style={{ padding:'6px 10px 6px 48px', fontWeight:600 }}>
+              <button onClick={()=>toggles.toggleS(curS)} style={btnLink}>
+                {isCollapsed ? '▶' : '▼'} Sub-theme {curS}
+              </button>
+            </td>
+          </tr>
+        );
+        if (isCollapsed) {
+          while (
+            i+1 < rows.length &&
+            rows[i+1].pillar_code === r.pillar_code &&
+            rows[i+1].theme_code === r.theme_code &&
+            rows[i+1].subtheme_code === curS
+          ) i++;
+          continue;
+        }
+      }
+    }
+
+    // data row
+    out.push(
+      <tr key={`r-${i}`} style={{ borderTop:'1px solid #f2f2f2' }}>
+        <td style={td}>{r.pillar_code}</td>
+        <td style={td}>{r.theme_code}</td>
+        <td style={td}>{r.subtheme_code}</td>
+        <td style={td}>{r.standard_code}</td>
+        <td style={tdWrap}>{r.standard_statement}</td>
+        <td style={tdWrap}>{r.standard_notes}</td>
+        <td style={td}>{r.indicator_code}</td>
+        <td style={td}>{r.indicator_name}</td>
+        <td style={tdWrap}>{r.indicator_description}</td>
+        <td style={td}>{r.indicator_is_default}</td>
+      </tr>
+    );
+  }
+  return out;
+}
+
+/* ---------- small UI helpers ---------- */
 function TrHead({ children }: { children: React.ReactNode }) {
   return <tr style={{ background:'#fafafa', borderBottom:'1px solid #eee' }}>{children}</tr>;
 }
@@ -235,9 +375,11 @@ function Th({ onClick, label, curKey, curDir, k }: {
   );
 }
 
-const td: React.CSSProperties = { padding:'8px', whiteSpace:'nowrap' };
+const td: React.CSSProperties = { padding:'8px', whiteSpace:'nowrap', verticalAlign:'top' };
 const tdWrap: React.CSSProperties = { padding:'8px', whiteSpace:'normal', maxWidth: 420, lineHeight: 1.3 };
+const btnLink: React.CSSProperties = { background:'none', border:'none', padding:0, margin:0, cursor:'pointer', font: 'inherit' };
 
+/* ---------- sort helper ---------- */
 function sortBy(a: string, b: string) {
   return (x: any, y: any) => {
     const ax = x?.[a] ?? 999999, ay = y?.[a] ?? 999999;
