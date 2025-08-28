@@ -322,12 +322,16 @@ export default function BrowseTablePage() {
         sort_order: addForm.sort_order ? Number(addForm.sort_order) : null,
       };
       const res = await fetch('/api/themes', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) { alert('Add theme failed'); return; }
-      const newTheme = await res.json(); // { id, ... }
+  method:'POST',
+  headers:{'Content-Type':'application/json'},
+  body: JSON.stringify(body)
+});
+const payload = await res.json().catch(() => ({}));
+if (!res.ok) {
+  alert('Add theme failed: ' + (payload?.error || JSON.stringify(payload) || res.statusText));
+  return;
+}
+const newTheme = payload; // { id, ... }
 
       // 2) Optionally create a default Indicator for this Theme
       const defName = (addForm.def_indicator_name || '').trim();
