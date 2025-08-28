@@ -1,30 +1,51 @@
 // app/api/indicators/[id]/route.ts
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabaseServer';
 
-const db = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-);
+export async function PUT(_req: Request, { params }: { params: { id: string } }) {
+  const supabase = createClient();
+  const id = params.id;
+  const body = await _req.json();
 
-function getIdFromUrl(request: Request) {
-  const url = new URL(request.url);
-  const parts = url.pathname.split('/').filter(Boolean);
-  return parts[parts.length - 1];
+  const {
+    name,
+    description,
+    is_default,
+    pillar_id,
+    theme_id,
+    subtheme_id,
+    standard_id,
+    sort_order,
+    code,
+    weight,
+  } = body || {};
+
+  const { data, error } = await supabase
+    .from('indicators')
+    .update({
+      ...(name !== undefined ? { name } : {}),
+      ...(description !== undefined ? { description } : {}),
+      ...(is_default !== undefined ? { is_default } : {}),
+      ...(pillar_id !== undefined ? { pillar_id } : {}),
+      ...(theme_id !== undefined ? { theme_id } : {}),
+      ...(subtheme_id !== undefined ? { subtheme_id } : {}),
+      ...(standard_id !== undefined ? { standard_id } : {}),
+      ...(sort_order !== undefined ? { sort_order } : {}),
+      ...(code !== undefined ? { code } : {}),
+      ...(weight !== undefined ? { weight } : {}),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
 }
 
-export async function PUT(request: Request) {
-  const id = getIdFromUrl(request);
-  const body = await request.json().catch(() => ({}));
-  const { error } = await db.from('indicators').update(body).eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ ok: true });
-}
-
-export async function DELETE(request: Request) {
-  const id = getIdFromUrl(request);
-  const { error } = await db.from('indicators').delete().eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const supabase = createClient();
+  const id = params.id;
+  const { error } = await supabase.from('indicators').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
