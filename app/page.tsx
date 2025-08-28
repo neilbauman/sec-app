@@ -13,10 +13,10 @@ export default function HomePage() {
         <ul style={{ lineHeight: 1.9 }}>
           <li>
             <Link href="/framework-browse">Browse framework (read-only)</Link>
-          </li>// app/page.tsx (add one <li>)
-<li>
-  <a href="/browse-table">Browse framework (table view)</a>
-</li>
+          </li>
+          <li>
+            <Link href="/browse-table">Browse framework (table view)</Link>
+          </li>
           <li>
             <Link href="/framework">Open Framework Editor (Pillars → Themes → Sub-themes → Standards → Indicators)</Link>
           </li>
@@ -31,6 +31,7 @@ export default function HomePage() {
         <ol style={{ lineHeight: 1.9, paddingLeft: 20 }}>
           <li>Use <Link href="/framework">Framework Editor</Link> to add or edit content.</li>
           <li>Use <Link href="/framework-browse">Browse</Link> for a clean, read-only view.</li>
+          <li>Use <Link href="/browse-table">Table View</Link> for a flat, sortable list.</li>
           <li>Use <a href="/api/export">Export CSV</a> to download the one-sheet snapshot.</li>
         </ol>
       </section>
