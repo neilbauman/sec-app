@@ -13,7 +13,10 @@ export default function HomePage() {
         <ul style={{ lineHeight: 1.9 }}>
           <li>
             <Link href="/framework-browse">Browse framework (read-only)</Link>
-          </li>
+          </li>// app/page.tsx (add one <li>)
+<li>
+  <a href="/browse-table">Browse framework (table view)</a>
+</li>
           <li>
             <Link href="/framework">Open Framework Editor (Pillars → Themes → Sub-themes → Standards → Indicators)</Link>
           </li>
