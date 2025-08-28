@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
-type Pillar = { id: string; code: string; name: string; statement?: string|null; description?: string|null; sort_order: number|null; };
-type Theme = { id: string; pillar_id: string; code: string; name: string; statement?: string|null; description?: string|null; sort_order: number|null; };
-type Subtheme = { id: string; theme_id: string; code: string; name: string; statement?: string|null; description?: string|null; sort_order: number|null; };
-type Standard = { id: string; subtheme_id: string; code: string; statement: string; notes?: string|null; sort_order: number|null; };
+type Pillar = { id: string; code: string; name: string; description?: string|null; sort_order: number|null; };
+type Theme = { id: string; pillar_id: string; code: string; name: string; description?: string|null; sort_order: number|null; };
+type Subtheme = { id: string; theme_id: string; code: string; name: string; description?: string|null; sort_order: number|null; };
+type Standard = { id: string; subtheme_id: string; code: string; description: string; notes?: string|null; sort_order: number|null; };
 type Indicator = {
   id: string; code?: string|null; name: string; description?: string|null; weight?: number|null;
   pillar_id?: string|null; theme_id?: string|null; subtheme_id?: string|null; standard_id?: string|null;
@@ -17,7 +17,7 @@ type Row = {
   pillar_code: string; pillar_name: string; p_so: number;
   theme_code: string; theme_name: string; t_so: number;
   subtheme_code: string; subtheme_name: string; s_so: number;
-  standard_statement: string; std_so: number;
+  standard_description: string; std_so: number;    // CHANGED
   indicator_name: string; indicator_description: string; ind_so: number;
 };
 
@@ -31,12 +31,10 @@ export default function BrowseTablePage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string|null>(null);
 
-  // filters (by code; labels show names)
-  const [fPillar, setFPillar] = useState<string>('');    // pillar_code
-  const [fTheme, setFTheme] = useState<string>('');      // theme_code
-  const [fSub, setFSub] = useState<string>('');          // subtheme_code
+  const [fPillar, setFPillar] = useState<string>('');    // by code
+  const [fTheme, setFTheme] = useState<string>('');
+  const [fSub, setFSub] = useState<string>('');
 
-  // collapse state (defaults: pillars & themes collapsed)
   const [collapsedP, setCollapsedP] = useState<Record<string, boolean>>({});
   const [collapsedT, setCollapsedT] = useState<Record<string, boolean>>({});
 
@@ -61,12 +59,10 @@ export default function BrowseTablePage() {
     })();
   }, []);
 
-  // lookups
   const pById = useMemo(() => Object.fromEntries(pillars.map(x => [x.id, x])), [pillars]);
   const tById = useMemo(() => Object.fromEntries(themes.map(x => [x.id, x])), [themes]);
   const sById = useMemo(() => Object.fromEntries(subs.map(x => [x.id, x])), [subs]);
 
-  // build flat rows in framework order
   const baseRows: Row[] = useMemo(() => {
     const out: Row[] = [];
     const so = (n: number|null|undefined) => (n ?? 999999);
@@ -78,7 +74,6 @@ export default function BrowseTablePage() {
       indsByStd.set(ind.standard_id, [...(indsByStd.get(ind.standard_id) || []), ind]);
     }
 
-    // Standards drive rows
     const stdsSorted = [...stds].sort((a,b) => so(a.sort_order) - so(b.sort_order) || a.code.localeCompare(b.code));
     for (const std of stdsSorted) {
       const sub = sById[std.subtheme_id];
@@ -96,7 +91,7 @@ export default function BrowseTablePage() {
         subtheme_code: sub?.code || '',
         subtheme_name: sub?.name || sub?.code || '',
         s_so: so(sub?.sort_order),
-        standard_statement: std.statement,
+        standard_description: std.description, // CHANGED
         std_so: so(std.sort_order),
       };
 
@@ -110,7 +105,6 @@ export default function BrowseTablePage() {
       }
     }
 
-    // Framework chain: pillar -> theme -> subtheme -> standard -> indicator
     out.sort((A,B) =>
       A.p_so - B.p_so ||
       A.pillar_name.localeCompare(B.pillar_name, undefined, { numeric: true }) ||
@@ -125,13 +119,11 @@ export default function BrowseTablePage() {
     return out;
   }, [stds, subs, themes, pillars, inds, pById, tById, sById]);
 
-  // filters
   const pillarOptions = useMemo(() => {
     const seen = new Map<string,string>();
     for (const r of baseRows) if (r.pillar_code && !seen.has(r.pillar_code)) seen.set(r.pillar_code, r.pillar_name);
     return Array.from(seen.entries()).map(([code,name]) => ({ code, name }));
   }, [baseRows]);
-
   const themeOptions = useMemo(() => {
     const seen = new Map<string,string>();
     for (const r of baseRows) {
@@ -140,7 +132,6 @@ export default function BrowseTablePage() {
     }
     return Array.from(seen.entries()).map(([code,name]) => ({ code, name }));
   }, [baseRows, fPillar]);
-
   const subthemeOptions = useMemo(() => {
     const seen = new Map<string,string>();
     for (const r of baseRows) {
@@ -151,7 +142,6 @@ export default function BrowseTablePage() {
     return Array.from(seen.entries()).map(([code,name]) => ({ code, name }));
   }, [baseRows, fPillar, fTheme]);
 
-  // apply filters + search
   const qx = q.trim().toLowerCase();
   const filtered = useMemo(() => {
     let rows = baseRows;
@@ -163,29 +153,26 @@ export default function BrowseTablePage() {
       rows = rows.filter(r =>
         [
           r.pillar_name, r.theme_name, r.subtheme_name,
-          r.standard_statement, r.indicator_name, r.indicator_description
+          r.standard_description, r.indicator_name, r.indicator_description
         ].some(v => String(v || '').toLowerCase().includes(qx))
       );
     }
     return rows;
   }, [baseRows, fPillar, fTheme, fSub, qx]);
 
-  // tree for rendering with collapsible Pillar/Theme; rows inline
   const tree = useMemo(() => buildTree(filtered), [filtered]);
 
-  // default-collapse pillars + themes whenever the grouped set changes
   useEffect(() => {
     const newP: Record<string, boolean> = {};
     const newT: Record<string, boolean> = {};
     for (const p of tree) {
-      if (p.code) newP[p.code] = true;
+      if (p.code) newP[p.code] = true;      // collapsed by default
       for (const t of p.themes) if (t.code) newT[t.code] = true;
     }
     setCollapsedP(newP);
     setCollapsedT(newT);
   }, [tree.length]);
 
-  // controls
   const toggleP = (code: string) => setCollapsedP(m => ({ ...m, [code]: !m[code] }));
   const toggleT = (code: string) => setCollapsedT(m => ({ ...m, [code]: !m[code] }));
   const expandAll = () => { setCollapsedP({}); setCollapsedT({}); };
@@ -198,7 +185,6 @@ export default function BrowseTablePage() {
 
   return (
     <main style={{ padding: 24, maxWidth: '100%', margin: '0 auto' }}>
-      {/* Top bar with back link */}
       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom: 8 }}>
         <Link href="/" style={{ textDecoration:'none' }}>← Back to Home</Link>
       </div>
@@ -242,7 +228,7 @@ export default function BrowseTablePage() {
               <Th label="Pillar" />
               <Th label="Theme" />
               <Th label="Sub-theme" />
-              <Th label="Standard Statement" />
+              <Th label="Standard Description" />   {/* CHANGED label */}
               <Th label="Indicator Name" />
               <Th label="Indicator Description" />
             </tr>
@@ -259,7 +245,6 @@ export default function BrowseTablePage() {
   );
 }
 
-/* ---------- render inline rows using the tree and collapse state ---------- */
 function renderInlineRows(
   tree: ReturnType<typeof buildTree>,
   collapsedP: Record<string, boolean>,
@@ -271,7 +256,6 @@ function renderInlineRows(
   for (const P of tree) {
     const pCollapsed = !!collapsedP[P.code];
 
-    // Pillar row (inline)
     out.push(
       <tr key={`p-${P.code}`} style={{ background:'#f8fafc', borderTop:'1px solid #e6e6e6' }}>
         <td style={td}><button onClick={()=>toggles.toggleP(P.code)} style={btnLink}>{pCollapsed ? '▶' : '▼'} {P.pillar_name}</button></td>
@@ -287,7 +271,6 @@ function renderInlineRows(
     for (const T of P.themes) {
       const tCollapsed = !!collapsedT[T.code];
 
-      // Theme row (inline under pillar)
       out.push(
         <tr key={`t-${P.code}-${T.code}`} style={{ background:'#fbfcff' }}>
           <td style={td}></td>
@@ -315,11 +298,11 @@ function renderInlineRows(
         } else {
           for (const r of S.rows) {
             out.push(
-              <tr key={`r-${P.code}-${T.code}-${S.code}-${r.standard_statement}-${r.indicator_name}`} style={{ borderTop:'1px solid #f2f2f2' }}>
+              <tr key={`r-${P.code}-${T.code}-${S.code}-${r.standard_description}-${r.indicator_name}`} style={{ borderTop:'1px solid #f2f2f2' }}>
                 <td style={td}></td>
                 <td style={td}></td>
                 <td style={td}>{S.subtheme_name}</td>
-                <td style={tdWrap}>{r.standard_statement}</td>
+                <td style={tdWrap}>{r.standard_description}</td> {/* CHANGED */}
                 <td style={td}>{r.indicator_name}</td>
                 <td style={tdWrap}>{r.indicator_description}</td>
               </tr>
@@ -333,7 +316,6 @@ function renderInlineRows(
   return out;
 }
 
-/* ---------- build a stable tree from flat rows ---------- */
 function buildTree(rows: Row[]) {
   type SubNode = { code: string; subtheme_name: string; rows: Row[] };
   type ThemeNode = { code: string; theme_name: string; subthemes: SubNode[] };
@@ -343,14 +325,12 @@ function buildTree(rows: Row[]) {
   const tMap = new Map<string, ThemeNode>();
 
   for (const r of rows) {
-    // pillar
     let P = pMap.get(r.pillar_code);
     if (!P) {
       P = { code: r.pillar_code, pillar_name: r.pillar_name, themes: [] };
       pMap.set(r.pillar_code, P);
     }
 
-    // theme (scoped under pillar)
     const tKey = r.pillar_code + '|' + r.theme_code;
     let T = tMap.get(tKey);
     if (!T) {
@@ -359,7 +339,6 @@ function buildTree(rows: Row[]) {
       P.themes.push(T);
     }
 
-    // sub-theme
     let S = T.subthemes.find(x => x.code === r.subtheme_code);
     if (!S) {
       S = { code: r.subtheme_code, subtheme_name: r.subtheme_name, rows: [] };
@@ -372,7 +351,6 @@ function buildTree(rows: Row[]) {
   return Array.from(pMap.values());
 }
 
-/* ---------- small UI ---------- */
 function Th({ label }: { label: string }) {
   return (
     <th
