@@ -21,6 +21,13 @@ type Row = {
   indicator_name: string; indicator_description: string; ind_so: number;
 };
 
+// 🔵 Row background colors
+const COLORS = {
+  pillar: 'rgb(204,182,173)',   // Pillar rows
+  theme:  'rgb(180,179,185)',   // Theme rows
+  sub:    'rgb(202,212,226)',   // Sub-theme summary rows
+};
+
 export default function BrowseTablePage() {
   const [pillars, setPillars] = useState<Pillar[]>([]);
   const [themes, setThemes] = useState<Theme[]>([]);
@@ -70,7 +77,7 @@ export default function BrowseTablePage() {
   const themeCodeById  = useMemo(() => Object.fromEntries(themes.map(x => [x.id, x.code])), [themes]);
   const subCodeById    = useMemo(() => Object.fromEntries(subs.map(x => [x.id, x.code])), [subs]);
 
-  // default indicator lookups by CODE (so render function can key by node.code)
+  // default indicator lookups by CODE
   const defaultIndByPillarCode = useMemo(() => {
     const m = new Map<string, Indicator>();
     for (const ind of inds) {
@@ -104,12 +111,11 @@ export default function BrowseTablePage() {
     return m;
   }, [inds, subCodeById]);
 
-  // flat rows for standards (sub-theme → standards → indicators)
+  // flat rows (standards + indicators)
   const baseRows: Row[] = useMemo(() => {
     const out: Row[] = [];
     const so = (n: number|null|undefined) => (n ?? 999999);
 
-    // Standard -> Indicators index
     const indsByStd = new Map<string, Indicator[]>();
     for (const ind of inds) {
       if (!ind.standard_id) continue;
@@ -147,7 +153,6 @@ export default function BrowseTablePage() {
       }
     }
 
-    // Framework chain ordering
     out.sort((A,B) =>
       (A.p_so - B.p_so) ||
       A.pillar_name.localeCompare(B.pillar_name, undefined, { numeric: true }) ||
@@ -210,12 +215,12 @@ export default function BrowseTablePage() {
   // Build tree groups from filtered rows
   const tree = useMemo(() => buildTree(filtered), [filtered]);
 
-  // description maps by CODE (for quick read in renderer)
+  // descriptions by CODE
   const pillarDescByCode = useMemo(() => new Map(pillars.map(p => [p.code, p.description ?? ''])), [pillars]);
   const themeDescByCode  = useMemo(() => new Map(themes.map(t => [t.code, t.description ?? ''])), [themes]);
   const subDescByCode    = useMemo(() => new Map(subs.map(s => [s.code, s.description ?? ''])), [subs]);
 
-  // default-collapse pillars & themes whenever the tree shape changes
+  // default-collapse pillars & themes whenever the tree changes
   useEffect(() => {
     const newP: Record<string, boolean> = {};
     const newT: Record<string, boolean> = {};
@@ -245,7 +250,7 @@ export default function BrowseTablePage() {
 
       <h1>Framework Table (read-only)</h1>
       <p style={{ opacity: 0.8, marginBottom: 8 }}>
-        Pillar / Theme / Sub-theme are inline. Descriptions & default indicators shown on each level. Ordered by framework sort order. Pillars & Themes start collapsed.
+        Color-coded by level. Descriptions & default indicators shown on each level. Ordered by framework sort order. Pillars & Themes start collapsed.
       </p>
 
       <div style={{ display:'flex', gap:8, alignItems:'center', margin:'12px 0', flexWrap:'wrap' }}>
@@ -307,7 +312,7 @@ export default function BrowseTablePage() {
   );
 }
 
-/* ---------- render inline rows with descriptions + default indicators on each level ---------- */
+/* ---------- render inline rows with level colors ---------- */
 function renderInlineRows(
   tree: ReturnType<typeof buildTree>,
   collapsedP: Record<string, boolean>,
@@ -330,9 +335,9 @@ function renderInlineRows(
     const pDesc = lookups.pillarDescByCode.get(P.code) || '';
     const pDef = lookups.defaultIndByPillarCode.get(P.code);
 
-    // Pillar summary row (now with description + default indicator)
+    // Pillar row → colored
     out.push(
-      <tr key={`p-${P.code}`} style={{ background:'#f8fafc', borderTop:'1px solid #e6e6e6' }}>
+      <tr key={`p-${P.code}`} style={{ background: COLORS.pillar, borderTop:'1px solid #e6e6e6' }}>
         <td style={td}>
           <button onClick={()=>toggles.toggleP(P.code)} style={btnLink}>{pCollapsed ? '▶' : '▼'} {P.pillar_name}</button>
         </td>
@@ -351,9 +356,9 @@ function renderInlineRows(
       const tDesc = lookups.themeDescByCode.get(T.code) || '';
       const tDef = lookups.defaultIndByThemeCode.get(T.code);
 
-      // Theme summary row (now with description + default indicator)
+      // Theme row → colored
       out.push(
-        <tr key={`t-${P.code}-${T.code}`} style={{ background:'#fbfcff' }}>
+        <tr key={`t-${P.code}-${T.code}`} style={{ background: COLORS.theme }}>
           <td style={td}></td>
           <td style={td}>
             <button onClick={()=>toggles.toggleT(T.code)} style={btnLink}>{tCollapsed ? '▶' : '▼'} {T.theme_name}</button>
@@ -367,12 +372,12 @@ function renderInlineRows(
       if (tCollapsed) continue;
 
       for (const S of T.subthemes) {
-        // Sub-theme summary row (description + default indicator), shown before its standards
         const sDesc = lookups.subDescByCode.get(S.code) || '';
         const sDef = lookups.defaultIndBySubCode.get(S.code);
 
+        // Sub-theme summary row → colored
         out.push(
-          <tr key={`s-${P.code}-${T.code}-${S.code}-summary`}>
+          <tr key={`s-${P.code}-${T.code}-${S.code}-summary`} style={{ background: COLORS.sub }}>
             <td style={td}></td>
             <td style={td}></td>
             <td style={td}>{S.subtheme_name}</td>
@@ -382,7 +387,7 @@ function renderInlineRows(
           </tr>
         );
 
-        // Standards rows (as before)
+        // Standards rows (keep white)
         for (const r of S.rows) {
           out.push(
             <tr key={`r-${P.code}-${T.code}-${S.code}-${r.standard_description}-${r.indicator_name}`} style={{ borderTop:'1px solid #f2f2f2' }}>
@@ -412,14 +417,12 @@ function buildTree(rows: Row[]) {
   const tMap = new Map<string, ThemeNode>();
 
   for (const r of rows) {
-    // pillar
     let P = pMap.get(r.pillar_code);
     if (!P) {
       P = { code: r.pillar_code, pillar_name: r.pillar_name, themes: [] };
       pMap.set(r.pillar_code, P);
     }
 
-    // theme (scoped under pillar)
     const tKey = r.pillar_code + '|' + r.theme_code;
     let T = tMap.get(tKey);
     if (!T) {
@@ -428,7 +431,6 @@ function buildTree(rows: Row[]) {
       P.themes.push(T);
     }
 
-    // sub-theme
     let S = T.subthemes.find(x => x.code === r.subtheme_code);
     if (!S) {
       S = { code: r.subtheme_code, subtheme_name: r.subtheme_name, rows: [] };
