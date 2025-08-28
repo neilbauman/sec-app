@@ -1,11 +1,9 @@
 // lib/supabaseServer.ts
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@supabase/supabase-js';
 
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  if (!url || !anon) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  }
-  return createSupabaseClient(url, anon);
+  // IMPORTANT: Service Role key on the server to bypass RLS in API routes
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createServerClient(url, serviceRoleKey, { auth: { persistSession: false } });
 }
