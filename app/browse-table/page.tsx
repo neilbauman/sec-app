@@ -103,7 +103,7 @@ export default function BrowseTablePage() {
     return m;
   }, [inds]);
 
-  // flat rows (standards + indicators) with ids included
+  // flat rows (standards + indicators) WITH synthetic rows for empty branches
   const baseRows: Row[] = useMemo(() => {
     const out: Row[] = [];
     const indsByStd = new Map<string, Indicator[]>();
@@ -112,6 +112,7 @@ export default function BrowseTablePage() {
       indsByStd.set(ind.standard_id, [...(indsByStd.get(ind.standard_id) || []), ind]);
     }
 
+    // 1) real rows from standards (+indicators)
     const stdsSorted = [...stds].sort((a,b) => so(a.sort_order) - so(b.sort_order) || (a.code||'').localeCompare(b.code||''));
     for (const std of stdsSorted) {
       const sub = subById[std.subtheme_id];
@@ -119,7 +120,7 @@ export default function BrowseTablePage() {
       const theme = themeById[sub.theme_id];
       const pillar = theme ? pillarById[theme.pillar_id] : undefined;
 
-      const rowBase = {
+      const rowBase: Row = {
         pillar_id: pillar?.id || '',
         pillar_code: pillar?.code || '',
         pillar_name: pillar?.name || pillar?.code || '',
@@ -144,7 +145,9 @@ export default function BrowseTablePage() {
         ind_so: 999999,
       };
 
-      const theseInds = (indsByStd.get(std.id) || []).sort((a,b) => so(a.sort_order) - so(b.sort_order) || (a.code||'').localeCompare(b.code||''));
+      const theseInds = (indsByStd.get(std.id) || [])
+        .sort((a,b) => so(a.sort_order) - so(b.sort_order) || (a.code||'').localeCompare(b.code||''));
+
       if (theseInds.length === 0) {
         out.push(rowBase);
       } else {
@@ -154,6 +157,104 @@ export default function BrowseTablePage() {
       }
     }
 
+    // 2) synthetic rows for sub-themes with NO standards
+    const seenSubIds = new Set(out.map(r => r.subtheme_id));
+    for (const sub of subs) {
+      if (seenSubIds.has(sub.id)) continue; // already represented by a real row
+      const theme = themeById[sub.theme_id];
+      const pillar = theme ? pillarById[theme.pillar_id] : undefined;
+      out.push({
+        pillar_id: pillar?.id || '',
+        pillar_code: pillar?.code || '',
+        pillar_name: pillar?.name || pillar?.code || '',
+        p_so: so(pillar?.sort_order),
+
+        theme_id: theme?.id || '',
+        theme_code: theme?.code || '',
+        theme_name: theme?.name || theme?.code || '',
+        t_so: so(theme?.sort_order),
+
+        subtheme_id: sub.id,
+        subtheme_code: sub.code || '',
+        subtheme_name: sub.name || sub.code || '',
+        s_so: so(sub.sort_order),
+
+        standard_id: undefined,
+        standard_description: '',
+        std_so: 999999,
+
+        indicator_name: '',
+        indicator_description: '',
+        ind_so: 999999,
+      });
+    }
+
+    // 3) synthetic rows for themes with NO sub-themes
+    const seenThemeIds = new Set(out.map(r => r.theme_id));
+    for (const theme of themes) {
+      if (seenThemeIds.has(theme.id)) continue;
+      const pillar = pillarById[theme.pillar_id];
+      // fabricate a unique, local-only subtheme id so grouping still works
+      const fakeSubId = `__empty_sub__${theme.id}`;
+      out.push({
+        pillar_id: pillar?.id || '',
+        pillar_code: pillar?.code || '',
+        pillar_name: pillar?.name || pillar?.code || '',
+        p_so: so(pillar?.sort_order),
+
+        theme_id: theme.id,
+        theme_code: theme.code || '',
+        theme_name: theme.name || theme.code || '',
+        t_so: so(theme.sort_order),
+
+        subtheme_id: fakeSubId,
+        subtheme_code: '',
+        subtheme_name: '', // no sub-theme yet
+        s_so: 999999,
+
+        standard_id: undefined,
+        standard_description: '',
+        std_so: 999999,
+
+        indicator_name: '',
+        indicator_description: '',
+        ind_so: 999999,
+      });
+    }
+
+    // 4) synthetic rows for pillars with NO themes
+    const seenPillarIds = new Set(out.map(r => r.pillar_id));
+    for (const pillar of pillars) {
+      if (seenPillarIds.has(pillar.id)) continue;
+      const fakeThemeId = `__empty_theme__${pillar.id}`;
+      const fakeSubId   = `__empty_sub__${pillar.id}`;
+      out.push({
+        pillar_id: pillar.id,
+        pillar_code: pillar.code || '',
+        pillar_name: pillar.name || pillar.code || '',
+        p_so: so(pillar.sort_order),
+
+        theme_id: fakeThemeId,
+        theme_code: '',
+        theme_name: '', // no theme yet
+        t_so: 999999,
+
+        subtheme_id: fakeSubId,
+        subtheme_code: '',
+        subtheme_name: '', // no sub-theme yet
+        s_so: 999999,
+
+        standard_id: undefined,
+        standard_description: '',
+        std_so: 999999,
+
+        indicator_name: '',
+        indicator_description: '',
+        ind_so: 999999,
+      });
+    }
+
+    // 5) final sort (framework order)
     out.sort((A,B) =>
       (A.p_so - B.p_so) ||
       A.pillar_name.localeCompare(B.pillar_name, undefined, { numeric: true }) ||
@@ -166,7 +267,7 @@ export default function BrowseTablePage() {
     );
 
     return out;
-  }, [stds, inds, pillarById, themeById, subById]);
+  }, [pillars, themes, subs, stds, inds, pillarById, themeById, subById]);
 
   // Filters
   const pillarOptions = useMemo(() => {
@@ -301,7 +402,6 @@ export default function BrowseTablePage() {
     if (!res.ok) alert('Delete failed'); else await reload();
   }
 
-  // NEW: clean cancel helper
   function cancelEdit() {
     setForm({});
     setEditing(null);
@@ -322,16 +422,13 @@ export default function BrowseTablePage() {
         sort_order: addForm.sort_order ? Number(addForm.sort_order) : null,
       };
       const res = await fetch('/api/themes', {
-  method:'POST',
-  headers:{'Content-Type':'application/json'},
-  body: JSON.stringify(body)
-});
-const payload = await res.json().catch(() => ({}));
-if (!res.ok) {
-  alert('Add theme failed: ' + (payload?.error || JSON.stringify(payload) || res.statusText));
-  return;
-}
-const newTheme = payload; // { id, ... }
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) { alert('Add theme failed: ' + (payload?.error || JSON.stringify(payload) || res.statusText)); return; }
+      const newTheme = payload; // { id, ... }
 
       // 2) Optionally create a default Indicator for this Theme
       const defName = (addForm.def_indicator_name || '').trim();
@@ -350,7 +447,6 @@ const newTheme = payload; // { id, ... }
           })
         });
         if (!iRes.ok) {
-          // Theme created, but indicator failed
           console.warn('Default indicator creation failed for new theme');
           alert('Theme created, but default indicator failed to create');
         }
@@ -370,7 +466,7 @@ const newTheme = payload; // { id, ... }
         sort_order: addForm.sort_order ? Number(addForm.sort_order) : null,
       };
       const res = await fetch('/api/subthemes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-      if (!res.ok) { alert('Add sub-theme failed'); return; }
+      if (!res.ok) { const p = await res.json().catch(()=>({})); alert('Add sub-theme failed: ' + (p?.error || res.statusText)); return; }
       await reload();
       return;
     }
@@ -385,7 +481,7 @@ const newTheme = payload; // { id, ... }
         sort_order: addForm.sort_order ? Number(addForm.sort_order) : null,
       };
       const res = await fetch('/api/standards', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-      if (!res.ok) { alert('Add standard failed'); return; }
+      if (!res.ok) { const p = await res.json().catch(()=>({})); alert('Add standard failed: ' + (p?.error || res.statusText)); return; }
       await reload();
       return;
     }
