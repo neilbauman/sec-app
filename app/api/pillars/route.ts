@@ -1,4 +1,4 @@
-// app/api/pillars/[id]/route.ts
+// app/api/pillars/route.ts
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -8,26 +8,36 @@ const db = createClient(
   { auth: { persistSession: false } }
 );
 
-// Helper: get last path segment (the [id])
-function getIdFromUrl(request: Request) {
-  const url = new URL(request.url);
-  const parts = url.pathname.split('/').filter(Boolean);
-  return parts[parts.length - 1]; // .../pillars/[id]
+// GET /api/pillars  -> list all pillars
+export async function GET(_request: Request) {
+  const { data, error } = await db
+    .from('pillars')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('code', { ascending: true });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data ?? []);
 }
 
-// PUT /api/pillars/:id -> update
-export async function PUT(request: Request) {
-  const id = getIdFromUrl(request);
-  const body = await request.json();
-  const { error } = await db.from('pillars').update(body).eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ ok: true });
-}
+// POST /api/pillars  -> create a pillar
+// body: { code: string; name: string; statement?: string; description?: string; sort_order?: number }
+export async function POST(request: Request) {
+  const body = await request.json().catch(() => ({}));
+  const code = (body?.code ?? '').trim();
+  const name = (body?.name ?? '').trim();
+  const statement = (body?.statement ?? null) || null;
+  const description = (body?.description ?? null) || null;
+  const sort_order = Number.isFinite(body?.sort_order) ? Number(body.sort_order) : 1;
 
-// DELETE /api/pillars/:id -> delete
-export async function DELETE(request: Request) {
-  const id = getIdFromUrl(request);
-  const { error } = await db.from('pillars').delete().eq('id', id);
+  if (!code || !name) {
+    return NextResponse.json({ error: 'code and name are required' }, { status: 400 });
+  }
+
+  const { error } = await db.from('pillars').insert({
+    code, name, statement, description, sort_order
+  });
+
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
 }
