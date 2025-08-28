@@ -2,10 +2,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
 
-export async function PUT(_req: Request, { params }: { params: { id: string } }) {
+// Use a non-destructured, loosely-typed context to satisfy Next 15's handler typing
+export async function PUT(req: Request, context: any) {
   const supabase = createClient();
-  const id = params.id;
-  const body = await _req.json();
+  const id = context?.params?.id as string;
+  if (!id) return NextResponse.json({ error: 'missing id' }, { status: 400 });
+
+  const body = await req.json();
 
   const {
     name,
@@ -42,9 +45,11 @@ export async function PUT(_req: Request, { params }: { params: { id: string } })
   return NextResponse.json(data);
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, context: any) {
   const supabase = createClient();
-  const id = params.id;
+  const id = context?.params?.id as string;
+  if (!id) return NextResponse.json({ error: 'missing id' }, { status: 400 });
+
   const { error } = await supabase.from('indicators').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
