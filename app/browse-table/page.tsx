@@ -50,11 +50,11 @@ export default function BrowseTablePage() {
   // edit mode state
   const [editMode, setEditMode] = useState(false);
 
-  // inline editing trackers: store id currently edited and local form values
+  // inline editing trackers
   const [editing, setEditing] = useState<{ kind:'pillar'|'theme'|'sub'|'std'; id:string }|null>(null);
   const [form, setForm] = useState<Record<string, string>>({}); // generic form state
 
-  // "add child" trackers to show mini add-forms under a row
+  // "add child" trackers
   const [addingUnder, setAddingUnder] = useState<{ kind:'pillar'|'theme'|'sub'; id:string }|null>(null);
   const [addForm, setAddForm] = useState<Record<string, string>>({});
 
@@ -86,7 +86,7 @@ export default function BrowseTablePage() {
 
   const so = (n: number|null|undefined) => (n ?? 999999);
 
-  // default indicator lookups by id
+  // default indicators
   const defIndByPillarId = useMemo(() => {
     const m = new Map<string, Indicator>();
     for (const ind of inds) if (ind.is_default && ind.pillar_id && !m.has(ind.pillar_id)) m.set(ind.pillar_id, ind);
@@ -256,13 +256,11 @@ export default function BrowseTablePage() {
     }
   }
 
-  // actions: start edit helper
   function beginEdit(kind:'pillar'|'theme'|'sub'|'std', id:string, seed:Record<string, string>) {
     setEditing({ kind, id });
     setForm(seed);
   }
 
-  // actions: save edit
   async function saveEdit() {
     if (!editing) return;
     const { kind, id } = editing;
@@ -287,7 +285,6 @@ export default function BrowseTablePage() {
     if (!res.ok) alert('Save failed'); else await reload();
   }
 
-  // actions: delete
   async function del(kind:'pillar'|'theme'|'sub'|'std', id:string) {
     const msg =
       kind === 'pillar' ? 'Delete this pillar AND all its themes, sub-themes, and standards?' :
@@ -304,12 +301,10 @@ export default function BrowseTablePage() {
     if (!res.ok) alert('Delete failed'); else await reload();
   }
 
-  // actions: add child under a row
   async function addChild() {
     if (!addingUnder) return;
     const { kind, id } = addingUnder;
     if (kind === 'pillar') {
-      // add theme under pillar id
       const body = {
         pillar_id: id,
         code: addForm.code || '',
@@ -320,7 +315,6 @@ export default function BrowseTablePage() {
       const res = await fetch('/api/themes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
       if (!res.ok) alert('Add theme failed'); else await reload();
     } else if (kind === 'theme') {
-      // add sub-theme under theme id
       const body = {
         theme_id: id,
         code: addForm.code || '',
@@ -331,7 +325,6 @@ export default function BrowseTablePage() {
       const res = await fetch('/api/subthemes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
       if (!res.ok) alert('Add sub-theme failed'); else await reload();
     } else if (kind === 'sub') {
-      // add standard under sub-theme id
       const body = {
         subtheme_id: id,
         code: addForm.code ? addForm.code : null,
@@ -342,6 +335,12 @@ export default function BrowseTablePage() {
       const res = await fetch('/api/standards', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
       if (!res.ok) alert('Add standard failed'); else await reload();
     }
+  }
+
+  // NEW: clean cancel helper (fixes TS error)
+  function cancelEdit() {
+    setForm({});
+    setEditing(null);
   }
 
   const toggleP = (id: string) => setCollapsedP(m => ({ ...m, [id]: !m[id] }));
@@ -435,7 +434,8 @@ export default function BrowseTablePage() {
               editing,
               form,
               setForm,
-              saveEdit
+              saveEdit,
+              cancelEdit,   // << pass clean cancel
             })}
             {tree.length === 0 && !loading && (
               <tr><td style={{ padding:12 }} colSpan={editMode ? 7 : 6}>No matching rows.</td></tr>
@@ -472,6 +472,7 @@ function renderRows(args: {
   form: Record<string,string>,
   setForm: (s:Record<string,string>)=>void,
   saveEdit: ()=>Promise<void>,
+  cancelEdit: ()=>void, // << new
 }) {
   const out: ReactNode[] = [];
   const td: React.CSSProperties = { padding:'8px', whiteSpace:'nowrap', verticalAlign:'top' };
@@ -501,7 +502,7 @@ function renderRows(args: {
             {pEditing && (
               <span style={{ display:'flex', gap:6 }}>
                 <button style={btnLink} onClick={args.saveEdit}>Save</button>
-                <button style={btnLink} onClick={()=>args.setForm({}) || null || (args as any).setEditing?.(null)}>Cancel</button>
+                <button style={btnLink} onClick={args.cancelEdit}>Cancel</button>
               </span>
             )}
           </td>
@@ -565,7 +566,7 @@ function renderRows(args: {
               {tEditing && (
                 <span style={{ display:'flex', gap:6 }}>
                   <button style={btnLink} onClick={args.saveEdit}>Save</button>
-                  <button style={btnLink} onClick={()=>args.setForm({}) || null || (args as any).setEditing?.(null)}>Cancel</button>
+                  <button style={btnLink} onClick={args.cancelEdit}>Cancel</button>
                 </span>
               )}
             </td>
@@ -610,7 +611,6 @@ function renderRows(args: {
         const sDef = args.defIndBySubId.get(S.subtheme_id);
         const sEditing = args.editing?.kind === 'sub' && args.editing?.id === S.subtheme_id;
 
-        // Sub-theme summary row
         out.push(
           <tr key={`s-${S.subtheme_id}-summary`} style={{ background: COLORS.sub }}>
             {args.editMode && (
@@ -626,7 +626,7 @@ function renderRows(args: {
                 {sEditing && (
                   <span style={{ display:'flex', gap:6 }}>
                     <button style={btnLink} onClick={args.saveEdit}>Save</button>
-                    <button style={btnLink} onClick={()=>args.setForm({}) || null || (args as any).setEditing?.(null)}>Cancel</button>
+                    <button style={btnLink} onClick={args.cancelEdit}>Cancel</button>
                   </span>
                 )}
               </td>
@@ -662,7 +662,7 @@ function renderRows(args: {
           );
         }
 
-        // Standards rows (white)
+        // Standards rows
         for (const r of S.rows) {
           const stdEditing = args.editing?.kind === 'std' && args.editing?.id === r.standard_id;
           out.push(
@@ -673,7 +673,7 @@ function renderRows(args: {
                     <span style={{ display:'flex', gap:6 }}>
                       <button style={btnIcon} title="Edit standard"
                               onClick={()=>args.beginEdit('std', r.standard_id!, {
-                                code:'', // we don’t display code in table; you can load it if needed
+                                code:'',
                                 description:r.standard_description,
                                 notes:'',
                                 sort_order:String(r.std_so === 999999 ? '' : r.std_so)
@@ -683,7 +683,7 @@ function renderRows(args: {
                   ) : (
                     <span style={{ display:'flex', gap:6 }}>
                       <button style={btnLink} onClick={args.saveEdit}>Save</button>
-                      <button style={btnLink} onClick={()=>args.setForm({}) || null || (args as any).setEditing?.(null)}>Cancel</button>
+                      <button style={btnLink} onClick={args.cancelEdit}>Cancel</button>
                     </span>
                   )}
                 </td>
