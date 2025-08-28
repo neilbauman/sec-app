@@ -1,5 +1,6 @@
 // app/browse-table/page.tsx
 'use client';
+import Link from 'next/link';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 type Pillar = { id: string; code: string; name: string; statement?: string|null; description?: string|null; sort_order: number|null; };
@@ -35,10 +36,9 @@ export default function BrowseTablePage() {
   const [fTheme, setFTheme] = useState<string>('');      // theme_code
   const [fSub, setFSub] = useState<string>('');          // subtheme_code
 
-  // collapse state (default: pillars & themes collapsed)
+  // collapse state (defaults: pillars & themes collapsed)
   const [collapsedP, setCollapsedP] = useState<Record<string, boolean>>({});
   const [collapsedT, setCollapsedT] = useState<Record<string, boolean>>({});
-  // sub-themes remain expanded by default
 
   useEffect(() => {
     (async () => {
@@ -69,18 +69,16 @@ export default function BrowseTablePage() {
   // build flat rows in framework order
   const baseRows: Row[] = useMemo(() => {
     const out: Row[] = [];
-
-    // helpers to normalize sort_order (undefined -> big number)
     const so = (n: number|null|undefined) => (n ?? 999999);
 
-    // index standards->indicators
+    // Standard -> Indicators index
     const indsByStd = new Map<string, Indicator[]>();
     for (const ind of inds) {
       if (!ind.standard_id) continue;
       indsByStd.set(ind.standard_id, [...(indsByStd.get(ind.standard_id) || []), ind]);
     }
 
-    // iterate standards in order (they anchor the row), then join up to sub/theme/pillar and down to indicators
+    // Standards drive rows
     const stdsSorted = [...stds].sort((a,b) => so(a.sort_order) - so(b.sort_order) || a.code.localeCompare(b.code));
     for (const std of stdsSorted) {
       const sub = sById[std.subtheme_id];
@@ -88,19 +86,15 @@ export default function BrowseTablePage() {
       const theme = tById[sub.theme_id];
       const pillar = theme ? pById[theme.pillar_id] : undefined;
 
-      const p_code = pillar?.code || '';
-      const t_code = theme?.code || '';
-      const s_code = sub?.code || '';
-
       const rowBase = {
-        pillar_code: p_code,
-        pillar_name: pillar?.name || p_code,
+        pillar_code: pillar?.code || '',
+        pillar_name: pillar?.name || pillar?.code || '',
         p_so: so(pillar?.sort_order),
-        theme_code: t_code,
-        theme_name: theme?.name || t_code,
+        theme_code: theme?.code || '',
+        theme_name: theme?.name || theme?.code || '',
         t_so: so(theme?.sort_order),
-        subtheme_code: s_code,
-        subtheme_name: sub?.name || s_code,
+        subtheme_code: sub?.code || '',
+        subtheme_name: sub?.name || sub?.code || '',
         s_so: so(sub?.sort_order),
         standard_statement: std.statement,
         std_so: so(std.sort_order),
@@ -108,25 +102,15 @@ export default function BrowseTablePage() {
 
       const theseInds = (indsByStd.get(std.id) || []).sort((a,b) => so(a.sort_order) - so(b.sort_order) || (a.code||'').localeCompare(b.code||''));
       if (theseInds.length === 0) {
-        out.push({
-          ...rowBase,
-          indicator_name: '',
-          indicator_description: '',
-          ind_so: 999999,
-        });
+        out.push({ ...rowBase, indicator_name: '', indicator_description: '', ind_so: 999999 });
       } else {
         for (const ind of theseInds) {
-          out.push({
-            ...rowBase,
-            indicator_name: ind.name,
-            indicator_description: ind.description || '',
-            ind_so: so(ind.sort_order),
-          });
+          out.push({ ...rowBase, indicator_name: ind.name, indicator_description: ind.description || '', ind_so: so(ind.sort_order) });
         }
       }
     }
 
-    // final framework chain sort: pillar -> theme -> subtheme -> standard -> indicator
+    // Framework chain: pillar -> theme -> subtheme -> standard -> indicator
     out.sort((A,B) =>
       A.p_so - B.p_so ||
       A.pillar_name.localeCompare(B.pillar_name, undefined, { numeric: true }) ||
@@ -167,7 +151,7 @@ export default function BrowseTablePage() {
     return Array.from(seen.entries()).map(([code,name]) => ({ code, name }));
   }, [baseRows, fPillar, fTheme]);
 
-  // apply filters + free text search
+  // apply filters + search
   const qx = q.trim().toLowerCase();
   const filtered = useMemo(() => {
     let rows = baseRows;
@@ -186,23 +170,20 @@ export default function BrowseTablePage() {
     return rows;
   }, [baseRows, fPillar, fTheme, fSub, qx]);
 
-  // build a tree for rendering with collapsible groups (but data is inline on each row)
+  // tree for rendering with collapsible Pillar/Theme; rows inline
   const tree = useMemo(() => buildTree(filtered), [filtered]);
 
-  // default-collapse pillars + themes when data loads or filters change
+  // default-collapse pillars + themes whenever the grouped set changes
   useEffect(() => {
-    // collapse all pillars & themes by default
     const newP: Record<string, boolean> = {};
     const newT: Record<string, boolean> = {};
     for (const p of tree) {
-      if (p.code) newP[p.code] = true;  // collapsed
-      for (const t of p.themes) {
-        if (t.code) newT[t.code] = true; // collapsed
-      }
+      if (p.code) newP[p.code] = true;
+      for (const t of p.themes) if (t.code) newT[t.code] = true;
     }
     setCollapsedP(newP);
     setCollapsedT(newT);
-  }, [tree.length]); // re-run when grouping changes count
+  }, [tree.length]);
 
   // controls
   const toggleP = (code: string) => setCollapsedP(m => ({ ...m, [code]: !m[code] }));
@@ -217,6 +198,11 @@ export default function BrowseTablePage() {
 
   return (
     <main style={{ padding: 24, maxWidth: '100%', margin: '0 auto' }}>
+      {/* Top bar with back link */}
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom: 8 }}>
+        <Link href="/" style={{ textDecoration:'none' }}>← Back to Home</Link>
+      </div>
+
       <h1>Framework Table (read-only)</h1>
       <p style={{ opacity: 0.8, marginBottom: 8 }}>
         Pillar / Theme / Sub-theme are inline. Ordered by framework sort order. Pillars & Themes start collapsed.
@@ -285,7 +271,7 @@ function renderInlineRows(
   for (const P of tree) {
     const pCollapsed = !!collapsedP[P.code];
 
-    // Pillar row (inline; other columns blank)
+    // Pillar row (inline)
     out.push(
       <tr key={`p-${P.code}`} style={{ background:'#f8fafc', borderTop:'1px solid #e6e6e6' }}>
         <td style={td}><button onClick={()=>toggles.toggleP(P.code)} style={btnLink}>{pCollapsed ? '▶' : '▼'} {P.pillar_name}</button></td>
@@ -315,9 +301,7 @@ function renderInlineRows(
       if (tCollapsed) continue;
 
       for (const S of T.subthemes) {
-        // For each sub-theme, render all its data rows inline (one row per Standard×Indicator)
         if (S.rows.length === 0) {
-          // empty sub-theme row
           out.push(
             <tr key={`s-${P.code}-${T.code}-${S.code}-empty`}>
               <td style={td}></td>
