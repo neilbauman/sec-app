@@ -16,6 +16,8 @@ export default function Home() {
         <li>
           <a href="/api/import?download=1">Download current framework (Excel)</a>
         </li>
+        // app/page.tsx (snippet)
+<li><a href="/api/export">Download current framework (CSV)</a></li>
         <li>
           <Link href="/upload">Upload Excel (admin)</Link>
         </li>
