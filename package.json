@@ -1,24 +1,23 @@
 {
   "name": "ssc-app",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000"
   },
   "dependencies": {
+    "@supabase/supabase-js": "latest",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "@supabase/supabase-js": "latest",
     "xlsx": "latest"
   },
-  "type": "module"
-
   "devDependencies": {
-    "typescript": "latest",
+    "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "@types/node": "latest"
+    "typescript": "latest"
   }
 }
