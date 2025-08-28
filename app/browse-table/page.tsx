@@ -1,6 +1,7 @@
 // app/browse-table/page.tsx
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactElement } from 'react';
 
 type Pillar = { id: string; code: string; name: string; statement?: string|null; description?: string|null; sort_order: number|null; };
 type Theme = { id: string; pillar_id: string; code: string; name: string; statement?: string|null; description?: string|null; sort_order: number|null; };
@@ -257,7 +258,7 @@ function renderGroupedRows(
   collapsed: { collapsedP: Record<string, boolean>, collapsedT: Record<string, boolean>, collapsedS: Record<string, boolean> },
   toggles: { toggleP: (c:string)=>void, toggleT: (c:string)=>void, toggleS: (c:string)=>void }
 ) {
-  const out: JSX.Element[] = [];
+  const out: React.ReactElement[] = [];
   let curP = ''; let curT = ''; let curS = '';
 
   for (let i=0;i<rows.length;i++) {
