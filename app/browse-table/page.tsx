@@ -13,13 +13,18 @@ type Indicator = {
 };
 
 type Row = {
-  // grouping keys (kept internal)
+  // grouping keys (internal)
   pillar_code: string; theme_code: string; subtheme_code: string;
   // display names
   pillar_name: string; theme_name: string; subtheme_name: string;
-  // standard/indicator
-  standard_code: string; standard_statement: string; standard_notes: string;
-  indicator_code: string; indicator_name: string; indicator_description: string; indicator_is_default: string;
+  // fields to render
+  standard_code: string;                // kept internal (not displayed)
+  standard_statement: string;
+  standard_notes: string;
+  indicator_code: string;               // kept internal (not displayed)
+  indicator_name: string;
+  indicator_description: string;
+  indicator_is_default: string;         // not displayed but still searchable if you want
 };
 
 export default function BrowseTablePage() {
@@ -32,12 +37,12 @@ export default function BrowseTablePage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string|null>(null);
 
-  // filters (values are codes; labels show names)
+  // filters (codes as values, names for labels)
   const [fPillar, setFPillar] = useState<string>('');    // pillar_code
   const [fTheme, setFTheme] = useState<string>('');      // theme_code
   const [fSub, setFSub] = useState<string>('');          // subtheme_code
 
-  // collapses (store by code)
+  // collapses
   const [collapsedP, setCollapsedP] = useState<Record<string, boolean>>({});
   const [collapsedT, setCollapsedT] = useState<Record<string, boolean>>({});
   const [collapsedS, setCollapsedS] = useState<Record<string, boolean>>({});
@@ -89,14 +94,12 @@ export default function BrowseTablePage() {
   const indsByStandard = useMemo(() => {
     const m = new Map<string, Indicator[]>();
     for (const ind of inds) {
-      if (ind.standard_id) {
-        m.set(ind.standard_id, [...(m.get(ind.standard_id) || []), ind]);
-      }
+      if (ind.standard_id) m.set(ind.standard_id, [...(m.get(ind.standard_id) || []), ind]);
     }
     return m;
   }, [inds]);
 
-  // flat rows (codes kept internal, names used for display)
+  // flat rows
   const baseRows: Row[] = useMemo(() => {
     const out: Row[] = [];
     const sort = sortBy('sort_order','code');
@@ -138,7 +141,7 @@ export default function BrowseTablePage() {
     return out;
   }, [stds, sById, tById, pById, indsByStandard]);
 
-  // filter options (codes as values, names as labels)
+  // filter option lists (codes as values, names as labels)
   const pillarOptions = useMemo(() => {
     const set = new Set(baseRows.map(r => r.pillar_code).filter(Boolean));
     return Array.from(set).sort().map(code => ({ code, name: pillarNameByCode.get(code) || code }));
@@ -169,20 +172,21 @@ export default function BrowseTablePage() {
       rows = rows.filter(r =>
         [
           r.pillar_name, r.theme_name, r.subtheme_name,
-          r.standard_code, r.standard_statement, r.standard_notes,
-          r.indicator_code, r.indicator_name, r.indicator_description
+          r.standard_statement, r.standard_notes,
+          r.indicator_name, r.indicator_description
         ].some(v => String(v || '').toLowerCase().includes(qx))
       );
     }
     return rows;
   }, [baseRows, fPillar, fTheme, fSub, qx]);
 
-  // sort (default by pillar/theme/subtheme then standard code)
-  const [sortKey, setSortKey] = useState<keyof Row>('standard_code');
+  // sort (by the four visible columns; default = Standard Statement)
+  const [sortKey, setSortKey] = useState<keyof Row>('standard_statement');
   const [sortDir, setSortDir] = useState<'asc'|'desc'>('asc');
   const sorted = useMemo(() => {
     const arr = [...filtered];
     arr.sort((a,b) => {
+      // stable chain by group names for a predictable order
       const chainA = [a.pillar_name || a.pillar_code, a.theme_name || a.theme_code, a.subtheme_name || a.subtheme_code];
       const chainB = [b.pillar_name || b.pillar_code, b.theme_name || b.theme_code, b.subtheme_name || b.subtheme_code];
       for (let i=0;i<3;i++) {
@@ -202,13 +206,7 @@ export default function BrowseTablePage() {
     else { setSortKey(k); setSortDir('asc'); }
   }
 
-  // level-specific bulk collapse helpers
-  function collapsePillarsOnly() {
-    const p: Record<string, boolean> = {};
-    for (const r of sorted) if (r.pillar_code) p[r.pillar_code] = true;
-    setCollapsedP(p);
-  }
-  function expandPillarsOnly() { setCollapsedP({}); }
+  // bulk collapse helpers
   function expandAll() { setCollapsedP({}); setCollapsedT({}); setCollapsedS({}); }
   function collapseAll() {
     const p: Record<string, boolean> = {};
@@ -221,17 +219,23 @@ export default function BrowseTablePage() {
     }
     setCollapsedP(p); setCollapsedT(t); setCollapsedS(s);
   }
+  function expandPillarsOnly() { setCollapsedP({}); }
+  function collapsePillarsOnly() {
+    const p: Record<string, boolean> = {};
+    for (const r of sorted) if (r.pillar_code) p[r.pillar_code] = true;
+    setCollapsedP(p);
+  }
 
   return (
     <main style={{ padding: 24, maxWidth: '100%', margin: '0 auto' }}>
       <h1>Framework Table (read-only)</h1>
       <p style={{ opacity: 0.8, marginBottom: 8 }}>
-        Collapsible groups and filters. Pillar/Theme/Sub-theme names are shown; codes are hidden.
+        Collapsible groups and filters. Showing Standard Statement, Standard Notes, Indicator Name, and Indicator Description.
       </p>
 
       <div style={{ display:'flex', gap:8, alignItems:'center', margin:'12px 0 12px', flexWrap:'wrap' }}>
         <input
-          placeholder="Search everything…"
+          placeholder="Search…"
           value={q}
           onChange={e=>setQ(e.target.value)}
           style={{ flex:'1 1 320px', minWidth: 220, padding:'10px 12px', border:'1px solid #ddd', borderRadius:8 }}
@@ -251,8 +255,8 @@ export default function BrowseTablePage() {
         <a href="/api/export">Download CSV</a>
         <button onClick={expandAll}>Expand all</button>
         <button onClick={collapseAll}>Collapse all</button>
-        <button onClick={expandPillarsOnly} title="Show just the three pillar rows (no details)">Expand pillars</button>
-        <button onClick={collapsePillarsOnly} title="Collapse all pillars to a condensed 3-row view">Collapse pillars</button>
+        <button onClick={expandPillarsOnly} title="Expand Pillars (show full details under each pillar)">Expand pillars</button>
+        <button onClick={collapsePillarsOnly} title="Collapse Pillars (condensed view)">Collapse pillars</button>
       </div>
 
       {loading && <p>Loading…</p>}
@@ -262,13 +266,10 @@ export default function BrowseTablePage() {
         <table style={{ width:'100%', borderCollapse:'collapse', fontSize: 14 }}>
           <thead>
             <TrHead>
-              <Th onClick={()=>onHeaderClick('standard_code')} label="Standard Code" curKey={sortKey} curDir={sortDir} k="standard_code" />
               <Th onClick={()=>onHeaderClick('standard_statement')} label="Standard Statement" curKey={sortKey} curDir={sortDir} k="standard_statement" />
               <Th onClick={()=>onHeaderClick('standard_notes')} label="Standard Notes" curKey={sortKey} curDir={sortDir} k="standard_notes" />
-              <Th onClick={()=>onHeaderClick('indicator_code')} label="Indicator Code" curKey={sortKey} curDir={sortDir} k="indicator_code" />
               <Th onClick={()=>onHeaderClick('indicator_name')} label="Indicator Name" curKey={sortKey} curDir={sortDir} k="indicator_name" />
               <Th onClick={()=>onHeaderClick('indicator_description')} label="Indicator Description" curKey={sortKey} curDir={sortDir} k="indicator_description" />
-              <Th onClick={()=>onHeaderClick('indicator_is_default')} label="Default?" curKey={sortKey} curDir={sortDir} k="indicator_is_default" />
             </TrHead>
           </thead>
           <tbody>
@@ -283,7 +284,7 @@ export default function BrowseTablePage() {
               { pillarNameByCode, themeNameByCode, subthemeNameByCode }
             )}
             {sorted.length === 0 && !loading && (
-              <tr><td style={{ padding:12 }} colSpan={7}>No matching rows.</td></tr>
+              <tr><td style={{ padding:12 }} colSpan={4}>No matching rows.</td></tr>
             )}
           </tbody>
         </table>
@@ -292,7 +293,7 @@ export default function BrowseTablePage() {
   );
 }
 
-/* ---------- grouped rows renderer (tree-based, no index skipping) ---------- */
+/* ---------- grouped rows renderer (tree-based) ---------- */
 function renderGroupedRows(
   rows: Row[],
   collapsed: { collapsedP: Record<string, boolean>, collapsedT: Record<string, boolean>, collapsedS: Record<string, boolean> },
@@ -307,7 +308,7 @@ function renderGroupedRows(
     const pCollapsed = !!collapsed.collapsedP[p.code];
     out.push(
       <tr key={`p-${p.code}`} style={{ background:'#f8fafc', borderTop:'1px solid #e6e6e6' }}>
-        <td colSpan={7} style={{ padding:'8px 10px', fontWeight:600 }}>
+        <td colSpan={4} style={{ padding:'8px 10px', fontWeight:600 }}>
           <button onClick={()=>toggles.toggleP(p.code)} style={btnLink}>
             {pCollapsed ? '▶' : '▼'} Pillar — {pLabel}
           </button>
@@ -321,7 +322,7 @@ function renderGroupedRows(
       const tCollapsed = !!collapsed.collapsedT[t.code];
       out.push(
         <tr key={`t-${p.code}-${t.code}`} style={{ background:'#fbfcff' }}>
-          <td colSpan={7} style={{ padding:'6px 10px 6px 24px', fontWeight:600 }}>
+          <td colSpan={4} style={{ padding:'6px 10px 6px 24px', fontWeight:600 }}>
             <button onClick={()=>toggles.toggleT(t.code)} style={btnLink}>
               {tCollapsed ? '▶' : '▼'} Theme — {tLabel}
             </button>
@@ -335,7 +336,7 @@ function renderGroupedRows(
         const sCollapsed = !!collapsed.collapsedS[s.code];
         out.push(
           <tr key={`s-${p.code}-${t.code}-${s.code}`} style={{ background:'#ffffff' }}>
-            <td colSpan={7} style={{ padding:'6px 10px 6px 48px', fontWeight:600 }}>
+            <td colSpan={4} style={{ padding:'6px 10px 6px 48px', fontWeight:600 }}>
               <button onClick={()=>toggles.toggleS(s.code)} style={btnLink}>
                 {sCollapsed ? '▶' : '▼'} Sub-theme — {sLabel}
               </button>
@@ -346,14 +347,11 @@ function renderGroupedRows(
 
         for (const r of s.rows) {
           out.push(
-            <tr key={`r-${p.code}-${t.code}-${s.code}-${r.standard_code}-${r.indicator_code}`} style={{ borderTop:'1px solid #f2f2f2' }}>
-              <td style={td}>{r.standard_code}</td>
+            <tr key={`r-${p.code}-${t.code}-${s.code}-${r.standard_statement}-${r.indicator_name}`} style={{ borderTop:'1px solid #f2f2f2' }}>
               <td style={tdWrap}>{r.standard_statement}</td>
               <td style={tdWrap}>{r.standard_notes}</td>
-              <td style={td}>{r.indicator_code}</td>
               <td style={td}>{r.indicator_name}</td>
               <td style={tdWrap}>{r.indicator_description}</td>
-              <td style={td}>{r.indicator_is_default}</td>
             </tr>
           );
         }
@@ -428,7 +426,7 @@ function Th({ onClick, label, curKey, curDir, k }: {
 }
 
 const td: React.CSSProperties = { padding:'8px', whiteSpace:'nowrap', verticalAlign:'top' };
-const tdWrap: React.CSSProperties = { padding:'8px', whiteSpace:'normal', maxWidth: 420, lineHeight: 1.3 };
+const tdWrap: React.CSSProperties = { padding:'8px', whiteSpace:'normal', maxWidth: 480, lineHeight: 1.3 };
 const btnLink: React.CSSProperties = { background:'none', border:'none', padding:0, margin:0, cursor:'pointer', font: 'inherit' };
 
 /* ---------- sort helper ---------- */
