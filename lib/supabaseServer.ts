@@ -7,9 +7,18 @@ export const createClient = () =>
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) { return cookies().get(name)?.value },
-        set(name: string, value: string, options: CookieOptions) { cookies().set(name, value, options) },
-        remove(name: string, options: CookieOptions) { cookies().set(name, '', { ...options, maxAge: 0 }) },
+        async get(name: string) {
+          const store = await cookies()
+          return store.get(name)?.value
+        },
+        async set(name: string, value: string, options: CookieOptions) {
+          const store = await cookies()
+          store.set(name, value, options)
+        },
+        async remove(name: string, options: CookieOptions) {
+          const store = await cookies()
+          store.set(name, '', { ...options, maxAge: 0 })
+        },
       },
     }
   )
