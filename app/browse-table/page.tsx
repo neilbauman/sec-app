@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { createClient } from '@/lib/supabaseClient'
+import { createClient } from '@supabase/supabase-js'
 
 type Pillar = { id: string; code: string; name: string; description: string | null; sort_order: number | null }
 type Theme = { id: string; pillar_id: string; code: string; name: string; description: string | null; sort_order: number | null }
@@ -22,30 +22,28 @@ type Indicator = {
 }
 
 type Row = {
-  // hierarchy context
   level: 'pillar' | 'theme' | 'subtheme' | 'standard'
   pillar?: Pillar
   theme?: Theme
   subtheme?: Subtheme
   standard?: Standard
-
-  // the indicator actually shown for this row (could be at this level or inherited from a parent)
   indicator_id?: string | null
   indicator_name?: string | null
   indicator_description?: string | null
-
-  // whether this row HAS its own indicator (vs. inheriting from a parent)
   canAddOwnIndicator: boolean
 }
 
 export default function BrowseTablePage() {
-  const supabase = React.useMemo(() => createClient(), [])
+  const supabase = React.useMemo(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    return createClient(url, anon)
+  }, [])
+
   const [loading, setLoading] = React.useState(false)
   const [rows, setRows] = React.useState<Row[]>([])
   const [error, setError] = React.useState<string | null>(null)
   const [editMode, setEditMode] = React.useState(false)
-
-  // draft edits keyed by indicator_id
   const [form, setForm] = React.useState<Record<string, { name?: string; description?: string }>>({})
 
   async function load() {
@@ -60,29 +58,24 @@ export default function BrowseTablePage() {
           supabase.from('standards').select('*').order('sort_order', { ascending: true }),
           supabase.from('indicators').select('*'),
         ])
-
       if (e1 || e2 || e3 || e4 || e5) throw new Error([e1?.message, e2?.message, e3?.message, e4?.message, e5?.message].filter(Boolean).join(' | '))
 
-      // group helpers
       const themesByPillar = new Map<string, Theme[]>()
       themes!.forEach(t => {
         const arr = themesByPillar.get(t.pillar_id) || []
-        arr.push(t)
-        themesByPillar.set(t.pillar_id, arr)
+        arr.push(t); themesByPillar.set(t.pillar_id, arr)
       })
 
       const subsByTheme = new Map<string, Subtheme[]>()
       subthemes!.forEach(s => {
         const arr = subsByTheme.get(s.theme_id) || []
-        arr.push(s)
-        subsByTheme.set(s.theme_id, arr)
+        arr.push(s); subsByTheme.set(s.theme_id, arr)
       })
 
       const stdsBySub = new Map<string, Standard[]>()
       standards!.forEach(d => {
         const arr = stdsBySub.get(d.subtheme_id) || []
-        arr.push(d)
-        stdsBySub.set(d.subtheme_id, arr)
+        arr.push(d); stdsBySub.set(d.subtheme_id, arr)
       })
 
       const indByPillar = new Map<string, Indicator[]>()
@@ -91,68 +84,47 @@ export default function BrowseTablePage() {
       const indByStd = new Map<string, Indicator[]>()
       indicators!.forEach(i => {
         if (i.pillar_id) indByPillar.set(i.pillar_id, (indByPillar.get(i.pillar_id) || []).concat(i))
-        if (i.theme_id) indByTheme.set(i.theme_id, (indByTheme.get(i.theme_id) || []).concat(i))
+        if (i.theme_id)  indByTheme.set(i.theme_id, (indByTheme.get(i.theme_id) || []).concat(i))
         if (i.subtheme_id) indBySub.set(i.subtheme_id, (indBySub.get(i.subtheme_id) || []).concat(i))
         if (i.standard_id) indByStd.set(i.standard_id, (indByStd.get(i.standard_id) || []).concat(i))
       })
 
-      // helper: pick default indicator from a list (prefer is_default, else first)
       const pick = (list?: Indicator[]) => (list && list.length ? (list.find(x => x.is_default) || list[0]) : undefined)
 
       const out: Row[] = []
-      // Pillars in order
       for (const p of (pillars || [])) {
         const pInd = pick(indByPillar.get(p.id))
         out.push({
-          level: 'pillar',
-          pillar: p,
-          indicator_id: pInd?.id,
-          indicator_name: pInd?.name ?? null,
-          indicator_description: pInd?.description ?? null,
-          canAddOwnIndicator: !pInd, // allow add if none exists at pillar
+          level: 'pillar', pillar: p,
+          indicator_id: pInd?.id, indicator_name: pInd?.name ?? null, indicator_description: pInd?.description ?? null,
+          canAddOwnIndicator: !pInd,
         })
 
-        const tList = (themesByPillar.get(p.id) || []).sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        const tList = (themesByPillar.get(p.id) || []).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))
         for (const t of tList) {
           const tInd = pick(indByTheme.get(t.id)) || pInd
           out.push({
-            level: 'theme',
-            pillar: p,
-            theme: t,
-            indicator_id: tInd?.id,
-            indicator_name: tInd?.name ?? null,
-            indicator_description: tInd?.description ?? null,
-            canAddOwnIndicator: !pick(indByTheme.get(t.id)), // only if there is no theme-level indicator yet
+            level: 'theme', pillar: p, theme: t,
+            indicator_id: tInd?.id, indicator_name: tInd?.name ?? null, indicator_description: tInd?.description ?? null,
+            canAddOwnIndicator: !pick(indByTheme.get(t.id)),
           })
 
-          const sList = (subsByTheme.get(t.id) || []).sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          const sList = (subsByTheme.get(t.id) || []).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))
           for (const s of sList) {
             const sInd = pick(indBySub.get(s.id)) || tInd || pInd
-            // if subtheme has no standards, render a subtheme row itself
             const ds = (stdsBySub.get(s.id) || [])
             if (ds.length === 0) {
               out.push({
-                level: 'subtheme',
-                pillar: p,
-                theme: t,
-                subtheme: s,
-                indicator_id: sInd?.id,
-                indicator_name: sInd?.name ?? null,
-                indicator_description: sInd?.description ?? null,
+                level: 'subtheme', pillar: p, theme: t, subtheme: s,
+                indicator_id: sInd?.id, indicator_name: sInd?.name ?? null, indicator_description: sInd?.description ?? null,
                 canAddOwnIndicator: !pick(indBySub.get(s.id)),
               })
             } else {
-              for (const d of ds.sort((a,b)=> (a.sort_order ?? 0) - (b.sort_order ?? 0))) {
+              for (const d of ds.sort((a,b)=>(a.sort_order??0)-(b.sort_order??0))) {
                 const dInd = pick(indByStd.get(d.id)) || sInd
                 out.push({
-                  level: 'standard',
-                  pillar: p,
-                  theme: t,
-                  subtheme: s,
-                  standard: d,
-                  indicator_id: dInd?.id,
-                  indicator_name: dInd?.name ?? null,
-                  indicator_description: dInd?.description ?? null,
+                  level: 'standard', pillar: p, theme: t, subtheme: s, standard: d,
+                  indicator_id: dInd?.id, indicator_name: dInd?.name ?? null, indicator_description: dInd?.description ?? null,
                   canAddOwnIndicator: !pick(indByStd.get(d.id)),
                 })
               }
@@ -169,7 +141,7 @@ export default function BrowseTablePage() {
     }
   }
 
-  React.useEffect(() => { load() }, []) // initial load
+  React.useEffect(() => { load() }, [])
 
   async function updateIndicator(id: string, patch: any) {
     const res = await fetch(`/api/indicators/${id}`, {
@@ -220,7 +192,7 @@ export default function BrowseTablePage() {
   async function saveEdit() {
     try {
       const entries = Object.entries(form) as [string, { name?: string; description?: string }][]
-      const toSave = entries.filter(([id]) => id !== '__new__' && id) // exclude "new" scratchpad
+      const toSave = entries.filter(([id]) => id !== '__new__' && id)
 
       for (const [id, vals] of toSave) {
         const patch: any = {}
@@ -304,8 +276,6 @@ export default function BrowseTablePage() {
                   <td style={{ padding: 8 }}>
                     {r.standard?.description ?? ''}
                   </td>
-
-                  {/* Indicator name */}
                   <td style={{ padding: 8, minWidth: 220 }}>
                     {editMode && id ? (
                       <input
@@ -320,8 +290,6 @@ export default function BrowseTablePage() {
                       r.indicator_name || <span style={{ opacity: 0.5 }}>—</span>
                     )}
                   </td>
-
-                  {/* Indicator description */}
                   <td style={{ padding: 8, minWidth: 280 }}>
                     {editMode && id ? (
                       <textarea
@@ -337,8 +305,6 @@ export default function BrowseTablePage() {
                       r.indicator_description || <span style={{ opacity: 0.5 }}>—</span>
                     )}
                   </td>
-
-                  {/* Actions */}
                   {editMode && (
                     <td style={{ padding: 8, whiteSpace: 'nowrap' }}>
                       {!id && r.canAddOwnIndicator ? (
