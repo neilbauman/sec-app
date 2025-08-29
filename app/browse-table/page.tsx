@@ -38,10 +38,9 @@ const COLORS = {
   headerBorder: '#e5e7eb',
   textMuted: '#6b7280',
   chipBg: '#f3f4f6',
-  // subtle, complementary tints:
-  rowP: 'rgba(241, 236, 231, 0.70)',   // Pillar
-  rowT: 'rgba(232, 233, 238, 0.65)',   // Theme
-  rowS: 'rgba(233, 240, 248, 0.65)',   // Sub-theme
+  rowP: 'rgba(241,236,231,0.70)',  // Pillar tint
+  rowT: 'rgba(232,233,238,0.65)',  // Theme tint
+  rowS: 'rgba(233,240,248,0.65)',  // Sub-theme tint
 } as const
 
 const cell: React.CSSProperties = { padding: '6px 8px', borderBottom: `1px solid ${COLORS.headerBorder}`, verticalAlign: 'top' }
@@ -95,8 +94,8 @@ export default function BrowseTablePage() {
   const [editMode, setEditMode] = React.useState(false)
   const [form, setForm] = React.useState<Record<string, { name?: string; description?: string }>>({})
 
-  // collapse state
-  const [collapsedPillars, setCollapsedPillars] = React.useState<Set<string>>(new Set())   // default collapsed after load
+  // collapse state (default collapsed after load)
+  const [collapsedPillars, setCollapsedPillars] = React.useState<Set<string>>(new Set())
   const [collapsedThemes, setCollapsedThemes] = React.useState<Set<string>>(new Set())
 
   // filters
@@ -207,7 +206,7 @@ export default function BrowseTablePage() {
   }
   React.useEffect(() => { load() }, [])
 
-  // --------- API helpers
+  // --- API helpers
   async function apiUpdateIndicator(id: string, patch: any) {
     const res = await fetch(`/api/indicators/${id}`, {
       method: 'PUT',
@@ -220,7 +219,6 @@ export default function BrowseTablePage() {
     }
     return res.json()
   }
-
   async function apiDeleteIndicator(id: string) {
     const res = await fetch(`/api/indicators/${id}`, { method: 'DELETE' })
     if (!res.ok) {
@@ -228,7 +226,6 @@ export default function BrowseTablePage() {
       throw new Error(j.error || 'Delete failed')
     }
   }
-
   async function apiAddIndicatorForRow(r: Row) {
     const payload: any = {
       code: null,
@@ -250,7 +247,7 @@ export default function BrowseTablePage() {
     }
   }
 
-  // --------- actions
+  // --- actions
   async function saveEdit() {
     try {
       const entries = Object.entries(form) as [string, { name?: string; description?: string }][]
@@ -267,45 +264,38 @@ export default function BrowseTablePage() {
     } catch (e: any) { alert('Save failed: ' + e.message) }
   }
 
-  // --------- render helpers
+  // --- helpers
   const bgFor = (lvl: RowLevel) => (lvl === 'pillar' ? COLORS.rowP : lvl === 'theme' ? COLORS.rowT : lvl === 'subtheme' ? COLORS.rowS : 'transparent')
+  function descForRow(r: Row): string {
+    if (r.level === 'standard') return r.standard?.description ?? ''
+    if (r.level === 'subtheme') return r.subtheme?.description ?? ''
+    if (r.level === 'theme')    return r.theme?.description ?? ''
+    if (r.level === 'pillar')   return r.pillar?.description ?? ''
+    return ''
+  }
 
   const visible = (r: Row) => {
-    // filter by dropdowns
-    if (filterPillar !== 'all') {
-      if (!r.pillar || r.pillar.id !== filterPillar) return false
-    }
-    if (filterTheme !== 'all') {
-      if (!r.theme || r.theme.id !== filterTheme) return false
-    }
-    if (filterSubtheme !== 'all') {
-      if (!r.subtheme || r.subtheme.id !== filterSubtheme) return false
-    }
-    // search across main text fields
+    if (filterPillar !== 'all') { if (!r.pillar || r.pillar.id !== filterPillar) return false }
+    if (filterTheme !== 'all')  { if (!r.theme  || r.theme.id  !== filterTheme)  return false }
+    if (filterSubtheme !== 'all') { if (!r.subtheme || r.subtheme.id !== filterSubtheme) return false }
     if (search.trim()) {
       const q = search.toLowerCase()
       const hay = [
         r.pillar?.name, r.theme?.name, r.subtheme?.name,
-        r.standard?.description, r.indicator_name, r.indicator_description
+        descForRow(r), r.indicator_name, r.indicator_description
       ].filter(Boolean).join(' ').toLowerCase()
       if (!hay.includes(q)) return false
     }
-    // collapse logic
     if (r.level !== 'pillar' && r.pillar && collapsedPillars.has(r.pillar.id)) return false
     if ((r.level === 'subtheme' || r.level === 'standard') && r.theme && collapsedThemes.has(r.theme.id)) return false
     return true
   }
 
-  // Pillar/Theme toggles
   const PToggle = ({ p }: { p: Pillar }) => {
     const open = !collapsedPillars.has(p.id)
     return (
       <button
-        onClick={() => setCollapsedPillars(s => {
-          const n = new Set(s)
-          if (open) n.add(p.id); else n.delete(p.id) // toggle opposite
-          return n
-        })}
+        onClick={() => setCollapsedPillars(s => { const n = new Set(s); if (open) n.add(p.id); else n.delete(p.id); return n })}
         title={open ? 'Collapse pillar' : 'Expand pillar'}
         style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, marginRight: 6 }}
       >
@@ -317,11 +307,7 @@ export default function BrowseTablePage() {
     const open = !collapsedThemes.has(t.id)
     return (
       <button
-        onClick={() => setCollapsedThemes(s => {
-          const n = new Set(s)
-          if (open) n.add(t.id); else n.delete(t.id)
-          return n
-        })}
+        onClick={() => setCollapsedThemes(s => { const n = new Set(s); if (open) n.add(t.id); else n.delete(t.id); return n })}
         title={open ? 'Collapse theme' : 'Expand theme'}
         style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, marginRight: 6 }}
       >
@@ -330,7 +316,6 @@ export default function BrowseTablePage() {
     )
   }
 
-  // Filter option lists
   const pillarOpts = [{ id: 'all', name: 'All Pillars' as any } as Pillar].concat(pillarsOpt)
   const themeOpts = [{ id: 'all', name: 'All Themes', pillar_id: '' } as any as Theme].concat(
     filterPillar === 'all' ? themesOpt : themesOpt.filter(t => t.pillar_id === filterPillar)
@@ -361,7 +346,7 @@ export default function BrowseTablePage() {
       {/* Filters */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
         <input
-          placeholder="Search (pillar, theme, sub-theme, standard, indicator)…"
+          placeholder="Search (pillar, theme, sub-theme, description, indicator)…"
           value={search}
           onChange={e=>setSearch(e.target.value)}
           style={{ ...input, maxWidth: 520 }}
@@ -389,7 +374,7 @@ export default function BrowseTablePage() {
               <th style={{ ...cell }}>Pillar</th>
               <th style={{ ...cell }}>Theme</th>
               <th style={{ ...cell }}>Sub-theme</th>
-              <th style={{ ...cell, width: 320 }}>Standard Description</th>
+              <th style={{ ...cell, width: 320 }}>Description</th>
               <th style={{ ...cell, width: 260 }}>Indicator Name</th>
               <th style={{ ...cell, width: 320 }}>Indicator Description</th>
               {editMode && <th style={{ ...cell, width: 120 }}></th>}
@@ -402,30 +387,17 @@ export default function BrowseTablePage() {
               const draft = id ? form[id] : undefined
               return (
                 <tr key={idx} style={{ background: bg }}>
-                  {/* Pillar cell with toggle */}
                   <td style={cell}>
-                    {r.pillar && (
-                      <>
-                        <PToggle p={r.pillar} />
-                        <span style={chip}>P</span> <span style={{ fontWeight: 600 }}>{r.pillar.name}</span>
-                      </>
-                    )}
+                    {r.pillar && (<><PToggle p={r.pillar} /><span style={chip}>P</span> <span style={{ fontWeight: 600 }}>{r.pillar.name}</span></>)}
                   </td>
-                  {/* Theme cell with toggle */}
                   <td style={cell}>
-                    {r.theme && (
-                      <>
-                        <TToggle t={r.theme} />
-                        <span style={chip}>T</span> {r.theme.name}
-                      </>
-                    )}
+                    {r.theme && (<><TToggle t={r.theme} /><span style={chip}>T</span> {r.theme.name}</>)}
                   </td>
                   <td style={cell}>
                     {r.subtheme && (<><span style={chip}>ST</span> {r.subtheme.name}</>)}
                   </td>
-                  <td style={cell}>{r.standard?.description ?? ''}</td>
+                  <td style={cell}>{descForRow(r)}</td>
 
-                  {/* Indicator name */}
                   <td style={cell}>
                     {editMode && id ? (
                       <input
@@ -434,12 +406,9 @@ export default function BrowseTablePage() {
                         onChange={e => setForm(f => ({ ...f, [id]: { ...(f[id] || {}), name: e.target.value } }))}
                         placeholder="Indicator name"
                       />
-                    ) : (
-                      r.indicator_name || <span style={{ color: COLORS.textMuted }}>—</span>
-                    )}
+                    ) : (r.indicator_name || <span style={{ color: COLORS.textMuted }}>—</span>)}
                   </td>
 
-                  {/* Indicator description */}
                   <td style={cell}>
                     {editMode && id ? (
                       <textarea
@@ -449,23 +418,32 @@ export default function BrowseTablePage() {
                         onChange={e => setForm(f => ({ ...f, [id]: { ...(f[id] || {}), description: e.target.value } }))}
                         placeholder="Indicator description"
                       />
-                    ) : (
-                      r.indicator_description || <span style={{ color: COLORS.textMuted }}>—</span>
-                    )}
+                    ) : (r.indicator_description || <span style={{ color: COLORS.textMuted }}>—</span>)}
                   </td>
 
                   {editMode && (
                     <td style={{ ...cell, whiteSpace: 'nowrap', display: 'flex', gap: 8 }}>
                       {!id && r.canAddOwnIndicator ? (
-                        <button onClick={() => apiAddIndicatorForRow(r).then(load).catch(e=>alert(e.message))}
+                        <button
+                          onClick={() => apiAddIndicatorForRow(r).then(load).catch(e=>alert(e.message))}
                           title="Add indicator"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderRadius: 8, border: `1px solid ${COLORS.headerBorder}`, background: '#f9fafb' }}>
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderRadius: 8, border: `1px solid ${COLORS.headerBorder}`, background: '#f9fafb' }}
+                        >
                           <IconPlus /> Add
                         </button>
                       ) : (
                         <>
                           <button
-                            onClick={() => apiUpdateIndicator(id, form[id] || {}).then(load).catch(e=>alert(e.message))}
+                            onClick={async () => {
+                              if (!id) return
+                              const curName = draft?.name ?? r.indicator_name ?? ''
+                              const curDesc = draft?.description ?? r.indicator_description ?? ''
+                              try {
+                                await apiUpdateIndicator(id, { name: curName, description: curDesc })
+                                setForm(f => ({ ...f, [id]: {} }))
+                                await load()
+                              } catch (e: any) { alert(e.message) }
+                            }}
                             title="Save this indicator"
                             style={{ border: `1px solid ${COLORS.headerBorder}`, background: '#f9fafb', borderRadius: 8, padding: 6 }}
                           >
