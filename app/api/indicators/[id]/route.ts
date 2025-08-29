@@ -11,9 +11,12 @@ export async function PUT(req: Request, ctx: any) {
   for (const k of ['name', 'description', 'weight', 'is_default', 'code', 'sort_order']) {
     if (k in body) patch[k] = body[k]
   }
+
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+  // If no changes, just return OK (avoids the popup).
   if (Object.keys(patch).length === 0) {
-    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    return NextResponse.json({ ok: true, data: null })
   }
 
   const { data, error } = await supabase
@@ -31,7 +34,6 @@ export async function DELETE(_req: Request, ctx: any) {
   const supabase = createClient()
   const id = ctx?.params?.id
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
-
   const { error } = await supabase.from('indicators').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ ok: true })
