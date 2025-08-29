@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 type Pillar = { id: string; code: string; name: string; description: string | null; sort_order: number | null }
@@ -38,9 +38,9 @@ const COLORS = {
   headerBorder: '#e5e7eb',
   textMuted: '#6b7280',
   chipBg: '#f3f4f6',
-  rowP: 'rgba(241,236,231,0.70)',  // Pillar tint
-  rowT: 'rgba(232,233,238,0.65)',  // Theme tint
-  rowS: 'rgba(233,240,248,0.65)',  // Sub-theme tint
+  rowP: 'rgba(241,236,231,0.70)',  // Pillar
+  rowT: 'rgba(232,233,238,0.65)',  // Theme
+  rowS: 'rgba(233,240,248,0.65)',  // Sub-theme
 } as const
 
 const cell: React.CSSProperties = { padding: '6px 8px', borderBottom: `1px solid ${COLORS.headerBorder}`, verticalAlign: 'top' }
@@ -94,9 +94,10 @@ export default function BrowseTablePage() {
   const [editMode, setEditMode] = React.useState(false)
   const [form, setForm] = React.useState<Record<string, { name?: string; description?: string }>>({})
 
-  // collapse state (default collapsed after load)
+  // collapse state (we will only set defaults on the first load)
   const [collapsedPillars, setCollapsedPillars] = React.useState<Set<string>>(new Set())
   const [collapsedThemes, setCollapsedThemes] = React.useState<Set<string>>(new Set())
+  const firstLoadRef = useRef(true)
 
   // filters
   const [filterPillar, setFilterPillar] = React.useState<string>('all')
@@ -195,9 +196,12 @@ export default function BrowseTablePage() {
       }
       setRows(out)
 
-      // default collapsed: all pillars & themes
-      setCollapsedPillars(new Set((pillars || []).map(p => p.id)))
-      setCollapsedThemes(new Set((themes || []).map(t => t.id)))
+      // Only set default collapsed ONCE (first load). This preserves your open/closed state on saves.
+      if (firstLoadRef.current) {
+        setCollapsedPillars(new Set((pillars || []).map(p => p.id)))
+        setCollapsedThemes(new Set((themes || []).map(t => t.id)))
+        firstLoadRef.current = false
+      }
     } catch (e: any) {
       setError(e.message || 'Load failed')
     } finally {
@@ -259,7 +263,7 @@ export default function BrowseTablePage() {
         if (Object.keys(patch).length > 0) await apiUpdateIndicator(id, patch)
       }
       setForm({})
-      await load()
+      await load() // collapse state preserved
       alert('Saved')
     } catch (e: any) { alert('Save failed: ' + e.message) }
   }
@@ -441,7 +445,7 @@ export default function BrowseTablePage() {
                               try {
                                 await apiUpdateIndicator(id, { name: curName, description: curDesc })
                                 setForm(f => ({ ...f, [id]: {} }))
-                                await load()
+                                await load() // collapse state preserved
                               } catch (e: any) { alert(e.message) }
                             }}
                             title="Save this indicator"
