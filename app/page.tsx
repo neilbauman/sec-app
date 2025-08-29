@@ -264,9 +264,10 @@ export default function Home() {
           dataSource={filtered}
           pagination={false}
           expandable={{
-            expandedRowKeys,
-            onExpandedRowsChange: setExpandedRowKeys,
-          }}
+  expandedRowKeys,
+  onExpandedRowsChange: (keys) =>
+    setExpandedRowKeys([...(keys as React.Key[])]),
+}}
           rowClassName={(rec) => `lvl-${rec.level}`}
           style={{ background: 'white' }}
         />
