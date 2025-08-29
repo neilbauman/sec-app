@@ -7,11 +7,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const id = params.id
   const body = await req.json().catch(() => ({} as any))
 
-  // allow partial updates; only whitelist supported columns
+  // only update supported fields
   const patch: any = {}
-  for (const k of ['name','description','weight','is_default','code','sort_order']) {
+  for (const k of ['name', 'description', 'weight', 'is_default', 'code', 'sort_order']) {
     if (k in body) patch[k] = body[k]
   }
+
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
   }
