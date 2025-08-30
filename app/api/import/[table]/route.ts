@@ -1,6 +1,6 @@
 import Papa from 'papaparse'
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabaseServer'
+import { createClient } from '../../../lib/supabaseServer'
 
 type TableName = 'pillars' | 'themes' | 'subthemes' | 'standards' | 'indicators'
 
