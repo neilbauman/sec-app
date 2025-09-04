@@ -26,6 +26,9 @@ export default function Page() {
               <Link href="/framework">
                 <Button type="primary">Open Framework Editor</Button>
               </Link>
+              <Link href="/indicators">
+  <Button>Manage Indicators & Scoring</Button>
+</Link>
             </div>
           </Space>
         </Card>
