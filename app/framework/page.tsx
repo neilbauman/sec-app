@@ -23,7 +23,7 @@ import {
   ReloadOutlined,
   ArrowLeftOutlined,
 } from '@ant-design/icons';
-import createClient from '@/lib/supabaseClient';
+import getBrowserClient from '@/lib/supabaseClient';
 
 type Level = 'pillar' | 'theme' | 'subtheme';
 
@@ -44,7 +44,7 @@ const typeTag = (level: Level) => {
 };
 
 export default function FrameworkEditorPage() {
-  const supabase = useMemo(() => createClient(), []);
+const supabase = getBrowserClient();
   const [rows, setRows] = useState<Row[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
