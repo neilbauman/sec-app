@@ -1,268 +1,234 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Table, Typography, Space, Modal, Form, Input, Select, InputNumber, message, Popconfirm } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Table, Button, Modal, Form, Input, InputNumber, Select, Space, message, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined } from '@ant-design/icons';
-import { z } from 'zod';
-import { createClient } from '@/lib/supabaseClient'; // browser client
+import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import { getBrowserClient } from '@/lib/supabaseClient';
 
-// ---------- Types & Validation ----------
-export type IndicatorLevel = 'pillar' | 'theme' | 'subtheme';
+type IndicatorLevel = 'pillar' | 'theme' | 'subtheme';
 
-const IndicatorRowSchema = z.object({
-  id: z.number(),
-  level: z.enum(['pillar', 'theme', 'subtheme']),
-  ref_code: z.string(),
-  name: z.string(),
-  description: z.string().nullable().optional(),
-  sort_order: z.number().nullable().optional(),
-});
+type IndicatorRow = {
+  id: string;
+  level: IndicatorLevel;
+  ref_code?: string | null;
+  name: string;
+  description?: string | null;
+  sort_order?: number | null;
+};
 
-type IndicatorRow = z.infer<typeof IndicatorRowSchema>;
-
-const emptyRow: Omit<IndicatorRow, 'id'> = {
-  level: 'pillar',
-  ref_code: '',
-  name: '',
-  description: '',
-  sort_order: 1,
+const LEVEL_COLOR: Record<IndicatorLevel, string> = {
+  pillar: 'geekblue',
+  theme: 'green',
+  subtheme: 'volcano',
 };
 
 export default function IndicatorsPage() {
-  const supabase = useMemo(() => createClient(), []);
-  // Cast to any to avoid TS generic constraints causing 'never' errors in CI
-  const s = useMemo(() => supabase as any, [supabase]);
-
-  const [rows, setRows] = useState<IndicatorRow[]>([]);
+  const supabase = getBrowserClient();
   const [loading, setLoading] = useState(false);
-
-  const [form] = Form.useForm<Omit<IndicatorRow, 'id'>>();
-  const [modalOpen, setModalOpen] = useState(false);
+  const [rows, setRows] = useState<IndicatorRow[]>([]);
+  const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<IndicatorRow | null>(null);
+  const [form] = Form.useForm();
 
-  const fetchRows = useCallback(async () => {
+  const load = async () => {
     setLoading(true);
-    const { data, error } = await s
-      .from('indicators')
-      .select('*')
-      .order('level', { ascending: true })
-      .order('sort_order', { ascending: true });
-
-    setLoading(false);
-
-    if (error) {
-      message.error(`Failed to load indicators: ${error.message}`);
-      return;
+    try {
+      const { data, error } = await supabase
+        .from('indicators')
+        .select('*')
+        .order('level', { ascending: true })
+        .order('sort_order', { ascending: true });
+      if (error) throw error;
+      setRows((data ?? []) as any);
+    } catch (err: any) {
+      console.error(err);
+      message.error(err.message ?? 'Failed to load indicators');
+    } finally {
+      setLoading(false);
     }
-    const parsed: IndicatorRow[] = [];
-    (data ?? []).forEach((d: any) => {
-      const safe = IndicatorRowSchema.safeParse(d);
-      if (safe.success) parsed.push(safe.data);
-    });
-    setRows(parsed);
-  }, [s]);
+  };
 
   useEffect(() => {
-    fetchRows();
-  }, [fetchRows]);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const openCreate = () => {
-    setEditing(null);
-    form.setFieldsValue(emptyRow);
-    setModalOpen(true);
-  };
-
-  const openEdit = (row: IndicatorRow) => {
-    setEditing(row);
-    form.setFieldsValue({
-      level: row.level,
-      ref_code: row.ref_code ?? '',
-      name: row.name ?? '',
-      description: row.description ?? '',
-      sort_order: row.sort_order ?? 1,
-    });
-    setModalOpen(true);
-  };
-
-  const onSubmit = async () => {
-    const values = await form.validateFields();
-    const payload: Omit<IndicatorRow, 'id'> = {
-      level: values.level,
-      ref_code: values.ref_code.trim(),
-      name: values.name.trim(),
-      description: (values.description ?? '').toString(),
-      sort_order: Number(values.sort_order ?? 1),
-    };
-
-    let err: string | null = null;
-
-    if (editing) {
-      const { error } = await s
-        .from('indicators')
-        .update(payload)
-        .eq('id', editing.id);
-      err = error?.message ?? null;
-    } else {
-      const { error } = await s.from('indicators').insert(payload);
-      err = error?.message ?? null;
-    }
-
-    if (err) {
-      message.error(err);
-      return;
-    }
-
-    setModalOpen(false);
-    setEditing(null);
-    message.success('Saved');
-    fetchRows();
-  };
-
-  const remove = async (row: IndicatorRow) => {
-    const { error } = await s.from('indicators').delete().eq('id', row.id);
-    if (error) {
-      message.error(error.message);
-      return;
-    }
-    message.success('Deleted');
-    fetchRows();
-  };
-
-  const columns: ColumnsType<IndicatorRow> = [
+  const columns: ColumnsType<IndicatorRow> = useMemo(() => [
     {
       title: 'Level',
       dataIndex: 'level',
+      key: 'level',
       width: 120,
-      filters: [
-        { text: 'Pillar', value: 'pillar' },
-        { text: 'Theme', value: 'theme' },
-        { text: 'Sub-theme', value: 'subtheme' },
-      ],
-      onFilter: (v, record) => record.level === v,
-      render: (v: IndicatorLevel) => {
-        const label = v === 'pillar' ? 'Pillar' : v === 'theme' ? 'Theme' : 'Sub-theme';
-        return <Typography.Text>{label}</Typography.Text>;
-      },
+      render: (lvl: IndicatorLevel) => <Tag color={LEVEL_COLOR[lvl]}>{lvl}</Tag>,
     },
-    {
-      title: 'Code',
-      dataIndex: 'ref_code',
-      width: 140,
-      render: (text: string) => <Typography.Text code>{text}</Typography.Text>,
-    },
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      ellipsis: true,
-    },
+    { title: 'Ref code', dataIndex: 'ref_code', key: 'ref_code', width: 140 },
+    { title: 'Name', dataIndex: 'name', key: 'name' },
     {
       title: 'Description',
       dataIndex: 'description',
-      ellipsis: true,
-      render: (t?: string | null) => t ?? '',
+      key: 'description',
+      render: (t) => <span style={{ opacity: 0.9 }}>{t}</span>,
     },
     {
       title: 'Sort',
       dataIndex: 'sort_order',
-      width: 90,
-      sorter: (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-      render: (n?: number | null) => n ?? '',
+      key: 'sort_order',
+      align: 'right',
+      width: 80,
+      render: (n) => (n ?? 1),
     },
     {
       title: 'Actions',
-      dataIndex: 'actions',
-      fixed: 'right',
-      width: 160,
-      render: (_: any, row) => (
+      key: 'actions',
+      width: 150,
+      render: (_, rec) => (
         <Space>
-          <Button size="small" onClick={() => openEdit(row)}>Edit</Button>
-          <Popconfirm
-            title="Delete indicator?"
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => remove(row)}
-          >
-            <Button danger size="small">Delete</Button>
-          </Popconfirm>
+          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)}>
+            Edit
+          </Button>
+          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => del(rec)}>
+            Delete
+          </Button>
         </Space>
       ),
     },
-  ];
+  ], []);
+
+  const openNew = () => {
+    setEditing(null);
+    form.setFieldsValue({
+      level: 'pillar',
+      ref_code: '',
+      name: '',
+      description: '',
+      sort_order: 1,
+    });
+    setEditOpen(true);
+  };
+
+  const openEdit = (rec: IndicatorRow) => {
+    setEditing(rec);
+    form.setFieldsValue({
+      level: rec.level,
+      ref_code: rec.ref_code ?? '',
+      name: rec.name,
+      description: rec.description ?? '',
+      sort_order: rec.sort_order ?? 1,
+    });
+    setEditOpen(true);
+  };
+
+  const save = async () => {
+    const vals = await form.validateFields();
+    setLoading(true);
+    try {
+      if (editing) {
+        const { error } = await supabase
+          .from('indicators')
+          .update({
+            level: vals.level,
+            ref_code: vals.ref_code || null,
+            name: vals.name,
+            description: vals.description || null,
+            sort_order: vals.sort_order ?? 1,
+          } as any)
+          .eq('id', editing.id);
+        if (error) throw error;
+        message.success('Updated');
+      } else {
+        const { error } = await supabase.from('indicators').insert({
+          level: vals.level,
+          ref_code: vals.ref_code || null,
+          name: vals.name,
+          description: vals.description || null,
+          sort_order: vals.sort_order ?? 1,
+        } as any);
+        if (error) throw error;
+        message.success('Created');
+      }
+      setEditOpen(false);
+      setEditing(null);
+      await load();
+    } catch (err: any) {
+      console.error(err);
+      message.error(err.message ?? 'Save failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const del = async (rec: IndicatorRow) => {
+    Modal.confirm({
+      title: 'Delete indicator?',
+      content: rec.name,
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        setLoading(true);
+        try {
+          const { error } = await supabase.from('indicators').delete().eq('id', rec.id);
+          if (error) throw error;
+          message.success('Deleted');
+          await load();
+        } catch (err: any) {
+          console.error(err);
+          message.error(err.message ?? 'Delete failed');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
 
   return (
-    <div style={{ padding: 24 }}>
-      <Space style={{ marginBottom: 16 }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Indicators
-        </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          Add Indicator
+    <div style={{ padding: 20 }}>
+      <Space style={{ marginBottom: 12 }}>
+        <Button icon={<ReloadOutlined />} onClick={load} disabled={loading}>
+          Refresh
         </Button>
-        <Button onClick={fetchRows}>Refresh</Button>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openNew}>
+          New indicator
+        </Button>
       </Space>
 
       <Table<IndicatorRow>
-        rowKey="id"
-        size="middle"
         loading={loading}
-        columns={columns}
         dataSource={rows}
-        pagination={{ pageSize: 20, showSizeChanger: false }}
+        rowKey="id"
+        columns={columns}
+        pagination={{ pageSize: 20 }}
+        size="small"
       />
 
       <Modal
-        title={editing ? 'Edit Indicator' : 'Add Indicator'}
-        open={modalOpen}
-        onCancel={() => {
-          setModalOpen(false);
-          setEditing(null);
-        }}
-        onOk={onSubmit}
-        okText="Save"
+        title={editing ? 'Edit indicator' : 'New indicator'}
+        open={editOpen}
+        onCancel={() => setEditOpen(false)}
+        onOk={save}
+        okButtonProps={{ loading }}
         destroyOnClose
       >
-        <Form<Omit<IndicatorRow, 'id'>> form={form} layout="vertical" initialValues={emptyRow}>
-          <Form.Item
-            name="level"
-            label="Level"
-            rules={[{ required: true, message: 'Please choose a level' }]}
-          >
+        <Form form={form} layout="vertical">
+          <Form.Item name="level" label="Level" rules={[{ required: true }]}>
             <Select
               options={[
-                { value: 'pillar', label: 'Pillar' },
-                { value: 'theme', label: 'Theme' },
-                { value: 'subtheme', label: 'Sub-theme' },
+                { label: 'Pillar', value: 'pillar' },
+                { label: 'Theme', value: 'theme' },
+                { label: 'Sub-theme', value: 'subtheme' },
               ]}
             />
           </Form.Item>
-
-          <Form.Item
-            name="ref_code"
-            label="Reference Code"
-            rules={[{ required: true, message: 'Code is required' }]}
-          >
-            <Input placeholder="e.g., P2, T1.3, ST2.1.1" />
+          <Form.Item name="ref_code" label="Reference code">
+            <Input placeholder="optional" />
           </Form.Item>
-
-          <Form.Item
-            name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Name is required' }]}
-          >
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-
           <Form.Item name="description" label="Description">
-            <Input.TextArea rows={3} />
+            <Input.TextArea rows={4} />
           </Form.Item>
-
-          <Form.Item
-            name="sort_order"
-            label="Sort Order"
-            rules={[{ required: true, message: 'Sort order is required' }]}
-          >
-            <InputNumber min={0} style={{ width: '100%' }} />
+          <Form.Item name="sort_order" label="Sort order" rules={[{ type: 'number', min: 1 }]}>
+            <InputNumber min={1} style={{ width: 120 }} />
           </Form.Item>
         </Form>
       </Modal>
