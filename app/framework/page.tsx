@@ -1,177 +1,175 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Table, Tag, Button, Modal, Form, Input, InputNumber, message, Space, Typography } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import {
+  Table,
+  Tag,
+  Space,
+  Button,
+  message,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Popconfirm,
+} from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
-  ReloadOutlined,
+  DeleteOutlined,
   CaretDownOutlined,
   CaretRightOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import { createClient } from '@supabase/supabase-js';
 
-import { getBrowserClient } from '@/lib/supabaseClient';
+// ----- Minimal browser Supabase client (no dependency on your lib) -----
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+);
 
-type RowLevel = 'pillar' | 'theme' | 'subtheme';
-
+// -------------------- types --------------------
 type PillarRow = {
-  id: string;
-  code?: string | null;
+  code: string;
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
+  description: string | null;
+  sort_order: number | null;
 };
 
 type ThemeRow = {
-  id: string;
-  pillar_id: string;
-  code?: string | null;
+  code: string;
+  pillar_code: string;
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
+  description: string | null;
+  sort_order: number | null;
 };
 
 type SubthemeRow = {
-  id: string;
-  theme_id: string;
-  code?: string | null;
+  code: string;
+  theme_code: string;
+  // pillar_code may or may not exist in your schema; we don’t require it
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
+  description: string | null;
+  sort_order: number | null;
 };
 
-type TreeRow = {
-  key: string;
-  level: RowLevel;
-  id: string;
-  parentId?: string | null;
+type Level = 'pillar' | 'theme' | 'subtheme';
+
+type NodeRow = {
+  key: string;                 // e.g. "pillar:P1", "theme:T1.1", "subtheme:ST1.1.1"
+  level: Level;
+  code: string;
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
-  code?: string | null;
-  children?: TreeRow[];
+  description: string | null;
+  sort_order: number | null;
+  parentKey?: string;          // for targeting/adding children
+  children?: NodeRow[];
 };
 
-const TYPE_COLORS: Record<RowLevel, string> = {
+// Tag colors you liked previously
+const levelColor: Record<Level, string> = {
   pillar: 'geekblue',
   theme: 'green',
   subtheme: 'volcano',
 };
 
-const TYPE_LABELS: Record<RowLevel, string> = {
-  pillar: 'Pillar',
-  theme: 'Theme',
-  subtheme: 'Sub-theme',
-};
-
-export default function FrameworkEditorPage() {
-  const supabase = getBrowserClient();
+// -------------------- page --------------------
+export default function FrameworkPage() {
   const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<TreeRow[]>([]);
-  const [expanded, setExpanded] = useState<React.Key[]>([]);
+  const [rows, setRows] = useState<NodeRow[]>([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [editOpen, setEditOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<TreeRow | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<NodeRow | null>(null);
+  const [addContext, setAddContext] = useState<{ parent: NodeRow; childLevel: Level } | null>(null);
   const [form] = Form.useForm();
+  const [addForm] = Form.useForm();
 
-  const load = async () => {
-    setLoading(true);
+  // -------- data load & tree build --------
+  const refresh = async () => {
     try {
+      setLoading(true);
+
       const [{ data: pillars, error: pe }, { data: themes, error: te }, { data: subs, error: se }] =
         await Promise.all([
-          supabase.from('pillars').select('*').order('sort_order', { ascending: true }),
-          supabase.from('themes').select('*').order('sort_order', { ascending: true }),
-          supabase.from('subthemes').select('*').order('sort_order', { ascending: true }),
+          supabase.from<PillarRow>('pillars').select('*').order('sort_order', { ascending: true }),
+          supabase.from<ThemeRow>('themes').select('*').order('sort_order', { ascending: true }),
+          supabase.from<SubthemeRow>('subthemes').select('*').order('sort_order', { ascending: true }),
         ]);
 
       if (pe) throw pe;
       if (te) throw te;
       if (se) throw se;
 
-      const pillarsById = new Map((pillars ?? []).map(p => [p.id, p as PillarRow]));
-      const themesByPillar = new Map<string, ThemeRow[]>();
+      const themeByPillar = new Map<string, ThemeRow[]>();
       (themes ?? []).forEach(t => {
-        const k = (t as ThemeRow).pillar_id;
-        const arr = themesByPillar.get(k) ?? [];
-        arr.push(t as ThemeRow);
-        themesByPillar.set(k, arr);
+        const arr = themeByPillar.get(t.pillar_code) ?? [];
+        arr.push(t);
+        themeByPillar.set(t.pillar_code, arr);
       });
 
       const subsByTheme = new Map<string, SubthemeRow[]>();
-      (subs ?? []).forEach(s => {
-        const k = (s as SubthemeRow).theme_id;
-        const arr = subsByTheme.get(k) ?? [];
-        arr.push(s as SubthemeRow);
-        subsByTheme.set(k, arr);
+      (subs ?? []).forEach(st => {
+        const arr = subsByTheme.get(st.theme_code) ?? [];
+        arr.push(st);
+        subsByTheme.set(st.theme_code, arr);
       });
 
-      // Build tree
-      const tree: TreeRow[] = (pillars ?? []).map(p => {
-        const pillar = p as PillarRow;
-        const pillarNode: TreeRow = {
-          key: `p:${pillar.id}`,
-          id: pillar.id,
-          level: 'pillar',
-          name: pillar.name,
-          description: pillar.description ?? '',
-          sort_order: pillar.sort_order ?? 1,
-          code: pillar.code ?? null,
-        };
+      const tree: NodeRow[] = (pillars ?? []).map(p => {
+        const pKey = `pillar:${p.code}`;
+        const children: NodeRow[] = (themeByPillar.get(p.code) ?? []).map(t => {
+          const tKey = `theme:${t.code}`;
+          const tChildren: NodeRow[] = (subsByTheme.get(t.code) ?? []).map(su => ({
+            key: `subtheme:${su.code}`,
+            level: 'subtheme',
+            code: su.code,
+            name: su.name,
+            description: su.description,
+            sort_order: su.sort_order,
+            parentKey: tKey,
+          }));
 
-        const tChildren: TreeRow[] = (themesByPillar.get(pillar.id) ?? []).map(t => {
-          const theme = t as ThemeRow;
-          const themeNode: TreeRow = {
-            key: `t:${theme.id}`,
-            id: theme.id,
-            parentId: pillar.id,
+          return {
+            key: tKey,
             level: 'theme',
-            name: theme.name,
-            description: theme.description ?? '',
-            sort_order: theme.sort_order ?? 1,
-            code: theme.code ?? null,
+            code: t.code,
+            name: t.name,
+            description: t.description,
+            sort_order: t.sort_order,
+            parentKey: pKey,
+            children: tChildren,
           };
-
-          const sChildren: TreeRow[] = (subsByTheme.get(theme.id) ?? []).map(s => {
-            const sub = s as SubthemeRow;
-            const subNode: TreeRow = {
-              key: `s:${sub.id}`,
-              id: sub.id,
-              parentId: theme.id,
-              level: 'subtheme',
-              name: sub.name,
-              description: sub.description ?? '',
-              sort_order: sub.sort_order ?? 1,
-              code: sub.code ?? null,
-            };
-            return subNode;
-          });
-
-          if (sChildren.length) themeNode.children = sChildren;
-          return themeNode;
         });
 
-        if (tChildren.length) pillarNode.children = tChildren;
-        return pillarNode;
+        return {
+          key: pKey,
+          level: 'pillar',
+          code: p.code,
+          name: p.name,
+          description: p.description,
+          sort_order: p.sort_order,
+          children,
+        };
       });
 
       setRows(tree);
-      // default collapsed all
-      setExpanded([]);
     } catch (err: any) {
       console.error(err);
-      message.error(err.message ?? 'Failed to load framework');
+      message.error(err?.message ?? 'Failed to load framework');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    refresh();
   }, []);
 
-  const onEdit = (rec: TreeRow) => {
-    setEditTarget(rec);
+  // -------- edit handlers --------
+  const onEdit = (rec: NodeRow) => {
+    setEditing(rec);
     form.setFieldsValue({
       name: rec.name,
       description: rec.description ?? '',
@@ -180,32 +178,30 @@ export default function FrameworkEditorPage() {
     setEditOpen(true);
   };
 
-  const saveEdit = async () => {
+  const handleSave = async () => {
+    if (!editing) return;
     const vals = await form.validateFields();
-    if (!editTarget) return;
-    const { level, id } = editTarget;
-
-    setLoading(true);
     try {
-      if (level === 'pillar') {
+      setLoading(true);
+      if (editing.level === 'pillar') {
         const { error } = await supabase
           .from('pillars')
           .update({
             name: vals.name,
             description: vals.description ?? '',
             sort_order: vals.sort_order ?? 1,
-          } as any)
-          .eq('id', id);
+          })
+          .eq('code', editing.code);
         if (error) throw error;
-      } else if (level === 'theme') {
+      } else if (editing.level === 'theme') {
         const { error } = await supabase
           .from('themes')
           .update({
             name: vals.name,
             description: vals.description ?? '',
             sort_order: vals.sort_order ?? 1,
-          } as any)
-          .eq('id', id);
+          })
+          .eq('code', editing.code);
         if (error) throw error;
       } else {
         const { error } = await supabase
@@ -214,181 +210,291 @@ export default function FrameworkEditorPage() {
             name: vals.name,
             description: vals.description ?? '',
             sort_order: vals.sort_order ?? 1,
-          } as any)
-          .eq('id', id);
+          })
+          .eq('code', editing.code);
         if (error) throw error;
       }
-
       message.success('Saved');
       setEditOpen(false);
-      setEditTarget(null);
-      await load();
+      setEditing(null);
+      await refresh();
     } catch (err: any) {
       console.error(err);
-      message.error(err.message ?? 'Save failed');
+      message.error(err?.message ?? 'Save failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const columns: ColumnsType<TreeRow> = useMemo(() => {
-    return [
+  // -------- add handlers --------
+  const onAddThemeUnderPillar = (pillar: NodeRow) => {
+    setAddContext({ parent: pillar, childLevel: 'theme' });
+    addForm.resetFields();
+    setAddOpen(true);
+  };
+
+  const onAddSubthemeUnderTheme = (theme: NodeRow) => {
+    setAddContext({ parent: theme, childLevel: 'subtheme' });
+    addForm.resetFields();
+    setAddOpen(true);
+  };
+
+  const handleAdd = async () => {
+    if (!addContext) return;
+    const vals = await addForm.validateFields();
+    try {
+      setLoading(true);
+      if (addContext.childLevel === 'theme') {
+        // create theme under pillar
+        const pillarCode = addContext.parent.code;
+        const { error } = await supabase.from('themes').insert({
+          code: vals.code,
+          pillar_code: pillarCode,
+          name: vals.name,
+          description: vals.description ?? '',
+          sort_order: vals.sort_order ?? 1,
+        });
+        if (error) throw error;
+      } else {
+        // create subtheme under theme
+        const themeCode = addContext.parent.code;
+        const { error } = await supabase.from('subthemes').insert({
+          code: vals.code,
+          theme_code: themeCode,
+          name: vals.name,
+          description: vals.description ?? '',
+          sort_order: vals.sort_order ?? 1,
+        });
+        if (error) throw error;
+      }
+      message.success('Created');
+      setAddOpen(false);
+      setAddContext(null);
+      await refresh();
+      // auto-expand parent so the new row is visible
+      setExpandedRowKeys(prev =>
+        prev.includes(addContext.parent.key) ? prev : [...prev, addContext.parent.key]
+      );
+    } catch (err: any) {
+      console.error(err);
+      message.error(err?.message ?? 'Create failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // -------- delete (optional, leaves your UI design intact) --------
+  const onDelete = async (rec: NodeRow) => {
+    try {
+      setLoading(true);
+      if (rec.level === 'pillar') {
+        const { error } = await supabase.from('pillars').delete().eq('code', rec.code);
+        if (error) throw error;
+      } else if (rec.level === 'theme') {
+        const { error } = await supabase.from('themes').delete().eq('code', rec.code);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('subthemes').delete().eq('code', rec.code);
+        if (error) throw error;
+      }
+      message.success('Deleted');
+      await refresh();
+    } catch (err: any) {
+      console.error(err);
+      message.error(err?.message ?? 'Delete failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // -------- columns --------
+  const columns: ColumnsType<NodeRow> = useMemo(
+    () => [
       {
         title: 'Type',
         dataIndex: 'level',
-        key: 'level',
-        width: 120,
-        render: (_, rec) => (
-          <Tag color={TYPE_COLORS[rec.level]} style={{ fontWeight: 600 }}>
-            {TYPE_LABELS[rec.level]}
+        width: 110,
+        render: (_: any, rec) => (
+          <Tag color={levelColor[rec.level]} style={{ fontWeight: 600 }}>
+            {rec.level === 'pillar' ? 'Pillar' : rec.level === 'theme' ? 'Theme' : 'Sub-theme'}
           </Tag>
         ),
       },
       {
         title: 'Name',
         dataIndex: 'name',
-        key: 'name',
-        render: (text: any, rec) => (
-          <Space align="baseline">
-            <span style={{ fontWeight: 600 }}>{text}</span>
-            {rec.code ? (
-              <span style={{ opacity: 0.6, fontSize: 12 }}>(code: {rec.code})</span>
-            ) : null}
+        render: (_: any, rec) => (
+          <Space direction="vertical" size={0} style={{ lineHeight: 1.2 }}>
+            <div style={{ fontWeight: 600 }}>{rec.name}</div>
+            <div style={{ color: '#667085', fontSize: 12 }}>(code: {rec.code})</div>
           </Space>
         ),
       },
       {
         title: 'Description',
         dataIndex: 'description',
-        key: 'description',
-        render: (text: any) => (
-          <Typography.Paragraph style={{ margin: 0 }} ellipsis={{ rows: 2, expandable: false }}>
-            {text}
-          </Typography.Paragraph>
-        ),
-      },
-      {
-        title: 'Sort',
-        dataIndex: 'sort_order',
-        key: 'sort_order',
-        width: 80,
-        align: 'right',
-        render: (n: any) => (n ?? 1),
+        ellipsis: true,
+        render: (val: any) => val ?? '',
       },
       {
         title: 'Actions',
         key: 'actions',
-        width: 110,
-        render: (_, rec) => (
+        width: 170,
+        render: (_: any, rec) => (
           <Space>
             <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(rec)}>
               Edit
             </Button>
+            {rec.level === 'pillar' && (
+              <Button
+                size="small"
+                icon={<PlusOutlined />}
+                onClick={() => onAddThemeUnderPillar(rec)}
+              >
+                Theme
+              </Button>
+            )}
+            {rec.level === 'theme' && (
+              <Button
+                size="small"
+                icon={<PlusOutlined />}
+                onClick={() => onAddSubthemeUnderTheme(rec)}
+              >
+                Sub-theme
+              </Button>
+            )}
+            <Popconfirm
+              title="Delete this item?"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => onDelete(rec)}
+            >
+              <Button danger size="small" icon={<DeleteOutlined />} />
+            </Popconfirm>
           </Space>
         ),
       },
-    ];
-  }, []);
+    ],
+    []
+  );
 
   return (
-    <div style={{ padding: 20 }}>
-      <Space style={{ marginBottom: 12 }}>
-        <Button icon={<ReloadOutlined />} onClick={load} disabled={loading}>
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <Button icon={<ReloadOutlined />} onClick={refresh}>
           Refresh
         </Button>
-        <Button
-          onClick={() => setExpanded([])}
-          size="small"
-        >
-          Collapse all
-        </Button>
+        <Button onClick={() => setExpandedRowKeys([])}>Collapse all</Button>
         <Button
           onClick={() => {
-            // expand everything
+            // expand all current nodes
             const allKeys: string[] = [];
-            const walk = (nodes: TreeRow[]) => {
-              nodes.forEach(n => {
-                if (n.children?.length) {
-                  allKeys.push(n.key);
-                  walk(n.children);
-                }
+            const walk = (arr: NodeRow[]) => {
+              arr.forEach(r => {
+                allKeys.push(r.key);
+                if (r.children?.length) walk(r.children);
               });
             };
             walk(rows);
-            setExpanded(allKeys);
+            setExpandedRowKeys(allKeys);
           }}
-          size="small"
         >
           Expand all
         </Button>
-      </Space>
+      </div>
 
-      <Table<TreeRow>
+      <Table<NodeRow>
+        size="middle"
         loading={loading}
         columns={columns}
         dataSource={rows}
-        rowKey="key"
         pagination={false}
-        size="small"
-        expandIcon={({ expanded, onExpand, record }) => (
-          record.children && record.children.length ? (
-            <Button
-              type="link"
-              size="small"
-              onClick={(e) => onExpand(record, e)}
-              icon={expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
-              style={{ paddingInline: 4, height: 24 }}
-            />
-          ) : (
-            <span style={{ display: 'inline-block', width: 16 }} />
-          )
-        )}
+        rowKey="key"
         expandable={{
-          expandedRowKeys: expanded,
-          onExpand: (exp, rec) => {
-            setExpanded((prev) => {
-              const k = rec.key;
-              if (exp) return [...new Set([...prev, k])];
-              return prev.filter(x => x !== k);
-            });
-          },
+          expandedRowKeys,
+          onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as React.Key[]),
+          expandIcon: ({ expanded, onExpand, record }) =>
+            expanded ? (
+              <CaretDownOutlined
+                onClick={e => onExpand(record, e)}
+                style={{ color: '#667085', marginRight: 8 }}
+              />
+            ) : (
+              <CaretRightOutlined
+                onClick={e => onExpand(record, e)}
+                style={{ color: '#667085', marginRight: 8 }}
+              />
+            ),
         }}
-        rowClassName={(rec) => `lvl-${rec.level}`}
-        style={{ background: '#fff' }}
+        rowClassName="tight-row"
       />
 
-      <style>{`
-        /* tighter rows */
-        .ant-table-wrapper .ant-table-cell {
-          padding-top: 6px;
-          padding-bottom: 6px;
-        }
-        /* row tints by type */
-        .lvl-pillar .ant-table-cell { background: #eef4ff; }
-        .lvl-theme .ant-table-cell { background: #eefaf0; }
-        .lvl-subtheme .ant-table-cell { background: #fff3ef; }
-      `}</style>
-
+      {/* Edit modal */}
       <Modal
-        title={`Edit ${editTarget ? TYPE_LABELS[editTarget.level] : ''}`}
+        title={`Edit ${editing?.level ?? ''}`}
         open={editOpen}
         onCancel={() => setEditOpen(false)}
-        onOk={saveEdit}
-        okButtonProps={{ loading }}
-        destroyOnClose
+        onOk={handleSave}
+        okText="Save"
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+          <Form.Item label="Name" name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea rows={4} />
+          <Form.Item label="Description" name="description">
+            <Input.TextArea rows={3} />
           </Form.Item>
-          <Form.Item name="sort_order" label="Sort order" rules={[{ type: 'number', min: 1 }]}>
-            <InputNumber min={1} style={{ width: 120 }} />
+          <Form.Item label="Sort order" name="sort_order" rules={[{ required: true }]}>
+            <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Add modal */}
+      <Modal
+        title={
+          addContext?.childLevel === 'theme'
+            ? 'Add Theme under Pillar'
+            : 'Add Sub-theme under Theme'
+        }
+        open={addOpen}
+        onCancel={() => setAddOpen(false)}
+        onOk={handleAdd}
+        okText="Create"
+      >
+        {addContext && (
+          <div style={{ marginBottom: 8, color: '#475467' }}>
+            Parent:{' '}
+            <Tag color={levelColor[addContext.parent.level]}>{addContext.parent.level}</Tag>{' '}
+            <strong>{addContext.parent.name}</strong> (code: {addContext.parent.code})
+          </div>
+        )}
+        <Form form={addForm} layout="vertical">
+          <Form.Item
+            label="Code"
+            name="code"
+            rules={[{ required: true, message: 'Enter a unique code' }]}
+          >
+            <Input placeholder="e.g. T2.6 or ST2.1.3" />
+          </Form.Item>
+          <Form.Item label="Name" name="name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item label="Description" name="description">
+            <Input.TextArea rows={3} />
+          </Form.Item>
+          <Form.Item label="Sort order" name="sort_order" initialValue={1}>
+            <InputNumber min={1} style={{ width: '100%' }} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* tighten row height a bit */}
+      <style jsx global>{`
+        .tight-row .ant-table-cell {
+          padding-top: 8px !important;
+          padding-bottom: 8px !important;
+        }
+      `}</style>
     </div>
   );
 }
