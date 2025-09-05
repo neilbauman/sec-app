@@ -1,231 +1,236 @@
-// app/indicators/page.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { getSupabase } from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabaseClient';
 import {
+  Table,
+  Typography,
+  Space,
   Button,
+  message,
+  Modal,
   Form,
   Input,
-  InputNumber,
-  Modal,
-  Popconfirm,
   Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-  message,
+  Divider,
+  InputNumber,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
-type IndicatorLevel = 'pillar' | 'theme' | 'subtheme';
+const { Title, Text } = Typography;
 
-type IndicatorRow = {
-  id: number;
-  level: IndicatorLevel;
-  ref_code: string | null;
+// ------------- Types -------------
+export type IndicatorLevel = 'pillar' | 'theme' | 'subtheme';
+
+export interface IndicatorRow {
+  id: number;                  // PK
+  level: IndicatorLevel;       // 'pillar' | 'theme' | 'subtheme'
+  ref_code: string;            // P*, T*.*, ST*.*.*
   name: string;
-  description: string | null;
-  sort_order: number | null;
-  criteria_count?: number;
-};
+  description: string;
+  sort_order: number;          // integer
+}
 
-const levelColor: Record<IndicatorLevel, string> = {
-  pillar: 'gold',
-  theme: 'blue',
-  subtheme: 'purple',
-};
+type NewIndicator = Omit<IndicatorRow, 'id'>;
 
+// ------------- Component -------------
 export default function IndicatorsPage() {
-  const supabase = getSupabase();
+  const supabase = useMemo(() => createClient(), []);
   const [rows, setRows] = useState<IndicatorRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<IndicatorRow | null>(null);
-  const [form] = Form.useForm<IndicatorRow>();
+  const [form] = Form.useForm<NewIndicator>();
 
-  const fetchRows = async () => {
+  // ---- Fetch ----
+  const fetchData = async () => {
     setLoading(true);
-    // Grab indicators + criteria count
     const { data, error } = await supabase
-      .from('indicators')
-      .select('id, level, ref_code, name, description, sort_order, criteria_levels ( id )')
+      .from<IndicatorRow>('indicators')
+      .select('*')
       .order('level', { ascending: true })
-      .order('sort_order', { ascending: true, nullsFirst: true });
+      .order('sort_order', { ascending: true });
 
+    setLoading(false);
     if (error) {
       message.error(error.message);
-      setLoading(false);
       return;
     }
-
-    const mapped: IndicatorRow[] =
-      (data ?? []).map((r: any) => ({
-        id: r.id,
-        level: r.level as IndicatorLevel,
-        ref_code: r.ref_code,
-        name: r.name,
-        description: r.description,
-        sort_order: r.sort_order,
-        criteria_count: Array.isArray(r.criteria_levels) ? r.criteria_levels.length : 0,
-      })) ?? [];
-
-    setRows(mapped);
-    setLoading(false);
+    setRows(data ?? []);
   };
 
   useEffect(() => {
-    fetchRows();
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const columns: ColumnsType<IndicatorRow> = useMemo(
-    () => [
-      {
-        title: 'Level',
-        dataIndex: 'level',
-        width: 120,
-        render: (lvl: IndicatorLevel) => <Tag color={levelColor[lvl]}>{lvl}</Tag>,
-        sorter: (a, b) => a.level.localeCompare(b.level),
-      },
-      {
-        title: 'Code',
-        dataIndex: 'ref_code',
-        width: 140,
-        render: (c: string | null) => c ?? <span style={{ opacity: 0.5 }}>—</span>,
-        sorter: (a, b) => (a.ref_code ?? '').localeCompare(b.ref_code ?? ''),
-      },
-      {
-        title: 'Name',
-        dataIndex: 'name',
-        render: (v) => <Typography.Text strong>{v}</Typography.Text>,
-        sorter: (a, b) => a.name.localeCompare(b.name),
-      },
-      {
-        title: 'Description',
-        dataIndex: 'description',
-        render: (v: string | null) => v ?? <span style={{ opacity: 0.5 }}>—</span>,
-      },
-      {
-        title: 'Sort',
-        dataIndex: 'sort_order',
-        width: 90,
-        align: 'right',
-        render: (n: number | null) => n ?? <span style={{ opacity: 0.5 }}>—</span>,
-        sorter: (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-      },
-      {
-        title: 'Criteria',
-        dataIndex: 'criteria_count',
-        width: 100,
-        align: 'right',
-        render: (n: number | undefined) => n ?? 0,
-        sorter: (a, b) => (a.criteria_count ?? 0) - (b.criteria_count ?? 0),
-      },
-      {
-        title: 'Actions',
-        key: 'actions',
-        width: 160,
-        render: (_, rec) => (
-          <Space>
-            <Button
-              size="small"
-              onClick={() => {
-                setEditing(rec);
-                form.setFieldsValue({
-                  ...rec,
-                });
-                setModalOpen(true);
-              }}
-            >
-              Edit
-            </Button>
-            <Popconfirm
-              title="Delete indicator"
-              description="Are you sure?"
-              onConfirm={() => handleDelete(rec.id)}
-            >
-              <Button size="small" danger>
-                Delete
-              </Button>
-            </Popconfirm>
-          </Space>
-        ),
-      },
-    ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rows]
-  );
-
-  const handleDelete = async (id: number) => {
-    const { error } = await supabase.from('indicators').delete().eq('id', id);
-    if (error) return message.error(error.message);
-    message.success('Deleted');
-    fetchRows();
-  };
-
-  const handleOpenNew = () => {
+  // ---- Open / Close modal ----
+  const openCreate = () => {
     setEditing(null);
     form.resetFields();
+    // sensible defaults
+    form.setFieldsValue({
+      level: 'pillar',
+      ref_code: '',
+      name: '',
+      description: '',
+      sort_order: (rows[rows.length - 1]?.sort_order ?? 0) + 1,
+    } as NewIndicator);
     setModalOpen(true);
   };
 
-  const handleSubmit = async () => {
-    const values = await form.validateFields();
-    const payload = {
-      level: values.level as IndicatorLevel,
-      ref_code: values.ref_code || null,
-      name: values.name,
-      description: values.description || null,
-      sort_order: values.sort_order ?? null,
-    };
-
-    let errorMsg: string | null = null;
-
-    if (editing) {
-      const { error } = await supabase.from('indicators').update(payload).eq('id', editing.id);
-      errorMsg = error?.message ?? null;
-    } else {
-      const { error } = await supabase.from('indicators').insert(payload);
-      errorMsg = error?.message ?? null;
-    }
-
-    if (errorMsg) return message.error(errorMsg);
-    setModalOpen(false);
-    message.success(editing ? 'Saved' : 'Added');
-    fetchRows();
+  const openEdit = (row: IndicatorRow) => {
+    setEditing(row);
+    form.setFieldsValue({
+      level: row.level,
+      ref_code: row.ref_code,
+      name: row.name,
+      description: row.description,
+      sort_order: row.sort_order,
+    });
+    setModalOpen(true);
   };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditing(null);
+    form.resetFields();
+  };
+
+  // ---- Submit ----
+  const onSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      // ensure exact type
+      const payload: NewIndicator = {
+        level: values.level as IndicatorLevel,
+        ref_code: String(values.ref_code).trim(),
+        name: String(values.name).trim(),
+        description: String(values.description ?? '').trim(),
+        sort_order: Number(values.sort_order ?? 0),
+      };
+
+      let errorMsg: string | null = null;
+
+      if (editing) {
+        // Update typed call
+        const { error } = await supabase
+          .from<IndicatorRow>('indicators')
+          .update(payload) // payload typed as NewIndicator, compatible with row
+          .eq('id', editing.id);
+
+        errorMsg = error?.message ?? null;
+      } else {
+        const { error } = await supabase
+          .from<IndicatorRow>('indicators')
+          .insert(payload);
+        errorMsg = error?.message ?? null;
+      }
+
+      if (errorMsg) {
+        message.error(errorMsg);
+        return;
+      }
+
+      message.success(editing ? 'Indicator updated' : 'Indicator created');
+      closeModal();
+      fetchData();
+    } catch (err) {
+      // validation or unexpected
+      const msg =
+        err instanceof Error ? err.message : 'Validation failed. Check fields.';
+      message.error(msg);
+    }
+  };
+
+  // ---- Delete ----
+  const onDelete = async (row: IndicatorRow) => {
+    const { error } = await supabase.from('indicators').delete().eq('id', row.id);
+    if (error) {
+      message.error(error.message);
+      return;
+    }
+    message.success('Indicator deleted');
+    fetchData();
+  };
+
+  // ---- Columns ----
+  const columns: ColumnsType<IndicatorRow> = [
+    {
+      title: 'Level',
+      dataIndex: 'level',
+      width: 120,
+      render: (v: IndicatorLevel) => v.toUpperCase(),
+      filters: [
+        { text: 'Pillar', value: 'pillar' },
+        { text: 'Theme', value: 'theme' },
+        { text: 'Sub-theme', value: 'subtheme' },
+      ],
+      onFilter: (val, rec) => rec.level === val,
+    },
+    { title: 'Code', dataIndex: 'ref_code', width: 140 },
+    { title: 'Name', dataIndex: 'name' },
+    { title: 'Description', dataIndex: 'description' },
+    {
+      title: 'Sort',
+      dataIndex: 'sort_order',
+      width: 90,
+      sorter: (a, b) => a.sort_order - b.sort_order,
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 180,
+      render: (_, row) => (
+        <Space>
+          <Button size="small" onClick={() => openEdit(row)}>
+            Edit
+          </Button>
+          <Button size="small" danger onClick={() => onDelete(row)}>
+            Delete
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <div style={{ padding: 24 }}>
-      <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={handleOpenNew}>
-          New indicator
-        </Button>
-        <Button onClick={fetchRows}>Refresh</Button>
+      <Space align="center" style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Title level={3} style={{ margin: 0 }}>
+          Indicators
+        </Title>
+        <Space>
+          <Button onClick={fetchData}>Refresh</Button>
+          <Button type="primary" onClick={openCreate}>
+            Add Indicator
+          </Button>
+        </Space>
       </Space>
+
+      <Divider />
 
       <Table<IndicatorRow>
         rowKey="id"
         loading={loading}
         columns={columns}
         dataSource={rows}
-        pagination={{ pageSize: 20, showSizeChanger: true }}
+        pagination={{ pageSize: 20, size: 'small' }}
       />
 
       <Modal
-        title={editing ? 'Edit indicator' : 'New indicator'}
+        title={editing ? 'Edit Indicator' : 'New Indicator'}
         open={modalOpen}
-        onOk={handleSubmit}
-        onCancel={() => setModalOpen(false)}
-        okText="Save"
+        onCancel={closeModal}
+        onOk={onSubmit}
+        okText={editing ? 'Save' : 'Create'}
+        destroyOnClose
       >
-        <Form form={form} layout="vertical">
+        <Form<NewIndicator> form={form} layout="vertical">
           <Form.Item
             label="Level"
             name="level"
-            rules={[{ required: true, message: 'Please pick a level' }]}
+            rules={[{ required: true, message: 'Select a level' }]}
           >
             <Select
               options={[
@@ -236,24 +241,32 @@ export default function IndicatorsPage() {
             />
           </Form.Item>
 
-          <Form.Item label="Code (optional)" name="ref_code">
-            <Input placeholder="e.g. I-P1 (optional)" />
+          <Form.Item
+            label="Reference Code"
+            name="ref_code"
+            rules={[{ required: true, message: 'Enter the reference code' }]}
+          >
+            <Input placeholder="e.g., P2, T1.3, ST2.1.1" />
           </Form.Item>
 
           <Form.Item
             label="Name"
             name="name"
-            rules={[{ required: true, message: 'Please enter a name' }]}
+            rules={[{ required: true, message: 'Enter a name' }]}
           >
             <Input />
           </Form.Item>
 
           <Form.Item label="Description" name="description">
-            <Input.TextArea rows={4} />
+            <Input.TextArea rows={3} />
           </Form.Item>
 
-          <Form.Item label="Sort order" name="sort_order">
-            <InputNumber style={{ width: '100%' }} min={0} />
+          <Form.Item
+            label="Sort order"
+            name="sort_order"
+            rules={[{ required: true, message: 'Provide sort order (integer)' }]}
+          >
+            <InputNumber min={0} step={1} style={{ width: '100%' }} />
           </Form.Item>
         </Form>
       </Modal>
