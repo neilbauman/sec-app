@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Table, Tag, Button, Form, Input, Space, Spin, message } from "antd";
 import { ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import Link from "next/link";
-import { createBrowserClient } from "@/lib/supabaseClient";
+import { getBrowserClient } from "@/lib/supabaseClient";
 
 type Level = "pillar" | "theme" | "subtheme";
 
@@ -23,7 +23,7 @@ export default function FrameworkPage() {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<Row | null>(null);
   const [form] = Form.useForm();
-  const supabase = createBrowserClient();
+  const supabase = getBrowserClient();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
