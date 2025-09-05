@@ -1,417 +1,526 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Table, Typography, Button, Space, Tag, Modal, Form, Input, InputNumber, message, Popconfirm } from 'antd';
+import { Table, Tag, Space, Button, Modal, Form, Input, InputNumber, message, Popconfirm, Typography } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, ExpandOutlined, CompressOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined } from '@ant-design/icons';
+import type { Key } from 'react';
 import { createClient } from '@/lib/supabaseClient';
 
+type Level = 'pillar' | 'theme' | 'subtheme';
+
 type Pillar = {
-  id: number;
   code: string;
-  name: string;
+  name: string | null;
   description: string | null;
   sort_order: number | null;
 };
 
 type Theme = {
-  id: number;
   code: string;
   pillar_code: string;
-  name: string;
+  name: string | null;
   description: string | null;
   sort_order: number | null;
 };
 
-type SubTheme = {
-  id: number;
+type Subtheme = {
   code: string;
-  pillar_code: string;
   theme_code: string;
-  name: string;
+  name: string | null;
   description: string | null;
   sort_order: number | null;
 };
 
-type Level = 'pillar' | 'theme' | 'subtheme';
-
-type Row = {
-  key: string;
+type Indicator = {
+  id: string;
   level: Level;
-  id: number;
-  code: string;
+  ref_code: string;
+  name: string | null;
+  description: string | null;
+  sort_order: number | null;
+};
+
+// Row model we render in the table (tree)
+type Row = {
+  key: string;                 // unique per row
+  level: Level;
+  code: string;                // code at this level
+  parentKey?: string;          // for convenience (not displayed)
+  pillar_code?: string | null; // filled for lower levels
+  theme_code?: string | null;  // filled for lower levels
+
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
-  pillar_code?: string;
-  theme_code?: string;
+  description: string;
+  sort_order: number;
+
+  indicator_name: string;
+  indicator_description: string;
+  indicator_sort_order: number;
+
   children?: Row[];
 };
 
-const pastel = {
-  pillar: { bg: '#e6f4ff', border: '#bae0ff', text: '#0958d9' },    // light blue
-  theme: { bg: '#f6ffed', border: '#b7eb8f', text: '#389e0d' },     // light green
-  subtheme: { bg: '#fff1f0', border: '#ffa39e', text: '#cf1322' },  // light red
+const tagStyle = (lvl: Level): React.CSSProperties => {
+  // Subtle, complementary pastels
+  if (lvl === 'pillar') return { background: 'rgba(59,130,246,0.10)', borderColor: 'rgba(59,130,246,0.35)', color: '#1e3a8a' };     // soft blue
+  if (lvl === 'theme')  return { background: 'rgba(16,185,129,0.10)', borderColor: 'rgba(16,185,129,0.35)', color: '#065f46' };     // soft green
+  return                    { background: 'rgba(244,63,94,0.10)',  borderColor: 'rgba(244,63,94,0.35)',  color: '#7f1d1d' };        // soft red
 };
 
-export default function FrameworkPage() {
+const levelLabel = (lvl: Level) => (lvl === 'pillar' ? 'Pillar' : lvl === 'theme' ? 'Theme' : 'Sub-theme');
+
+export default function FrameworkEditorPage() {
   const supabase = useMemo(() => createClient(), []);
-  // Cast to any to avoid TS generic inference issues on Vercel
-  const s = supabase as any;
-
   const [loading, setLoading] = useState(false);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<Key[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
-  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Row | null>(null);
-  const [createParent, setCreateParent] = useState<Row | null>(null);
-  const [createLevel, setCreateLevel] = useState<Level>('pillar');
-  const [form] = Form.useForm<{ name: string; description?: string; code: string; sort_order: number }>();
+  const [form] = Form.useForm();
 
-  // --------- Data load ----------
-  async function loadAll() {
+  // --------- DATA LOADING ----------
+  const load = async () => {
     setLoading(true);
 
-    const [pRes, tRes, sRes] = await Promise.all([
-      s.from('pillars').select('*').order('sort_order', { ascending: true }).order('code', { ascending: true }),
-      s.from('themes').select('*').order('sort_order', { ascending: true }).order('code', { ascending: true }),
-      s.from('subthemes').select('*').order('sort_order', { ascending: true }).order('code', { ascending: true }),
+    // fetch pillars, themes, subthemes, indicators in parallel
+    const [
+      pillarsRes,
+      themesRes,
+      subthemesRes,
+      indicatorsRes
+    ] = await Promise.all([
+      supabase.from('pillars').select('*').order('sort_order', { ascending: true }).order('code', { ascending: true }),
+      supabase.from('themes').select('*').order('pillar_code', { ascending: true }).order('sort_order', { ascending: true }).order('code', { ascending: true }),
+      supabase.from('subthemes').select('*').order('theme_code', { ascending: true }).order('sort_order', { ascending: true }).order('code', { ascending: true }),
+      supabase.from('indicators').select('*').order('level', { ascending: true }).order('sort_order', { ascending: true })
     ]);
 
-    if (pRes.error) { setLoading(false); message.error(pRes.error.message); return; }
-    if (tRes.error) { setLoading(false); message.error(tRes.error.message); return; }
-    if (sRes.error) { setLoading(false); message.error(sRes.error.message); return; }
+    const err = pillarsRes.error || themesRes.error || subthemesRes.error || indicatorsRes.error;
+    if (err) {
+      message.error(`Load failed: ${err.message}`);
+      setLoading(false);
+      return;
+    }
 
-    const pillars: Pillar[] = pRes.data ?? [];
-    const themes: Theme[] = tRes.data ?? [];
-    const subs: SubTheme[] = sRes.data ?? [];
+    const pillars = (pillarsRes.data || []) as Pillar[];
+    const themes = (themesRes.data || []) as Theme[];
+    const subthemes = (subthemesRes.data || []) as Subtheme[];
+    const indicators = (indicatorsRes.data || []) as Indicator[];
 
-    // Map by code for fast linking
-    const themesByPillar = new Map<string, Theme[]>();
-    themes.forEach(t => {
-      const arr = themesByPillar.get(t.pillar_code) ?? [];
-      arr.push(t);
-      themesByPillar.set(t.pillar_code, arr);
-    });
+    // index indicators by level+ref_code
+    const indKey = (lvl: Level, ref: string) => `${lvl}::${ref}`;
+    const indMap = new Map<string, Indicator>();
+    for (const i of indicators) {
+      if (i.level && i.ref_code) {
+        indMap.set(indKey(i.level, i.ref_code), i);
+      }
+    }
 
-    const subsByTheme = new Map<string, SubTheme[]>();
-    subs.forEach(st => {
-      const arr = subsByTheme.get(st.theme_code) ?? [];
-      arr.push(st);
-      subsByTheme.set(st.theme_code, arr);
-    });
-
-    // Build tree
-    const tree: Row[] = pillars.map(p => {
-      const pRow: Row = {
-        key: `p:${p.id}`,
-        level: 'pillar',
-        id: p.id,
-        code: p.code,
-        name: p.name,
-        description: p.description,
-        sort_order: p.sort_order,
-        children: [],
+    // helper to pull indicator fields with defaults
+    const pickInd = (lvl: Level, ref: string) => {
+      const i = indMap.get(indKey(lvl, ref));
+      return {
+        indicator_name: i?.name ?? '',
+        indicator_description: i?.description ?? '',
+        indicator_sort_order: i?.sort_order ?? 1,
       };
-      const pThemes = themesByPillar.get(p.code) ?? [];
-      pRow.children = pThemes.map(t => {
-        const tRow: Row = {
-          key: `t:${t.id}`,
-          level: 'theme',
-          id: t.id,
-          code: t.code,
-          name: t.name,
-          description: t.description,
-          sort_order: t.sort_order,
-          pillar_code: t.pillar_code,
-          children: [],
-        };
-        const tSubs = subsByTheme.get(t.code) ?? [];
-        tRow.children = tSubs.map(st => ({
-          key: `s:${st.id}`,
-          level: 'subtheme',
-          id: st.id,
-          code: st.code,
-          name: st.name,
-          description: st.description,
-          sort_order: st.sort_order,
-          pillar_code: st.pillar_code,
-          theme_code: st.theme_code,
-        }));
-        return tRow;
-      });
-      return pRow;
-    });
-
-    setRows(tree);
-    setLoading(false);
-  }
-
-  useEffect(() => { loadAll(); }, []);
-
-  // --------- Helpers ----------
-  function levelTag(lvl: Level) {
-    const c = pastel[lvl];
-    const label = lvl === 'pillar' ? 'Pillar' : lvl === 'theme' ? 'Theme' : 'Sub-theme';
-    return <Tag style={{ background: c.bg, borderColor: c.border, color: c.text }}>{label}</Tag>;
-  }
-
-  function openCreate(level: Level, parent?: Row) {
-    setEditing(null);
-    setCreateParent(parent ?? null);
-    setCreateLevel(level);
-    // default code suggestion: use parent code as prefix if any
-    const baseCode =
-      level === 'pillar' ? '' :
-      level === 'theme' && parent ? `${parent.code}.` :
-      level === 'subtheme' && parent ? `${parent.code}.` :
-      '';
-    form.setFieldsValue({ name: '', description: '', code: baseCode, sort_order: 1 });
-    setModalOpen(true);
-  }
-
-  function openEdit(row: Row) {
-    setEditing(row);
-    setCreateParent(null);
-    setCreateLevel(row.level);
-    form.setFieldsValue({
-      name: row.name ?? '',
-      description: row.description ?? '',
-      code: row.code ?? '',
-      sort_order: row.sort_order ?? 1,
-    });
-    setModalOpen(true);
-  }
-
-  async function handleSave() {
-    const vals = await form.validateFields();
-    const payload = {
-      name: vals.name.trim(),
-      description: (vals.description ?? '').toString(),
-      code: vals.code.trim(),
-      sort_order: Number(vals.sort_order ?? 1),
     };
 
-    let err: string | null = null;
+    // build rows tree
+    const pillarNodes: Row[] = [];
+    const pillarIndex = new Map<string, Row>();
+    const themeIndex = new Map<string, Row>();
 
-    if (editing) {
-      // UPDATE
-      if (editing.level === 'pillar') {
-        const { error } = await s.from('pillars').update(payload).eq('id', editing.id);
-        err = error?.message ?? null;
-      } else if (editing.level === 'theme') {
-        const { error } = await s.from('themes').update(payload).eq('id', editing.id);
-        err = error?.message ?? null;
-      } else {
-        const { error } = await s.from('subthemes').update(payload).eq('id', editing.id);
-        err = error?.message ?? null;
-      }
-    } else {
-      // INSERT
-      if (createLevel === 'pillar') {
-        const { error } = await s.from('pillars').insert(payload);
-        err = error?.message ?? null;
-      } else if (createLevel === 'theme') {
-        if (!createParent || createParent.level !== 'pillar') {
-          message.error('Please create a Theme under a Pillar.');
-          return;
-        }
-        const { error } = await s.from('themes').insert({
-          ...payload,
-          pillar_code: createParent.code,
-        });
-        err = error?.message ?? null;
-      } else {
-        if (!createParent || createParent.level !== 'theme') {
-          message.error('Please create a Sub-theme under a Theme.');
-          return;
-        }
-        const { error } = await s.from('subthemes').insert({
-          ...payload,
-          theme_code: createParent.code,
-          pillar_code: createParent.pillar_code ?? extractPillarCode(createParent.code),
-        });
-        err = error?.message ?? null;
-      }
+    for (const p of pillars) {
+      const base = pickInd('pillar', p.code);
+      const node: Row = {
+        key: `p:${p.code}`,
+        level: 'pillar',
+        code: p.code,
+        name: p.name ?? '',
+        description: p.description ?? '',
+        sort_order: p.sort_order ?? 1,
+        ...base,
+        children: [],
+      };
+      pillarNodes.push(node);
+      pillarIndex.set(p.code, node);
     }
 
-    if (err) {
-      message.error(err);
+    for (const t of themes) {
+      const parent = pillarIndex.get(t.pillar_code);
+      if (!parent) continue; // orphan safety
+      const base = pickInd('theme', t.code);
+      const node: Row = {
+        key: `t:${t.pillar_code}:${t.code}`,
+        level: 'theme',
+        code: t.code,
+        pillar_code: t.pillar_code,
+        name: t.name ?? '',
+        description: t.description ?? '',
+        sort_order: t.sort_order ?? 1,
+        parentKey: parent.key,
+        ...base,
+        children: [],
+      };
+      parent.children!.push(node);
+      themeIndex.set(t.code, node);
+    }
+
+    for (const s of subthemes) {
+      const parent = themeIndex.get(s.theme_code);
+      if (!parent) continue; // themes can legitimately have no subthemes
+      const base = pickInd('subtheme', s.code);
+      const node: Row = {
+        key: `s:${parent.pillar_code}:${s.theme_code}:${s.code}`,
+        level: 'subtheme',
+        code: s.code,
+        pillar_code: parent.pillar_code!,
+        theme_code: s.theme_code,
+        name: s.name ?? '',
+        description: s.description ?? '',
+        sort_order: s.sort_order ?? 1,
+        parentKey: parent.key,
+        ...base,
+      };
+      if (!parent.children) parent.children = [];
+      parent.children!.push(node);
+    }
+
+    // sort children by sort_order (and fallback name) to ensure deterministic display
+    const sortRows = (arr: Row[]) => {
+      arr.sort((a, b) => {
+        const so = (a.sort_order ?? 0) - (b.sort_order ?? 0);
+        if (so !== 0) return so;
+        return a.name.localeCompare(b.name);
+      });
+      for (const r of arr) {
+        if (r.children && r.children.length) sortRows(r.children);
+      }
+    };
+    sortRows(pillarNodes);
+
+    setRows(pillarNodes);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  // --------- EXPAND/COLLAPSE ----------
+  const expandAll = () => {
+    // collect all keys
+    const all: Key[] = [];
+    const walk = (arr: Row[]) => {
+      for (const r of arr) {
+        all.push(r.key);
+        if (r.children && r.children.length) walk(r.children);
+      }
+    };
+    walk(rows);
+    setExpandedRowKeys(all);
+  };
+
+  const collapseAll = () => setExpandedRowKeys([]);
+
+  const onRowExpand = (expanded: boolean, record: Row) => {
+    setExpandedRowKeys(prev => {
+      const set = new Set(prev as string[]);
+      if (expanded) set.add(record.key);
+      else set.delete(record.key);
+      return Array.from(set);
+    });
+  };
+
+  // --------- EDIT / DELETE ----------
+  const openEdit = (rec: Row) => {
+    setEditing(rec);
+    form.setFieldsValue({
+      name: rec.name,
+      description: rec.description,
+      sort_order: rec.sort_order,
+      indicator_name: rec.indicator_name,
+      indicator_description: rec.indicator_description,
+      indicator_sort_order: rec.indicator_sort_order,
+    });
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    const rec = editing;
+    if (!rec) return;
+    const vals = await form.validateFields().catch(() => null);
+    if (!vals) return;
+
+    setLoading(true);
+
+    // 1) update base record in its table
+    let baseErr: string | null = null;
+    if (rec.level === 'pillar') {
+      const { error } = await supabase.from('pillars')
+        .update({
+          name: vals.name,
+          description: vals.description,
+          sort_order: vals.sort_order ?? 1,
+        })
+        .eq('code', rec.code);
+      baseErr = error?.message ?? null;
+    } else if (rec.level === 'theme') {
+      const { error } = await supabase.from('themes')
+        .update({
+          name: vals.name,
+          description: vals.description,
+          sort_order: vals.sort_order ?? 1,
+        })
+        .eq('code', rec.code);
+      baseErr = error?.message ?? null;
+    } else {
+      const { error } = await supabase.from('subthemes')
+        .update({
+          name: vals.name,
+          description: vals.description,
+          sort_order: vals.sort_order ?? 1,
+        })
+        .eq('code', rec.code);
+      baseErr = error?.message ?? null;
+    }
+
+    if (baseErr) {
+      setLoading(false);
+      message.error(`Save failed (base): ${baseErr}`);
       return;
     }
 
-    setModalOpen(false);
+    // 2) upsert indicator for this node
+    const { error: indErr } = await supabase.from('indicators').upsert({
+      // in your schema the PK is 'id'; to upsert safely, use natural key (level+ref_code) with a unique constraint if present.
+      // If there isn't a unique constraint yet, this will insert duplicates. For now we try an "upsert" with the natural key columns:
+      // If you have a unique constraint on (level, ref_code), supabase will do the right thing. If not, consider adding it later.
+      level: rec.level,
+      ref_code: rec.code,
+      name: vals.indicator_name ?? '',
+      description: vals.indicator_description ?? '',
+      sort_order: vals.indicator_sort_order ?? 1,
+    } as any, { onConflict: 'level,ref_code' } as any);
+
+    if (indErr) {
+      setLoading(false);
+      message.error(`Save failed (indicator): ${indErr.message}`);
+      return;
+    }
+
+    setEditOpen(false);
     setEditing(null);
-    setCreateParent(null);
+    await load();
+    setLoading(false);
     message.success('Saved');
-    await loadAll();
-  }
+  };
 
-  function extractPillarCode(themeCode: string) {
-    // If your theme codes look like "P1.T2" or "1.2", adjust accordingly.
-    // As a fallback, take the first segment before a dot.
-    const seg = themeCode.split('.')[0];
-    return seg;
-  }
+  const deleteRow = async (rec: Row) => {
+    setLoading(true);
+    let baseErr: string | null = null;
 
-  async function tryDelete(row: Row) {
-    // Basic guard: block deletes if children exist (to avoid FK errors)
-    if (row.level !== 'subtheme' && row.children && row.children.length > 0) {
-      message.warning('Please delete or move child rows first.');
+    if (rec.level === 'pillar') {
+      const { error } = await supabase.from('pillars').delete().eq('code', rec.code);
+      baseErr = error?.message ?? null;
+    } else if (rec.level === 'theme') {
+      const { error } = await supabase.from('themes').delete().eq('code', rec.code);
+      baseErr = error?.message ?? null;
+    } else {
+      const { error } = await supabase.from('subthemes').delete().eq('code', rec.code);
+      baseErr = error?.message ?? null;
+    }
+
+    if (baseErr) {
+      setLoading(false);
+      message.error(`Delete failed: ${baseErr}`);
       return;
     }
-    let err: string | null = null;
 
-    if (row.level === 'pillar') {
-      // double-check children exist in DB
-      const { data: kids, error } = await s.from('themes').select('id').eq('pillar_code', row.code).limit(1);
-      if (error) { message.error(error.message); return; }
-      if ((kids ?? []).length > 0) { message.warning('This pillar has themes. Delete/move them first.'); return; }
-      const { error: delErr } = await s.from('pillars').delete().eq('id', row.id);
-      err = delErr?.message ?? null;
-    } else if (row.level === 'theme') {
-      const { data: kids, error } = await s.from('subthemes').select('id').eq('theme_code', row.code).limit(1);
-      if (error) { message.error(error.message); return; }
-      if ((kids ?? []).length > 0) { message.warning('This theme has sub-themes. Delete/move them first.'); return; }
-      const { error: delErr } = await s.from('themes').delete().eq('id', row.id);
-      err = delErr?.message ?? null;
+    // remove indicator (optional; harmless if none)
+    await supabase.from('indicators').delete().match({ level: rec.level, ref_code: rec.code });
+
+    await load();
+    setLoading(false);
+    message.success('Deleted');
+  };
+
+  // --------- NEW ROWS ----------
+  const addRow = async (lvl: Level, parent?: Row) => {
+    setLoading(true);
+
+    if (lvl === 'pillar') {
+      // create code like P# next
+      const nextIndex = (rows.length || 0) + 1;
+      const code = `P${nextIndex}`;
+      const { error } = await supabase.from('pillars').insert({
+        code, name: 'New Pillar', description: '', sort_order: nextIndex,
+      });
+      if (error) message.error(error.message);
+    } else if (lvl === 'theme') {
+      if (!parent || parent.level !== 'pillar') {
+        message.warning('Select a Pillar to add a Theme under.');
+        setLoading(false);
+        return;
+      }
+      const existing = parent.children?.filter(c => c.level === 'theme') ?? [];
+      const nextIndex = existing.length + 1;
+      const code = `${parent.code}-T${nextIndex}`;
+      const { error } = await supabase.from('themes').insert({
+        code, pillar_code: parent.code, name: 'New Theme', description: '', sort_order: nextIndex,
+      });
+      if (error) message.error(error.message);
     } else {
-      const { error: delErr } = await s.from('subthemes').delete().eq('id', row.id);
-      err = delErr?.message ?? null;
+      // subtheme
+      if (!parent || parent.level !== 'theme') {
+        message.warning('Select a Theme to add a Sub-theme under.');
+        setLoading(false);
+        return;
+      }
+      const existing = parent.children?.filter(c => c.level === 'subtheme') ?? [];
+      const nextIndex = existing.length + 1;
+      const code = `${parent.code}-S${nextIndex}`;
+      const { error } = await supabase.from('subthemes').insert({
+        code, theme_code: parent.code, name: 'New Sub-theme', description: '', sort_order: nextIndex,
+      });
+      if (error) message.error(error.message);
     }
 
-    if (err) { message.error(err); return; }
-    message.success('Deleted');
-    await loadAll();
-  }
+    await load();
+    setLoading(false);
+  };
 
-  // --------- Columns ----------
+  // --------- COLUMNS ----------
   const columns: ColumnsType<Row> = [
     {
-      title: '',
-      dataIndex: 'level',
-      width: 110,
-      render: (_: any, r) => levelTag(r.level),
-    },
-    {
-      title: 'Code',
-      dataIndex: 'code',
-      width: 140,
-      render: (t: string) => <Typography.Text code>{t}</Typography.Text>,
-    },
-    {
-      title: 'Name',
+      title: 'Item',
       dataIndex: 'name',
-      ellipsis: true,
-      render: (t: string) => <Typography.Text>{t}</Typography.Text>,
+      key: 'name',
+      width: 360,
+      render: (_val, rec) => (
+        <Space size="small">
+          <Tag style={tagStyle(rec.level)}>{levelLabel(rec.level)}</Tag>
+          <span style={{ fontWeight: 600 }}>{rec.name || <em>(unnamed)</em>}</span>
+        </Space>
+      ),
     },
     {
       title: 'Description',
       dataIndex: 'description',
+      key: 'description',
       ellipsis: true,
-      render: (t?: string | null) => t ?? '',
+      render: (v: any) => v || <span style={{ opacity: 0.6 }}>(none)</span>,
+    },
+    {
+      title: 'Indicator (name)',
+      dataIndex: 'indicator_name',
+      key: 'indicator_name',
+      width: 240,
+      render: (v: any) => v || <span style={{ opacity: 0.6 }}>(none)</span>,
+    },
+    {
+      title: 'Indicator (description)',
+      dataIndex: 'indicator_description',
+      key: 'indicator_description',
+      ellipsis: true,
+      render: (v: any) => v || <span style={{ opacity: 0.6 }}>(none)</span>,
     },
     {
       title: 'Sort',
       dataIndex: 'sort_order',
-      width: 90,
-      sorter: (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-      render: (n?: number | null) => n ?? '',
+      key: 'sort_order',
+      width: 80,
+      align: 'center' as const,
+      render: (v: any) => v ?? '',
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 260,
-      fixed: 'right',
-      render: (_: any, row) => (
-        <Space wrap>
-          {row.level === 'pillar' && (
-            <Button size="small" onClick={() => openCreate('theme', row)}>
-              Add Theme
-            </Button>
-          )}
-          {row.level === 'theme' && (
-            <Button size="small" onClick={() => openCreate('subtheme', row)}>
-              Add Sub-theme
-            </Button>
-          )}
-          <Button size="small" onClick={() => openEdit(row)}>Edit</Button>
+      width: 130,
+      fixed: 'right' as const,
+      render: (_val, rec) => (
+        <Space size="small">
+          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)}>
+            Edit
+          </Button>
           <Popconfirm
-            title="Delete this row?"
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            onConfirm={() => tryDelete(row)}
+            title={`Delete this ${levelLabel(rec.level)}?`}
+            description="This may remove any children as well."
+            okText="Yes"
+            onConfirm={() => deleteRow(rec)}
           >
-            <Button danger size="small">Delete</Button>
+            <Button size="small" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
       ),
     },
   ];
 
+  // --------- RENDER ----------
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 20 }}>
       <Space style={{ marginBottom: 12 }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Framework Editor
-        </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate('pillar')}>
+        <Typography.Title level={3} style={{ margin: 0 }}>Framework Editor</Typography.Title>
+      </Space>
+
+      <Space style={{ marginBottom: 14 }}>
+        <Button icon={<ReloadOutlined />} onClick={load} disabled={loading}>Refresh</Button>
+        <Button icon={<ExpandOutlined />} onClick={expandAll} disabled={loading}>Expand all</Button>
+        <Button icon={<CompressOutlined />} onClick={collapseAll} disabled={loading}>Collapse all</Button>
+
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => addRow('pillar')} disabled={loading}>
           Add Pillar
         </Button>
-        <Button onClick={() => loadAll()}>Refresh</Button>
       </Space>
 
       <Table<Row>
-        rowKey="key"
-        size="small"
         loading={loading}
         columns={columns}
         dataSource={rows}
         pagination={false}
+        size="middle"
+        rowKey="key"
         expandable={{
-          expandedRowKeys: expandedKeys,
-          onExpandedRowsChange: (keys) => setExpandedKeys(keys as React.Key[]),
+          expandedRowKeys,
+          onExpand: onRowExpand,
+          indentSize: 16,
+          expandIconColumnIndex: 0,
         }}
+        // tighter rows
+        rowClassName={(rec) => `lvl-${rec.level}`}
+        style={{ background: '#fff' }}
       />
 
       <Modal
-        open={modalOpen}
-        title={editing ? `Edit ${editing.level === 'pillar' ? 'Pillar' : editing.level === 'theme' ? 'Theme' : 'Sub-theme'}`
-                      : createLevel === 'pillar' ? 'Add Pillar' : createLevel === 'theme' ? 'Add Theme' : 'Add Sub-theme'}
-        onCancel={() => { setModalOpen(false); setEditing(null); setCreateParent(null); }}
-        onOk={handleSave}
+        title={editing ? `Edit ${levelLabel(editing.level)}: ${editing.name}` : 'Edit'}
+        open={editOpen}
+        onCancel={() => { setEditOpen(false); setEditing(null); }}
+        onOk={saveEdit}
         okText="Save"
+        confirmLoading={loading}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" initialValues={{ sort_order: 1 }}>
-          <Form.Item
-            name="code"
-            label="Code"
-            rules={[{ required: true, message: 'Code is required' }]}
-            tooltip={createLevel === 'theme' ? 'Consider prefixing with the pillar code (e.g., P1.T1)' :
-                    createLevel === 'subtheme' ? 'Consider prefixing with the theme code (e.g., T1.ST1)' : ''}
-          >
-            <Input placeholder="e.g., P1 / T1.2 / ST3.1" />
-          </Form.Item>
-
-          <Form.Item
-            name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Name is required' }]}
-          >
+        <Form form={form} layout="vertical">
+          <Form.Item label="Name" name="name" rules={[{ required: true, message: 'Please enter a name' }]}>
             <Input />
           </Form.Item>
-
-          <Form.Item name="description" label="Description">
+          <Form.Item label="Description" name="description">
             <Input.TextArea rows={3} />
           </Form.Item>
+          <Form.Item label="Sort order" name="sort_order" rules={[{ type: 'number', min: 0 }]}>
+            <InputNumber style={{ width: '100%' }} />
+          </Form.Item>
 
-          <Form.Item
-            name="sort_order"
-            label="Sort Order"
-            rules={[{ required: true, message: 'Sort order is required' }]}
-          >
-            <InputNumber min={0} style={{ width: '100%' }} />
+          <Form.Item label="Indicator name" name="indicator_name">
+            <Input />
+          </Form.Item>
+          <Form.Item label="Indicator description" name="indicator_description">
+            <Input.TextArea rows={3} />
+          </Form.Item>
+          <Form.Item label="Indicator sort order" name="indicator_sort_order" rules={[{ type: 'number', min: 0 }]}>
+            <InputNumber style={{ width: '100%' }} />
           </Form.Item>
         </Form>
       </Modal>
