@@ -435,36 +435,15 @@ export default function FrameworkPage() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          marginBottom: 12,
-          gap: 8,
-        }}
-      >
-        <Button href="/" icon={<ArrowLeftOutlined />}>
-          Back to Dashboard
-        </Button>
-        <Typography.Title
-          level={4}
-          style={{ margin: 0, fontWeight: 700, letterSpacing: 0.2 }}
-        >
-          Framework Editor
-        </Typography.Title>
-        <Space style={{ marginLeft: 'auto' }}>
-          <Button
-            icon={<PlusOutlined />}
-            onClick={() => openCreate('pillar', null)}
-          >
-            Add Pillar
-          </Button>
-          <Button icon={<ReloadOutlined />} onClick={fetchAll}>
-            Refresh
-          </Button>
-        </Space>
-      </div>
+    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
+  <Space>
+    <Link href="/">
+      <Button icon={<ArrowLeftOutlined />}>Back to Dashboard</Button>
+    </Link>
+    <Typography.Title level={3} style={{margin:0}}>Framework Editor</Typography.Title>
+  </Space>
+  <Button icon={<ReloadOutlined />} onClick={fetchAll}>Refresh</Button>
+</div>
 
       <Table<UIRow>
         dataSource={flatData}
