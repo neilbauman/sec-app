@@ -1,256 +1,420 @@
-// app/framework/page.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { createClient } from '@/lib/supabaseClient'; // your existing export
-import { Button } from 'antd';
-import {
-  CaretDownOutlined,
-  CaretRightOutlined,
-  ReloadOutlined,
-  EditOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
-import classNames from 'classnames';
+import { Table, Typography, Button, Space, Tag, Modal, Form, Input, InputNumber, message, Popconfirm } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { PlusOutlined } from '@ant-design/icons';
+import { createClient } from '@/lib/supabaseClient';
 
-// ---------- styling helpers ----------
-const typeBadgeStyles: Record<string, React.CSSProperties> = {
-  pillar:   { background: 'rgba(204,182,173,0.25)', color: '#5a463d', border: '1px solid rgba(204,182,173,0.45)' },
-  theme:    { background: 'rgba(180,179,185,0.22)', color: '#3f3f46', border: '1px solid rgba(180,179,185,0.45)' },
-  subtheme: { background: 'rgba(202,212,226,0.22)', color: '#334155', border: '1px solid rgba(202,212,226,0.45)' },
-};
-
-const levelLabel = (lvl: string) =>
-  lvl === 'pillar' ? 'Pillar' : lvl === 'theme' ? 'Theme' : 'Sub-theme';
-
-// ---------- types ----------
-type FlatRow = {
-  id: string | number;
-  level: 'pillar' | 'theme' | 'subtheme';
+type Pillar = {
+  id: number;
   code: string;
   name: string;
   description: string | null;
-  parent_code: string | null;
   sort_order: number | null;
 };
 
-type TreeRow = FlatRow & {
-  children?: TreeRow[];
+type Theme = {
+  id: number;
+  code: string;
+  pillar_code: string;
+  name: string;
+  description: string | null;
+  sort_order: number | null;
 };
 
-// ---------- utilities ----------
-function normalize(row: any): FlatRow {
-  // Map/rename here if your view uses different column names
-  return {
-    id: row.id,
-    level: row.level,
-    code: row.code,
-    name: row.name,
-    description: row.description ?? null,
-    parent_code: row.parent_code ?? null,
-    sort_order: row.sort_order ?? null,
-  } as FlatRow;
-}
+type SubTheme = {
+  id: number;
+  code: string;
+  pillar_code: string;
+  theme_code: string;
+  name: string;
+  description: string | null;
+  sort_order: number | null;
+};
 
-function buildTree(rows: FlatRow[]): TreeRow[] {
-  // Index by code for fast parent lookups
-  const byCode = new Map<string, TreeRow>();
-  rows.forEach(r => byCode.set(r.code, { ...r, children: [] }));
-  const roots: TreeRow[] = [];
+type Level = 'pillar' | 'theme' | 'subtheme';
 
-  rows.forEach(r => {
-    const node = byCode.get(r.code)!;
-    if (r.parent_code && byCode.has(r.parent_code)) {
-      byCode.get(r.parent_code)!.children!.push(node);
-    } else {
-      roots.push(node);
-    }
-  });
+type Row = {
+  key: string;
+  level: Level;
+  id: number;
+  code: string;
+  name: string;
+  description?: string | null;
+  sort_order?: number | null;
+  pillar_code?: string;
+  theme_code?: string;
+  children?: Row[];
+};
 
-  // Sort children by sort_order then name
-  const sortFn = (a: TreeRow, b: TreeRow) => {
-    const ao = a.sort_order ?? 9999;
-    const bo = b.sort_order ?? 9999;
-    if (ao !== bo) return ao - bo;
-    return a.name.localeCompare(b.name);
-  };
+const pastel = {
+  pillar: { bg: '#e6f4ff', border: '#bae0ff', text: '#0958d9' },    // light blue
+  theme: { bg: '#f6ffed', border: '#b7eb8f', text: '#389e0d' },     // light green
+  subtheme: { bg: '#fff1f0', border: '#ffa39e', text: '#cf1322' },  // light red
+};
 
-  const sortDeep = (nodes: TreeRow[]) => {
-    nodes.sort(sortFn);
-    nodes.forEach(n => n.children && sortDeep(n.children));
-  };
-  sortDeep(roots);
-
-  // Ensure root groups show Pillars > Themes > Sub-themes
-  const levelRank = (lvl: string) => (lvl === 'pillar' ? 0 : lvl === 'theme' ? 1 : 2);
-  roots.sort((a, b) => levelRank(a.level) - levelRank(b.level) || sortFn(a, b));
-  return roots;
-}
-
-// Flatten for rendering with indentation & expand/collapse
-type RenderRow = TreeRow & { depth: number; isLeaf: boolean; path: string };
-
-function flattenForRender(nodes: TreeRow[], expanded: Set<string>, depth = 0, acc: RenderRow[] = [], parentPath = '') {
-  const indent = depth;
-  nodes.forEach((n, i) => {
-    const path = parentPath ? `${parentPath}/${n.code}` : n.code;
-    const isOpen = expanded.has(path);
-    const isLeaf = !n.children || n.children.length === 0;
-    acc.push({ ...n, depth: indent, isLeaf, path });
-    if (!isLeaf && isOpen) {
-      flattenForRender(n.children!, expanded, depth + 1, acc, path);
-    }
-  });
-  return acc;
-}
-
-// ---------- component ----------
 export default function FrameworkPage() {
-  const [rows, setRows] = useState<FlatRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set()); // paths, not just codes
-
   const supabase = useMemo(() => createClient(), []);
+  // Cast to any to avoid TS generic inference issues on Vercel
+  const s = supabase as any;
 
-  async function load() {
+  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Row | null>(null);
+  const [createParent, setCreateParent] = useState<Row | null>(null);
+  const [createLevel, setCreateLevel] = useState<Level>('pillar');
+  const [form] = Form.useForm<{ name: string; description?: string; code: string; sort_order: number }>();
+
+  // --------- Data load ----------
+  async function loadAll() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('v_framework_flat') // <-- your view
-      .select('*');
+
+    const [pRes, tRes, sRes] = await Promise.all([
+      s.from('pillars').select('*').order('sort_order', { ascending: true }).order('code', { ascending: true }),
+      s.from('themes').select('*').order('sort_order', { ascending: true }).order('code', { ascending: true }),
+      s.from('subthemes').select('*').order('sort_order', { ascending: true }).order('code', { ascending: true }),
+    ]);
+
+    if (pRes.error) { setLoading(false); message.error(pRes.error.message); return; }
+    if (tRes.error) { setLoading(false); message.error(tRes.error.message); return; }
+    if (sRes.error) { setLoading(false); message.error(sRes.error.message); return; }
+
+    const pillars: Pillar[] = pRes.data ?? [];
+    const themes: Theme[] = tRes.data ?? [];
+    const subs: SubTheme[] = sRes.data ?? [];
+
+    // Map by code for fast linking
+    const themesByPillar = new Map<string, Theme[]>();
+    themes.forEach(t => {
+      const arr = themesByPillar.get(t.pillar_code) ?? [];
+      arr.push(t);
+      themesByPillar.set(t.pillar_code, arr);
+    });
+
+    const subsByTheme = new Map<string, SubTheme[]>();
+    subs.forEach(st => {
+      const arr = subsByTheme.get(st.theme_code) ?? [];
+      arr.push(st);
+      subsByTheme.set(st.theme_code, arr);
+    });
+
+    // Build tree
+    const tree: Row[] = pillars.map(p => {
+      const pRow: Row = {
+        key: `p:${p.id}`,
+        level: 'pillar',
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        description: p.description,
+        sort_order: p.sort_order,
+        children: [],
+      };
+      const pThemes = themesByPillar.get(p.code) ?? [];
+      pRow.children = pThemes.map(t => {
+        const tRow: Row = {
+          key: `t:${t.id}`,
+          level: 'theme',
+          id: t.id,
+          code: t.code,
+          name: t.name,
+          description: t.description,
+          sort_order: t.sort_order,
+          pillar_code: t.pillar_code,
+          children: [],
+        };
+        const tSubs = subsByTheme.get(t.code) ?? [];
+        tRow.children = tSubs.map(st => ({
+          key: `s:${st.id}`,
+          level: 'subtheme',
+          id: st.id,
+          code: st.code,
+          name: st.name,
+          description: st.description,
+          sort_order: st.sort_order,
+          pillar_code: st.pillar_code,
+          theme_code: st.theme_code,
+        }));
+        return tRow;
+      });
+      return pRow;
+    });
+
+    setRows(tree);
     setLoading(false);
-    if (error) {
-      console.error(error);
-      setRows([]);
-      return;
-    }
-    // normalize + filter out unexpected levels
-    const clean = (data ?? [])
-      .map(normalize)
-      .filter(r => r.level === 'pillar' || r.level === 'theme' || r.level === 'subtheme');
-    setRows(clean);
   }
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { loadAll(); }, []);
 
-  const tree = useMemo(() => buildTree(rows), [rows]);
-  const renderRows = useMemo(() => flattenForRender(tree, expanded), [tree, expanded]);
+  // --------- Helpers ----------
+  function levelTag(lvl: Level) {
+    const c = pastel[lvl];
+    const label = lvl === 'pillar' ? 'Pillar' : lvl === 'theme' ? 'Theme' : 'Sub-theme';
+    return <Tag style={{ background: c.bg, borderColor: c.border, color: c.text }}>{label}</Tag>;
+  }
 
-  const togglePath = (path: string) => {
-    setExpanded(prev => {
-      const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
+  function openCreate(level: Level, parent?: Row) {
+    setEditing(null);
+    setCreateParent(parent ?? null);
+    setCreateLevel(level);
+    // default code suggestion: use parent code as prefix if any
+    const baseCode =
+      level === 'pillar' ? '' :
+      level === 'theme' && parent ? `${parent.code}.` :
+      level === 'subtheme' && parent ? `${parent.code}.` :
+      '';
+    form.setFieldsValue({ name: '', description: '', code: baseCode, sort_order: 1 });
+    setModalOpen(true);
+  }
+
+  function openEdit(row: Row) {
+    setEditing(row);
+    setCreateParent(null);
+    setCreateLevel(row.level);
+    form.setFieldsValue({
+      name: row.name ?? '',
+      description: row.description ?? '',
+      code: row.code ?? '',
+      sort_order: row.sort_order ?? 1,
     });
-  };
+    setModalOpen(true);
+  }
 
-  // --- compact row CSS ---
-  const thTd: React.CSSProperties = { padding: '8px 10px', lineHeight: 1.2, verticalAlign: 'middle' };
-  const nameCell: React.CSSProperties = { ...thTd, display: 'flex', alignItems: 'center', gap: 10 };
+  async function handleSave() {
+    const vals = await form.validateFields();
+    const payload = {
+      name: vals.name.trim(),
+      description: (vals.description ?? '').toString(),
+      code: vals.code.trim(),
+      sort_order: Number(vals.sort_order ?? 1),
+    };
+
+    let err: string | null = null;
+
+    if (editing) {
+      // UPDATE
+      if (editing.level === 'pillar') {
+        const { error } = await s.from('pillars').update(payload).eq('id', editing.id);
+        err = error?.message ?? null;
+      } else if (editing.level === 'theme') {
+        const { error } = await s.from('themes').update(payload).eq('id', editing.id);
+        err = error?.message ?? null;
+      } else {
+        const { error } = await s.from('subthemes').update(payload).eq('id', editing.id);
+        err = error?.message ?? null;
+      }
+    } else {
+      // INSERT
+      if (createLevel === 'pillar') {
+        const { error } = await s.from('pillars').insert(payload);
+        err = error?.message ?? null;
+      } else if (createLevel === 'theme') {
+        if (!createParent || createParent.level !== 'pillar') {
+          message.error('Please create a Theme under a Pillar.');
+          return;
+        }
+        const { error } = await s.from('themes').insert({
+          ...payload,
+          pillar_code: createParent.code,
+        });
+        err = error?.message ?? null;
+      } else {
+        if (!createParent || createParent.level !== 'theme') {
+          message.error('Please create a Sub-theme under a Theme.');
+          return;
+        }
+        const { error } = await s.from('subthemes').insert({
+          ...payload,
+          theme_code: createParent.code,
+          pillar_code: createParent.pillar_code ?? extractPillarCode(createParent.code),
+        });
+        err = error?.message ?? null;
+      }
+    }
+
+    if (err) {
+      message.error(err);
+      return;
+    }
+
+    setModalOpen(false);
+    setEditing(null);
+    setCreateParent(null);
+    message.success('Saved');
+    await loadAll();
+  }
+
+  function extractPillarCode(themeCode: string) {
+    // If your theme codes look like "P1.T2" or "1.2", adjust accordingly.
+    // As a fallback, take the first segment before a dot.
+    const seg = themeCode.split('.')[0];
+    return seg;
+  }
+
+  async function tryDelete(row: Row) {
+    // Basic guard: block deletes if children exist (to avoid FK errors)
+    if (row.level !== 'subtheme' && row.children && row.children.length > 0) {
+      message.warning('Please delete or move child rows first.');
+      return;
+    }
+    let err: string | null = null;
+
+    if (row.level === 'pillar') {
+      // double-check children exist in DB
+      const { data: kids, error } = await s.from('themes').select('id').eq('pillar_code', row.code).limit(1);
+      if (error) { message.error(error.message); return; }
+      if ((kids ?? []).length > 0) { message.warning('This pillar has themes. Delete/move them first.'); return; }
+      const { error: delErr } = await s.from('pillars').delete().eq('id', row.id);
+      err = delErr?.message ?? null;
+    } else if (row.level === 'theme') {
+      const { data: kids, error } = await s.from('subthemes').select('id').eq('theme_code', row.code).limit(1);
+      if (error) { message.error(error.message); return; }
+      if ((kids ?? []).length > 0) { message.warning('This theme has sub-themes. Delete/move them first.'); return; }
+      const { error: delErr } = await s.from('themes').delete().eq('id', row.id);
+      err = delErr?.message ?? null;
+    } else {
+      const { error: delErr } = await s.from('subthemes').delete().eq('id', row.id);
+      err = delErr?.message ?? null;
+    }
+
+    if (err) { message.error(err); return; }
+    message.success('Deleted');
+    await loadAll();
+  }
+
+  // --------- Columns ----------
+  const columns: ColumnsType<Row> = [
+    {
+      title: '',
+      dataIndex: 'level',
+      width: 110,
+      render: (_: any, r) => levelTag(r.level),
+    },
+    {
+      title: 'Code',
+      dataIndex: 'code',
+      width: 140,
+      render: (t: string) => <Typography.Text code>{t}</Typography.Text>,
+    },
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      ellipsis: true,
+      render: (t: string) => <Typography.Text>{t}</Typography.Text>,
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      ellipsis: true,
+      render: (t?: string | null) => t ?? '',
+    },
+    {
+      title: 'Sort',
+      dataIndex: 'sort_order',
+      width: 90,
+      sorter: (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+      render: (n?: number | null) => n ?? '',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 260,
+      fixed: 'right',
+      render: (_: any, row) => (
+        <Space wrap>
+          {row.level === 'pillar' && (
+            <Button size="small" onClick={() => openCreate('theme', row)}>
+              Add Theme
+            </Button>
+          )}
+          {row.level === 'theme' && (
+            <Button size="small" onClick={() => openCreate('subtheme', row)}>
+              Add Sub-theme
+            </Button>
+          )}
+          <Button size="small" onClick={() => openEdit(row)}>Edit</Button>
+          <Popconfirm
+            title="Delete this row?"
+            okText="Delete"
+            okButtonProps={{ danger: true }}
+            onConfirm={() => tryDelete(row)}
+          >
+            <Button danger size="small">Delete</Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 22 }}>Framework Editor</h1>
-        <span style={{ color: '#64748b' }}>Read-only snapshot from database.</span>
-        <Button icon={<ReloadOutlined />} size="small" onClick={load} loading={loading}>
-          Refresh
+    <div style={{ padding: 24 }}>
+      <Space style={{ marginBottom: 12 }}>
+        <Typography.Title level={3} style={{ margin: 0 }}>
+          Framework Editor
+        </Typography.Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate('pillar')}>
+          Add Pillar
         </Button>
-      </div>
+        <Button onClick={() => loadAll()}>Refresh</Button>
+      </Space>
 
-      <div style={{ border: '1px solid #eef2f7', borderRadius: 8, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ background: '#fafafa' }}>
-            <tr>
-              <th style={{ ...thTd, width: 60 }}>Order</th>
-              <th style={{ ...thTd, width: 220 }}>Name / Code</th>
-              <th style={{ ...thTd }}>Description / Notes</th>
-              <th style={{ ...thTd, width: 180 }}>Parent</th>
-              <th style={{ ...thTd, width: 120, textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {renderRows.length === 0 && (
-              <tr>
-                <td colSpan={5} style={{ padding: 24, color: '#94a3b8' }}>
-                  No data
-                </td>
-              </tr>
-            )}
+      <Table<Row>
+        rowKey="key"
+        size="small"
+        loading={loading}
+        columns={columns}
+        dataSource={rows}
+        pagination={false}
+        expandable={{
+          expandedRowKeys: expandedKeys,
+          onExpandedRowsChange: (keys) => setExpandedKeys(keys as React.Key[]),
+        }}
+      />
 
-            {renderRows.map((r) => {
-              const badgeStyle = typeBadgeStyles[r.level];
-              const indentPx = r.depth * 20;
+      <Modal
+        open={modalOpen}
+        title={editing ? `Edit ${editing.level === 'pillar' ? 'Pillar' : editing.level === 'theme' ? 'Theme' : 'Sub-theme'}`
+                      : createLevel === 'pillar' ? 'Add Pillar' : createLevel === 'theme' ? 'Add Theme' : 'Add Sub-theme'}
+        onCancel={() => { setModalOpen(false); setEditing(null); setCreateParent(null); }}
+        onOk={handleSave}
+        okText="Save"
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical" initialValues={{ sort_order: 1 }}>
+          <Form.Item
+            name="code"
+            label="Code"
+            rules={[{ required: true, message: 'Code is required' }]}
+            tooltip={createLevel === 'theme' ? 'Consider prefixing with the pillar code (e.g., P1.T1)' :
+                    createLevel === 'subtheme' ? 'Consider prefixing with the theme code (e.g., T1.ST1)' : ''}
+          >
+            <Input placeholder="e.g., P1 / T1.2 / ST3.1" />
+          </Form.Item>
 
-              return (
-                <tr key={r.path} className="compact-row" style={{ borderTop: '1px solid #f0f2f5' }}>
-                  {/* sort/order */}
-                  <td style={{ ...thTd, color: '#94a3b8', width: 60 }}>
-                    {r.sort_order ?? ''}
-                  </td>
+          <Form.Item
+            name="name"
+            label="Name"
+            rules={[{ required: true, message: 'Name is required' }]}
+          >
+            <Input />
+          </Form.Item>
 
-                  {/* name + type tag + expander */}
-                  <td style={{ ...nameCell }}>
-                    <div style={{ paddingLeft: indentPx, display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {!r.isLeaf ? (
-                        <span
-                          role="button"
-                          onClick={() => togglePath(r.path)}
-                          style={{ cursor: 'pointer', color: '#64748b' }}
-                          aria-label={expanded.has(r.path) ? 'Collapse' : 'Expand'}
-                        >
-                          {expanded.has(r.path) ? <CaretDownOutlined /> : <CaretRightOutlined />}
-                        </span>
-                      ) : (
-                        <span style={{ width: 14 }} />
-                      )}
+          <Form.Item name="description" label="Description">
+            <Input.TextArea rows={3} />
+          </Form.Item>
 
-                      <span
-                        style={{
-                          ...badgeStyle,
-                          fontSize: 11,
-                          padding: '2px 6px',
-                          borderRadius: 999,
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={levelLabel(r.level)}
-                      >
-                        {levelLabel(r.level)}
-                      </span>
-
-                      <span style={{ fontWeight: 600 }}>{r.name}</span>
-                      <span style={{ color: '#94a3b8' }}>{r.code}</span>
-                    </div>
-                  </td>
-
-                  {/* description */}
-                  <td style={{ ...thTd, color: '#334155' }}>
-                    {r.description || <span style={{ color: '#cbd5e1' }}>—</span>}
-                  </td>
-
-                  {/* parent */}
-                  <td style={{ ...thTd, color: '#64748b' }}>{r.parent_code ?? '—'}</td>
-
-                  {/* actions (kept minimal here; wire to your handlers if needed) */}
-                  <td style={{ ...thTd, textAlign: 'right' }}>
-                    <Button type="text" size="small" icon={<EditOutlined />} />
-                    <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      <style jsx global>{`
-        .compact-row td {
-          padding-top: 7px !important;
-          padding-bottom: 7px !important;
-        }
-      `}</style>
+          <Form.Item
+            name="sort_order"
+            label="Sort Order"
+            rules={[{ required: true, message: 'Sort order is required' }]}
+          >
+            <InputNumber min={0} style={{ width: '100%' }} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
