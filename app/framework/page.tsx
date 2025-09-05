@@ -1,254 +1,256 @@
-"use client";
+// app/framework/page.tsx
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabaseClient";
+import React, { useEffect, useMemo, useState } from 'react';
+import { createClient } from '@/lib/supabaseClient'; // your existing export
+import { Button } from 'antd';
 import {
-  Table,
-  Typography,
-  Space,
-  Button,
-  Popconfirm,
-  message,
-  Input,
-} from "antd";
-import {
+  CaretDownOutlined,
+  CaretRightOutlined,
+  ReloadOutlined,
   EditOutlined,
   DeleteOutlined,
-  PlusOutlined,
-} from "@ant-design/icons";
+} from '@ant-design/icons';
+import classNames from 'classnames';
 
-const { Text } = Typography;
-
-type FrameworkRow = {
-  id: string;
-  level: "pillar" | "theme" | "subtheme" | "indicator" | "criteria";
-  ref_code: string;
-  name: string;
-  description: string;
-  parent_id?: string;
-  sort_order?: number;
-  children?: FrameworkRow[];
+// ---------- styling helpers ----------
+const typeBadgeStyles: Record<string, React.CSSProperties> = {
+  pillar:   { background: 'rgba(204,182,173,0.25)', color: '#5a463d', border: '1px solid rgba(204,182,173,0.45)' },
+  theme:    { background: 'rgba(180,179,185,0.22)', color: '#3f3f46', border: '1px solid rgba(180,179,185,0.45)' },
+  subtheme: { background: 'rgba(202,212,226,0.22)', color: '#334155', border: '1px solid rgba(202,212,226,0.45)' },
 };
 
-export default function FrameworkPage() {
-  const supabase = createClient();
-  const [rows, setRows] = useState<FrameworkRow[]>([]);
-  const [loading, setLoading] = useState(false);
+const levelLabel = (lvl: string) =>
+  lvl === 'pillar' ? 'Pillar' : lvl === 'theme' ? 'Theme' : 'Sub-theme';
 
-  // fetch all framework data
-  const fetchFramework = async () => {
-    setLoading(true);
+// ---------- types ----------
+type FlatRow = {
+  id: string | number;
+  level: 'pillar' | 'theme' | 'subtheme';
+  code: string;
+  name: string;
+  description: string | null;
+  parent_code: string | null;
+  sort_order: number | null;
+};
 
-    try {
-      // 1. Get all tables
-      const [pillars, themes, subthemes, indicators, criteria] =
-        await Promise.all([
-          supabase.from("pillars").select("*").order("sort_order"),
-          supabase.from("themes").select("*").order("sort_order"),
-          supabase.from("subthemes").select("*").order("sort_order"),
-          supabase.from("indicators").select("*").order("sort_order"),
-          supabase.from("criteria_levels").select("*").order("sort_order"),
-        ]);
+type TreeRow = FlatRow & {
+  children?: TreeRow[];
+};
 
-      if (pillars.error) throw pillars.error;
-      if (themes.error) throw themes.error;
-      if (subthemes.error) throw subthemes.error;
-      if (indicators.error) throw indicators.error;
-      if (criteria.error) throw criteria.error;
+// ---------- utilities ----------
+function normalize(row: any): FlatRow {
+  // Map/rename here if your view uses different column names
+  return {
+    id: row.id,
+    level: row.level,
+    code: row.code,
+    name: row.name,
+    description: row.description ?? null,
+    parent_code: row.parent_code ?? null,
+    sort_order: row.sort_order ?? null,
+  } as FlatRow;
+}
 
-      // 2. Nest hierarchy
-      const framework: FrameworkRow[] = (pillars.data || []).map((p: any) => {
-        const pillarThemes = (themes.data || [])
-          .filter((t: any) => t.pillar_code === p.code)
-          .map((t: any) => {
-            const themeSubs = (subthemes.data || [])
-              .filter((st: any) => st.theme_code === t.code)
-              .map((st: any) => {
-                const subIndicators = (indicators.data || [])
-                  .filter((i: any) => i.ref_code.startsWith(st.code))
-                  .map((i: any) => {
-                    const iCriteria = (criteria.data || [])
-                      .filter((c: any) => c.indicator_id === i.id)
-                      .map((c: any) => ({
-                        id: c.id,
-                        level: "criteria",
-                        ref_code: "",
-                        name: c.label,
-                        description: `Default score: ${c.default_score}`,
-                        parent_id: i.id,
-                        sort_order: c.sort_order,
-                      }));
+function buildTree(rows: FlatRow[]): TreeRow[] {
+  // Index by code for fast parent lookups
+  const byCode = new Map<string, TreeRow>();
+  rows.forEach(r => byCode.set(r.code, { ...r, children: [] }));
+  const roots: TreeRow[] = [];
 
-                    return {
-                      id: i.id,
-                      level: "indicator",
-                      ref_code: i.ref_code,
-                      name: i.name,
-                      description: i.description,
-                      parent_id: st.id,
-                      sort_order: i.sort_order,
-                      children: iCriteria,
-                    } as FrameworkRow;
-                  });
-
-                return {
-                  id: st.id,
-                  level: "subtheme",
-                  ref_code: st.code,
-                  name: st.name,
-                  description: st.description,
-                  parent_id: t.id,
-                  sort_order: st.sort_order,
-                  children: subIndicators,
-                } as FrameworkRow;
-              });
-
-            const themeIndicators = (indicators.data || [])
-              .filter((i: any) => i.ref_code.startsWith(t.code))
-              .map((i: any) => {
-                const iCriteria = (criteria.data || [])
-                  .filter((c: any) => c.indicator_id === i.id)
-                  .map((c: any) => ({
-                    id: c.id,
-                    level: "criteria",
-                    ref_code: "",
-                    name: c.label,
-                    description: `Default score: ${c.default_score}`,
-                    parent_id: i.id,
-                    sort_order: c.sort_order,
-                  }));
-
-                return {
-                  id: i.id,
-                  level: "indicator",
-                  ref_code: i.ref_code,
-                  name: i.name,
-                  description: i.description,
-                  parent_id: t.id,
-                  sort_order: i.sort_order,
-                  children: iCriteria,
-                } as FrameworkRow;
-              });
-
-            return {
-              id: t.id,
-              level: "theme",
-              ref_code: t.code,
-              name: t.name,
-              description: t.description,
-              parent_id: p.id,
-              sort_order: t.sort_order,
-              children: [...themeSubs, ...themeIndicators],
-            } as FrameworkRow;
-          });
-
-        const pillarIndicators = (indicators.data || [])
-          .filter((i: any) => i.ref_code.startsWith(p.code))
-          .map((i: any) => {
-            const iCriteria = (criteria.data || [])
-              .filter((c: any) => c.indicator_id === i.id)
-              .map((c: any) => ({
-                id: c.id,
-                level: "criteria",
-                ref_code: "",
-                name: c.label,
-                description: `Default score: ${c.default_score}`,
-                parent_id: i.id,
-                sort_order: c.sort_order,
-              }));
-
-            return {
-              id: i.id,
-              level: "indicator",
-              ref_code: i.ref_code,
-              name: i.name,
-              description: i.description,
-              parent_id: p.id,
-              sort_order: i.sort_order,
-              children: iCriteria,
-            } as FrameworkRow;
-          });
-
-        return {
-          id: p.id,
-          level: "pillar",
-          ref_code: p.code,
-          name: p.name,
-          description: p.description,
-          sort_order: p.sort_order,
-          children: [...pillarThemes, ...pillarIndicators],
-        } as FrameworkRow;
-      });
-
-      setRows(framework);
-    } catch (err: any) {
-      console.error(err);
-      message.error("Failed to fetch framework");
-    } finally {
-      setLoading(false);
+  rows.forEach(r => {
+    const node = byCode.get(r.code)!;
+    if (r.parent_code && byCode.has(r.parent_code)) {
+      byCode.get(r.parent_code)!.children!.push(node);
+    } else {
+      roots.push(node);
     }
+  });
+
+  // Sort children by sort_order then name
+  const sortFn = (a: TreeRow, b: TreeRow) => {
+    const ao = a.sort_order ?? 9999;
+    const bo = b.sort_order ?? 9999;
+    if (ao !== bo) return ao - bo;
+    return a.name.localeCompare(b.name);
   };
 
+  const sortDeep = (nodes: TreeRow[]) => {
+    nodes.sort(sortFn);
+    nodes.forEach(n => n.children && sortDeep(n.children));
+  };
+  sortDeep(roots);
+
+  // Ensure root groups show Pillars > Themes > Sub-themes
+  const levelRank = (lvl: string) => (lvl === 'pillar' ? 0 : lvl === 'theme' ? 1 : 2);
+  roots.sort((a, b) => levelRank(a.level) - levelRank(b.level) || sortFn(a, b));
+  return roots;
+}
+
+// Flatten for rendering with indentation & expand/collapse
+type RenderRow = TreeRow & { depth: number; isLeaf: boolean; path: string };
+
+function flattenForRender(nodes: TreeRow[], expanded: Set<string>, depth = 0, acc: RenderRow[] = [], parentPath = '') {
+  const indent = depth;
+  nodes.forEach((n, i) => {
+    const path = parentPath ? `${parentPath}/${n.code}` : n.code;
+    const isOpen = expanded.has(path);
+    const isLeaf = !n.children || n.children.length === 0;
+    acc.push({ ...n, depth: indent, isLeaf, path });
+    if (!isLeaf && isOpen) {
+      flattenForRender(n.children!, expanded, depth + 1, acc, path);
+    }
+  });
+  return acc;
+}
+
+// ---------- component ----------
+export default function FrameworkPage() {
+  const [rows, setRows] = useState<FlatRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set()); // paths, not just codes
+
+  const supabase = useMemo(() => createClient(), []);
+
+  async function load() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('v_framework_flat') // <-- your view
+      .select('*');
+    setLoading(false);
+    if (error) {
+      console.error(error);
+      setRows([]);
+      return;
+    }
+    // normalize + filter out unexpected levels
+    const clean = (data ?? [])
+      .map(normalize)
+      .filter(r => r.level === 'pillar' || r.level === 'theme' || r.level === 'subtheme');
+    setRows(clean);
+  }
+
   useEffect(() => {
-    fetchFramework();
+    load();
   }, []);
 
-  const columns = [
-    {
-      title: "Code",
-      dataIndex: "ref_code",
-      key: "ref_code",
-      render: (text: string) => <Text code>{text}</Text>,
-    },
-    {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_: any, record: FrameworkRow) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => message.info(`Edit ${record.name}`)}
-          />
-          <Popconfirm
-            title="Delete?"
-            onConfirm={() => message.info(`Delete ${record.name}`)}
-          >
-            <Button type="link" icon={<DeleteOutlined />} danger />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const tree = useMemo(() => buildTree(rows), [rows]);
+  const renderRows = useMemo(() => flattenForRender(tree, expanded), [tree, expanded]);
+
+  const togglePath = (path: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  };
+
+  // --- compact row CSS ---
+  const thTd: React.CSSProperties = { padding: '8px 10px', lineHeight: 1.2, verticalAlign: 'middle' };
+  const nameCell: React.CSSProperties = { ...thTd, display: 'flex', alignItems: 'center', gap: 10 };
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Framework Editor</h1>
-      <Button
-        type="primary"
-        icon={<PlusOutlined />}
-        style={{ marginBottom: 16 }}
-      >
-        Add Item
-      </Button>
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={rows}
-        loading={loading}
-        pagination={false}
-        expandable={{ childrenColumnName: "children" }}
-      />
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <h1 style={{ margin: 0, fontSize: 22 }}>Framework Editor</h1>
+        <span style={{ color: '#64748b' }}>Read-only snapshot from database.</span>
+        <Button icon={<ReloadOutlined />} size="small" onClick={load} loading={loading}>
+          Refresh
+        </Button>
+      </div>
+
+      <div style={{ border: '1px solid #eef2f7', borderRadius: 8, overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead style={{ background: '#fafafa' }}>
+            <tr>
+              <th style={{ ...thTd, width: 60 }}>Order</th>
+              <th style={{ ...thTd, width: 220 }}>Name / Code</th>
+              <th style={{ ...thTd }}>Description / Notes</th>
+              <th style={{ ...thTd, width: 180 }}>Parent</th>
+              <th style={{ ...thTd, width: 120, textAlign: 'right' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {renderRows.length === 0 && (
+              <tr>
+                <td colSpan={5} style={{ padding: 24, color: '#94a3b8' }}>
+                  No data
+                </td>
+              </tr>
+            )}
+
+            {renderRows.map((r) => {
+              const badgeStyle = typeBadgeStyles[r.level];
+              const indentPx = r.depth * 20;
+
+              return (
+                <tr key={r.path} className="compact-row" style={{ borderTop: '1px solid #f0f2f5' }}>
+                  {/* sort/order */}
+                  <td style={{ ...thTd, color: '#94a3b8', width: 60 }}>
+                    {r.sort_order ?? ''}
+                  </td>
+
+                  {/* name + type tag + expander */}
+                  <td style={{ ...nameCell }}>
+                    <div style={{ paddingLeft: indentPx, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {!r.isLeaf ? (
+                        <span
+                          role="button"
+                          onClick={() => togglePath(r.path)}
+                          style={{ cursor: 'pointer', color: '#64748b' }}
+                          aria-label={expanded.has(r.path) ? 'Collapse' : 'Expand'}
+                        >
+                          {expanded.has(r.path) ? <CaretDownOutlined /> : <CaretRightOutlined />}
+                        </span>
+                      ) : (
+                        <span style={{ width: 14 }} />
+                      )}
+
+                      <span
+                        style={{
+                          ...badgeStyle,
+                          fontSize: 11,
+                          padding: '2px 6px',
+                          borderRadius: 999,
+                          whiteSpace: 'nowrap',
+                        }}
+                        title={levelLabel(r.level)}
+                      >
+                        {levelLabel(r.level)}
+                      </span>
+
+                      <span style={{ fontWeight: 600 }}>{r.name}</span>
+                      <span style={{ color: '#94a3b8' }}>{r.code}</span>
+                    </div>
+                  </td>
+
+                  {/* description */}
+                  <td style={{ ...thTd, color: '#334155' }}>
+                    {r.description || <span style={{ color: '#cbd5e1' }}>—</span>}
+                  </td>
+
+                  {/* parent */}
+                  <td style={{ ...thTd, color: '#64748b' }}>{r.parent_code ?? '—'}</td>
+
+                  {/* actions (kept minimal here; wire to your handlers if needed) */}
+                  <td style={{ ...thTd, textAlign: 'right' }}>
+                    <Button type="text" size="small" icon={<EditOutlined />} />
+                    <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <style jsx global>{`
+        .compact-row td {
+          padding-top: 7px !important;
+          padding-bottom: 7px !important;
+        }
+      `}</style>
     </div>
   );
 }
