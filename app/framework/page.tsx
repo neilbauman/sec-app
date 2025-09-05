@@ -93,11 +93,16 @@ export default function FrameworkPage() {
       setLoading(true);
 
       const [{ data: pillars, error: pe }, { data: themes, error: te }, { data: subs, error: se }] =
-        await Promise.all([
-          supabase.from<PillarRow>('pillars').select('*').order('sort_order', { ascending: true }),
-          supabase.from<ThemeRow>('themes').select('*').order('sort_order', { ascending: true }),
-          supabase.from<SubthemeRow>('subthemes').select('*').order('sort_order', { ascending: true }),
-        ]);
+  await Promise.all([
+    supabase.from('pillars').select('*').order('sort_order', { ascending: true }),
+    supabase.from('themes').select('*').order('sort_order', { ascending: true }),
+    supabase.from('subthemes').select('*').order('sort_order', { ascending: true }),
+  ]);
+
+// (optional) keep your local types for better IntelliSense:
+const pillarsRows = (pillars ?? []) as PillarRow[];
+const themeRows   = (themes ?? [])  as ThemeRow[];
+const subRows     = (subs ?? [])    as SubthemeRow[];
 
       if (pe) throw pe;
       if (te) throw te;
