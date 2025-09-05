@@ -1,122 +1,187 @@
-// app/indicators/page.tsx
-'use client';
+"use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { createClient } from '@/lib/supabaseClient'; // ✅ this exists in your repo
-import {
-  Table,
-  Typography,
-  Space,
-  Button,
-  message,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Divider,
-  InputNumber,
-} from 'antd';
+import React, { useEffect, useMemo, useState } from "react";
+import { Table, Tag, Space, Button, Input, Select, Typography, message } from "antd";
+import { EditOutlined, DeleteOutlined, ReloadOutlined } from "@ant-design/icons";
+import { createClient } from "@/lib/supabaseClient";
 
-type Pillar = { code: string; name: string };
-type Theme = { code: string; pillar_code: string; name: string };
-type Subtheme = { code: string; theme_code: string; pillar_code: string; name: string };
+type Level = "pillar" | "theme" | "subtheme";
+
 type Indicator = {
-  code: string;
-  level: 'pillar' | 'theme' | 'subtheme';
-  pillar_code: string | null;
-  theme_code: string | null;
-  subtheme_code: string | null;
+  id: number;
+  level: Level;
+  ref_code: string;     // points to pillars.code OR themes.code OR subthemes.code
   name: string;
   description: string | null;
   sort_order: number | null;
 };
 
-const { Title, Text } = Typography;
+type Pillar = { code: string; name: string };
+type Theme = { code: string; name: string };
+type Subtheme = { code: string; name: string };
+
+const levelColors: Record<Level, string> = {
+  pillar: "geekblue",
+  theme: "green",
+  subtheme: "purple",
+};
 
 export default function IndicatorsPage() {
-  const supabase = useMemo(() => createClient(), []);
-  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<Indicator[]>([]);
   const [pillars, setPillars] = useState<Pillar[]>([]);
   const [themes, setThemes] = useState<Theme[]>([]);
-  const [subs, setSubs] = useState<Subtheme[]>([]);
-  const [rows, setRows] = useState<any[]>([]);
+  const [subthemes, setSubthemes] = useState<Subtheme[]>([]);
+
+  // simple client-side search/filter
+  const [q, setQ] = useState("");
+  const [lvl, setLvl] = useState<Level | "all">("all");
+
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const [ind, ps, ts, sts] = await Promise.all([
+        supabase.from("indicators").select("*").order("sort_order", { ascending: true }),
+        supabase.from("pillars").select("code, name").order("sort_order", { ascending: true }),
+        supabase.from("themes").select("code, name").order("sort_order", { ascending: true }),
+        supabase.from("subthemes").select("code, name").order("sort_order", { ascending: true }),
+      ]);
+
+      if (ind.error) throw ind.error;
+      if (ps.error) throw ps.error;
+      if (ts.error) throw ts.error;
+      if (sts.error) throw sts.error;
+
+      setRows((ind.data ?? []) as Indicator[]);
+      setPillars((ps.data ?? []) as Pillar[]);
+      setThemes((ts.data ?? []) as Theme[]);
+      setSubthemes((sts.data ?? []) as Subtheme[]);
+    } catch (e: any) {
+      console.error(e);
+      message.error("Failed to load indicators");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
+    fetchAll();
+  }, []);
 
-        const [{ data: p }, { data: t }, { data: s }] = await Promise.all([
-          supabase.from('pillars').select('code,name').order('sort_order', { ascending: true }),
-          supabase.from('themes').select('code,pillar_code,name').order('sort_order', { ascending: true }),
-          supabase.from('subthemes')
-            .select('code,theme_code,pillar_code,name')
-            .order('sort_order', { ascending: true }),
-        ]);
+  // quick lookup maps
+  const pByCode = useMemo(() => Object.fromEntries(pillars.map(p => [p.code, p.name])), [pillars]);
+  const tByCode = useMemo(() => Object.fromEntries(themes.map(t => [t.code, t.name])), [themes]);
+  const stByCode = useMemo(() => Object.fromEntries(subthemes.map(s => [s.code, s.name])), [subthemes]);
 
-        setPillars(p || []);
-        setThemes(t || []);
-        setSubs(s || []);
-
-        const { data: indicators, error } = await supabase
-          .from('indicators')
-          .select(
-            'code,level,pillar_code,theme_code,subtheme_code,name,description,sort_order',
-          )
-          .order('sort_order', { ascending: true });
-
-        if (error) throw error;
-
-        const nameOfPillar = Object.fromEntries((p || []).map(x => [x.code, x.name]));
-        const nameOfTheme = Object.fromEntries((t || []).map(x => [x.code, x.name]));
-        const nameOfSub = Object.fromEntries((s || []).map(x => [x.code, x.name]));
-
-        const enriched = (indicators || []).map((it) => ({
-          key: it.code,
-          code: it.code,
-          level: it.level,
-          pillar: it.pillar_code ? nameOfPillar[it.pillar_code] || it.pillar_code : '',
-          theme: it.theme_code ? nameOfTheme[it.theme_code] || it.theme_code : '',
-          subtheme: it.subtheme_code ? nameOfSub[it.subtheme_code] || it.subtheme_code : '',
-          name: it.name,
-          description: it.description || '',
-          sort_order: it.sort_order ?? null,
-        }));
-
-        setRows(enriched);
-      } catch (e: any) {
-        console.error(e);
-        message.error(e.message || 'Failed to load indicators');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [supabase]);
+  const data = useMemo(() => {
+    const filtered = rows.filter(r => {
+      const matchesLevel = lvl === "all" ? true : r.level === lvl;
+      const text = `${r.ref_code} ${r.name} ${r.description ?? ""}`.toLowerCase();
+      const matchesQ = q.trim() ? text.includes(q.trim().toLowerCase()) : true;
+      return matchesLevel && matchesQ;
+    });
+    return filtered;
+  }, [rows, lvl, q]);
 
   const columns = [
-    { title: 'Level', dataIndex: 'level', width: 110 },
-    { title: 'Pillar', dataIndex: 'pillar', width: 220 },
-    { title: 'Theme', dataIndex: 'theme', width: 260 },
-    { title: 'Sub-theme', dataIndex: 'subtheme', width: 260 },
-    { title: 'Indicator Name', dataIndex: 'name', width: 320 },
-    { title: 'Description', dataIndex: 'description' },
+    {
+      title: "Level",
+      dataIndex: "level",
+      key: "level",
+      width: 120,
+      render: (v: Level) => <Tag color={levelColors[v]}>{v}</Tag>,
+      filters: [
+        { text: "Pillar", value: "pillar" },
+        { text: "Theme", value: "theme" },
+        { text: "Sub-theme", value: "subtheme" },
+      ],
+      onFilter: (val: any, rec: Indicator) => rec.level === val,
+    },
+    {
+      title: "Parent (Code → Name)",
+      key: "parent",
+      render: (_: any, r: Indicator) => {
+        let name = "";
+        if (r.level === "pillar") name = pByCode[r.ref_code] ?? "";
+        if (r.level === "theme") name = tByCode[r.ref_code] ?? "";
+        if (r.level === "subtheme") name = stByCode[r.ref_code] ?? "";
+        return (
+          <Space direction="vertical" size={0}>
+            <Typography.Text code>{r.ref_code}</Typography.Text>
+            <Typography.Text type="secondary">{name || "—"}</Typography.Text>
+          </Space>
+        );
+      },
+      sorter: (a: Indicator, b: Indicator) => a.ref_code.localeCompare(b.ref_code),
+    },
+    {
+      title: "Indicator Name",
+      dataIndex: "name",
+      key: "name",
+      sorter: (a: Indicator, b: Indicator) => a.name.localeCompare(b.name),
+    },
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+      ellipsis: true,
+      render: (v: string | null) => v ?? "—",
+    },
+    {
+      title: "Sort",
+      dataIndex: "sort_order",
+      key: "sort_order",
+      width: 90,
+      render: (v: number | null) => v ?? "—",
+      sorter: (a: Indicator, b: Indicator) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 120,
+      render: (_: any, r: Indicator) => (
+        <Space>
+          <Button type="link" icon={<EditOutlined />} onClick={() => message.info(`Edit ${r.name}`)} />
+          <Button type="link" icon={<DeleteOutlined />} danger onClick={() => message.info(`Delete ${r.name}`)} />
+        </Space>
+      ),
+    },
   ];
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Title level={3} style={{ margin: 0 }}>Indicators</Title>
-      <Text type="secondary">
-        Read-only listing for now. This page exists to satisfy the build and let you review data.
-      </Text>
-      <Divider style={{ margin: '8px 0' }} />
+    <div style={{ padding: 24 }}>
+      <Space style={{ marginBottom: 16 }}>
+        <Input
+          allowClear
+          placeholder="Search indicators…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          style={{ width: 320 }}
+        />
+        <Select
+          value={lvl}
+          onChange={(v) => setLvl(v as any)}
+          style={{ width: 160 }}
+          options={[
+            { value: "all", label: "All levels" },
+            { value: "pillar", label: "Pillar" },
+            { value: "theme", label: "Theme" },
+            { value: "subtheme", label: "Sub-theme" },
+          ]}
+        />
+        <Button icon={<ReloadOutlined />} onClick={fetchAll}>
+          Refresh
+        </Button>
+      </Space>
+
       <Table
+        rowKey="id"
+        columns={columns}
+        dataSource={data}
         loading={loading}
-        rowKey="key"
-        dataSource={rows}
-        columns={columns as any}
-        pagination={{ pageSize: 20 }}
-        scroll={{ x: 1200 }}
+        pagination={{ pageSize: 20, showSizeChanger: true }}
       />
-    </Space>
+    </div>
   );
 }
