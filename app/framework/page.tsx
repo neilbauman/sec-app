@@ -35,7 +35,7 @@ export default function FrameworkPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient(), []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
