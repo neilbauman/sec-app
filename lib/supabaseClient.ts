@@ -1,32 +1,33 @@
-// lib/supabaseClient.ts
-import { createClient as createBrowserClient } from '@supabase/supabase-js'
+// /lib/supabaseClient.ts
+import { createClient as _createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Single place to create a typed browser Supabase client.
- * We intentionally export a *named* function `createClient` so
- * pages can `import { createClient } from '@/lib/supabaseClient'`.
- *
- * You must have NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
- * available at build/runtime (already in your .env.local on Vercel).
+ * A single browser client instance. Using a singleton prevents
+ * multiple clients/sessions from being created on re-renders.
  */
-export function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+let _browserClient: SupabaseClient | null = null;
 
+/** Get (or create) a browser-side Supabase client */
+export function getBrowserClient(): SupabaseClient {
+  if (_browserClient) return _browserClient;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   if (!url || !anon) {
-    // Fail loudly in build logs if env not present
-    throw new Error(
-      'Missing Supabase env vars. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
-    )
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
   }
 
-  return createBrowserClient(url, anon)
+  _browserClient = _createClient(url, anon, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  });
+  return _browserClient;
 }
 
-// Optional: keep a singleton for convenience if you prefer
-let _client: ReturnType<typeof createBrowserClient> | null = null
-export function supabase() {
-  if (_client) return _client
-  _client = createClient()
-  return _client
-}
+/**
+ * Back-compat export used by your pages.
+ * (Both pages can import { createClient } from '@/lib/supabaseClient')
+ */
+export const createClient = getBrowserClient;
