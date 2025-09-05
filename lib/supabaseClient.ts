@@ -1,14 +1,10 @@
-'use client';
+// lib/supabaseClient.ts
+import { createClient as createSb } from '@supabase/supabase-js';
 
-import { createClient } from '@supabase/supabase-js';
-
-export function getSupabase() {
+export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  if (!url || !anon) {
-    throw new Error('Supabase env vars missing');
-  }
-  return createClient(url, anon, {
-    auth: { persistSession: false }
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  return createSb(url, key, {
+    auth: { persistSession: false },
   });
 }
