@@ -5,7 +5,7 @@ import { Button, Table, Typography, Space, Modal, Form, Input, Select, InputNumb
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabaseClient'; // <- your existing export (browser client)
+import { createClient } from '@/lib/supabaseClient'; // browser client
 
 // ---------- Types & Validation ----------
 export type IndicatorLevel = 'pillar' | 'theme' | 'subtheme';
@@ -29,9 +29,11 @@ const emptyRow: Omit<IndicatorRow, 'id'> = {
   sort_order: 1,
 };
 
-// ---------- Component ----------
 export default function IndicatorsPage() {
   const supabase = useMemo(() => createClient(), []);
+  // Cast to any to avoid TS generic constraints causing 'never' errors in CI
+  const s = useMemo(() => supabase as any, [supabase]);
+
   const [rows, setRows] = useState<IndicatorRow[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -39,10 +41,9 @@ export default function IndicatorsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<IndicatorRow | null>(null);
 
-  // ---- Load
   const fetchRows = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await s
       .from('indicators')
       .select('*')
       .order('level', { ascending: true })
@@ -54,20 +55,18 @@ export default function IndicatorsPage() {
       message.error(`Failed to load indicators: ${error.message}`);
       return;
     }
-    // Runtime validation & sanitization
     const parsed: IndicatorRow[] = [];
     (data ?? []).forEach((d: any) => {
       const safe = IndicatorRowSchema.safeParse(d);
       if (safe.success) parsed.push(safe.data);
     });
     setRows(parsed);
-  }, [supabase]);
+  }, [s]);
 
   useEffect(() => {
     fetchRows();
   }, [fetchRows]);
 
-  // ---- Open create / edit
   const openCreate = () => {
     setEditing(null);
     form.setFieldsValue(emptyRow);
@@ -76,7 +75,6 @@ export default function IndicatorsPage() {
 
   const openEdit = (row: IndicatorRow) => {
     setEditing(row);
-    // Ensure defaults to satisfy form control types
     form.setFieldsValue({
       level: row.level,
       ref_code: row.ref_code ?? '',
@@ -87,10 +85,8 @@ export default function IndicatorsPage() {
     setModalOpen(true);
   };
 
-  // ---- Submit create / update
   const onSubmit = async () => {
     const values = await form.validateFields();
-    // Normalize
     const payload: Omit<IndicatorRow, 'id'> = {
       level: values.level,
       ref_code: values.ref_code.trim(),
@@ -102,13 +98,13 @@ export default function IndicatorsPage() {
     let err: string | null = null;
 
     if (editing) {
-      const { error } = await supabase
+      const { error } = await s
         .from('indicators')
-        .update(payload as any)
+        .update(payload)
         .eq('id', editing.id);
       err = error?.message ?? null;
     } else {
-      const { error } = await supabase.from('indicators').insert(payload as any);
+      const { error } = await s.from('indicators').insert(payload);
       err = error?.message ?? null;
     }
 
@@ -123,9 +119,8 @@ export default function IndicatorsPage() {
     fetchRows();
   };
 
-  // ---- Delete
   const remove = async (row: IndicatorRow) => {
-    const { error } = await supabase.from('indicators').delete().eq('id', row.id);
+    const { error } = await s.from('indicators').delete().eq('id', row.id);
     if (error) {
       message.error(error.message);
       return;
@@ -134,7 +129,6 @@ export default function IndicatorsPage() {
     fetchRows();
   };
 
-  // ---- Columns
   const columns: ColumnsType<IndicatorRow> = [
     {
       title: 'Level',
@@ -147,8 +141,7 @@ export default function IndicatorsPage() {
       ],
       onFilter: (v, record) => record.level === v,
       render: (v: IndicatorLevel) => {
-        const label =
-          v === 'pillar' ? 'Pillar' : v === 'theme' ? 'Theme' : 'Sub-theme';
+        const label = v === 'pillar' ? 'Pillar' : v === 'theme' ? 'Theme' : 'Sub-theme';
         return <Typography.Text>{label}</Typography.Text>;
       },
     },
@@ -183,9 +176,7 @@ export default function IndicatorsPage() {
       width: 160,
       render: (_: any, row) => (
         <Space>
-          <Button size="small" onClick={() => openEdit(row)}>
-            Edit
-          </Button>
+          <Button size="small" onClick={() => openEdit(row)}>Edit</Button>
           <Popconfirm
             title="Delete indicator?"
             okText="Delete"
@@ -231,11 +222,7 @@ export default function IndicatorsPage() {
         okText="Save"
         destroyOnClose
       >
-        <Form<Omit<IndicatorRow, 'id'>>
-          form={form}
-          layout="vertical"
-          initialValues={emptyRow}
-        >
+        <Form<Omit<IndicatorRow, 'id'>> form={form} layout="vertical" initialValues={emptyRow}>
           <Form.Item
             name="level"
             label="Level"
