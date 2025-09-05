@@ -1,223 +1,253 @@
-'use client';
+"use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Table, Typography, Button, message } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { createClient } from '@/lib/supabaseClient';
-
-type PillarRow = {
-  level: 'pillar';
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  parent: string | null;
-  sort_order: number | null;
-};
-
-type ThemeRow = {
-  level: 'theme';
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  parent: string; // pillar code
-  sort_order: number | null;
-};
-
-type SubthemeRow = {
-  level: 'subtheme';
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  parent: string; // theme code
-  sort_order: number | null;
-};
-
-type UiRow = {
-  key: string;
-  level: 'pillar' | 'theme' | 'subtheme';
-  nameCode: string;
-  description: string;
-  parent: string | null;
-  sort_order: number | null;
-};
+import React, { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabaseClient";
+import {
+  Table,
+  Typography,
+  Space,
+  Button,
+  Popconfirm,
+  message,
+  Input,
+} from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 
 const { Text } = Typography;
 
-export default function FrameworkEditorPage() {
+type FrameworkRow = {
+  id: string;
+  level: "pillar" | "theme" | "subtheme" | "indicator" | "criteria";
+  ref_code: string;
+  name: string;
+  description: string;
+  parent_id?: string;
+  sort_order?: number;
+  children?: FrameworkRow[];
+};
+
+export default function FrameworkPage() {
+  const supabase = createClient();
+  const [rows, setRows] = useState<FrameworkRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<UiRow[]>([]);
 
-  const supabase = useMemo(() => createClient(), []);
+  // fetch all framework data
+  const fetchFramework = async () => {
+    setLoading(true);
 
-  const fetchAll = async () => {
     try {
-      setLoading(true);
+      // 1. Get all tables
+      const [pillars, themes, subthemes, indicators, criteria] =
+        await Promise.all([
+          supabase.from("pillars").select("*").order("sort_order"),
+          supabase.from("themes").select("*").order("sort_order"),
+          supabase.from("subthemes").select("*").order("sort_order"),
+          supabase.from("indicators").select("*").order("sort_order"),
+          supabase.from("criteria_levels").select("*").order("sort_order"),
+        ]);
 
-      // PILLARS
-      const { data: pillarsData, error: pillarsErr } = await supabase
-        .from('pillars')
-        .select('id, code, name, description, sort_order')
-        .order('sort_order', { ascending: true });
+      if (pillars.error) throw pillars.error;
+      if (themes.error) throw themes.error;
+      if (subthemes.error) throw subthemes.error;
+      if (indicators.error) throw indicators.error;
+      if (criteria.error) throw criteria.error;
 
-      if (pillarsErr) throw pillarsErr;
+      // 2. Nest hierarchy
+      const framework: FrameworkRow[] = (pillars.data || []).map((p: any) => {
+        const pillarThemes = (themes.data || [])
+          .filter((t: any) => t.pillar_code === p.code)
+          .map((t: any) => {
+            const themeSubs = (subthemes.data || [])
+              .filter((st: any) => st.theme_code === t.code)
+              .map((st: any) => {
+                const subIndicators = (indicators.data || [])
+                  .filter((i: any) => i.ref_code.startsWith(st.code))
+                  .map((i: any) => {
+                    const iCriteria = (criteria.data || [])
+                      .filter((c: any) => c.indicator_id === i.id)
+                      .map((c: any) => ({
+                        id: c.id,
+                        level: "criteria",
+                        ref_code: "",
+                        name: c.label,
+                        description: `Default score: ${c.default_score}`,
+                        parent_id: i.id,
+                        sort_order: c.sort_order,
+                      }));
 
-      const pillars: PillarRow[] =
-        (pillarsData || []).map((p: any) => ({
-          level: 'pillar',
-          id: String(p.id ?? p.code),
-          code: String(p.code ?? ''),
-          name: String(p.name ?? ''),
-          description: p.description ?? null,
-          parent: null,
-          sort_order: p.sort_order ?? null,
-        })) ?? [];
+                    return {
+                      id: i.id,
+                      level: "indicator",
+                      ref_code: i.ref_code,
+                      name: i.name,
+                      description: i.description,
+                      parent_id: st.id,
+                      sort_order: i.sort_order,
+                      children: iCriteria,
+                    } as FrameworkRow;
+                  });
 
-      // THEMES
-      const { data: themesData, error: themesErr } = await supabase
-        .from('themes')
-        .select('id, code, pillar_code, name, description, sort_order')
-        .order('sort_order', { ascending: true });
+                return {
+                  id: st.id,
+                  level: "subtheme",
+                  ref_code: st.code,
+                  name: st.name,
+                  description: st.description,
+                  parent_id: t.id,
+                  sort_order: st.sort_order,
+                  children: subIndicators,
+                } as FrameworkRow;
+              });
 
-      if (themesErr) throw themesErr;
+            const themeIndicators = (indicators.data || [])
+              .filter((i: any) => i.ref_code.startsWith(t.code))
+              .map((i: any) => {
+                const iCriteria = (criteria.data || [])
+                  .filter((c: any) => c.indicator_id === i.id)
+                  .map((c: any) => ({
+                    id: c.id,
+                    level: "criteria",
+                    ref_code: "",
+                    name: c.label,
+                    description: `Default score: ${c.default_score}`,
+                    parent_id: i.id,
+                    sort_order: c.sort_order,
+                  }));
 
-      const themes: ThemeRow[] =
-        (themesData || []).map((t: any) => ({
-          level: 'theme',
-          id: String(t.id ?? t.code),
-          code: String(t.code ?? ''),
-          name: String(t.name ?? ''),
-          description: t.description ?? null,
-          parent: String(t.pillar_code ?? ''),
-          sort_order: t.sort_order ?? null,
-        })) ?? [];
+                return {
+                  id: i.id,
+                  level: "indicator",
+                  ref_code: i.ref_code,
+                  name: i.name,
+                  description: i.description,
+                  parent_id: t.id,
+                  sort_order: i.sort_order,
+                  children: iCriteria,
+                } as FrameworkRow;
+              });
 
-      // SUB-THEMES
-      const { data: subsData, error: subsErr } = await supabase
-        .from('subthemes')
-        .select('id, code, theme_code, name, description, sort_order')
-        .order('sort_order', { ascending: true });
+            return {
+              id: t.id,
+              level: "theme",
+              ref_code: t.code,
+              name: t.name,
+              description: t.description,
+              parent_id: p.id,
+              sort_order: t.sort_order,
+              children: [...themeSubs, ...themeIndicators],
+            } as FrameworkRow;
+          });
 
-      if (subsErr) throw subsErr;
+        const pillarIndicators = (indicators.data || [])
+          .filter((i: any) => i.ref_code.startsWith(p.code))
+          .map((i: any) => {
+            const iCriteria = (criteria.data || [])
+              .filter((c: any) => c.indicator_id === i.id)
+              .map((c: any) => ({
+                id: c.id,
+                level: "criteria",
+                ref_code: "",
+                name: c.label,
+                description: `Default score: ${c.default_score}`,
+                parent_id: i.id,
+                sort_order: c.sort_order,
+              }));
 
-      const subthemes: SubthemeRow[] =
-        (subsData || []).map((s: any) => ({
-          level: 'subtheme',
-          id: String(s.id ?? s.code),
-          code: String(s.code ?? ''),
-          name: String(s.name ?? ''),
-          description: s.description ?? null,
-          parent: String(s.theme_code ?? ''),
-          sort_order: s.sort_order ?? null,
-        })) ?? [];
+            return {
+              id: i.id,
+              level: "indicator",
+              ref_code: i.ref_code,
+              name: i.name,
+              description: i.description,
+              parent_id: p.id,
+              sort_order: i.sort_order,
+              children: iCriteria,
+            } as FrameworkRow;
+          });
 
-      // Flatten for the table
-      const flat: UiRow[] = [
-        ...pillars.map((p) => ({
-          key: `pillar:${p.code}`,
-          level: p.level,
-          nameCode: `${p.name} (${p.code})`,
-          description: (p.description ?? '') as string,
-          parent: null,
-          sort_order: p.sort_order ?? null,
-        })),
-        ...themes.map((t) => ({
-          key: `theme:${t.code}`,
-          level: t.level,
-          nameCode: `${t.name} (${t.code})`,
-          description: (t.description ?? '') as string,
-          parent: t.parent,
-          sort_order: t.sort_order ?? null,
-        })),
-        ...subthemes.map((s) => ({
-          key: `subtheme:${s.code}`,
-          level: s.level,
-          nameCode: `${s.name} (${s.code})`,
-          description: (s.description ?? '') as string,
-          parent: s.parent,
-          sort_order: s.sort_order ?? null,
-        })),
-      ];
+        return {
+          id: p.id,
+          level: "pillar",
+          ref_code: p.code,
+          name: p.name,
+          description: p.description,
+          sort_order: p.sort_order,
+          children: [...pillarThemes, ...pillarIndicators],
+        } as FrameworkRow;
+      });
 
-      setRows(flat);
+      setRows(framework);
     } catch (err: any) {
       console.error(err);
-      message.error(err?.message ?? 'Failed to load framework data');
-      setRows([]);
+      message.error("Failed to fetch framework");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchFramework();
   }, []);
 
-  const columns: ColumnsType<UiRow> = [
+  const columns = [
     {
-      title: 'Level',
-      dataIndex: 'level',
-      key: 'level',
-      width: 140,
-      render: (v: UiRow['level']) => {
-        if (v === 'pillar') return <Text strong>Pillar</Text>;
-        if (v === 'theme') return <Text>Theme</Text>;
-        return <Text type="secondary">Sub-theme</Text>;
-      },
-      sorter: (a, b) => (a.level > b.level ? 1 : -1),
+      title: "Code",
+      dataIndex: "ref_code",
+      key: "ref_code",
+      render: (text: string) => <Text code>{text}</Text>,
     },
     {
-      title: 'Name / Code',
-      dataIndex: 'nameCode',
-      key: 'nameCode',
-      width: 420,
-      ellipsis: true,
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
     },
     {
-      title: 'Description / Notes',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
     },
     {
-      title: 'Parent',
-      dataIndex: 'parent',
-      key: 'parent',
-      width: 220,
-      render: (parent: string | null, row) => {
-        if (!parent) return <Text type="secondary">—</Text>;
-        // For convenience, show the parent code with a small label
-        return (
-          <Text code>
-            {row.level === 'theme' ? `Pillar: ${parent}` : `Theme: ${parent}`}
-          </Text>
-        );
-      },
+      title: "Actions",
+      key: "actions",
+      render: (_: any, record: FrameworkRow) => (
+        <Space>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => message.info(`Edit ${record.name}`)}
+          />
+          <Popconfirm
+            title="Delete?"
+            onConfirm={() => message.info(`Delete ${record.name}`)}
+          >
+            <Button type="link" icon={<DeleteOutlined />} danger />
+          </Popconfirm>
+        </Space>
+      ),
     },
   ];
 
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          Framework Editor
-        </Typography.Title>
-        <Typography.Text type="secondary">Read-only snapshot from database.</Typography.Text>
-        <Button onClick={fetchAll} loading={loading}>
-          Refresh
-        </Button>
-      </div>
-
-      <Table<UiRow>
-        rowKey="key"
-        loading={loading}
-        dataSource={rows}
+      <h1>Framework Editor</h1>
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        style={{ marginBottom: 16 }}
+      >
+        Add Item
+      </Button>
+      <Table
+        rowKey="id"
         columns={columns}
-        pagination={{ pageSize: 50, showSizeChanger: true }}
-        locale={{ emptyText: 'No data' }}
+        dataSource={rows}
+        loading={loading}
+        pagination={false}
+        expandable={{ childrenColumnName: "children" }}
       />
     </div>
   );
