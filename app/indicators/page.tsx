@@ -1,187 +1,262 @@
-"use client";
+// app/indicators/page.tsx
+'use client';
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Table, Tag, Space, Button, Input, Select, Typography, message } from "antd";
-import { EditOutlined, DeleteOutlined, ReloadOutlined } from "@ant-design/icons";
-import { createClient } from "@/lib/supabaseClient";
+import React, { useEffect, useMemo, useState } from 'react';
+import { getSupabase } from '@/lib/supabaseClient';
+import {
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+  message,
+} from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
-type Level = "pillar" | "theme" | "subtheme";
+type IndicatorLevel = 'pillar' | 'theme' | 'subtheme';
 
-type Indicator = {
+type IndicatorRow = {
   id: number;
-  level: Level;
-  ref_code: string;     // points to pillars.code OR themes.code OR subthemes.code
+  level: IndicatorLevel;
+  ref_code: string | null;
   name: string;
   description: string | null;
   sort_order: number | null;
+  criteria_count?: number;
 };
 
-type Pillar = { code: string; name: string };
-type Theme = { code: string; name: string };
-type Subtheme = { code: string; name: string };
-
-const levelColors: Record<Level, string> = {
-  pillar: "geekblue",
-  theme: "green",
-  subtheme: "purple",
+const levelColor: Record<IndicatorLevel, string> = {
+  pillar: 'gold',
+  theme: 'blue',
+  subtheme: 'purple',
 };
 
 export default function IndicatorsPage() {
-  const supabase = createClient();
+  const supabase = getSupabase();
+  const [rows, setRows] = useState<IndicatorRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<Indicator[]>([]);
-  const [pillars, setPillars] = useState<Pillar[]>([]);
-  const [themes, setThemes] = useState<Theme[]>([]);
-  const [subthemes, setSubthemes] = useState<Subtheme[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<IndicatorRow | null>(null);
+  const [form] = Form.useForm<IndicatorRow>();
 
-  // simple client-side search/filter
-  const [q, setQ] = useState("");
-  const [lvl, setLvl] = useState<Level | "all">("all");
-
-  const fetchAll = async () => {
+  const fetchRows = async () => {
     setLoading(true);
-    try {
-      const [ind, ps, ts, sts] = await Promise.all([
-        supabase.from("indicators").select("*").order("sort_order", { ascending: true }),
-        supabase.from("pillars").select("code, name").order("sort_order", { ascending: true }),
-        supabase.from("themes").select("code, name").order("sort_order", { ascending: true }),
-        supabase.from("subthemes").select("code, name").order("sort_order", { ascending: true }),
-      ]);
+    // Grab indicators + criteria count
+    const { data, error } = await supabase
+      .from('indicators')
+      .select('id, level, ref_code, name, description, sort_order, criteria_levels ( id )')
+      .order('level', { ascending: true })
+      .order('sort_order', { ascending: true, nullsFirst: true });
 
-      if (ind.error) throw ind.error;
-      if (ps.error) throw ps.error;
-      if (ts.error) throw ts.error;
-      if (sts.error) throw sts.error;
-
-      setRows((ind.data ?? []) as Indicator[]);
-      setPillars((ps.data ?? []) as Pillar[]);
-      setThemes((ts.data ?? []) as Theme[]);
-      setSubthemes((sts.data ?? []) as Subtheme[]);
-    } catch (e: any) {
-      console.error(e);
-      message.error("Failed to load indicators");
-    } finally {
+    if (error) {
+      message.error(error.message);
       setLoading(false);
+      return;
     }
+
+    const mapped: IndicatorRow[] =
+      (data ?? []).map((r: any) => ({
+        id: r.id,
+        level: r.level as IndicatorLevel,
+        ref_code: r.ref_code,
+        name: r.name,
+        description: r.description,
+        sort_order: r.sort_order,
+        criteria_count: Array.isArray(r.criteria_levels) ? r.criteria_levels.length : 0,
+      })) ?? [];
+
+    setRows(mapped);
+    setLoading(false);
   };
 
   useEffect(() => {
-    fetchAll();
+    fetchRows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // quick lookup maps
-  const pByCode = useMemo(() => Object.fromEntries(pillars.map(p => [p.code, p.name])), [pillars]);
-  const tByCode = useMemo(() => Object.fromEntries(themes.map(t => [t.code, t.name])), [themes]);
-  const stByCode = useMemo(() => Object.fromEntries(subthemes.map(s => [s.code, s.name])), [subthemes]);
-
-  const data = useMemo(() => {
-    const filtered = rows.filter(r => {
-      const matchesLevel = lvl === "all" ? true : r.level === lvl;
-      const text = `${r.ref_code} ${r.name} ${r.description ?? ""}`.toLowerCase();
-      const matchesQ = q.trim() ? text.includes(q.trim().toLowerCase()) : true;
-      return matchesLevel && matchesQ;
-    });
-    return filtered;
-  }, [rows, lvl, q]);
-
-  const columns = [
-    {
-      title: "Level",
-      dataIndex: "level",
-      key: "level",
-      width: 120,
-      render: (v: Level) => <Tag color={levelColors[v]}>{v}</Tag>,
-      filters: [
-        { text: "Pillar", value: "pillar" },
-        { text: "Theme", value: "theme" },
-        { text: "Sub-theme", value: "subtheme" },
-      ],
-      onFilter: (val: any, rec: Indicator) => rec.level === val,
-    },
-    {
-      title: "Parent (Code → Name)",
-      key: "parent",
-      render: (_: any, r: Indicator) => {
-        let name = "";
-        if (r.level === "pillar") name = pByCode[r.ref_code] ?? "";
-        if (r.level === "theme") name = tByCode[r.ref_code] ?? "";
-        if (r.level === "subtheme") name = stByCode[r.ref_code] ?? "";
-        return (
-          <Space direction="vertical" size={0}>
-            <Typography.Text code>{r.ref_code}</Typography.Text>
-            <Typography.Text type="secondary">{name || "—"}</Typography.Text>
-          </Space>
-        );
+  const columns: ColumnsType<IndicatorRow> = useMemo(
+    () => [
+      {
+        title: 'Level',
+        dataIndex: 'level',
+        width: 120,
+        render: (lvl: IndicatorLevel) => <Tag color={levelColor[lvl]}>{lvl}</Tag>,
+        sorter: (a, b) => a.level.localeCompare(b.level),
       },
-      sorter: (a: Indicator, b: Indicator) => a.ref_code.localeCompare(b.ref_code),
-    },
-    {
-      title: "Indicator Name",
-      dataIndex: "name",
-      key: "name",
-      sorter: (a: Indicator, b: Indicator) => a.name.localeCompare(b.name),
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      ellipsis: true,
-      render: (v: string | null) => v ?? "—",
-    },
-    {
-      title: "Sort",
-      dataIndex: "sort_order",
-      key: "sort_order",
-      width: 90,
-      render: (v: number | null) => v ?? "—",
-      sorter: (a: Indicator, b: Indicator) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      width: 120,
-      render: (_: any, r: Indicator) => (
-        <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => message.info(`Edit ${r.name}`)} />
-          <Button type="link" icon={<DeleteOutlined />} danger onClick={() => message.info(`Delete ${r.name}`)} />
-        </Space>
-      ),
-    },
-  ];
+      {
+        title: 'Code',
+        dataIndex: 'ref_code',
+        width: 140,
+        render: (c: string | null) => c ?? <span style={{ opacity: 0.5 }}>—</span>,
+        sorter: (a, b) => (a.ref_code ?? '').localeCompare(b.ref_code ?? ''),
+      },
+      {
+        title: 'Name',
+        dataIndex: 'name',
+        render: (v) => <Typography.Text strong>{v}</Typography.Text>,
+        sorter: (a, b) => a.name.localeCompare(b.name),
+      },
+      {
+        title: 'Description',
+        dataIndex: 'description',
+        render: (v: string | null) => v ?? <span style={{ opacity: 0.5 }}>—</span>,
+      },
+      {
+        title: 'Sort',
+        dataIndex: 'sort_order',
+        width: 90,
+        align: 'right',
+        render: (n: number | null) => n ?? <span style={{ opacity: 0.5 }}>—</span>,
+        sorter: (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+      },
+      {
+        title: 'Criteria',
+        dataIndex: 'criteria_count',
+        width: 100,
+        align: 'right',
+        render: (n: number | undefined) => n ?? 0,
+        sorter: (a, b) => (a.criteria_count ?? 0) - (b.criteria_count ?? 0),
+      },
+      {
+        title: 'Actions',
+        key: 'actions',
+        width: 160,
+        render: (_, rec) => (
+          <Space>
+            <Button
+              size="small"
+              onClick={() => {
+                setEditing(rec);
+                form.setFieldsValue({
+                  ...rec,
+                });
+                setModalOpen(true);
+              }}
+            >
+              Edit
+            </Button>
+            <Popconfirm
+              title="Delete indicator"
+              description="Are you sure?"
+              onConfirm={() => handleDelete(rec.id)}
+            >
+              <Button size="small" danger>
+                Delete
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows]
+  );
+
+  const handleDelete = async (id: number) => {
+    const { error } = await supabase.from('indicators').delete().eq('id', id);
+    if (error) return message.error(error.message);
+    message.success('Deleted');
+    fetchRows();
+  };
+
+  const handleOpenNew = () => {
+    setEditing(null);
+    form.resetFields();
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    const values = await form.validateFields();
+    const payload = {
+      level: values.level as IndicatorLevel,
+      ref_code: values.ref_code || null,
+      name: values.name,
+      description: values.description || null,
+      sort_order: values.sort_order ?? null,
+    };
+
+    let errorMsg: string | null = null;
+
+    if (editing) {
+      const { error } = await supabase.from('indicators').update(payload).eq('id', editing.id);
+      errorMsg = error?.message ?? null;
+    } else {
+      const { error } = await supabase.from('indicators').insert(payload);
+      errorMsg = error?.message ?? null;
+    }
+
+    if (errorMsg) return message.error(errorMsg);
+    setModalOpen(false);
+    message.success(editing ? 'Saved' : 'Added');
+    fetchRows();
+  };
 
   return (
     <div style={{ padding: 24 }}>
       <Space style={{ marginBottom: 16 }}>
-        <Input
-          allowClear
-          placeholder="Search indicators…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          style={{ width: 320 }}
-        />
-        <Select
-          value={lvl}
-          onChange={(v) => setLvl(v as any)}
-          style={{ width: 160 }}
-          options={[
-            { value: "all", label: "All levels" },
-            { value: "pillar", label: "Pillar" },
-            { value: "theme", label: "Theme" },
-            { value: "subtheme", label: "Sub-theme" },
-          ]}
-        />
-        <Button icon={<ReloadOutlined />} onClick={fetchAll}>
-          Refresh
+        <Button type="primary" onClick={handleOpenNew}>
+          New indicator
         </Button>
+        <Button onClick={fetchRows}>Refresh</Button>
       </Space>
 
-      <Table
+      <Table<IndicatorRow>
         rowKey="id"
-        columns={columns}
-        dataSource={data}
         loading={loading}
+        columns={columns}
+        dataSource={rows}
         pagination={{ pageSize: 20, showSizeChanger: true }}
       />
+
+      <Modal
+        title={editing ? 'Edit indicator' : 'New indicator'}
+        open={modalOpen}
+        onOk={handleSubmit}
+        onCancel={() => setModalOpen(false)}
+        okText="Save"
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            label="Level"
+            name="level"
+            rules={[{ required: true, message: 'Please pick a level' }]}
+          >
+            <Select
+              options={[
+                { value: 'pillar', label: 'Pillar' },
+                { value: 'theme', label: 'Theme' },
+                { value: 'subtheme', label: 'Sub-theme' },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label="Code (optional)" name="ref_code">
+            <Input placeholder="e.g. I-P1 (optional)" />
+          </Form.Item>
+
+          <Form.Item
+            label="Name"
+            name="name"
+            rules={[{ required: true, message: 'Please enter a name' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item label="Description" name="description">
+            <Input.TextArea rows={4} />
+          </Form.Item>
+
+          <Form.Item label="Sort order" name="sort_order">
+            <InputNumber style={{ width: '100%' }} min={0} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
