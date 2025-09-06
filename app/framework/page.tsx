@@ -4,9 +4,15 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ReloadOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 
+// ---- Supabase client (robust to export differences) -------------------
+import * as supa from '@/lib/supabaseClient';
 
-import supabaseClient from '@/lib/supabaseClient';
-const supabase = supabaseClient;
+// helper to always return a usable browser client
+const getSb = () =>
+  (supa as any).getBrowserClient?.() ??
+  (supa as any).createBrowserClient?.() ??
+  (supa as any).createClient?.() ??
+  supa;
 
 // ---- Types (minimal) -------------------------------------------------------
 type Level = 'pillar' | 'theme' | 'subtheme';
