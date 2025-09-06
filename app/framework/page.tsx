@@ -1,4 +1,6 @@
 'use client';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0; // never cache/SSG this page
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -27,16 +29,32 @@ import {
 } from '@ant-design/icons';
 
 // ---- Supabase client (robust to export name changes) -----------------------
-import * as supa from '@/lib/supabaseClient';
-// Try the common exports; fall back to default-callable
-const getSb = () => {
-  const anySupa: any = supa as any;
-  return (
-    anySupa.getBrowserClient?.() ??
-    anySupa.createClient?.() ??
-    (typeof anySupa === 'function' ? anySupa() : anySupa.default?.())
-  );
+// keep your other imports
+import * as sb from '@/lib/supabaseClient';
+
+// Helper that works with any export shape: getBrowserClient, createClient, default, etc.
+const makeBrowserClient = () => {
+  // @ts-ignore – allow either default or named exports
+  const f =
+    (sb as any).getBrowserClient ??
+    (sb as any).createBrowserClient ??
+    (sb as any).createClient ??
+    (sb as any).default;
+
+  if (!f) throw new Error('No browser Supabase client export found in lib/supabaseClient');
+  return f();
 };
+
+// ---- inside your component:
+const supabase = React.useMemo(() => {
+  if (typeof window === 'undefined') return null; // avoid during build/SSR
+  return makeBrowserClient();
+}, []);
+
+if (!supabase) {
+  // Optional: a tiny skeleton to avoid flashing during hydration
+  return null;
+}
 
 // ---- Types (loose to keep Vercel happy) ------------------------------------
 type Level = 'pillar' | 'theme' | 'subtheme';
