@@ -1,238 +1,192 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Table, Button, Space, Modal, Form, Input, Select, InputNumber, message, Upload } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
-import Papa from 'papaparse';
-import { getBrowserClient } from '@/lib/supabaseClient';
+import React, { useEffect, useMemo, useState } from "react";
+import { Button, Form, Input, InputNumber, Modal, Space, Table, Tag, Typography, message } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from "@ant-design/icons";
+import { getBrowserClient } from "@/lib/supabaseClient";
 
-type IndicatorLevel = 'pillar' | 'theme' | 'subtheme';
+type IndicatorLevel = "pillar" | "theme" | "subtheme";
 type IndicatorRow = {
   id: string;
   level: IndicatorLevel;
-  ref_code: string; // P#/T#/S#
+  ref_code: string;
   name: string;
   description: string | null;
   sort_order: number | null;
 };
 
+const levelTag = (level: IndicatorLevel, ref?: string) => {
+  const color = level === "pillar" ? "blue" : level === "theme" ? "green" : "red";
+  return (
+    <Space size={6}>
+      <Tag color={color} style={{ fontSize: 12 }}>
+        {level[0].toUpperCase() + level.slice(1)}
+      </Tag>
+      {ref ? <span style={{ color: "#999", fontSize: 12 }}>[{ref}]</span> : null}
+    </Space>
+  );
+};
+
 export default function IndicatorsPage() {
-  const supabaseRef = useRef<any>(null);
-  const [rows, setRows] = useState<IndicatorRow[]>([]);
+  if (typeof window === "undefined") return null;
+
+  const supabase = useMemo(() => getBrowserClient(), []);
   const [loading, setLoading] = useState(false);
-  const [editing, setEditing] = useState<IndicatorRow | null>(null);
-  const [form] = Form.useForm<Partial<IndicatorRow>>();
+  const [rows, setRows] = useState<IndicatorRow[]>([]);
+  const [modal, setModal] = useState<{ open: boolean; editing?: IndicatorRow | null }>({ open: false });
+
+  const fetchAll = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from("indicators").select("*").order("level", { ascending: true }).order("sort_order", { ascending: true });
+    if (error) {
+      message.error(error.message);
+    } else {
+      setRows((data ?? []).map((d) => ({
+        id: d.id,
+        level: d.level,
+        ref_code: d.ref_code,
+        name: d.name,
+        description: d.description ?? "",
+        sort_order: d.sort_order ?? 0,
+      })));
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    try {
-      supabaseRef.current = getBrowserClient();
-    } catch {
-      // no-op until hydration
-    }
+    fetchAll();
   }, []);
 
-  async function load() {
-    if (!supabaseRef.current) return;
-    setLoading(true);
-    const { data, error } = await supabaseRef.current.from('indicators').select('*').order('level').order('sort_order');
-    if (error) message.error(error.message);
-    setRows((data ?? []) as any);
-    setLoading(false);
-  }
+  const [form] = Form.useForm();
 
-  useEffect(() => {
-    if (supabaseRef.current) load();
-  }, [supabaseRef.current]);
+  const openCreate = () => {
+    setModal({ open: true, editing: null });
+    setTimeout(() => form.setFieldsValue({ sort_order: 1 }), 0);
+  };
 
-  const cols: ColumnsType<IndicatorRow> = [
-    { title: 'Level', dataIndex: 'level', width: '14%' },
-    { title: 'Ref Code', dataIndex: 'ref_code', width: '16%' },
-    { title: 'Name', dataIndex: 'name', width: '28%' },
-    { title: 'Description', dataIndex: 'description', width: '30%', ellipsis: true },
-    { title: 'Sort', dataIndex: 'sort_order', width: '6%' },
+  const openEdit = (rec: IndicatorRow) => {
+    setModal({ open: true, editing: rec });
+    setTimeout(() => {
+      form.setFieldsValue({
+        level: rec.level,
+        ref_code: rec.ref_code,
+        name: rec.name,
+        description: rec.description ?? "",
+        sort_order: rec.sort_order ?? 1,
+      });
+    }, 0);
+  };
+
+  const onSubmit = async () => {
+    try {
+      const vals = await form.validateFields();
+      let err: string | null = null;
+
+      if (modal.editing) {
+        const { error } = await supabase.from("indicators").update({
+          level: vals.level,
+          ref_code: vals.ref_code,
+          name: vals.name,
+          description: vals.description ?? "",
+          sort_order: vals.sort_order ?? 1,
+        }).eq("id", modal.editing.id);
+        err = error?.message ?? null;
+      } else {
+        const { error } = await supabase.from("indicators").insert({
+          level: vals.level,
+          ref_code: vals.ref_code,
+          name: vals.name,
+          description: vals.description ?? "",
+          sort_order: vals.sort_order ?? 1,
+        });
+        err = error?.message ?? null;
+      }
+
+      if (err) return message.error(err);
+      message.success("Saved.");
+      setModal({ open: false, editing: null });
+      fetchAll();
+    } catch {
+      /* validation cancelled */
+    }
+  };
+
+  const onDelete = async (rec: IndicatorRow) => {
+    const { error } = await supabase.from("indicators").delete().eq("id", rec.id);
+    if (error) return message.error(error.message);
+    message.success("Deleted.");
+    fetchAll();
+  };
+
+  const columns: ColumnsType<IndicatorRow> = [
     {
-      title: 'Actions',
-      key: 'actions',
-      width: '6%',
-      render: (_: any, r) => (
-        <Space size="small">
-          <Button icon={<EditOutlined />} size="small" onClick={() => { setEditing(r); form.setFieldsValue(r as any); }} />
-          <Button danger icon={<DeleteOutlined />} size="small" onClick={() => remove(r)} />
+      title: "Type / Code",
+      dataIndex: "level",
+      width: "20%",
+      render: (_: any, rec) => levelTag(rec.level, rec.ref_code),
+    },
+    { title: "Name", dataIndex: "name", width: "36%", render: (t: string) => <span style={{ fontWeight: 500 }}>{t}</span> },
+    { title: "Description", dataIndex: "description", width: "36%", ellipsis: true },
+    { title: "Sort", dataIndex: "sort_order", align: "right", width: "8%", render: (v: number) => v ?? 0 },
+    {
+      title: "Actions",
+      key: "actions",
+      width: "12%",
+      render: (_: any, rec) => (
+        <Space>
+          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} />
+          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(rec)} />
         </Space>
       ),
     },
   ];
 
-  async function remove(r: IndicatorRow) {
-    if (!supabaseRef.current) return;
-    const { error } = await supabaseRef.current.from('indicators').delete().eq('id', r.id);
-    if (error) return message.error(error.message);
-    message.success('Deleted');
-    load();
-  }
-
-  async function save(values: Partial<IndicatorRow>) {
-    if (!supabaseRef.current) return;
-    const payload = {
-      level: values.level!,
-      ref_code: values.ref_code!.trim(),
-      name: values.name!.trim(),
-      description: values.description ?? '',
-      sort_order: values.sort_order ?? 1,
-    };
-    if (editing) {
-      const { error } = await supabaseRef.current.from('indicators').update(payload as any).eq('id', editing.id);
-      if (error) return message.error(error.message);
-      message.success('Saved');
-    } else {
-      const { error } = await supabaseRef.current.from('indicators').insert(payload as any);
-      if (error) return message.error(error.message);
-      message.success('Added');
-    }
-    setEditing(null);
-    form.resetFields();
-    load();
-  }
-
-  function exportCSV() {
-    const csv = Papa.unparse(
-      rows.map((r) => ({
-        id: r.id,
-        level: r.level,
-        ref_code: r.ref_code,
-        name: r.name,
-        description: r.description ?? '',
-        sort_order: r.sort_order ?? '',
-      })),
-    );
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'indicators.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function importCSV(file: File) {
-    if (!supabaseRef.current) return;
-    const rows = await new Promise<any[]>((resolve, reject) => {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (res) => resolve(res.data as any[]),
-        error: reject,
-      });
-    });
-
-    // Upsert by (level, ref_code)
-    for (const row of rows) {
-      const level = (row.level ?? '').trim() as IndicatorLevel;
-      const ref_code = (row.ref_code ?? '').trim();
-      if (!level || !ref_code) continue;
-      const patch = {
-        level,
-        ref_code,
-        name: (row.name ?? '').trim(),
-        description: row.description ?? '',
-        sort_order: row.sort_order ? Number(row.sort_order) : 1,
-      };
-      const { data } = await supabaseRef.current
-        .from('indicators')
-        .select('id')
-        .eq('level', level)
-        .eq('ref_code', ref_code)
-        .maybeSingle();
-
-      if (data?.id) {
-        await supabaseRef.current.from('indicators').update(patch as any).eq('id', data.id);
-      } else {
-        await supabaseRef.current.from('indicators').insert(patch as any);
-      }
-    }
-    message.success('Indicators import complete');
-    load();
-  }
-
-  if (!supabaseRef.current) return null;
-
   return (
-    <div style={{ padding: 16 }}>
-      <Space style={{ marginBottom: 12 }}>
-        <Button icon={<ReloadOutlined />} onClick={load}>
-          Refresh
-        </Button>
-        <Button icon={<PlusOutlined />} type="primary" onClick={() => { setEditing(null); form.resetFields(); Modal.confirm({
-          title: 'Create Indicator',
-          icon: null,
-          content: (
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={(vals) => {
-                save(vals);
-                Modal.destroyAll();
-              }}
-            >
-              <Form.Item name="level" label="Level" rules={[{ required: true }]}>
-                <Select
-                  options={[
-                    { value: 'pillar', label: 'pillar' },
-                    { value: 'theme', label: 'theme' },
-                    { value: 'subtheme', label: 'subtheme' },
-                  ]}
-                />
-              </Form.Item>
-              <Form.Item name="ref_code" label="Reference Code (P#/T#/S#)" rules={[{ required: true }]}>
-                <Input placeholder="e.g., P1 or T1.2 or S1.2.3" />
-              </Form.Item>
-              <Form.Item name="name" label="Name" rules={[{ required: true }]}>
-                <Input />
-              </Form.Item>
-              <Form.Item name="description" label="Description">
-                <Input.TextArea rows={4} />
-              </Form.Item>
-              <Form.Item name="sort_order" label="Sort order" initialValue={1}>
-                <InputNumber min={0} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item>
-                <Space>
-                  <Button onClick={() => Modal.destroyAll()}>Cancel</Button>
-                  <Button type="primary" htmlType="submit">Save</Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          ),
-          okButtonProps: { style: { display: 'none' } },
-          cancelButtonProps: { style: { display: 'none' } },
-        }); }}>
-          Add
-        </Button>
-
-        <Button icon={<DownloadOutlined />} onClick={exportCSV}>
-          Export CSV
-        </Button>
-        <Upload
-          accept=".csv"
-          maxCount={1}
-          beforeUpload={(file) => {
-            importCSV(file);
-            return false;
-          }}
-        >
-          <Button icon={<UploadOutlined />}>Import CSV</Button>
-        </Upload>
+    <div style={{ padding: 20 }}>
+      <Space style={{ marginBottom: 16, width: "100%", justifyContent: "space-between" }}>
+        <Typography.Title level={3} style={{ margin: 0 }}>Indicators</Typography.Title>
+        <Space>
+          <Button icon={<ReloadOutlined />} onClick={fetchAll}>Refresh</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            New Indicator
+          </Button>
+        </Space>
       </Space>
 
       <Table<IndicatorRow>
-        dataSource={rows}
-        columns={cols}
-        rowKey={(r) => r.id}
         loading={loading}
+        columns={columns}
+        dataSource={rows}
+        rowKey={(r) => r.id}
         pagination={false}
-        size="small"
       />
+
+      <Modal
+        title={modal.editing ? "Edit Indicator" : "Add Indicator"}
+        open={modal.open}
+        onCancel={() => setModal({ open: false, editing: null })}
+        onOk={onSubmit}
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical" initialValues={{ sort_order: 1 }}>
+          <Form.Item name="level" label="Level" rules={[{ required: true }]}>
+            <Input placeholder="pillar | theme | subtheme" />
+          </Form.Item>
+          <Form.Item name="ref_code" label="Reference Code" rules={[{ required: true }]}>
+            <Input placeholder="Unique indicator code" />
+          </Form.Item>
+          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label="Description">
+            <Input.TextArea rows={3} />
+          </Form.Item>
+          <Form.Item name="sort_order" label="Sort Order">
+            <InputNumber min={0} style={{ width: "100%" }} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
