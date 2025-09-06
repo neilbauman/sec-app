@@ -1,23 +1,17 @@
-'use client';
+// lib/supabaseClient.ts
+import { createBrowserClient, type SupabaseClient } from '@supabase/ssr';
 
-import { createBrowserClient } from '@supabase/ssr';
-
-// Read from public env (already in your Vercel project settings)
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-/**
- * Return a browser-only Supabase client.
- * Do not call this on the server.
- */
-export function getBrowserClient(): any {
+// Named export we will use everywhere
+export function getBrowserClient(): SupabaseClient {
   if (typeof window === 'undefined') {
+    // Never construct the browser client on the server/prerender
     throw new Error('getBrowserClient() must be called in the browser.');
   }
   return createBrowserClient(URL, KEY);
 }
 
-// Back-compat aliases so other pages don’t break if they import differently
+// Back-compat (do not use, but leaving here prevents old imports from crashing)
 export default getBrowserClient;
-export const createClient = getBrowserClient;
-export const getSupabase = getBrowserClient;
