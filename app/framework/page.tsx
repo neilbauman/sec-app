@@ -2,23 +2,40 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ReloadOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import {
+  ReloadOutlined,
+  ArrowLeftOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
+import {
+  App,
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 
-// ---- Supabase client (robust to export differences) -------------------
+// ---------- Supabase client (robust to export differences) ----------
 import * as supa from '@/lib/supabaseClient';
-
-// helper to always return a usable browser client
 const getSb = () =>
   (supa as any).getBrowserClient?.() ??
   (supa as any).createBrowserClient?.() ??
   (supa as any).createClient?.() ??
   supa;
 
-// ---- Types (minimal) -------------------------------------------------------
+// ---------- Types (minimal) ----------
 type Level = 'pillar' | 'theme' | 'subtheme';
 
 type PillarRow = {
-  id: number | string;
+  id: number;
   code: string;
   name: string;
   description?: string | null;
@@ -26,319 +43,388 @@ type PillarRow = {
 };
 
 type ThemeRow = {
-  id: number | string;
+  id: number;
+  pillar_id: number;
   code: string;
-  pillar_code: string;
   name: string;
   description?: string | null;
   sort_order?: number | null;
 };
 
 type SubthemeRow = {
-  id: number | string;
+  id: number;
+  theme_id: number;
   code: string;
-  theme_code: string;
-  pillar_code: string;
   name: string;
   description?: string | null;
   sort_order?: number | null;
 };
 
-// What we actually render as flat rows (built from the 3 tables)
-type UIRow =
-  | { key: string; level: 'pillar'; code: string; name: string; description?: string | null }
-  | { key: string; level: 'theme'; code: string; parentP: string; name: string; description?: string | null }
-  | { key: string; level: 'subtheme'; code: string; parentP: string; parentT: string; name: string; description?: string | null };
-
-// ---- Small UI helpers ------------------------------------------------------
-const Badge: React.FC<{ label: string; tone: 'blue' | 'green' | 'red' }> = ({ label, tone }) => {
-  const bg =
-    tone === 'blue' ? 'rgba(79,140,255,.12)' : tone === 'green' ? 'rgba(28,184,65,.12)' : 'rgba(255,86,48,.12)';
-  const fg =
-    tone === 'blue' ? '#2b6de9' : tone === 'green' ? '#1a7f2e' : '#b42b17';
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 8px',
-        borderRadius: 6,
-        fontSize: 12,
-        lineHeight: '18px',
-        background: bg,
-        color: fg,
-        textTransform: 'lowercase',
-        marginRight: 8,
-      }}
-    >
-      {label}
-    </span>
-  );
+type UIRow = {
+  key: string;            // e.g. P:1, T:3, S:9
+  level: Level;
+  id: number;
+  parentKey?: string;     // P:1 for T:* ; T:3 for S:*
+  code: string;
+  name: string;
+  description?: string | null;
+  sort_order?: number | null;
+  children?: UIRow[];
 };
 
-const CodeChip: React.FC<{ code: string }> = ({ code }) => (
-  <span style={{ fontSize: 12, color: '#8e8e93', marginLeft: 4 }}>[{code}]</span>
+// ---------- Small helpers ----------
+const typeTag: Record<Level, { txt: string; color: string }> = {
+  pillar: { txt: 'pillar', color: 'blue' },
+  theme: { txt: 'theme', color: 'green' },
+  subtheme: { txt: 'sub-theme', color: 'red' },
+};
+
+const makeKey = (level: Level, id: number) =>
+  (level === 'pillar' ? 'P' : level === 'theme' ? 'T' : 'S') + ':' + id;
+
+const codeNode = (code: string) => (
+  <span style={{ marginLeft: 8, fontSize: 12, color: '#8c8c8c' }}>[{code}]</span>
 );
 
-// caret
-const Caret: React.FC<{ open: boolean; onClick: () => void; disabled?: boolean }> = ({ open, onClick, disabled }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    aria-label={open ? 'Collapse' : 'Expand'}
-    style={{
-      border: 'none',
-      background: 'transparent',
-      width: 24,
-      height: 24,
-      borderRadius: 6,
-      cursor: disabled ? 'default' : 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 8,
-      color: '#4a4a4a',
-    }}
-  >
-    <span style={{ display: 'inline-block', transform: `rotate(${open ? 90 : 0}deg)`, transition: 'transform .15s' }}>
-      ▶
-    </span>
-  </button>
-);
-
-// ---- Page ------------------------------------------------------------------
+// ---------- Page ----------
 export default function FrameworkPage() {
   const supabase = useMemo(() => getSb(), []);
+  const { message, modal } = App.useApp();
+
   const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<UIRow[]>([]);
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
 
-  // expanded holds IDs like `P:P1`, `T:T1.2`
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  // modal state
+  const [form] = Form.useForm<{
+    code: string;
+    name: string;
+    description?: string;
+    sort_order?: number;
+  }>();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState('Add');
+  const [editing, setEditing] = useState<UIRow | null>(null);
+  const [addUnder, setAddUnder] = useState<UIRow | null>(null); // parent for add
 
-  // data
-  const [pillars, setPillars] = useState<PillarRow[]>([]);
-  const [themes, setThemes] = useState<ThemeRow[]>([]);
-  const [subs, setSubs] = useState<SubthemeRow[]>([]);
-
-  const fetchAll = useCallback(async () => {
+  // -------- Fetch & build tree --------
+  const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: p }, { data: t }, { data: s }] = await Promise.all([
+      const [{ data: pillars }, { data: themes }, { data: subs }] = await Promise.all([
         supabase.from('pillars').select('*').order('sort_order', { ascending: true }),
         supabase.from('themes').select('*').order('sort_order', { ascending: true }),
         supabase.from('subthemes').select('*').order('sort_order', { ascending: true }),
       ]);
-      setPillars(p ?? []);
-      setThemes(t ?? []);
-      setSubs(s ?? []);
+
+      const p: PillarRow[] = Array.isArray(pillars) ? pillars : [];
+      const t: ThemeRow[] = Array.isArray(themes) ? themes : [];
+      const s: SubthemeRow[] = Array.isArray(subs) ? subs : [];
+
+      // build theme children under each pillar
+      const themesByPillar: Record<number, UIRow[]> = {};
+      for (const th of t) {
+        const node: UIRow = {
+          key: makeKey('theme', th.id),
+          level: 'theme',
+          id: th.id,
+          parentKey: makeKey('pillar', th.pillar_id),
+          code: th.code,
+          name: th.name,
+          description: th.description ?? null,
+          sort_order: th.sort_order ?? null,
+          children: [],
+        };
+        (themesByPillar[th.pillar_id] ||= []).push(node);
+      }
+
+      // build subtheme children under each theme
+      const subsByTheme: Record<number, UIRow[]> = {};
+      for (const st of s) {
+        const node: UIRow = {
+          key: makeKey('subtheme', st.id),
+          level: 'subtheme',
+          id: st.id,
+          parentKey: makeKey('theme', st.theme_id),
+          code: st.code,
+          name: st.name,
+          description: st.description ?? null,
+          sort_order: st.sort_order ?? null,
+        };
+        (subsByTheme[st.theme_id] ||= []).push(node);
+      }
+
+      // attach subthemes into themes
+      for (const list of Object.values(themesByPillar)) {
+        for (const th of list) {
+          const themeId = th.id;
+          const kids = subsByTheme[themeId] || [];
+          // sub-themes have no caret if no children (which they never do)
+          if (kids.length) th.children = kids;
+        }
+      }
+
+      // create pillar nodes and attach themes
+      const tree: UIRow[] = p.map((pr) => {
+        const node: UIRow = {
+          key: makeKey('pillar', pr.id),
+          level: 'pillar',
+          id: pr.id,
+          code: pr.code,
+          name: pr.name,
+          description: pr.description ?? null,
+          sort_order: pr.sort_order ?? null,
+          children: themesByPillar[pr.id] || [],
+        };
+        return node;
+      });
+
+      setRows(tree);
+    } catch (err: any) {
+      message.error(err?.message || 'Failed to load framework.');
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, message]);
 
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    refresh();
+  }, [refresh]);
 
-  // Build parent -> children maps (guarantees children render under the correct parent)
-  const themesByPillar = useMemo(() => {
-    const m = new Map<string, ThemeRow[]>();
-    for (const th of themes) {
-      if (!m.has(th.pillar_code)) m.set(th.pillar_code, []);
-      m.get(th.pillar_code)!.push(th);
-    }
-    // stable order (themes already ordered by sort_order)
-    return m;
-  }, [themes]);
+  // ---------- Actions ----------
+  const openAddModal = (parent: UIRow | null) => {
+    setAddUnder(parent);
+    setEditing(null);
+    setModalTitle(parent == null ? 'Add pillar' : parent.level === 'pillar' ? 'Add theme' : 'Add sub-theme');
+    form.resetFields();
+    setModalOpen(true);
+  };
 
-  const subsByTheme = useMemo(() => {
-    const m = new Map<string, SubthemeRow[]>();
-    for (const st of subs) {
-      if (!m.has(st.theme_code)) m.set(st.theme_code, []);
-      m.get(st.theme_code)!.push(st);
-    }
-    return m;
-  }, [subs]);
+  const openEditModal = (row: UIRow) => {
+    setEditing(row);
+    setAddUnder(null);
+    setModalTitle(`Edit ${row.level}`);
+    form.setFieldsValue({
+      code: row.code,
+      name: row.name,
+      description: row.description ?? undefined,
+      sort_order: row.sort_order ?? undefined,
+    });
+    setModalOpen(true);
+  };
 
-  // Deterministic flattening driven ONLY by parent–child relations + expanded state
-  const flatRows: UIRow[] = useMemo(() => {
-    const out: UIRow[] = [];
+  const doDelete = (row: UIRow) => {
+    modal.confirm({
+      title: `Delete ${row.level}`,
+      content: `Are you sure you want to delete “${row.name}” (${row.code})?`,
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          let error: any = null;
+          if (row.level === 'pillar') {
+            ({ error } = await supabase.from('pillars').delete().eq('id', row.id));
+          } else if (row.level === 'theme') {
+            ({ error } = await supabase.from('themes').delete().eq('id', row.id));
+          } else {
+            ({ error } = await supabase.from('subthemes').delete().eq('id', row.id));
+          }
+          if (error) throw error;
+          message.success('Deleted');
+          await refresh();
+        } catch (e: any) {
+          message.error(e?.message || 'Delete failed');
+        }
+      },
+    });
+  };
 
-    for (const p of pillars) {
-      const pKey = `P:${p.code}`;
-      out.push({ key: pKey, level: 'pillar', code: p.code, name: p.name, description: p.description ?? '' });
+  const submitModal = async () => {
+    try {
+      const vals = await form.validateFields();
+      const payload = {
+        code: vals.code.trim(),
+        name: vals.name.trim(),
+        description: vals.description ?? null,
+        sort_order: vals.sort_order ?? null,
+      };
 
-      if (!expanded[pKey]) continue;
+      let error: any = null;
 
-      const ths = themesByPillar.get(p.code) ?? [];
-      for (const t of ths) {
-        const tKey = `T:${t.code}`;
-        out.push({
-          key: tKey,
-          level: 'theme',
-          code: t.code,
-          parentP: p.code,
-          name: t.name,
-          description: t.description ?? '',
-        });
-
-        if (!expanded[tKey]) continue;
-
-        const subsOfT = subsByTheme.get(t.code) ?? [];
-        for (const st of subsOfT) {
-          const sKey = `S:${st.code}`;
-          out.push({
-            key: sKey,
-            level: 'subtheme',
-            code: st.code,
-            parentP: p.code,
-            parentT: t.code,
-            name: st.name,
-            description: st.description ?? '',
-          });
+      if (editing) {
+        if (editing.level === 'pillar') {
+          ({ error } = await supabase.from('pillars').update(payload).eq('id', editing.id));
+        } else if (editing.level === 'theme') {
+          ({ error } = await supabase.from('themes').update(payload).eq('id', editing.id));
+        } else {
+          ({ error } = await supabase.from('subthemes').update(payload).eq('id', editing.id));
+        }
+      } else {
+        // add
+        if (!addUnder) {
+          // new pillar
+          ({ error } = await supabase.from('pillars').insert(payload));
+        } else if (addUnder.level === 'pillar') {
+          ({ error } = await supabase
+            .from('themes')
+            .insert({ ...payload, pillar_id: addUnder.id }));
+        } else {
+          ({ error } = await supabase
+            .from('subthemes')
+            .insert({ ...payload, theme_id: addUnder.id }));
         }
       }
+
+      if (error) throw error;
+
+      setModalOpen(false);
+      setEditing(null);
+      setAddUnder(null);
+      message.success('Saved');
+      await refresh();
+    } catch (err: any) {
+      if (err?.errorFields) return; // form validation error already shown
+      message.error(err?.message || 'Save failed');
     }
-
-    return out;
-  }, [pillars, themesByPillar, subsByTheme, expanded]);
-
-  // toggle helpers
-  const toggle = (key: string) =>
-    setExpanded((prev) => {
-      const next = { ...prev };
-      next[key] = !next[key];
-      return next;
-    });
-
-  const expandAll = () => {
-    const next: Record<string, boolean> = {};
-    for (const p of pillars) next[`P:${p.code}`] = true;
-    for (const t of themes) next[`T:${t.code}`] = true;
-    setExpanded(next);
-  };
-  const collapseAll = () => setExpanded({});
-
-  // ---- Styles: 2-column responsive with percentage widths ------------------
-  const rowGrid: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '58% 42%',
-    gap: '16px',
-    alignItems: 'center',
-    padding: '14px 16px',
   };
 
-  const nameCellStyle = (level: Level): React.CSSProperties => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    paddingLeft: level === 'pillar' ? 4 : level === 'theme' ? 28 : 52,
-    minHeight: 28,
-  });
+  // ---------- Table ----------
+  const columns = [
+    {
+      title: <span style={{ fontWeight: 600 }}>Name</span>,
+      dataIndex: 'name',
+      key: 'name',
+      width: '42%',
+      render: (_: any, rec: UIRow) => {
+        const t = typeTag[rec.level];
+        return (
+          <Space size="middle">
+            <Tag color={t.color} style={{ textTransform: 'none', marginRight: 0 }}>
+              {t.txt}
+            </Tag>
+            <span style={{ fontSize: 12, color: '#8c8c8c', marginLeft: -4 }}>
+              [{rec.code}]
+            </span>
+            <span style={{ fontWeight: 500 }}>{rec.name}</span>
+          </Space>
+        );
+      },
+    },
+    {
+      title: <span style={{ fontWeight: 600 }}>Description / Notes</span>,
+      dataIndex: 'description',
+      key: 'description',
+      width: '44%',
+      render: (val: any) => <span style={{ color: '#4f4f4f' }}>{val || ''}</span>,
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: '14%',
+      align: 'right' as const,
+      render: (_: any, rec: UIRow) => {
+        const canAddChild = rec.level !== 'subtheme';
+        return (
+          <Space>
+            {canAddChild && (
+              <Tooltip title={rec.level === 'pillar' ? 'Add theme' : 'Add sub-theme'}>
+                <Button
+                  icon={<PlusOutlined />}
+                  size="small"
+                  onClick={() => openAddModal(rec)}
+                />
+              </Tooltip>
+            )}
+            <Tooltip title="Edit">
+              <Button icon={<EditOutlined />} size="small" onClick={() => openEditModal(rec)} />
+            </Tooltip>
+            <Tooltip title="Delete">
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+                onClick={() => doDelete(rec)}
+              />
+            </Tooltip>
+          </Space>
+        );
+      },
+    },
+  ];
 
-  // ---- Render --------------------------------------------------------------
+  // antd expandable config
+  const expandable = {
+    // only pillars & themes can expand; sub-themes never show a caret
+    rowExpandable: (rec: UIRow) => rec.level !== 'subtheme' && (rec.children?.length ?? 0) > 0,
+    expandedRowKeys: expandedKeys,
+    onExpand: (expanded: boolean, record: UIRow) => {
+      setExpandedKeys((prev) =>
+        expanded ? [...new Set([...prev, record.key])] : prev.filter((k) => k !== record.key)
+      );
+    },
+  };
+
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#111' }}>
-          <ArrowLeftOutlined /> Dashboard
-        </Link>
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 8px 0 12px' }}>Framework Editor</h1>
-        <div style={{ flex: 1 }} />
-        <button
-          onClick={fetchAll}
-          disabled={loading}
-          style={{
-            border: '1px solid #e5e5ea',
-            borderRadius: 8,
-            padding: '6px 12px',
-            background: '#fff',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
+    <App>
+      <div style={{ padding: 16 }}>
+        <Space size="large" style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+          <Link href="/" style={{ color: '#1677ff' }}>
+            <ArrowLeftOutlined /> Dashboard
+          </Link>
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            Framework Editor
+          </Typography.Title>
+          <span style={{ flex: 1 }} />
+          <Button icon={<ReloadOutlined />} onClick={refresh}>
+            Refresh
+          </Button>
+        </Space>
+
+        <Table<UIRow>
+          dataSource={rows}
+          columns={columns}
+          loading={loading}
+          rowKey={(r) => r.key}
+          size="middle"
+          expandable={expandable}
+          pagination={false}
+        />
+
+        <Modal
+          title={modalTitle}
+          open={modalOpen}
+          onCancel={() => {
+            setModalOpen(false);
+            setEditing(null);
+            setAddUnder(null);
           }}
+          onOk={submitModal}
+          okText="Save"
+          destroyOnClose
         >
-          <ReloadOutlined />
-          Refresh
-        </button>
-        <button
-          onClick={collapseAll}
-          style={{ marginLeft: 8, border: '1px solid #e5e5ea', borderRadius: 8, padding: '6px 10px', background: '#fff' }}
-        >
-          Collapse all
-        </button>
-        <button
-          onClick={expandAll}
-          style={{ marginLeft: 8, border: '1px solid #e5e5ea', borderRadius: 8, padding: '6px 10px', background: '#fff' }}
-        >
-          Expand all
-        </button>
+          <Form form={form} layout="vertical">
+            <Form.Item
+              label="Code"
+              name="code"
+              rules={[{ required: true, message: 'Please enter a code' }]}
+            >
+              <Input placeholder="e.g. P1 / T1.2 / ST2.1.1" />
+            </Form.Item>
+            <Form.Item
+              label="Name"
+              name="name"
+              rules={[{ required: true, message: 'Please enter a name' }]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item label="Description / Notes" name="description">
+              <Input.TextArea autoSize={{ minRows: 3, maxRows: 6 }} />
+            </Form.Item>
+            <Form.Item label="Sort order" name="sort_order">
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+          </Form>
+        </Modal>
       </div>
-
-      {/* Header row */}
-      <div
-        style={{
-          ...rowGrid,
-          fontWeight: 600,
-          color: '#6b7280',
-          borderBottom: '1px solid #eee',
-          position: 'sticky',
-          top: 0,
-          background: '#fafafa',
-          zIndex: 1,
-        }}
-      >
-        <div>Name</div>
-        <div>Description / Notes</div>
-      </div>
-
-      {/* Data rows */}
-      <div style={{ borderTop: '1px solid #f0f0f0' }}>
-        {flatRows.map((r) => {
-          const isP = r.level === 'pillar';
-          const isT = r.level === 'theme';
-          const caretKey = isP ? `P:${r.code}` : isT ? `T:${r.code}` : '';
-          const canExpand = r.level !== 'subtheme';
-          const open = canExpand ? !!expanded[caretKey] : false;
-
-          return (
-            <div key={r.key} style={{ ...rowGrid, borderBottom: '1px solid #f5f5f5' }}>
-              {/* Name column */}
-              <div style={nameCellStyle(r.level)}>
-                <Caret open={open} onClick={() => (canExpand ? toggle(caretKey) : undefined)} disabled={!canExpand} />
-                {r.level === 'pillar' && (
-                  <>
-                    <Badge label="pillar" tone="blue" />
-                    <CodeChip code={r.code} />
-                  </>
-                )}
-                {r.level === 'theme' && (
-                  <>
-                    <Badge label="theme" tone="green" />
-                    <CodeChip code={r.code} />
-                  </>
-                )}
-                {r.level === 'subtheme' && (
-                  <>
-                    <Badge label="sub-theme" tone="red" />
-                    <CodeChip code={r.code} />
-                  </>
-                )}
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#111' }}>{r.name}</span>
-              </div>
-
-              {/* Description column */}
-              <div style={{ fontSize: 14, color: '#2a2a2a' }}>{r.description || ''}</div>
-            </div>
-          );
-        })}
-
-        {!loading && flatRows.length === 0 && (
-          <div style={{ padding: 32, color: '#6b7280' }}>No data</div>
-        )}
-        {loading && (
-          <div style={{ padding: 32, color: '#6b7280' }}>Loading…</div>
-        )}
-      </div>
-    </div>
+    </App>
   );
 }
