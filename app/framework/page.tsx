@@ -4,13 +4,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ReloadOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 
-// ---- Supabase client (robust to export name changes) -----------------------
-import * as supa from '@/lib/supabaseClient';
-// @ts-expect-error – we intentionally accept any helper shape
-const getSb = () =>
-  (supa as any).getBrowserClient?.() ??
-  (supa as any).createClient?.() ??
-  (typeof (supa as any) === 'function' ? (supa as any)() : (supa as any).default?.());
+
+import supabaseClient from '@/lib/supabaseClient';
+const supabase = supabaseClient;
 
 // ---- Types (minimal) -------------------------------------------------------
 type Level = 'pillar' | 'theme' | 'subtheme';
