@@ -1,17 +1,21 @@
-// lib/supabaseClient.ts
-import { createBrowserClient, type SupabaseClient } from '@supabase/ssr';
+// /lib/supabaseClient.ts
+import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const URL = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
-// Named export we will use everywhere
-export function getBrowserClient(): SupabaseClient {
-  if (typeof window === 'undefined') {
-    // Never construct the browser client on the server/prerender
-    throw new Error('getBrowserClient() must be called in the browser.');
-  }
-  return createBrowserClient(URL, KEY);
+if (!URL || !KEY) {
+  // Avoid throwing at import time — surfaces clearly in the browser instead
+  // and prevents SSR/Build crashes. Pages should still be client-only.
+  console.warn('Supabase env vars are missing: NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
 
-// Back-compat (do not use, but leaving here prevents old imports from crashing)
-export default getBrowserClient;
+export function getBrowserClient(): SupabaseClient<any> {
+  // Must only be called in the browser — pages using this are client components
+  return createBrowserClient(URL || '', KEY || '');
+}
+
+// Back-compat (do NOT use anywhere new):
+export const createClient = undefined as unknown as never;
+export const createBrowserClientCompat = undefined as unknown as never;
