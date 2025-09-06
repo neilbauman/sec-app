@@ -1,20 +1,27 @@
-// lib/supabaseClient.ts
-// A compatibility layer so pages can import getBrowserClient, createClient, or default.
+'use client';
 
+/**
+ * ONE stable browser client for the whole app.
+ * - No type annotations that conflict with @supabase/ssr generics
+ * - Safe to import from client components only
+ * - Back-compat aliases so older code keeps working
+ */
 import { createBrowserClient } from '@supabase/ssr';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export function getBrowserClient(): SupabaseClient {
-  // This must only run in the browser; pages should guard or be 'use client'
+function getBrowserClient() {
+  if (typeof window === 'undefined') {
+    // Never call this on the server / during prerender
+    throw new Error('getBrowserClient() must be called in the browser.');
+  }
   return createBrowserClient(URL, KEY);
 }
 
-// Back-compat aliases
-export const createClient = getBrowserClient;
-export const createBrowserClientCompat = getBrowserClient;
-
-// Default export for imports like: import createClient from '@/lib/supabaseClient'
 export default getBrowserClient;
+
+// Back-compat named exports (so previous imports don’t break)
+export { getBrowserClient };
+// Some of your files import ‘createClient’—map that to the same thing:
+export const createClient = getBrowserClient;
