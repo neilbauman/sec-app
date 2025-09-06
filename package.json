@@ -8,10 +8,11 @@
     "start": "next start -p 3000",
     "lint": "next lint"
   },
+  "engines": { "node": "20.x" },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.10",
     "@supabase/ssr": "^0.5.1",
-    "antd": "^5.19.4",
+    "antd": "^5.20.1",
     "@ant-design/icons": "^5.3.7",
     "dayjs": "^1.11.13",
     "next": "15.5.2",
