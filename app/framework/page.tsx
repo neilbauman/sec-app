@@ -1,11 +1,6 @@
 'use client';
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   PlusOutlined,
@@ -13,27 +8,14 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   ArrowLeftOutlined,
+  UploadOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
-import {
-  Button,
-  Modal,
-  Form,
-  Input,
-  InputNumber,
-  Tag,
-  Space,
-  Tooltip,
-  Popconfirm,
-  message,
-} from 'antd';
+import { Button, Form, Input, InputNumber, message, Modal, Space, Tag, Tooltip, Upload } from 'antd';
+import type { UploadProps } from 'antd';
+import { getBrowserClient } from '@/lib/supabaseClient';
 
-// IMPORTANT: your supabase helper must export a *default* client instance.
-import supabase from '@/lib/supabaseClient';
-
-/* -------------------------------------------------------------------------- */
-/*                                   Types                                    */
-/* -------------------------------------------------------------------------- */
-
+/** -------------------- Types (minimal + tolerant) -------------------- */
 type Level = 'pillar' | 'theme' | 'subtheme';
 
 type PillarRow = {
@@ -43,6 +25,7 @@ type PillarRow = {
   description?: string | null;
   sort_order?: number | null;
 };
+
 type ThemeRow = {
   id: number | string;
   pillar_id: number | string;
@@ -51,6 +34,7 @@ type ThemeRow = {
   description?: string | null;
   sort_order?: number | null;
 };
+
 type SubthemeRow = {
   id: number | string;
   theme_id: number | string;
@@ -60,508 +44,613 @@ type SubthemeRow = {
   sort_order?: number | null;
 };
 
-type UIRow =
-  | { level: 'pillar'; id: string; code: string; name: string; description: string; sort: number; }
-  | { level: 'theme'; id: string; code: string; name: string; description: string; sort: number; parent: string; }
-  | { level: 'subtheme'; id: string; code: string; name: string; description: string; sort: number; parent: string };
+type UIRowKey = `P:${string | number}` | `T:${string | number}` | `S:${string | number}`;
 
-type EditTarget =
-  | { level: 'pillar'; rec: PillarRow }
-  | { level: 'theme'; rec: ThemeRow }
-  | { level: 'subtheme'; rec: SubthemeRow };
-
-/* -------------------------------------------------------------------------- */
-/*                                   Utils                                    */
-/* -------------------------------------------------------------------------- */
-
-const keyFor = (lvl: Level, id: string | number) => `${lvl}:${id}`;
-
-const labelFor = (lvl: Level) =>
-  lvl === 'pillar' ? 'pillar' : lvl === 'theme' ? 'theme' : 'sub-theme';
-
-const tagStyle = (lvl: Level) => {
-  switch (lvl) {
-    case 'pillar':
-      return { color: '#1677ff', bg: '#e6f4ff' }; // light blue
-    case 'theme':
-      return { color: '#389e0d', bg: '#f6ffed' }; // light green
-    default:
-      return { color: '#d4380d', bg: '#fff2e8' }; // light red / orange
-  }
+type UIRow = {
+  key: UIRowKey;
+  level: Level;
+  id: number | string;
+  code: string;
+  name: string;
+  description?: string | null;
+  sort_order?: number | null;
+  parentKey?: UIRowKey;
 };
 
-/* -------------------------------------------------------------------------- */
-/*                               Main component                               */
-/* -------------------------------------------------------------------------- */
+/** -------------------- Helpers -------------------- */
+const levelTag = (level: Level) => {
+  if (level === 'pillar') return <Tag color="#e6f4ff" style={{ color: '#1677ff', borderColor: '#91caff' }}>pillar</Tag>;
+  if (level === 'theme') return <Tag color="#f6ffed" style={{ color: '#52c41a', borderColor: '#b7eb8f' }}>theme</Tag>;
+  return <Tag color="#fff1f0" style={{ color: '#ff4d4f', borderColor: '#ffa39e' }}>sub-theme</Tag>;
+};
 
-export default function FrameworkEditorPage() {
+const makeKey = (level: Level, id: number | string): UIRowKey =>
+  (level === 'pillar' ? `P:${id}` : level === 'theme' ? `T:${id}` : `S:${id}`);
+
+/** Simple CSV (no extra deps) — handles quoted fields */
+function parseCSV(text: string): Record<string, string>[] {
+  const rows: Record<string, string>[] = [];
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(Boolean);
+  if (lines.length === 0) return rows;
+  const headers = parseCSVLine(lines[0]);
+  for (let i = 1; i < lines.length; i++) {
+    const vals = parseCSVLine(lines[i]);
+    const row: Record<string, string> = {};
+    headers.forEach((h, idx) => (row[h] = vals[idx] ?? ''));
+    rows.push(row);
+  }
+  return rows;
+}
+function parseCSVLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = '';
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQ) {
+      if (ch === '"' && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else if (ch === '"') {
+        inQ = false;
+      } else {
+        cur += ch;
+      }
+    } else {
+      if (ch === ',') {
+        out.push(cur);
+        cur = '';
+      } else if (ch === '"') {
+        inQ = true;
+      } else {
+        cur += ch;
+      }
+    }
+  }
+  out.push(cur);
+  return out;
+}
+function toCSV(rows: Record<string, unknown>[]) {
+  if (rows.length === 0) return 'level,code,name,description,sort_order,parent_code\n';
+  const headers = Object.keys(rows[0]);
+  const esc = (v: unknown) => {
+    const s = v == null ? '' : String(v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  return [headers.join(','), ...rows.map(r => headers.map(h => esc((r as any)[h])).join(','))].join('\n');
+}
+
+/** -------------------- Page -------------------- */
+export default function FrameworkPage() {
+  const supabase = useMemo(() => getBrowserClient(), []);
   const [loading, setLoading] = useState(false);
 
-  // raw tables
   const [pillars, setPillars] = useState<PillarRow[]>([]);
   const [themes, setThemes] = useState<ThemeRow[]>([]);
   const [subs, setSubs] = useState<SubthemeRow[]>([]);
 
-  // expanded state (keys: "pillar:ID", "theme:ID")
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  // Expanded row-keys: store actual UIRowKey strings
+  const [expanded, setExpanded] = useState<Set<UIRowKey>>(new Set());
 
-  // dialog state
-  const [open, setOpen] = useState(false);
-  const [addingUnder, setAddingUnder] = useState<Level | null>(null); // when adding, which level are we creating (based on parent)
-  const [parentForAdd, setParentForAdd] = useState<string | null>(null);
-  const [editing, setEditing] = useState<EditTarget | null>(null);
-  const [form] = Form.useForm();
+  // Editing modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<UIRow | null>(null);
+  const [form] = Form.useForm<{
+    code: string;
+    name: string;
+    description?: string;
+    sort_order?: number;
+  }>();
 
-  /* ------------------------------ Fetch / load ----------------------------- */
-
-  const loadAll = useCallback(async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: p }, { data: t }, { data: s }] = await Promise.all([
+      const [{ data: p, error: pe }, { data: t, error: te }, { data: s, error: se }] = await Promise.all([
         supabase.from('pillars').select('*').order('sort_order', { ascending: true }),
         supabase.from('themes').select('*').order('sort_order', { ascending: true }),
         supabase.from('subthemes').select('*').order('sort_order', { ascending: true }),
       ]);
-
+      if (pe || te || se) {
+        throw new Error(pe?.message || te?.message || se?.message || 'Load failed');
+      }
       setPillars((p ?? []) as any);
       setThemes((t ?? []) as any);
       setSubs((s ?? []) as any);
-    } catch (e: any) {
-      console.error(e);
-      message.error(e?.message || 'Failed to load framework.');
+    } catch (err: any) {
+      message.error(err.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+    refresh();
+  }, [refresh]);
 
-  /* ------------------------------- Flat rows ------------------------------- */
-
-  const flatRows: UIRow[] = useMemo(() => {
+  /** Build flat UI rows honoring current expansion */
+  const flatData: UIRow[] = useMemo(() => {
     const out: UIRow[] = [];
-
-    const byPillar = new Map<string | number, ThemeRow[]>();
-    themes.forEach((t) => {
-      const list = byPillar.get(t.pillar_id) || [];
+    const themeByPillar = new Map<string | number, ThemeRow[]>();
+    themes.forEach(t => {
+      const list = themeByPillar.get(t.pillar_id) ?? [];
       list.push(t);
-      byPillar.set(t.pillar_id, list);
+      themeByPillar.set(t.pillar_id, list);
     });
-
-    const byTheme = new Map<string | number, SubthemeRow[]>();
-    subs.forEach((s) => {
-      const list = byTheme.get(s.theme_id) || [];
+    const subByTheme = new Map<string | number, SubthemeRow[]>();
+    subs.forEach(s => {
+      const list = subByTheme.get(s.theme_id) ?? [];
       list.push(s);
-      byTheme.set(s.theme_id, list);
+      subByTheme.set(s.theme_id, list);
     });
 
-    const safe = (v: any) => (v ?? '') as string;
-    const so = (v: any) => (typeof v === 'number' ? v : 0);
-
-    for (const p of pillars) {
+    pillars.forEach(p => {
+      const pKey = makeKey('pillar', p.id);
       out.push({
+        key: pKey,
         level: 'pillar',
-        id: keyFor('pillar', p.id),
-        code: safe(p.code),
-        name: safe(p.name),
-        description: safe(p.description),
-        sort: so(p.sort_order),
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        description: p.description ?? '',
+        sort_order: p.sort_order ?? null,
       });
 
-      if (expanded[keyFor('pillar', p.id)]) {
-        const kids = (byPillar.get(p.id) || []).slice().sort((a, b) => so(a.sort_order) - so(b.sort_order));
-        for (const t of kids) {
+      if (expanded.has(pKey)) {
+        const childThemes = (themeByPillar.get(p.id) ?? []).sort(
+          (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+        );
+        childThemes.forEach(t => {
+          const tKey = makeKey('theme', t.id);
           out.push({
+            key: tKey,
+            parentKey: pKey,
             level: 'theme',
-            id: keyFor('theme', t.id),
-            parent: keyFor('pillar', p.id),
-            code: safe(t.code),
-            name: safe(t.name),
-            description: safe(t.description),
-            sort: so(t.sort_order),
+            id: t.id,
+            code: t.code,
+            name: t.name,
+            description: t.description ?? '',
+            sort_order: t.sort_order ?? null,
           });
 
-          if (expanded[keyFor('theme', t.id)]) {
-            const gkids = (byTheme.get(t.id) || []).slice().sort((a, b) => so(a.sort_order) - so(b.sort_order));
-            for (const s of gkids) {
+          if (expanded.has(tKey)) {
+            const childSubs = (subByTheme.get(t.id) ?? []).sort(
+              (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+            );
+            childSubs.forEach(su => {
+              const sKey = makeKey('subtheme', su.id);
               out.push({
+                key: sKey,
+                parentKey: tKey,
                 level: 'subtheme',
-                id: keyFor('subtheme', s.id),
-                parent: keyFor('theme', t.id),
-                code: safe(s.code),
-                name: safe(s.name),
-                description: safe(s.description),
-                sort: so(s.sort_order),
+                id: su.id,
+                code: su.code,
+                name: su.name,
+                description: su.description ?? '',
+                sort_order: su.sort_order ?? null,
               });
-            }
+            });
           }
-        }
+        });
       }
-    }
+    });
+
     return out;
   }, [pillars, themes, subs, expanded]);
 
-  /* ------------------------------ Expand logic ----------------------------- */
-
-  const toggle = (row: UIRow) => {
-    if (row.level === 'subtheme') return; // no children
-    const key = row.id;
-    setExpanded((cur) => ({ ...cur, [key]: !cur[key] }));
-  };
-
-  const expandAll = () => {
-    const next: Record<string, boolean> = {};
-    pillars.forEach((p) => (next[keyFor('pillar', p.id)] = true));
-    themes.forEach((t) => (next[keyFor('theme', t.id)] = true));
+  /** Expand/collapse click */
+  const toggleExpand = (row: UIRow) => {
+    const hasChildren =
+      row.level === 'pillar'
+        ? themes.some(t => t.pillar_id === row.id)
+        : row.level === 'theme'
+        ? subs.some(su => su.theme_id === row.id)
+        : false;
+    if (!hasChildren) return; // subthemes have no caret
+    const next = new Set(expanded);
+    if (next.has(row.key)) next.delete(row.key);
+    else next.add(row.key);
     setExpanded(next);
   };
 
-  const collapseAll = () => setExpanded({});
-
-  /* ------------------------------- CRUD logic ------------------------------ */
-
-  const startAddUnder = (row: UIRow) => {
-    // If adding under pillar -> create theme
-    // If adding under theme -> create subtheme
-    const nextLevel: Level = row.level === 'pillar' ? 'theme' : 'subtheme';
-    setAddingUnder(nextLevel);
-    setParentForAdd(row.id);
-    form.setFieldsValue({ name: '', code: '', description: '', sort_order: 1 });
-    setEditing(null);
-    setOpen(true);
+  /** -------------------- CRUD -------------------- */
+  const openAdd = (parent: UIRow | null) => {
+    const level: Level = parent == null ? 'pillar' : parent.level === 'pillar' ? 'theme' : 'subtheme';
+    setEditing({
+      key: makeKey(level, 'new'),
+      id: 'new',
+      level,
+      code: '',
+      name: '',
+      description: '',
+      sort_order: 1,
+      parentKey: parent?.key,
+    } as any);
+    form.setFieldsValue({ code: '', name: '', description: '', sort_order: 1 });
+    setModalOpen(true);
   };
 
-  const startEdit = (row: UIRow) => {
-    if (row.level === 'pillar') {
-      const rec = pillars.find((p) => keyFor('pillar', p.id) === row.id)!;
-      setEditing({ level: 'pillar', rec });
-      form.setFieldsValue({
-        name: rec.name,
-        code: rec.code,
-        description: rec.description ?? '',
-        sort_order: rec.sort_order ?? 1,
-      });
-    } else if (row.level === 'theme') {
-      const rec = themes.find((t) => keyFor('theme', t.id) === row.id)!;
-      setEditing({ level: 'theme', rec });
-      form.setFieldsValue({
-        name: rec.name,
-        code: rec.code,
-        description: rec.description ?? '',
-        sort_order: rec.sort_order ?? 1,
-      });
-    } else {
-      const rec = subs.find((s) => keyFor('subtheme', s.id) === row.id)!;
-      setEditing({ level: 'subtheme', rec });
-      form.setFieldsValue({
-        name: rec.name,
-        code: rec.code,
-        description: rec.description ?? '',
-        sort_order: rec.sort_order ?? 1,
-      });
-    }
-    setAddingUnder(null);
-    setParentForAdd(null);
-    setOpen(true);
+  const openEdit = (row: UIRow) => {
+    setEditing(row);
+    form.setFieldsValue({
+      code: row.code,
+      name: row.name,
+      description: row.description ?? '',
+      sort_order: row.sort_order ?? undefined,
+    });
+    setModalOpen(true);
   };
 
   const doDelete = async (row: UIRow) => {
-    setLoading(true);
-    try {
-      if (row.level === 'pillar') {
-        const id = (row.id.split(':')[1]);
-        const { error } = await supabase.from('pillars').delete().eq('id', id);
-        if (error) throw error;
-      } else if (row.level === 'theme') {
-        const id = (row.id.split(':')[1]);
-        const { error } = await supabase.from('themes').delete().eq('id', id);
-        if (error) throw error;
-      } else {
-        const id = (row.id.split(':')[1]);
-        const { error } = await supabase.from('subthemes').delete().eq('id', id);
-        if (error) throw error;
-      }
-      message.success('Deleted.');
-      await loadAll();
-    } catch (e: any) {
-      console.error(e);
-      message.error(e?.message || 'Delete failed.');
-    } finally {
-      setLoading(false);
+    // prevent deleting nodes with children
+    if (row.level === 'pillar' && themes.some(t => t.pillar_id === row.id)) {
+      message.warning('Delete themes first. Pillar has children.');
+      return;
     }
+    if (row.level === 'theme' && subs.some(su => su.theme_id === row.id)) {
+      message.warning('Delete sub-themes first. Theme has children.');
+      return;
+    }
+
+    const table = row.level === 'pillar' ? 'pillars' : row.level === 'theme' ? 'themes' : 'subthemes';
+    const { error } = await supabase.from(table).delete().eq('id', row.id);
+    if (error) return message.error(error.message);
+    message.success('Deleted');
+    refresh();
   };
 
-  const submitForm = async () => {
-    const vals = await form.validateFields();
-    setLoading(true);
+  const saveModal = async () => {
     try {
-      if (editing) {
-        // update
-        if (editing.level === 'pillar') {
+      const vals = await form.validateFields();
+      if (!editing) return;
+
+      const isNew = editing.id === 'new';
+      if (editing.level === 'pillar') {
+        if (isNew) {
+          const { error } = await supabase.from('pillars').insert({
+            code: vals.code,
+            name: vals.name,
+            description: vals.description ?? '',
+            sort_order: vals.sort_order ?? 1,
+          });
+          if (error) return message.error(error.message);
+        } else {
           const { error } = await supabase
             .from('pillars')
             .update({
-              name: vals.name,
               code: vals.code,
+              name: vals.name,
               description: vals.description ?? '',
-              sort_order: Number(vals.sort_order ?? 1),
+              sort_order: vals.sort_order ?? null,
             })
-            .eq('id', (editing.rec as PillarRow).id);
-          if (error) throw error;
-        } else if (editing.level === 'theme') {
+            .eq('id', editing.id);
+          if (error) return message.error(error.message);
+        }
+      } else if (editing.level === 'theme') {
+        const parentId =
+          editing.parentKey && String(editing.parentKey).startsWith('P:')
+            ? String(editing.parentKey).slice(2)
+            : (themes.find(t => t.id === editing.id)?.pillar_id as any);
+        if (isNew) {
+          const { error } = await supabase.from('themes').insert({
+            pillar_id: parentId,
+            code: vals.code,
+            name: vals.name,
+            description: vals.description ?? '',
+            sort_order: vals.sort_order ?? 1,
+          });
+          if (error) return message.error(error.message);
+        } else {
           const { error } = await supabase
             .from('themes')
             .update({
-              name: vals.name,
               code: vals.code,
+              name: vals.name,
               description: vals.description ?? '',
-              sort_order: Number(vals.sort_order ?? 1),
+              sort_order: vals.sort_order ?? null,
             })
-            .eq('id', (editing.rec as ThemeRow).id);
-          if (error) throw error;
+            .eq('id', editing.id);
+          if (error) return message.error(error.message);
+        }
+      } else {
+        const parentId =
+          editing.parentKey && String(editing.parentKey).startsWith('T:')
+            ? String(editing.parentKey).slice(2)
+            : (subs.find(su => su.id === editing.id)?.theme_id as any);
+        if (isNew) {
+          const { error } = await supabase.from('subthemes').insert({
+            theme_id: parentId,
+            code: vals.code,
+            name: vals.name,
+            description: vals.description ?? '',
+            sort_order: vals.sort_order ?? 1,
+          });
+          if (error) return message.error(error.message);
         } else {
           const { error } = await supabase
             .from('subthemes')
             .update({
-              name: vals.name,
               code: vals.code,
+              name: vals.name,
               description: vals.description ?? '',
-              sort_order: Number(vals.sort_order ?? 1),
+              sort_order: vals.sort_order ?? null,
             })
-            .eq('id', (editing.rec as SubthemeRow).id);
-          if (error) throw error;
+            .eq('id', editing.id);
+          if (error) return message.error(error.message);
         }
-        message.success('Saved.');
-      } else if (addingUnder) {
-        // insert under parent
-        if (addingUnder === 'theme') {
-          // parent is a pillar
-          const pillarId = parentForAdd!.split(':')[1];
-          const { error } = await supabase.from('themes').insert({
-            pillar_id: pillarId,
-            name: vals.name,
-            code: vals.code,
-            description: vals.description ?? '',
-            sort_order: Number(vals.sort_order ?? 1),
-          } as any);
-          if (error) throw error;
-        } else {
-          // adding subtheme (parent is theme)
-          const themeId = parentForAdd!.split(':')[1];
-          const { error } = await supabase.from('subthemes').insert({
-            theme_id: themeId,
-            name: vals.name,
-            code: vals.code,
-            description: vals.description ?? '',
-            sort_order: Number(vals.sort_order ?? 1),
-          } as any);
-          if (error) throw error;
-        }
-        message.success('Added.');
-      } else {
-        // adding a brand new pillar (via top-level +)
-        const { error } = await supabase.from('pillars').insert({
-          name: vals.name,
-          code: vals.code,
-          description: vals.description ?? '',
-          sort_order: Number(vals.sort_order ?? 1),
-        } as any);
-        if (error) throw error;
-        message.success('Added pillar.');
       }
 
-      setOpen(false);
+      setModalOpen(false);
       setEditing(null);
-      setAddingUnder(null);
-      setParentForAdd(null);
-      await loadAll();
+      await refresh();
+      message.success('Saved');
+    } catch {
+      /* no-op - form errors are shown inline */
+    }
+  };
+
+  /** -------------------- CSV export/import -------------------- */
+  const exportCSV = () => {
+    // Single sheet with `level,code,name,description,sort_order,parent_code`
+    const byCodeP = new Map(pillars.map(p => [p.code, p] as const));
+    const byCodeT = new Map(themes.map(t => [t.code, t] as const));
+    const rows: Record<string, unknown>[] = [];
+
+    pillars.forEach(p => {
+      rows.push({
+        level: 'pillar',
+        code: p.code,
+        name: p.name,
+        description: p.description ?? '',
+        sort_order: p.sort_order ?? '',
+        parent_code: '',
+      });
+    });
+    themes.forEach(t => {
+      const parent = pillars.find(p => p.id === t.pillar_id);
+      rows.push({
+        level: 'theme',
+        code: t.code,
+        name: t.name,
+        description: t.description ?? '',
+        sort_order: t.sort_order ?? '',
+        parent_code: parent?.code ?? '',
+      });
+    });
+    subs.forEach(su => {
+      const parent = themes.find(t => t.id === su.theme_id);
+      rows.push({
+        level: 'subtheme',
+        code: su.code,
+        name: su.name,
+        description: su.description ?? '',
+        sort_order: su.sort_order ?? '',
+        parent_code: parent?.code ?? '',
+      });
+    });
+
+    const csv = toCSV(rows);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'framework.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  // Import policy: update by code; creates only if parent_code exists and we can resolve it.
+  const handleCSVText = async (text: string) => {
+    const rows = parseCSV(text);
+    if (!rows.length) return message.info('No rows found in CSV.');
+
+    // Build code -> id maps
+    const pByCode = new Map(pillars.map(p => [p.code, p]));
+    const tByCode = new Map(themes.map(t => [t.code, t]));
+    const ops: Promise<any>[] = [];
+
+    rows.forEach(r => {
+      const level = (r.level || '').toLowerCase().trim() as Level;
+      const code = r.code?.trim();
+      if (!level || !code) return;
+
+      const patch = {
+        name: r.name ?? '',
+        description: r.description ?? '',
+        sort_order: r.sort_order ? Number(r.sort_order) : null,
+      } as any;
+
+      if (level === 'pillar') {
+        const existing = pByCode.get(code);
+        if (existing) {
+          ops.push(supabase.from('pillars').update({ code, ...patch }).eq('id', existing.id));
+        } else {
+          ops.push(supabase.from('pillars').insert({ code, ...patch }));
+        }
+      } else if (level === 'theme') {
+        const parent = r.parent_code ? pByCode.get(r.parent_code) : undefined;
+        const existing = tByCode.get(code);
+        if (existing) {
+          ops.push(supabase.from('themes').update({ code, ...patch }).eq('id', existing.id));
+        } else if (parent) {
+          ops.push(supabase.from('themes').insert({ pillar_id: parent.id, code, ...patch }));
+        }
+      } else if (level === 'subtheme') {
+        const parent = r.parent_code ? tByCode.get(r.parent_code) : undefined;
+        const existing = subs.find(su => su.code === code);
+        if (existing) {
+          ops.push(supabase.from('subthemes').update({ code, ...patch }).eq('id', existing.id));
+        } else if (parent) {
+          ops.push(supabase.from('subthemes').insert({ theme_id: parent.id, code, ...patch }));
+        }
+      }
+    });
+
+    setLoading(true);
+    try {
+      const results = await Promise.all(ops);
+      const err = results.find(r => r?.error)?.error;
+      if (err) throw err;
+      message.success('CSV processed');
+      await refresh();
     } catch (e: any) {
-      console.error(e);
-      message.error(e?.message || 'Save failed.');
+      message.error(e.message || 'CSV import failed');
     } finally {
       setLoading(false);
     }
   };
 
-  /* --------------------------------- Render -------------------------------- */
-
-  const Header = (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
-      padding: '12px 16px',
-      borderBottom: '1px solid #f0f0f0',
-      background: '#fff'
-    }}>
-      <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1677ff' }}>
-        <ArrowLeftOutlined /> Dashboard
-      </Link>
-      <div style={{ fontSize: 22, fontWeight: 700, marginLeft: 6 }}>Framework Editor</div>
-      <div style={{ flex: 1 }} />
-      <Space>
-        <Button icon={<ReloadOutlined />} onClick={loadAll}>Refresh</Button>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => { setOpen(true); setEditing(null); setAddingUnder(null); setParentForAdd(null); form.setFieldsValue({ name: '', code: '', description: '', sort_order: 1 }); }}>
-          Add pillar
-        </Button>
-      </Space>
-    </div>
-  );
-
-  const Row = ({ row }: { row: UIRow }) => {
-    const isParent = row.level !== 'subtheme';
-    const caretOpen = !!expanded[row.id];
-
-    const lvl = row.level;
-    const tag = tagStyle(lvl);
-
-    return (
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '60% 35% 5%',
-          padding: '12px 16px',
-          borderBottom: '1px solid #f5f5f5',
-          alignItems: 'flex-start',
-          background: '#fff'
-        }}
-      >
-        {/* Name column */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* indent + caret */}
-          <div style={{ width: 18, textAlign: 'center' }}>
-            {row.level === 'pillar' && (
-              <button
-                aria-label="toggle"
-                onClick={() => toggle(row)}
-                style={{ border: 0, background: 'transparent', cursor: 'pointer', fontSize: 16 }}
-              >
-                {caretOpen ? '▾' : '▸'}
-              </button>
-            )}
-            {row.level === 'theme' && (
-              <button
-                aria-label="toggle"
-                onClick={() => toggle(row)}
-                style={{ border: 0, background: 'transparent', cursor: 'pointer', fontSize: 16 }}
-              >
-                {caretOpen ? '▾' : '▸'}
-              </button>
-            )}
-          </div>
-
-          {/* type tag + code */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <span
-              style={{
-                textTransform: 'lowercase',
-                fontSize: 12,
-                color: tag.color,
-                background: tag.bg,
-                border: `1px solid ${tag.color}`,
-                padding: '2px 8px',
-                borderRadius: 6,
-              }}
-            >
-              {labelFor(row.level)}
-            </span>
-            <span style={{ fontSize: 12, color: '#999' }}>[{row.code}]</span>
-          </div>
-
-          {/* name */}
-          <div style={{ fontWeight: 600 }}>
-            {row.name}
-          </div>
-        </div>
-
-        {/* Description column */}
-        <div style={{ color: '#555' }}>
-          {row.description}
-        </div>
-
-        {/* Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          {isParent && (
-            <Tooltip title={row.level === 'pillar' ? 'Add theme' : 'Add sub-theme'}>
-              <Button size="small" icon={<PlusOutlined />} onClick={() => startAddUnder(row)} />
-            </Tooltip>
-          )}
-          <Tooltip title="Edit">
-            <Button size="small" icon={<EditOutlined />} onClick={() => startEdit(row)} />
-          </Tooltip>
-          <Popconfirm title="Delete this row?" onConfirm={() => doDelete(row)}>
-            <Button danger size="small" icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </div>
-      </div>
-    );
+  const uploadProps: UploadProps = {
+    accept: '.csv,text/csv',
+    showUploadList: false,
+    beforeUpload: async (file) => {
+      const text = await file.text();
+      await handleCSVText(text);
+      return false; // prevent real upload
+    },
   };
 
+  /** -------------------- Render -------------------- */
   return (
-    <div style={{ background: '#fafafa', minHeight: '100vh' }}>
-      {Header}
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <Link href="/" style={{ color: '#1677ff' }}>
+          <ArrowLeftOutlined /> Dashboard
+        </Link>
+        <h1 style={{ margin: 0, fontSize: 22 }}>Framework Editor</h1>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <Button icon={<ReloadOutlined />} onClick={refresh} loading={loading}>
+            Refresh
+          </Button>
+          <Upload {...uploadProps}>
+            <Button icon={<UploadOutlined />}>Import CSV</Button>
+          </Upload>
+          <Button icon={<DownloadOutlined />} onClick={exportCSV}>
+            Export CSV
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openAdd(null)}>
+            Add Pillar
+          </Button>
+        </div>
+      </div>
 
-      {/* Column header */}
+      {/* Table header */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '60% 35% 5%',
+          gridTemplateColumns: '60% 40%', // responsive width split
           padding: '10px 16px',
-          borderBottom: '1px solid #eaeaea',
+          borderTop: '1px solid #f0f0f0',
+          borderBottom: '1px solid #f0f0f0',
           color: '#888',
-          fontSize: 12,
-          background: '#fcfcfc',
+          fontWeight: 600,
         }}
       >
         <div>Name</div>
         <div>Description / Notes</div>
-        <div />
       </div>
 
       {/* Rows */}
-      <div>
-        {flatRows.map((r) => (
-          <Row key={r.id} row={r} />
-        ))}
-        {!loading && flatRows.length === 0 && (
-          <div style={{ padding: 24, color: '#999' }}>No data</div>
-        )}
+      <div role="table" aria-label="framework-table">
+        {flatData.map((row) => {
+          const hasChildren =
+            row.level === 'pillar'
+              ? themes.some(t => t.pillar_id === row.id)
+              : row.level === 'theme'
+              ? subs.some(su => su.theme_id === row.id)
+              : false;
+
+          return (
+            <div
+              key={row.key}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '60% 40%',
+                alignItems: 'center',
+                padding: '12px 16px',
+                borderBottom: '1px solid #f5f5f5',
+              }}
+            >
+              {/* Name + type tag + code + caret */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* caret (hidden for subtheme / or when no children) */}
+                <button
+                  aria-label="expand"
+                  onClick={() => toggleExpand(row)}
+                  disabled={!hasChildren}
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    border: '1px solid #e5e5e5',
+                    background: '#fff',
+                    cursor: hasChildren ? 'pointer' : 'default',
+                    rotate: expanded.has(row.key) ? '90deg' : '0deg',
+                    display: row.level === 'subtheme' ? 'none' : 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <span style={{ fontSize: 12, lineHeight: 1, opacity: hasChildren ? 1 : 0.4 }}>▶</span>
+                </button>
+
+                {/* Tag + code */}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  {levelTag(row.level)}
+                  <span style={{ color: '#999' }}>[{row.code}]</span>
+                </span>
+
+                {/* Name text */}
+                <span style={{ fontWeight: 600 }}>{row.name}</span>
+              </div>
+
+              {/* Description + actions */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ color: '#555' }}>{row.description}</div>
+
+                <Space size="small">
+                  {/* Add child (only pillar/theme) */}
+                  {(row.level === 'pillar' || row.level === 'theme') && (
+                    <Tooltip title={`Add ${row.level === 'pillar' ? 'Theme' : 'Sub-theme'}`}>
+                      <Button size="small" icon={<PlusOutlined />} onClick={() => openAdd(row)} />
+                    </Tooltip>
+                  )}
+                  <Tooltip title="Edit">
+                    <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(row)} />
+                  </Tooltip>
+                  <Tooltip title="Delete">
+                    <Button
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => doDelete(row)}
+                    />
+                  </Tooltip>
+                </Space>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Editor dialog (used for Add & Edit) */}
+      {/* Edit/Add modal */}
       <Modal
-        open={open}
-        title={
-          editing
-            ? `Edit ${labelFor(editing.level)}`
-            : addingUnder
-              ? `Add ${labelFor(addingUnder)}`
-              : 'Add pillar'
-        }
+        title={editing ? (editing.id === 'new' ? `Add ${editing.level}` : `Edit ${editing.level}`) : 'Edit'}
+        open={modalOpen}
+        onCancel={() => setModalOpen(false)}
+        onOk={saveModal}
         okText="Save"
-        onOk={submitForm}
-        onCancel={() => {
-          setOpen(false);
-          setEditing(null);
-          setAddingUnder(null);
-          setParentForAdd(null);
-        }}
-        confirmLoading={loading}
         destroyOnClose
       >
-        <Form layout="vertical" form={form}>
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
-            <Input placeholder="Name" />
+        <Form form={form} layout="vertical">
+          <Form.Item name="code" label="Code" rules={[{ required: true, message: 'Code is required' }]}>
+            <Input placeholder={editing?.level === 'pillar' ? 'P1' : editing?.level === 'theme' ? 'T1.1' : 'ST1.1.1'} />
           </Form.Item>
-          <Form.Item name="code" label="Code" rules={[{ required: true }]}>
-            <Input placeholder="Code (e.g., P1, T1.2, ST1.2.1)" />
+          <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Name is required' }]}>
+            <Input />
           </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea rows={3} placeholder="Description / notes" />
+          <Form.Item name="description" label="Description / Notes">
+            <Input.TextArea rows={3} />
           </Form.Item>
-          <Form.Item name="sort_order" label="Sort order" rules={[{ required: true }]}>
+          <Form.Item name="sort_order" label="Sort order">
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
         </Form>
