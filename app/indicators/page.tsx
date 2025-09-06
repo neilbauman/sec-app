@@ -1,180 +1,190 @@
-"use client";
+// /app/indicators/page.tsx
+'use client';
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Button, Form, Input, InputNumber, Modal, Space, Table, Tag, Typography, message } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from "@ant-design/icons";
-import { getBrowserClient } from "@/lib/supabaseClient";
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-type IndicatorLevel = "pillar" | "theme" | "subtheme";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Table, Button, Space, Modal, Form, Input, Select, message } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import { getBrowserClient } from '@/lib/supabaseClient';
+
+type IndicatorLevel = 'pillar' | 'theme' | 'subtheme';
+
 type IndicatorRow = {
   id: string;
+  ref_code: string;         // e.g. ties to pillar/theme/subtheme code
   level: IndicatorLevel;
-  ref_code: string;
   name: string;
   description: string | null;
   sort_order: number | null;
 };
 
-const levelTag = (level: IndicatorLevel, ref?: string) => {
-  const color = level === "pillar" ? "blue" : level === "theme" ? "green" : "red";
-  return (
-    <Space size={6}>
-      <Tag color={color} style={{ fontSize: 12 }}>
-        {level[0].toUpperCase() + level.slice(1)}
-      </Tag>
-      {ref ? <span style={{ color: "#999", fontSize: 12 }}>[{ref}]</span> : null}
-    </Space>
-  );
-};
-
 export default function IndicatorsPage() {
-  if (typeof window === "undefined") return null;
-
   const supabase = useMemo(() => getBrowserClient(), []);
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<IndicatorRow[]>([]);
-  const [modal, setModal] = useState<{ open: boolean; editing?: IndicatorRow | null }>({ open: false });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<IndicatorRow | null>(null);
+  const [form] = Form.useForm<Partial<IndicatorRow>>();
 
-  const fetchAll = async () => {
+  const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("indicators").select("*").order("level", { ascending: true }).order("sort_order", { ascending: true });
-    if (error) {
-      message.error(error.message);
-    } else {
-      setRows((data ?? []).map((d) => ({
-        id: d.id,
-        level: d.level,
-        ref_code: d.ref_code,
-        name: d.name,
-        description: d.description ?? "",
-        sort_order: d.sort_order ?? 0,
-      })));
+    try {
+      const { data, error } = await supabase.from('indicators').select('*').order('sort_order', { ascending: true });
+      if (error) throw error;
+      setRows(data || []);
+    } catch (e: any) {
+      console.error(e);
+      message.error(e?.message ?? 'Failed to load indicators');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    fetchAll();
+    load();
   }, []);
 
-  const [form] = Form.useForm();
-
   const openCreate = () => {
-    setModal({ open: true, editing: null });
-    setTimeout(() => form.setFieldsValue({ sort_order: 1 }), 0);
+    setEditing(null);
+    form.setFieldsValue({ level: 'pillar', sort_order: 1 });
+    setModalOpen(true);
   };
 
-  const openEdit = (rec: IndicatorRow) => {
-    setModal({ open: true, editing: rec });
-    setTimeout(() => {
-      form.setFieldsValue({
-        level: rec.level,
-        ref_code: rec.ref_code,
-        name: rec.name,
-        description: rec.description ?? "",
-        sort_order: rec.sort_order ?? 1,
-      });
-    }, 0);
+  const openEdit = (row: IndicatorRow) => {
+    setEditing(row);
+    form.setFieldsValue({
+      ref_code: row.ref_code,
+      level: row.level,
+      name: row.name,
+      description: row.description ?? '',
+      sort_order: row.sort_order ?? 1,
+    });
+    setModalOpen(true);
   };
 
-  const onSubmit = async () => {
+  const onDelete = (row: IndicatorRow) => {
+    Modal.confirm({
+      title: 'Delete indicator?',
+      content: 'This action cannot be undone.',
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        setLoading(true);
+        try {
+          const { error } = await supabase.from('indicators').delete().eq('id', row.id);
+          if (error) throw error;
+          message.success('Deleted');
+          await load();
+        } catch (e: any) {
+          console.error(e);
+          message.error(e?.message ?? 'Delete failed');
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
+
+  const submit = async () => {
+    const vals = await form.validateFields();
+    setLoading(true);
     try {
-      const vals = await form.validateFields();
-      let err: string | null = null;
-
-      if (modal.editing) {
-        const { error } = await supabase.from("indicators").update({
-          level: vals.level,
-          ref_code: vals.ref_code,
-          name: vals.name,
-          description: vals.description ?? "",
-          sort_order: vals.sort_order ?? 1,
-        }).eq("id", modal.editing.id);
-        err = error?.message ?? null;
+      if (editing) {
+        const { error } = await supabase
+          .from('indicators')
+          .update({
+            ref_code: vals.ref_code,
+            level: vals.level,
+            name: vals.name,
+            description: vals.description ?? '',
+            sort_order: Number(vals.sort_order ?? 1),
+          })
+          .eq('id', editing.id);
+        if (error) throw error;
+        message.success('Saved');
       } else {
-        const { error } = await supabase.from("indicators").insert({
-          level: vals.level,
+        const { error } = await supabase.from('indicators').insert({
           ref_code: vals.ref_code,
+          level: vals.level,
           name: vals.name,
-          description: vals.description ?? "",
-          sort_order: vals.sort_order ?? 1,
+          description: vals.description ?? '',
+          sort_order: Number(vals.sort_order ?? 1),
         });
-        err = error?.message ?? null;
+        if (error) throw error;
+        message.success('Created');
       }
-
-      if (err) return message.error(err);
-      message.success("Saved.");
-      setModal({ open: false, editing: null });
-      fetchAll();
-    } catch {
-      /* validation cancelled */
+      setModalOpen(false);
+      setEditing(null);
+      form.resetFields();
+      await load();
+    } catch (e: any) {
+      console.error(e);
+      message.error(e?.message ?? 'Save failed');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const onDelete = async (rec: IndicatorRow) => {
-    const { error } = await supabase.from("indicators").delete().eq("id", rec.id);
-    if (error) return message.error(error.message);
-    message.success("Deleted.");
-    fetchAll();
-  };
-
   const columns: ColumnsType<IndicatorRow> = [
+    { title: 'Level', dataIndex: 'level', key: 'level', width: '12%' },
+    { title: 'Ref Code', dataIndex: 'ref_code', key: 'ref_code', width: '16%' },
+    { title: 'Name', dataIndex: 'name', key: 'name', width: '32%' },
+    { title: 'Description', dataIndex: 'description', key: 'description', width: '28%', render: (v) => v || <span style={{ color: '#bbb' }}>—</span> },
     {
-      title: "Type / Code",
-      dataIndex: "level",
-      width: "20%",
-      render: (_: any, rec) => levelTag(rec.level, rec.ref_code),
-    },
-    { title: "Name", dataIndex: "name", width: "36%", render: (t: string) => <span style={{ fontWeight: 500 }}>{t}</span> },
-    { title: "Description", dataIndex: "description", width: "36%", ellipsis: true },
-    { title: "Sort", dataIndex: "sort_order", align: "right", width: "8%", render: (v: number) => v ?? 0 },
-    {
-      title: "Actions",
-      key: "actions",
-      width: "12%",
+      title: 'Actions',
+      key: 'actions',
+      width: '12%',
       render: (_: any, rec) => (
-        <Space>
-          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)} />
-          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(rec)} />
+        <Space size="small">
+          <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(rec)}>Edit</Button>
+          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(rec)}>Delete</Button>
         </Space>
       ),
     },
   ];
 
   return (
-    <div style={{ padding: 20 }}>
-      <Space style={{ marginBottom: 16, width: "100%", justifyContent: "space-between" }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>Indicators</Typography.Title>
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+        <h2 style={{ margin: 0 }}>Indicators</h2>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchAll}>Refresh</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            New Indicator
-          </Button>
+          <Button icon={<ReloadOutlined />} onClick={load}>Reload</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>Add Indicator</Button>
         </Space>
-      </Space>
+      </div>
 
-      <Table<IndicatorRow>
+      <Table
         loading={loading}
-        columns={columns}
         dataSource={rows}
-        rowKey={(r) => r.id}
+        columns={columns}
+        rowKey="id"
         pagination={false}
+        size="middle"
       />
 
       <Modal
-        title={modal.editing ? "Edit Indicator" : "Add Indicator"}
-        open={modal.open}
-        onCancel={() => setModal({ open: false, editing: null })}
-        onOk={onSubmit}
+        open={modalOpen}
+        onCancel={() => { setModalOpen(false); setEditing(null); form.resetFields(); }}
+        onOk={submit}
+        title={editing ? 'Edit Indicator' : 'Create Indicator'}
+        okText={editing ? 'Save' : 'Create'}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" initialValues={{ sort_order: 1 }}>
+        <Form form={form} layout="vertical">
           <Form.Item name="level" label="Level" rules={[{ required: true }]}>
-            <Input placeholder="pillar | theme | subtheme" />
+            <Select
+              options={[
+                { value: 'pillar', label: 'Pillar' },
+                { value: 'theme', label: 'Theme' },
+                { value: 'subtheme', label: 'Subtheme' },
+              ]}
+            />
           </Form.Item>
-          <Form.Item name="ref_code" label="Reference Code" rules={[{ required: true }]}>
-            <Input placeholder="Unique indicator code" />
+          <Form.Item name="ref_code" label="Ref Code" rules={[{ required: true }]}>
+            <Input placeholder="Matches a pillar/theme/subtheme code (e.g. P1, T1.2)" />
           </Form.Item>
           <Form.Item name="name" label="Name" rules={[{ required: true }]}>
             <Input />
@@ -183,7 +193,7 @@ export default function IndicatorsPage() {
             <Input.TextArea rows={3} />
           </Form.Item>
           <Form.Item name="sort_order" label="Sort Order">
-            <InputNumber min={0} style={{ width: "100%" }} />
+            <Input type="number" min={1} />
           </Form.Item>
         </Form>
       </Modal>
