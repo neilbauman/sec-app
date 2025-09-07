@@ -1,254 +1,192 @@
-// app/framework/page.tsx
 'use client';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { getBrowserClient } from '@/lib/supabaseBrowser';
 
-type Pillar = {
-  id: number | string;
+type PillarRow = {
+  id: number;
   code: string;
   name: string;
   description?: string | null;
   sort_order?: number | null;
 };
 
-type Theme = {
-  id: number | string;
-  pillar_id: number | string;
+type ThemeRow = {
+  id: number;
+  pillar_id: number;         // FK → pillars.id
   code: string;
   name: string;
   description?: string | null;
   sort_order?: number | null;
 };
 
-type Subtheme = {
-  id: number | string;
-  theme_id: number | string;
+type SubthemeRow = {
+  id: number;
+  theme_id: number;          // FK → themes.id
   code: string;
   name: string;
   description?: string | null;
   sort_order?: number | null;
 };
 
-type ListPayload = {
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
+type Expanded = {
+  pillars: Set<number>;
+  themes: Set<number>;
 };
 
 export default function PrimaryFrameworkEditor() {
+  const supabase = useMemo(() => getBrowserClient(), []);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-  const [data, setData] = useState<ListPayload>({
-    pillars: [],
-    themes: [],
-    subthemes: [],
+  const [pillars, setPillars] = useState<PillarRow[]>([]);
+  const [themes, setThemes] = useState<ThemeRow[]>([]);
+  const [subs, setSubs] = useState<SubthemeRow[]>([]);
+  const [expanded, setExpanded] = useState<Expanded>({
+    pillars: new Set<number>(),
+    themes: new Set<number>(),
   });
 
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
-
-  // Read-only fetch via our own API route to avoid DB calls in the page component.
   useEffect(() => {
-    let cancelled = false;
+    let mounted = true;
     (async () => {
-      try {
-        setLoading(true);
-        setErr(null);
-        const res = await fetch('/framework/api/list', { cache: 'no-store' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const payload: ListPayload = await res.json();
-        if (!cancelled) setData(payload);
-      } catch (e: any) {
-        if (!cancelled) setErr(e?.message || 'Failed to load framework');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      setLoading(true);
+      // fetch all 3 tables in parallel, ordered by sort_order then id as tiebreaker
+      const [{ data: p }, { data: t }, { data: s }] = await Promise.all([
+        supabase.from('pillars').select('*').order('sort_order', { ascending: true }).order('id', { ascending: true }),
+        supabase.from('themes').select('*').order('sort_order', { ascending: true }).order('id', { ascending: true }),
+        supabase.from('subthemes').select('*').order('sort_order', { ascending: true }).order('id', { ascending: true }),
+      ]);
+      if (!mounted) return;
+      setPillars((p || []) as PillarRow[]);
+      setThemes((t || []) as ThemeRow[]);
+      setSubs((s || []) as SubthemeRow[]);
+      setLoading(false);
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => { mounted = false; };
+  }, [supabase]);
 
-  // Build parent→children maps (by ID, never by array index).
   const themesByPillar = useMemo(() => {
-    const m = new Map<string | number, Theme[]>();
-    for (const t of data.themes) {
-      const key = t.pillar_id;
-      if (!m.has(key)) m.set(key, []);
-      m.get(key)!.push(t);
+    const map = new Map<number, ThemeRow[]>();
+    for (const th of themes) {
+      const list = map.get(th.pillar_id) || [];
+      list.push(th);
+      map.set(th.pillar_id, list);
     }
-    for (const arr of m.values()) arr.sort(sortByOrderThenCode);
-    return m;
-  }, [data.themes]);
+    return map;
+  }, [themes]);
 
   const subsByTheme = useMemo(() => {
-    const m = new Map<string | number, Subtheme[]>();
-    for (const s of data.subthemes) {
-      const key = s.theme_id;
-      if (!m.has(key)) m.set(key, []);
-      m.get(key)!.push(s);
+    const map = new Map<number, SubthemeRow[]>();
+    for (const st of subs) {
+      const list = map.get(st.theme_id) || [];
+      list.push(st);
+      map.set(st.theme_id, list);
     }
-    for (const arr of m.values()) arr.sort(sortByOrderThenCode);
-    return m;
-  }, [data.subthemes]);
+    return map;
+  }, [subs]);
 
-  const pillarsSorted = useMemo(() => {
-    const copy = [...data.pillars];
-    copy.sort(sortByOrderThenCode);
-    return copy;
-  }, [data.pillars]);
-
-  function toggle(id: string) {
-    setExpanded(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  const togglePillar = (id: number) =>
+    setExpanded((e) => ({ ...e, pillars: new Set(e.pillars.has(id) ? [...e.pillars].filter(x => x !== id) : [...e.pillars, id]) }));
+  const toggleTheme = (id: number) =>
+    setExpanded((e) => ({ ...e, themes: new Set(e.themes.has(id) ? [...e.themes].filter(x => x !== id) : [...e.themes, id]) }));
 
   return (
-    <div className="fw-wrap">
-      <div className="fw-header">
-        <Link href="/" className="fw-back">Dashboard</Link>
-        <h1>Primary Framework Editor (read-only)</h1>
-        <button className="fw-refresh" onClick={() => location.reload()}>Refresh</button>
-      </div>
+    <div style={{ padding: 16 }}>
+      <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>Primary Framework Editor</h1>
 
-      {loading && <div className="fw-note">Loading framework…</div>}
-      {err && <div className="fw-error">Error: {err}</div>}
-
-      {!loading && !err && (
-        <div className="fw-table">
-          <div className="fw-thead">
-            <div className="fw-th fw-col-name">Name</div>
-            <div className="fw-th fw-col-desc">Description / Notes</div>
+      {loading ? (
+        <div>Loading framework…</div>
+      ) : (
+        <div role="table" aria-label="SSC Framework" style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div role="row" style={{ display: 'grid', gridTemplateColumns: '60% 40%', fontWeight: 600, padding: '8px 12px' }}>
+            <div>Name</div>
+            <div>Description / Notes</div>
           </div>
 
-          <div className="fw-tbody">
-            {pillarsSorted.map((p) => {
-              const pid = String(p.id);
-              const tOfP = themesByPillar.get(p.id) || [];
-              const isPExpanded = expanded.has(`P:${pid}`);
-              return (
-                <div key={`P:${pid}`}>
-                  <Row
-                    level="pillar"
-                    code={p.code}
-                    name={p.name}
-                    desc={p.description}
-                    expanded={isPExpanded}
-                    onToggle={() => toggle(`P:${pid}`)}
-                  />
-                  {isPExpanded &&
-                    tOfP.map((t) => {
-                      const tid = String(t.id);
-                      const sOfT = subsByTheme.get(t.id) || [];
-                      const isTExpanded = expanded.has(`T:${tid}`);
-                      return (
-                        <div key={`T:${tid}`}>
-                          <Row
-                            level="theme"
-                            code={t.code}
-                            name={t.name}
-                            desc={t.description}
-                            expanded={isTExpanded}
-                            onToggle={() => toggle(`T:${tid}`)}
-                          />
-                          {isTExpanded &&
-                            sOfT.map((s) => (
-                              <Row
-                                key={`S:${s.id}`}
-                                level="subtheme"
-                                code={s.code}
-                                name={s.name}
-                                desc={s.description}
-                                expanded={false}
-                                onToggle={undefined}
-                              />
-                            ))}
-                        </div>
-                      );
-                    })}
+          {/* Pillars */}
+          {pillars.map((p) => {
+            const openP = expanded.pillars.has(p.id);
+            const pThemes = themesByPillar.get(p.id) || [];
+            return (
+              <div key={`pillar-${p.id}`} role="rowgroup" style={{ borderTop: '1px solid #eee' }}>
+                <div role="row" style={{ display: 'grid', gridTemplateColumns: '60% 40%', alignItems: 'center', padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button
+                      aria-label={openP ? 'Collapse pillar' : 'Expand pillar'}
+                      onClick={() => togglePillar(p.id)}
+                      style={{
+                        width: 22, height: 22, borderRadius: 4, border: '1px solid #ccc',
+                        background: '#fff', cursor: 'pointer', fontSize: 14, lineHeight: '18px'
+                      }}
+                    >
+                      {openP ? '−' : '+'}
+                    </button>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ background: '#e6f0ff', color: '#2457c5', border: '1px solid #c9dbff', borderRadius: 8, padding: '2px 8px', fontSize: 12 }}>
+                        pillar
+                      </span>
+                      <span style={{ color: '#99a3b3', fontSize: 12, fontFamily: 'monospace' }}>[{p.code}]</span>
+                      <span style={{ fontWeight: 600 }}>{p.name}</span>
+                    </span>
+                  </div>
+                  <div style={{ color: '#444' }}>{p.description || ''}</div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Themes under this pillar */}
+                {openP && pThemes.map((t) => {
+                  const openT = expanded.themes.has(t.id);
+                  const tSubs = subsByTheme.get(t.id) || [];
+                  return (
+                    <div key={`theme-${t.id}`} role="rowgroup" style={{ paddingLeft: 34 }}>
+                      <div role="row" style={{ display: 'grid', gridTemplateColumns: '60% 40%', alignItems: 'center', padding: '8px 12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <button
+                            aria-label={openT ? 'Collapse theme' : 'Expand theme'}
+                            onClick={() => toggleTheme(t.id)}
+                            style={{
+                              width: 22, height: 22, borderRadius: 4, border: '1px solid #ccc',
+                              background: '#fff', cursor: 'pointer', fontSize: 14, lineHeight: '18px'
+                            }}
+                          >
+                            {openT ? '−' : '+'}
+                          </button>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ background: '#eaffea', color: '#2a7a2a', border: '1px solid #c7efc7', borderRadius: 8, padding: '2px 8px', fontSize: 12 }}>
+                              theme
+                            </span>
+                            <span style={{ color: '#99a3b3', fontSize: 12, fontFamily: 'monospace' }}>[{t.code}]</span>
+                            <span>{t.name}</span>
+                          </span>
+                        </div>
+                        <div style={{ color: '#444' }}>{t.description || ''}</div>
+                      </div>
+
+                      {/* Subthemes under this theme */}
+                      {openT && tSubs.map((s) => (
+                        <div key={`sub-${s.id}`} role="row" style={{ display: 'grid', gridTemplateColumns: '60% 40%', alignItems: 'center', padding: '6px 12px 6px 56px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ width: 22, height: 22 }} />
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ background: '#fff6e6', color: '#a66a00', border: '1px solid #ffe0b2', borderRadius: 8, padding: '2px 8px', fontSize: 12 }}>
+                                subtheme
+                              </span>
+                              <span style={{ color: '#99a3b3', fontSize: 12, fontFamily: 'monospace' }}>[{s.code}]</span>
+                              <span>{s.name}</span>
+                            </span>
+                          </div>
+                          <div style={{ color: '#444' }}>{s.description || ''}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       )}
-
-      <style jsx global>{frameworkCss}</style>
     </div>
   );
 }
-
-function sortByOrderThenCode<A extends { sort_order?: number | null; code?: string | null }>(a: A, b: A) {
-  const ao = a.sort_order ?? 0;
-  const bo = b.sort_order ?? 0;
-  if (ao !== bo) return ao - bo;
-  const ac = (a.code ?? '').localeCompare(b.code ?? undefined as any);
-  return ac;
-}
-
-function Row(props: {
-  level: 'pillar' | 'theme' | 'subtheme';
-  code: string;
-  name: string;
-  desc?: string | null;
-  expanded: boolean;
-  onToggle?: () => void;
-}) {
-  const { level, code, name, desc, expanded, onToggle } = props;
-  const tagClass =
-    level === 'pillar' ? 'tag-blue' : level === 'theme' ? 'tag-green' : 'tag-gray';
-
-  return (
-    <div className={`fw-tr lvl-${level}`}>
-      <div className="fw-td fw-col-name">
-        <button
-          className={`caret ${onToggle ? '' : 'invisible'}`}
-          onClick={onToggle}
-          aria-label="expand/collapse"
-        >
-          {expanded ? '▾' : '▸'}
-        </button>
-        <span className={`tag ${tagClass}`}>{level}</span>
-        <span className="code">[{code}]</span>
-        <span className="name">{name}</span>
-      </div>
-      <div className="fw-td fw-col-desc">
-        {desc || <span className="muted">No description</span>}
-      </div>
-    </div>
-  );
-}
-
-const frameworkCss = `
-.fw-wrap { padding: 16px 20px; }
-.fw-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
-.fw-back { color:#2563eb; text-decoration:none; }
-.fw-refresh { padding:6px 10px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; }
-.fw-note { padding:8px 0; color:#374151; }
-.fw-error { padding:10px 12px; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; border-radius:8px; }
-
-.fw-table { border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; }
-.fw-thead, .fw-tr { display:grid; grid-template-columns: 60% 40%; }
-.fw-th { background:#f9fafb; font-weight:600; color:#111827; padding:10px 12px; border-bottom:1px solid #e5e7eb; }
-.fw-td { padding:12px; border-bottom:1px solid #f3f4f6; }
-
-.fw-tr.lvl-theme { padding-left:16px; }
-.fw-tr.lvl-subtheme { padding-left:36px; }
-.fw-col-name { display:flex; align-items:center; gap:8px; }
-.caret { width:22px; height:22px; font-size:14px; display:inline-flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; background:#fff; }
-.caret.invisible { visibility:hidden; }
-.tag { padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid transparent; }
-.tag-blue { background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
-.tag-green { background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
-.tag-gray { background:#f3f4f6; color:#374151; border-color:#e5e7eb; }
-.code { color:#6b7280; font-size:12px; }
-.name { margin-left:4px; }
-.muted { color:#9ca3af; }
-`;
