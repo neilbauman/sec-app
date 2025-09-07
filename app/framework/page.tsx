@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'default-no-store';
+export const dynamicParams = true
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
