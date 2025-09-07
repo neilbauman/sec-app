@@ -1,8 +1,10 @@
 // /app/indicators/page.tsx
 'use client';
 
+'use client';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const fetchCache = 'default-no-store';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Button, Table, Space, Tag, Form, Input, InputNumber, Modal, Typography, message } from 'antd';
