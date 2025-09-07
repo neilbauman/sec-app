@@ -1,15 +1,25 @@
 // app/layout.tsx
-import type { ReactNode } from "react";
-
-export const metadata = {
-  title: "SSC",
-  description: "Social Stability Composite",
-};
-
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: "Inter, system-ui, Arial, sans-serif" }}>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>SSC</title>
+      </head>
+      <body
+        style={{
+          margin: 0,
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"',
+          background: "#0b1116",
+          color: "#e6edf3",
+        }}
+      >
         {children}
       </body>
     </html>
