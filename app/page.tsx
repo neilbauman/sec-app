@@ -1,19 +1,17 @@
-// app/framework/page.tsx
-import type { Metadata } from "next";
+// No 'use client' needed — this is a simple server component.
+// These two lines ensure the route is treated as dynamic at build time.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-export const metadata: Metadata = {
-  title: "Primary Framework Editor",
-};
-
-export default function Page() {
+export default function FrameworkPage() {
   return (
-    <div style={{ padding: "24px" }}>
-      <h1 style={{ fontSize: "22px", fontWeight: 600 }}>
+    <main style={{ padding: 24 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 600 }}>
         Primary Framework Editor
       </h1>
-      <p style={{ marginTop: 8, color: "#6b7280" }}>
-        Display-only skeleton. No data calls, no Supabase, no client code.
+      <p style={{ color: '#6b7280', marginTop: 8 }}>
+        Placeholder view — no data is loaded yet.
       </p>
-    </div>
+    </main>
   );
 }
