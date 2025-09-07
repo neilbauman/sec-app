@@ -1,10 +1,18 @@
 // app/framework/page.tsx
-export const dynamic = 'force-dynamic';
-export const revalidate = 0; // MUST be a number or false, never a function
-
-import ClientFrameworkPage from './ClientFrameworkPage';
-
 export default function FrameworkPage() {
-  // server wrapper only — no hooks, no data fetching yet
-  return <ClientFrameworkPage />;
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
+      <p className="mt-2 text-sm text-gray-600">
+        Read-only view. Pulls pillars → themes → subthemes from Supabase via a server API route.
+      </p>
+
+      {/* Client side fetch + render */}
+      {/* @ts-expect-error Async/Client boundary is fine here */}
+      <FrameworkClient />
+    </div>
+  );
 }
+
+// Import placed at bottom to keep the server file simple
+import FrameworkClient from './FrameworkClient';
