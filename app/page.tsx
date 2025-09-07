@@ -1,20 +1,17 @@
-// app/framework/page.tsx
-import * as React from "react";
+// app/page.tsx
+import Link from "next/link";
 
-// Optional: page title for the browser tab
-export const metadata = {
-  title: "Primary Framework Editor",
-};
-
-export default function FrameworkPage() {
+export default function HomePage() {
   return (
-    <div style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.2 }}>
-        Primary Framework Editor
-      </h1>
-      <p style={{ marginTop: 8, color: "#6b7280" }}>
-        Read-only placeholder. No data is loaded yet.
+    <main style={{ padding: 24 }}>
+      <h1 style={{ marginTop: 0 }}>SSC</h1>
+      <p>This is the temporary home page.</p>
+      <p>
+        Go to{" "}
+        <Link href="/framework" style={{ textDecoration: "underline" }}>
+          Primary Framework Editor
+        </Link>
       </p>
-    </div>
+    </main>
   );
 }
