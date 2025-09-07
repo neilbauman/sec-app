@@ -1,17 +1,19 @@
-'use client';
+// app/framework/page.tsx
+import type { Metadata } from "next";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const metadata: Metadata = {
+  title: "Primary Framework Editor",
+};
 
-export default function FrameworkPage() {
+export default function Page() {
   return (
-    <main style={{ padding: '24px' }}>
-      <h1 style={{ fontSize: '28px', fontWeight: 700, margin: 0 }}>
+    <div style={{ padding: "24px" }}>
+      <h1 style={{ fontSize: "22px", fontWeight: 600 }}>
         Primary Framework Editor
       </h1>
-      <p style={{ color: '#6b7280', marginTop: 8 }}>
-        (placeholder view — no data yet)
+      <p style={{ marginTop: 8, color: "#6b7280" }}>
+        Display-only skeleton. No data calls, no Supabase, no client code.
       </p>
-    </main>
+    </div>
   );
 }
