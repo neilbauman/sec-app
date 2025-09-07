@@ -1,11 +1,11 @@
-// app/framework/page.tsx
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// This file is a Server Component by default.
-// It only wraps the client UI to ensure the route is fully dynamic.
-import ClientFrameworkPage from './ClientFrameworkPage';
-
 export default function FrameworkPage() {
-  return <ClientFrameworkPage />;
+  return (
+    <main style={{ padding: "2rem" }}>
+      <h1>Primary Framework Editor</h1>
+      <p>This is a placeholder. No Supabase calls yet.</p>
+    </main>
+  );
 }
