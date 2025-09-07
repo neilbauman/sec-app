@@ -1,19 +1,14 @@
-// app/framework/page.tsx
-'use client';
-
-export const dynamic = 'force-dynamic';
+// Server component on purpose. No hooks, no client, no Supabase.
+// We also disable prerendering to avoid the “revalidate is a function” errors.
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-import React from 'react';
-
-export default function FrameworkPage(): JSX.Element {
+export default function FrameworkPage() {
   return (
-    <main style={{ padding: '24px' }}>
-      <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '8px' }}>
-        Primary Framework Editor
-      </h1>
-      <p style={{ color: '#666' }}>
-        (Display-only placeholder — no data calls yet.)
+    <main style={{ padding: "24px" }}>
+      <h1 style={{ margin: 0, fontSize: "28px" }}>Primary Framework Editor</h1>
+      <p style={{ marginTop: "12px", color: "#555" }}>
+        Read-only placeholder. No data is fetched yet.
       </p>
     </main>
   );
