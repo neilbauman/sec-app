@@ -1,13 +1,13 @@
+// app/framework/page.tsx
 'use client';
 
 export const dynamic = 'force-dynamic';
-export const revalidate=0;
+export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { getBrowserClient } from '@/lib/supabaseClient';
-import { Table, Tag, Button, Space, Modal, Form, Input, Select, Popconfirm, Upload, message } from 'antd';
+import { Table, Tag, Button, Space, Input, Modal, Form, message, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   ArrowLeftOutlined,
@@ -15,125 +15,150 @@ import {
   EditOutlined,
   DeleteOutlined,
   ReloadOutlined,
-  UploadOutlined,
-  DownloadOutlined,
-  DownOutlined,
-  RightOutlined,
 } from '@ant-design/icons';
-import Papa from 'papaparse';
+import { getBrowserClient } from '@/lib/supabaseClient';
+import './styles.css'; // optional, see note below
 
 type Level = 'pillar' | 'theme' | 'subtheme';
 
-type PillarRow = { id: string; code: string; name: string; description?: string | null; sort_order?: number | null; };
-type ThemeRow  = { id: string; code: string; name: string; description?: string | null; sort_order?: number | null; pillar_id: string; };
-type SubRow    = { id: string; code: string; name: string; description?: string | null; sort_order?: number | null; theme_id: string; };
-
-type UIRow = {
-  key: string;
-  level: Level;
+type PillarRow = {
   id: string;
-  parentId?: string | null;
   code: string;
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
-  pillarCode?: string;
-  themeCode?: string;
+  description: string | null;
+  sort_order: number | null;
 };
 
-const LEVEL_TAG: Record<Level, { color: string; text: string }> = {
-  pillar:   { color: 'blue',  text: 'Pillar' },
-  theme:    { color: 'green', text: 'Theme' },
-  subtheme: { color: 'red',   text: 'Sub-theme' },
+type ThemeRow = {
+  id: string;
+  pillar_id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  sort_order: number | null;
 };
 
-const CARET_SIZE_STYLE = { fontSize: 14 }; // larger carets
+type SubthemeRow = {
+  id: string;
+  theme_id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  sort_order: number | null;
+};
 
-export default function FrameworkPage() {
+type UIRow = {
+  key: string; // `${level}:${id}`
+  level: Level;
+  id: string;
+  parentId?: string; // pillar_id for themes, theme_id for subthemes
+  code: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  children?: UIRow[];
+};
+
+const TYPE_COLORS: Record<Level, string> = {
+  pillar: 'blue',
+  theme: 'green',
+  subtheme: 'red',
+};
+
+function levelToTable(level: Level): 'pillars' | 'themes' | 'subthemes' {
+  if (level === 'pillar') return 'pillars';
+  if (level === 'theme') return 'themes';
+  return 'subthemes';
+}
+
+export default function FrameworkEditorPage() {
   const supabase = useMemo(() => getBrowserClient(), []);
   const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<UIRow[]>([]);
-  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-  const [editOpen, setEditOpen] = useState(false);
-  const [editLevel, setEditLevel] = useState<Level>('pillar');
+  const [data, setData] = useState<UIRow[]>([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
   const [editing, setEditing] = useState<UIRow | null>(null);
-  const [form] = Form.useForm();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [form] = Form.useForm<Partial<UIRow>>();
 
-  // --- Fetch all three tables, build a flat + hierarchical map
+  // --------- fetch all ----------
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: pillars, error: pe }, { data: themes, error: te }, { data: subs, error: se }] = await Promise.all([
-        supabase.from('pillars').select('*').order('sort_order', { ascending: true }),
-        supabase.from('themes').select('*').order('sort_order', { ascending: true }),
-        supabase.from('subthemes').select('*').order('sort_order', { ascending: true }),
-      ]);
+      const [{ data: pillars, error: pe }, { data: themes, error: te }, { data: subs, error: se }] =
+        await Promise.all([
+          supabase.from('pillars').select('*').order('sort_order', { ascending: true }),
+          supabase.from('themes').select('*').order('sort_order', { ascending: true }),
+          supabase.from('subthemes').select('*').order('sort_order', { ascending: true }),
+        ]);
 
       if (pe) throw pe;
       if (te) throw te;
       if (se) throw se;
 
-      const pArr = (pillars ?? []) as PillarRow[];
-      const tArr = (themes ?? []) as ThemeRow[];
-      const sArr = (subs ?? []) as SubRow[];
+      const pillarsSafe = (pillars || []) as PillarRow[];
+      const themesSafe = (themes || []) as ThemeRow[];
+      const subsSafe = (subs || []) as SubthemeRow[];
 
-      // Index by id for relationships
-      const pillarsById = new Map<string, PillarRow>(pArr.map(p => [p.id, p]));
-      const themesById  = new Map<string, ThemeRow>(tArr.map(t => [t.id, t]));
+      // build maps
+      const tByPillar = new Map<string, UIRow[]>();
+      const sByTheme = new Map<string, UIRow[]>();
 
-      // Build UI rows
-      const ui: UIRow[] = [];
-
-      pArr.forEach(p => {
-        ui.push({
-          key: `P:${p.id}`,
-          id: p.id,
-          level: 'pillar',
-          code: p.code,
-          name: p.name,
-          description: p.description ?? '',
-          sort_order: p.sort_order ?? null,
-        });
-      });
-
-      tArr.forEach(t => {
-        const parent = pillarsById.get(t.pillar_id);
-        if (!parent) return;
-        ui.push({
-          key: `T:${t.id}`,
-          id: t.id,
+      for (const th of themesSafe) {
+        const ui: UIRow = {
+          key: `theme:${th.id}`,
+          id: th.id,
+          parentId: th.pillar_id,
           level: 'theme',
-          parentId: t.pillar_id,
-          code: t.code,
-          name: t.name,
-          description: t.description ?? '',
-          sort_order: t.sort_order ?? null,
-          pillarCode: parent.code,
-        });
-      });
+          code: th.code || '',
+          name: th.name || '',
+          description: th.description || '',
+          sort_order: th.sort_order ?? 1,
+          children: [], // will fill with subthemes
+        };
+        if (!tByPillar.has(th.pillar_id)) tByPillar.set(th.pillar_id, []);
+        tByPillar.get(th.pillar_id)!.push(ui);
+      }
 
-      sArr.forEach(s => {
-        const parentT = themesById.get(s.theme_id);
-        if (!parentT) return;
-        const parentP = pillarsById.get(parentT.pillar_id);
-        ui.push({
-          key: `S:${s.id}`,
-          id: s.id,
+      for (const st of subsSafe) {
+        const ui: UIRow = {
+          key: `subtheme:${st.id}`,
+          id: st.id,
+          parentId: st.theme_id,
           level: 'subtheme',
-          parentId: s.theme_id,
-          code: s.code,
-          name: s.name,
-          description: s.description ?? '',
-          sort_order: s.sort_order ?? null,
-          pillarCode: parentP?.code,
-          themeCode: parentT?.code,
-        });
-      });
+          code: st.code || '',
+          name: st.name || '',
+          description: st.description || '',
+          sort_order: st.sort_order ?? 1,
+        };
+        if (!sByTheme.has(st.theme_id)) sByTheme.set(st.theme_id, []);
+        sByTheme.get(st.theme_id)!.push(ui);
+      }
 
-      setRows(ui);
+      // attach subthemes to themes
+      for (const [, list] of tByPillar) {
+        for (const th of list) {
+          th.children = (sByTheme.get(th.id) || []).sort((a, b) => a.sort_order - b.sort_order);
+        }
+      }
+
+      // top-level pillars with nested themes
+      const tree: UIRow[] = pillarsSafe.map((p) => ({
+        key: `pillar:${p.id}`,
+        id: p.id,
+        level: 'pillar',
+        code: p.code || '',
+        name: p.name || '',
+        description: p.description || '',
+        sort_order: p.sort_order ?? 1,
+        children: (tByPillar.get(p.id) || []).sort((a, b) => a.sort_order - b.sort_order),
+      }));
+
+      // sort pillars
+      tree.sort((a, b) => a.sort_order - b.sort_order);
+      setData(tree);
     } catch (err: any) {
       console.error(err);
-      message.error(err?.message || 'Failed to load framework.');
+      message.error(err?.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -143,359 +168,140 @@ export default function FrameworkPage() {
     fetchAll();
   }, [fetchAll]);
 
-  // Build parent-child maps for expandable table
-  const childrenMap = useMemo(() => {
-    const byParent: Record<string, UIRow[]> = {};
-    rows.forEach(r => {
-      if (r.level === 'theme') {
-        const key = `P:${r.parentId}`;
-        byParent[key] = byParent[key] || [];
-        byParent[key].push(r);
-      } else if (r.level === 'subtheme') {
-        const key = `T:${r.parentId}`;
-        byParent[key] = byParent[key] || [];
-        byParent[key].push(r);
-      }
+  // --------- helpers ----------
+  const openEdit = (row: UIRow) => {
+    setEditing(row);
+    form.setFieldsValue({
+      name: row.name,
+      description: row.description,
+      code: row.code,
+      sort_order: row.sort_order,
     });
-    return byParent;
-  }, [rows]);
+    setIsModalOpen(true);
+  };
 
-  const topLevel = useMemo(() => rows.filter(r => r.level === 'pillar'), [rows]);
-
-  const getChildren = useCallback((rec: UIRow): UIRow[] => {
-    if (rec.level === 'pillar') return childrenMap[`P:${rec.id}`] || [];
-    if (rec.level === 'theme')  return childrenMap[`T:${rec.id}`] || [];
-    return [];
-  }, [childrenMap]);
-
-  // ----- CRUD helpers -----
-  const openCreate = (level: Level, parent?: UIRow) => {
-    setEditLevel(level);
+  const closeModal = () => {
+    setIsModalOpen(false);
     setEditing(null);
-    const initial: any = { level, name: '', description: '', sort_order: 1, code: '' };
-
-    if (level === 'theme' && parent) initial.pillar_id = parent.id;
-    if (level === 'subtheme' && parent) initial.theme_id = parent.id;
-
-    form.setFieldsValue(initial);
-    setEditOpen(true);
+    form.resetFields();
   };
 
-  const openEdit = (rec: UIRow) => {
-    setEditLevel(rec.level);
-    setEditing(rec);
-    const initial: any = {
-      level: rec.level,
-      name: rec.name,
-      description: rec.description ?? '',
-      sort_order: rec.sort_order ?? 1,
-      code: rec.code,
-    };
-    if (rec.level === 'theme')   initial.pillar_id = rec.parentId;
-    if (rec.level === 'subtheme') initial.theme_id  = rec.parentId;
-    form.setFieldsValue(initial);
-    setEditOpen(true);
-  };
-
-  const handleDelete = async (rec: UIRow) => {
-    setLoading(true);
-    try {
-      if (rec.level === 'pillar') {
-        const childThemes = getChildren(rec);
-        if (childThemes.length) {
-          message.warning('Delete themes under this pillar first.');
-          return;
-        }
-        const { error } = await supabase.from('pillars').delete().eq('id', rec.id);
-        if (error) throw error;
-      } else if (rec.level === 'theme') {
-        const childSubs = getChildren(rec);
-        if (childSubs.length) {
-          message.warning('Delete sub-themes under this theme first.');
-          return;
-        }
-        const { error } = await supabase.from('themes').delete().eq('id', rec.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('subthemes').delete().eq('id', rec.id);
-        if (error) throw error;
-      }
-      message.success('Deleted.');
-      await fetchAll();
-    } catch (err: any) {
-      console.error(err);
-      message.error(err?.message || 'Delete failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const submitEdit = async () => {
+  const saveEdit = async () => {
     try {
       const vals = await form.validateFields();
-      setLoading(true);
-
-      if (!editing) {
-        // CREATE
-        if (editLevel === 'pillar') {
-          const payload = { name: vals.name, description: vals.description ?? '', sort_order: vals.sort_order ?? 1, code: vals.code };
-          const { error } = await supabase.from('pillars').insert(payload);
-          if (error) throw error;
-        } else if (editLevel === 'theme') {
-          if (!vals.pillar_id) throw new Error('Please choose a Pillar.');
-          const payload = { name: vals.name, description: vals.description ?? '', sort_order: vals.sort_order ?? 1, pillar_id: vals.pillar_id, code: vals.code };
-          const { error } = await supabase.from('themes').insert(payload);
-          if (error) throw error;
-        } else {
-          if (!vals.theme_id) throw new Error('Please choose a Theme.');
-          const payload = { name: vals.name, description: vals.description ?? '', sort_order: vals.sort_order ?? 1, theme_id: vals.theme_id, code: vals.code };
-          const { error } = await supabase.from('subthemes').insert(payload);
-          if (error) throw error;
-        }
-        message.success('Created.');
-      } else {
-        // UPDATE
-        if (editing.level === 'pillar') {
-          const { error } = await supabase.from('pillars')
-            .update({ name: vals.name, description: vals.description ?? '', sort_order: vals.sort_order ?? 1, code: vals.code })
-            .eq('id', editing.id);
-          if (error) throw error;
-        } else if (editing.level === 'theme') {
-          const { error } = await supabase.from('themes')
-            .update({
-              name: vals.name,
-              description: vals.description ?? '',
-              sort_order: vals.sort_order ?? 1,
-              pillar_id: vals.pillar_id || editing.parentId,
-              code: vals.code,
-            })
-            .eq('id', editing.id);
-          if (error) throw error;
-        } else {
-          const { error } = await supabase.from('subthemes')
-            .update({
-              name: vals.name,
-              description: vals.description ?? '',
-              sort_order: vals.sort_order ?? 1,
-              theme_id: vals.theme_id || editing.parentId,
-              code: vals.code,
-            })
-            .eq('id', editing.id);
-          if (error) throw error;
-        }
-        message.success('Saved.');
-      }
-
-      setEditOpen(false);
-      setEditing(null);
-      await fetchAll();
-    } catch (err: any) {
-      if (err?.errorFields) return; // antd validation
-      console.error(err);
-      message.error(err?.message || 'Save failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ----- CSV Export / Import -----
-  const exportCSV = () => {
-    // export pillars, themes, subthemes as flat CSV with level and parent codes
-    const data = rows.map(r => ({
-      level: r.level,
-      code: r.code,
-      name: r.name,
-      description: r.description ?? '',
-      sort_order: r.sort_order ?? '',
-      pillar_code: r.level !== 'pillar' ? (r.pillarCode || '') : '',
-      theme_code: r.level === 'subtheme' ? (r.themeCode || '') : '',
-    }));
-    const csv = Papa.unparse(data);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'framework.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const importCSV = async (file: File) => {
-    setLoading(true);
-    try {
-      const text = await file.text();
-      const parsed = Papa.parse(text, { header: true });
-      if (parsed.errors?.length) {
-        console.error(parsed.errors);
-        throw new Error('CSV parse error.');
-      }
-
-      type RowIn = {
-        level: Level;
-        code: string;
-        name: string;
-        description?: string;
-        sort_order?: string | number;
-        pillar_code?: string;
-        theme_code?: string;
+      if (!editing) return;
+      const table = levelToTable(editing.level);
+      const patch: any = {
+        name: vals.name ?? '',
+        description: vals.description ?? '',
+        code: vals.code ?? '',
+        sort_order: Number(vals.sort_order ?? editing.sort_order ?? 1),
       };
-
-      const inRows = (parsed.data as any[]).filter(Boolean) as RowIn[];
-
-      // Fetch current to resolve parents
-      const [{ data: pillars }, { data: themes }] = await Promise.all([
-        supabase.from('pillars').select('*'),
-        supabase.from('themes').select('*'),
-      ]);
-
-      const pByCode = new Map<string, any>((pillars || []).map(p => [p.code, p]));
-      const tByCode = new Map<string, any>((themes || []).map(t => [t.code, t]));
-
-      // upsert in order: pillars -> themes -> subthemes
-      for (const r of inRows) {
-        const sort_order = r.sort_order === '' || r.sort_order == null ? 1 : Number(r.sort_order);
-        if (r.level === 'pillar') {
-          const existing = pByCode.get(r.code);
-          if (existing) {
-            const { error } = await supabase.from('pillars')
-              .update({ name: r.name, description: r.description ?? '', sort_order, code: r.code })
-              .eq('id', existing.id);
-            if (error) throw error;
-          } else {
-            const { data, error } = await supabase.from('pillars')
-              .insert({ name: r.name, description: r.description ?? '', sort_order, code: r.code })
-              .select()
-              .single();
-            if (error) throw error;
-            pByCode.set(r.code, data);
-          }
-        }
-      }
-
-      for (const r of inRows) {
-        if (r.level === 'theme') {
-          const sort_order = r.sort_order === '' || r.sort_order == null ? 1 : Number(r.sort_order);
-          const parent = pByCode.get(r.pillar_code || '');
-          if (!parent) throw new Error(`Missing pillar_code for theme ${r.code}`);
-          const existing = tByCode.get(r.code);
-          if (existing) {
-            const { error } = await supabase.from('themes')
-              .update({ name: r.name, description: r.description ?? '', sort_order, pillar_id: parent.id, code: r.code })
-              .eq('id', existing.id);
-            if (error) throw error;
-          } else {
-            const { data, error } = await supabase.from('themes')
-              .insert({ name: r.name, description: r.description ?? '', sort_order, pillar_id: parent.id, code: r.code })
-              .select()
-              .single();
-            if (error) throw error;
-            tByCode.set(r.code, data);
-          }
-        }
-      }
-
-      for (const r of inRows) {
-        if (r.level === 'subtheme') {
-          const sort_order = r.sort_order === '' || r.sort_order == null ? 1 : Number(r.sort_order);
-          const parentTheme = tByCode.get(r.theme_code || '');
-          if (!parentTheme) throw new Error(`Missing theme_code for subtheme ${r.code}`);
-          const { data: existing } = await supabase.from('subthemes').select('*').eq('code', r.code).maybeSingle();
-          if (existing) {
-            const { error } = await supabase.from('subthemes')
-              .update({ name: r.name, description: r.description ?? '', sort_order, theme_id: parentTheme.id, code: r.code })
-              .eq('id', existing.id);
-            if (error) throw error;
-          } else {
-            const { error } = await supabase.from('subthemes')
-              .insert({ name: r.name, description: r.description ?? '', sort_order, theme_id: parentTheme.id, code: r.code });
-            if (error) throw error;
-          }
-        }
-      }
-
-      message.success('CSV import complete.');
-      await fetchAll();
+      const { error } = await supabase.from(table).update(patch).eq('id', editing.id);
+      if (error) throw error;
+      message.success('Saved');
+      closeModal();
+      fetchAll();
     } catch (err: any) {
+      if (err?.errorFields) return; // form validation error, already shown
       console.error(err);
-      message.error(err?.message || 'CSV import failed.');
-    } finally {
-      setLoading(false);
+      message.error(err?.message || 'Failed to save');
     }
   };
 
-  const uploadProps = {
-    accept: '.csv',
-    showUploadList: false,
-    beforeUpload: async (file: File) => {
-      await importCSV(file);
-      return false;
-    },
+  const deleteRow = async (row: UIRow) => {
+    try {
+      const table = levelToTable(row.level);
+      // If deleting a pillar or theme, you may want to enforce cascade in DB or block when children exist.
+      const { error } = await supabase.from(table).delete().eq('id', row.id);
+      if (error) throw error;
+      message.success('Deleted');
+      fetchAll();
+    } catch (err: any) {
+      console.error(err);
+      message.error(err?.message || 'Failed to delete');
+    }
   };
 
-  // Form controls (choose parent)
-  const pillarOptions = useMemo(
-    () => rows.filter(r => r.level === 'pillar').map(r => ({ value: r.id, label: `${r.name} (${r.code})` })),
-    [rows]
-  );
-  const themeOptions = useMemo(
-    () => rows.filter(r => r.level === 'theme').map(r => ({ value: r.id, label: `${r.name} (${r.code})` })),
-    [rows]
-  );
+  const addChild = async (parent: UIRow) => {
+    try {
+      if (parent.level === 'subtheme') {
+        message.info('Subthemes cannot have children.');
+        return;
+      }
+      const nextLevel: Level = parent.level === 'pillar' ? 'theme' : 'subtheme';
+      const table = levelToTable(nextLevel);
 
-  // Table columns (width in percentages)
+      const payload: any = {
+        code: '',
+        name: nextLevel === 'theme' ? 'New Theme' : 'New Subtheme',
+        description: '',
+        sort_order: 9999,
+      };
+      if (nextLevel === 'theme') payload.pillar_id = parent.id;
+      if (nextLevel === 'subtheme') payload.theme_id = parent.id;
+
+      const { data: rows, error } = await supabase.from(table).insert(payload).select('*').single();
+      if (error) throw error;
+
+      // expand the parent so the new item is visible
+      setExpandedRowKeys((prev) => Array.from(new Set([...prev, parent.key])));
+      message.success('Added');
+      fetchAll();
+    } catch (err: any) {
+      console.error(err);
+      message.error(err?.message || 'Failed to add');
+    }
+  };
+
+  // --------- columns ----------
   const columns: ColumnsType<UIRow> = [
-    {
-      title: 'Type',
-      dataIndex: 'level',
-      key: 'level',
-      width: '12%',
-      render: (level: Level, rec) => (
-        <Space size="small">
-          <Tag color={LEVEL_TAG[level].color} style={{ marginRight: 4 }}>{LEVEL_TAG[level].text}</Tag>
-          <span style={{ color: '#888', fontSize: 12 }}>[{rec.code}]</span>
-        </Space>
-      ),
-    },
     {
       title: 'Name',
       dataIndex: 'name',
-      key: 'name',
-      width: '25%',
+      width: '28%',
+      render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>,
     },
     {
       title: 'Description',
       dataIndex: 'description',
-      key: 'description',
-      width: '38%',
-      ellipsis: true,
+      width: '42%',
+      render: (text) => <span style={{ color: '#555' }}>{text}</span>,
     },
     {
-      title: 'Sort',
-      dataIndex: 'sort_order',
-      key: 'sort_order',
-      width: '8%',
+      title: 'Type',
+      dataIndex: 'level',
+      width: '12%',
+      render: (_, row) => (
+        <Space size={6}>
+          <Tag color={TYPE_COLORS[row.level]} style={{ fontWeight: 500 }}>
+            {row.level === 'pillar' ? 'Pillar' : row.level === 'theme' ? 'Theme' : 'Subtheme'}
+          </Tag>
+          {/* small grey code, in brackets, right next to Type tag */}
+          <span style={{ color: '#999', fontSize: 12 }}>[{row.code || '—'}]</span>
+        </Space>
+      ),
     },
     {
       title: 'Actions',
-      key: 'actions',
-      width: '17%',
-      render: (_: any, rec) => (
-        <Space size="small">
-          {rec.level !== 'subtheme' && (
-            <Button
-              size="small"
-              type="default"
-              onClick={() => openCreate(rec.level === 'pillar' ? 'theme' : 'subtheme', rec)}
-              icon={<PlusOutlined />}
-            >
-              Add {rec.level === 'pillar' ? 'Theme' : 'Sub-theme'}
-            </Button>
-          )}
-          <Button size="small" type="default" icon={<EditOutlined />} onClick={() => openEdit(rec)}>
+      dataIndex: 'actions',
+      width: '18%',
+      render: (_, row) => (
+        <Space size="small" wrap>
+          <Button icon={<EditOutlined />} size="small" onClick={() => openEdit(row)}>
             Edit
           </Button>
-          <Popconfirm title="Delete this item?" onConfirm={() => handleDelete(rec)}>
-            <Button size="small" danger icon={<DeleteOutlined />}>
+          {row.level !== 'subtheme' && (
+            <Button icon={<PlusOutlined />} size="small" onClick={() => addChild(row)}>
+              Add
+            </Button>
+          )}
+          <Popconfirm
+            title="Delete this row?"
+            okButtonProps={{ danger: true }}
+            onConfirm={() => deleteRow(row)}
+          >
+            <Button icon={<DeleteOutlined />} size="small" danger>
               Delete
             </Button>
           </Popconfirm>
@@ -504,160 +310,89 @@ export default function FrameworkPage() {
     },
   ];
 
+  // only allow expand when row has children
+  const rowExpandable = (row: UIRow) => Array.isArray(row.children) && row.children.length > 0;
+
   return (
     <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 12 }}>
-        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center' }}>
-          <ArrowLeftOutlined /> <span style={{ marginLeft: 6 }}>Back to Dashboard</span>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+        <Link href="/" style={{ marginRight: 12 }}>
+          <Button icon={<ArrowLeftOutlined />}>Back to Dashboard</Button>
         </Link>
         <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Primary Framework Editor</h1>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <Button icon={<PlusOutlined />} onClick={() => openCreate('pillar')}>New Pillar</Button>
-          <Button icon={<ReloadOutlined />} onClick={fetchAll}>Refresh</Button>
-          <Button icon={<DownloadOutlined />} onClick={exportCSV}>Export CSV</Button>
-          <Upload {...uploadProps}>
-            <Button icon={<UploadOutlined />}>Import CSV</Button>
-          </Upload>
+        <div style={{ marginLeft: 'auto' }}>
+          <Button icon={<ReloadOutlined />} onClick={fetchAll}>
+            Refresh
+          </Button>
         </div>
       </div>
 
+      {/* Table */}
       <Table<UIRow>
-        loading={loading}
-        dataSource={topLevel}
+        dataSource={data}
         columns={columns}
+        loading={loading}
         rowKey={(rec) => rec.key}
-        pagination={false}
         expandable={{
-          expandedRowKeys: expandedKeys,
-          onExpand: (expanded, record) => {
-            const key = record.key;
-            setExpandedKeys((prev) =>
-              expanded ? [...prev, key] : prev.filter((k) => k !== key)
-            );
-          },
-          expandedRowRender: (parent) => {
-            const kids = getChildren(parent);
-            if (!kids.length) return null;
+          defaultExpandAllRows: false,
+          expandedRowKeys,
+          onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
+          rowExpandable,
+          // slightly larger caret
+          expandIcon: (props) => {
+            const { expanded, onExpand, record } = props;
+            if (!rowExpandable(record)) {
+              // render spacer to align rows that can't expand
+              return <span style={{ display: 'inline-block', width: 16 }} />;
+            }
             return (
-              <Table<UIRow>
-                showHeader={false}
-                dataSource={kids}
-                columns={columns}
-                rowKey={(rec) => rec.key}
-                pagination={false}
-                expandable={{
-                  expandIcon: ({ expanded, onExpand, record }) => (
-                    record.level === 'subtheme' ? null : (
-                      <span
-                        onClick={(e) => onExpand(record, e)}
-                        style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
-                      >
-                        {expanded ? <DownOutlined style={CARET_SIZE_STYLE} /> : <RightOutlined style={CARET_SIZE_STYLE} />}
-                      </span>
-                    )
-                  ),
-                  expandedRowKeys: expandedKeys,
-                  onExpand: (expanded, record) => {
-                    const key = record.key;
-                    setExpandedKeys((prev) =>
-                      expanded ? [...prev, key] : prev.filter((k) => k !== key)
-                    );
-                  },
-                  expandedRowRender: (theme) => {
-                    const subs = getChildren(theme);
-                    if (!subs.length) return null;
-                    return (
-                      <Table<UIRow>
-                        showHeader={false}
-                        dataSource={subs}
-                        columns={columns}
-                        rowKey={(rec) => rec.key}
-                        pagination={false}
-                      />
-                    );
-                  },
-                }}
-              />
-            );
-          },
-          expandIcon: ({ expanded, onExpand, record }) =>
-            record.level === 'subtheme' ? null : (
               <span
                 onClick={(e) => onExpand(record, e)}
-                style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                style={{
+                  display: 'inline-flex',
+                  width: 18,
+                  height: 18,
+                  border: '1px solid #d9d9d9',
+                  borderRadius: 4,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 8,
+                  cursor: 'pointer',
+                  background: '#fff',
+                }}
               >
-                {expanded ? <DownOutlined style={CARET_SIZE_STYLE} /> : <RightOutlined style={CARET_SIZE_STYLE} />}
+                {expanded ? '−' : '+'}
               </span>
-            ),
+            );
+          },
         }}
+        pagination={false}
+        // responsive widths — the column widths above are % based, this keeps it fluid
+        scroll={{ x: true }}
       />
 
+      {/* Edit Modal */}
       <Modal
-        title={editing ? `Edit ${editLevel}` : `New ${editLevel}`}
-        open={editOpen}
-        onCancel={() => { setEditOpen(false); setEditing(null); }}
-        onOk={submitEdit}
+        open={isModalOpen}
+        title={`Edit ${editing?.level ?? ''}`}
+        onCancel={closeModal}
+        onOk={saveEdit}
         okText="Save"
         destroyOnClose
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="level" label="Type">
-            <Select
-              disabled
-              options={[
-                { label: 'Pillar', value: 'pillar' },
-                { label: 'Theme', value: 'theme' },
-                { label: 'Sub-theme', value: 'subtheme' },
-              ]}
-            />
+          <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Name required' }]}>
+            <Input placeholder="Name" />
           </Form.Item>
-
-          {editLevel === 'theme' && (
-            <Form.Item
-              name="pillar_id"
-              label="Pillar"
-              rules={[{ required: true, message: 'Please choose a Pillar' }]}
-            >
-              <Select options={pillarOptions} showSearch optionFilterProp="label" />
-            </Form.Item>
-          )}
-
-          {editLevel === 'subtheme' && (
-            <Form.Item
-              name="theme_id"
-              label="Theme"
-              rules={[{ required: true, message: 'Please choose a Theme' }]}
-            >
-              <Select options={themeOptions} showSearch optionFilterProp="label" />
-            </Form.Item>
-          )}
-
-          <Form.Item
-            name="code"
-            label="Code"
-            rules={[{ required: true, message: 'Please enter a code' }]}
-          >
-            <Input placeholder="e.g. P1, T1.1, S3.2.4" />
-          </Form.Item>
-
-          <Form.Item
-            name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please enter a name' }]}
-          >
-            <Input />
-          </Form.Item>
-
           <Form.Item name="description" label="Description">
-            <Input.TextArea rows={3} />
+            <Input.TextArea placeholder="Description" autoSize={{ minRows: 2, maxRows: 6 }} />
           </Form.Item>
-
-          <Form.Item
-            name="sort_order"
-            label="Sort Order"
-            rules={[{ required: true, message: 'Please enter sort order (number)' }]}
-          >
-            <Input type="number" />
+          <Form.Item name="code" label="Code">
+            <Input placeholder="Short code (optional)" />
+          </Form.Item>
+          <Form.Item name="sort_order" label="Sort Order">
+            <Input type="number" placeholder="1" />
           </Form.Item>
         </Form>
       </Modal>
