@@ -1,7 +1,17 @@
 // app/framework/page.tsx
-'use client'
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default function FrameworkPage() {
+  return (
+    <main style={{ padding: '24px' }}>
+      <h1 style={{ fontSize: 28, fontWeight: 600 }}>Primary Framework Editor</h1>
+      <p style={{ marginTop: 8, opacity: 0.7 }}>
+        (placeholder — no Supabase calls yet)
+      </p>
+    </main>
+  );
+}
 
 import { useMemo, useState, useCallback } from 'react'
 
