@@ -1,19 +1,15 @@
 // app/layout.tsx
-import type { Metadata } from "next";
+import type { ReactNode } from "react";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "SSC",
-  description: "Sustainable Systems Calculator",
+  description: "Social Stability Composite",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" }}>
+      <body style={{ margin: 0, fontFamily: "Inter, system-ui, Arial, sans-serif" }}>
         {children}
       </body>
     </html>
