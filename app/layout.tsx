@@ -1,15 +1,10 @@
-export const metadata = {
-  title: 'SSC',
-  description: 'Shelter Severity Classification',
-};
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-import 'antd/dist/reset.css';
-import './globals.css';
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body style={{ background: '#f7f7f9' }}>{children}</body>
-    </html>
-  );
+export default function FrameworkLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return children;
 }
