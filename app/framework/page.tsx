@@ -1,7 +1,8 @@
 'use client';
 
 export const dynamic = 'force-dynamic';
-export const revalidate: false | 0 number =0;
+export const revalidate=0;
+export const fetchCache = 'force-no-store';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
