@@ -1,28 +1,17 @@
 // lib/supabaseServer.ts
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
-let _client: SupabaseClient | null = null;
+const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-/**
- * Server-side Supabase client for API routes.
- * Read-only for now (uses ANON key).
- */
-export function getServerClient(): SupabaseClient {
-  if (_client) return _client;
+if (!URL || !ANON) {
+  // Fail fast with a clear message in server logs
+  console.error('Missing Supabase env vars. Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.');
+}
 
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_ANON_KEY;
-
-  if (!url || !key) {
-    throw new Error(
-      'Missing SUPABASE_URL or SUPABASE_ANON_KEY in environment. ' +
-        'Add them in Vercel Project Settings → Environment Variables.'
-    );
-  }
-
-  _client = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
+export function getServerClient() {
+  // Server-only client; do NOT import this from client components
+  return createClient(URL, ANON, {
+    auth: { persistSession: false },
   });
-
-  return _client;
 }
