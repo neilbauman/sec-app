@@ -1,8 +1,8 @@
 // app/framework/page.tsx
-import FrameworkClient from './FrameworkClient'
+import FrameworkClient from './FrameworkClient';
 
-export const dynamic = 'force-dynamic' // ensure this route is never prerendered
+export const dynamic = 'force-dynamic'; // stay dynamic to avoid any accidental SSG
 
-export default function Page() {
-  return <FrameworkClient />
+export default function FrameworkPage() {
+  return <FrameworkClient />;
 }
