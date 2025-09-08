@@ -1,111 +1,186 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
+import * as React from 'react';
 
-type Pillar = { code: string; name?: string; description?: string; sort_order?: number }
-type Theme = { code: string; pillar_code: string; name?: string; description?: string; sort_order?: number }
-type Subtheme = { code: string; theme_code: string; name?: string; description?: string; sort_order?: number }
+type Pillar = { code: string; name: string; description?: string; sort_order?: number };
+type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order?: number };
+type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order?: number };
 
-export default function FrameworkClient() {
-  const [pillars, setPillars] = useState<Pillar[]>([])
-  const [themes, setThemes] = useState<Theme[]>([])
-  const [subs, setSubs] = useState<Subtheme[]>([])
-  const [loading, setLoading] = useState(true)
-  const [err, setErr] = useState<string | null>(null)
+type Props = {
+  pillars: Pillar[];
+  themes: Theme[];
+  subthemes: Subtheme[];
+};
 
-  useEffect(() => {
-    let alive = true
-    ;(async () => {
-      try {
-        const res = await fetch('/framework/api/list', { cache: 'no-store' })
-        const data = await res.json()
-        if (!alive) return
-        setPillars((data.pillars ?? []).sort((a: Pillar, b: Pillar) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
-        setThemes((data.themes ?? []).sort((a: Theme, b: Theme) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
-        setSubs((data.subthemes ?? []).sort((a: Subtheme, b: Subtheme) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
-      } catch (e: any) {
-        setErr(e?.message || 'Failed to load framework')
-      } finally {
-        if (alive) setLoading(false)
-      }
-    })()
-    return () => { alive = false }
-  }, [])
+function Badge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+      {children}
+    </span>
+  );
+}
 
-  const themesByPillar = new Map<string, Theme[]>()
-  themes.forEach(t => {
-    const arr = themesByPillar.get(t.pillar_code) ?? []
-    arr.push(t)
-    themesByPillar.set(t.pillar_code, arr)
-  })
+function IconChevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`h-5 w-5 shrink-0 text-gray-500 transition-transform ${open ? 'rotate-90' : 'rotate-0'}`}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M6.293 17.293a1 1 0 0 0 1.414 0l6-6a1 1 0 0 0 0-1.414l-6-6A1 1 0 0 0 6.293 5.293L11.586 10l-5.293 5.293a1 1 0 0 0 0 1.414z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
 
-  const subsByTheme = new Map<string, Subtheme[]>()
-  subs.forEach(s => {
-    const arr = subsByTheme.get(s.theme_code) ?? []
-    arr.push(s)
-    subsByTheme.set(s.theme_code, arr)
-  })
+export default function FrameworkClient({ pillars, themes, subthemes }: Props) {
+  // which pillar/theme rows are expanded
+  const [openPillars, setOpenPillars] = React.useState<Record<string, boolean>>({});
+  const [openThemes, setOpenThemes] = React.useState<Record<string, boolean>>({});
+
+  // group themes by pillar + subthemes by theme
+  const themesByPillar = React.useMemo(() => {
+    const m = new Map<string, Theme[]>();
+    for (const t of themes) {
+      const key = t.pillar_code;
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(t);
+    }
+    for (const arr of m.values()) arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    return m;
+  }, [themes]);
+
+  const subsByTheme = React.useMemo(() => {
+    const m = new Map<string, Subtheme[]>();
+    for (const s of subthemes) {
+      const key = s.theme_code;
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(s);
+    }
+    for (const arr of m.values()) arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    return m;
+  }, [subthemes]);
 
   return (
-    <div className="page">
-      <h1 className="h1">Primary Framework Editor</h1>
-      <p className="lead">Read-only view for now. Expand/collapse to browse pillars, themes, and sub-themes.</p>
-
-      <div className="meta section">
-        <strong>Pillars</strong> {pillars.length} &middot; <strong>Themes</strong> {themes.length} &middot{' '}
-        <strong>Sub-themes</strong> {subs.length}
+    <div className="mx-auto max-w-6xl px-4 py-6">
+      {/* Header row */}
+      <div className="mb-4 flex items-center gap-3">
+        <a href="/" className="text-sm text-gray-500 hover:text-gray-700">&larr; Dashboard</a>
+        <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => { setOpenPillars({}); setOpenThemes({}); }}
+            className="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Collapse all
+          </button>
+          <button
+            onClick={() => {
+              const p: Record<string, boolean> = {};
+              const t: Record<string, boolean> = {};
+              pillars.forEach(pl => (p[pl.code] = true));
+              themes.forEach(th => (t[th.code] = true));
+              setOpenPillars(p); setOpenThemes(t);
+            }}
+            className="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Expand all
+          </button>
+        </div>
       </div>
 
-      {err && <p className="meta">Error: {err}</p>}
-      {loading && <p className="meta">Loading…</p>}
+      {/* Table */}
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        {/* Table header */}
+        <div className="grid grid-cols-[auto_1fr_2fr_auto] items-center gap-4 border-b border-gray-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <div>Type / Code</div>
+          <div>Name</div>
+          <div>Description</div>
+          <div className="text-right pr-1">Sort</div>
+        </div>
 
-      <div className="stack section">
-        {pillars.map(p => {
-          const tlist = (themesByPillar.get(p.code) ?? [])
-          return (
-            <details key={p.code} className="details">
-              <summary>
-                {p.code ? `${p.code} ` : ''}{p.name || 'Untitled Pillar'}
-                <span className="badge">{tlist.length} theme{tlist.length === 1 ? '' : 's'}</span>
-              </summary>
-              <div className="content">
-                {p.description && <p className="meta" style={{ marginBottom: '.5rem' }}>{p.description}</p>}
+        {/* Pillar rows */}
+        {pillars
+          .slice()
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((p) => {
+            const tList = themesByPillar.get(p.code) ?? [];
+            const pOpen = !!openPillars[p.code];
 
-                <div className="kids">
-                  {tlist.length === 0 && <p className="meta">No themes.</p>}
+            return (
+              <div key={p.code} className="border-b border-gray-100">
+                <div className="grid grid-cols-[auto_1fr_2fr_auto] items-center gap-4 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setOpenPillars(s => ({ ...s, [p.code]: !s[p.code] }))}
+                      aria-label={pOpen ? 'Collapse pillar' : 'Expand pillar'}
+                      className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-50"
+                    >
+                      <IconChevron open={pOpen} />
+                    </button>
+                    <Badge>Pillar</Badge>
+                    <span className="text-xs text-gray-400">[{p.code}]</span>
+                  </div>
 
-                  {tlist.map(t => {
-                    const slist = subsByTheme.get(t.code) ?? []
-                    return (
-                      <details key={t.code} className="details">
-                        <summary>
-                          {t.code ? `${t.code} ` : ''}{t.name || 'Untitled Theme'}
-                          <span className="badge">{slist.length} subtheme{slist.length === 1 ? '' : 's'}</span>
-                        </summary>
-                        <div className="content">
-                          {t.description && <p className="meta" style={{ marginBottom: '.5rem' }}>{t.description}</p>}
+                  <div className="text-sm font-medium text-gray-900">{p.name}</div>
+                  <div className="text-sm text-gray-700">{p.description}</div>
+                  <div className="text-right text-sm tabular-nums text-gray-600 pr-1">{p.sort_order ?? ''}</div>
+                </div>
 
-                          <div className="kids">
-                            {slist.length === 0 && <p className="meta">No sub-themes.</p>}
-                            {slist.map(s => (
-                              <div key={s.code} className="details" style={{ padding: '.6rem .8rem', background: '#fff' }}>
-                                <div style={{ fontWeight: 600 }}>
-                                  {s.code ? `${s.code} ` : ''}{s.name || 'Untitled Sub-theme'}
+                {/* Themes under pillar */}
+                {pOpen && tList.map((t) => {
+                  const sList = subsByTheme.get(t.code) ?? [];
+                  const tOpen = !!openThemes[t.code];
+
+                  return (
+                    <div key={t.code} className="grid grid-cols-[auto_1fr_2fr_auto] items-start gap-4 px-4 py-2 pl-9">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setOpenThemes(s => ({ ...s, [t.code]: !s[t.code] }))}
+                          aria-label={tOpen ? 'Collapse theme' : 'Expand theme'}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-50"
+                        >
+                          <IconChevron open={tOpen} />
+                        </button>
+                        <Badge>Theme</Badge>
+                        <span className="text-xs text-gray-400">[{t.code}]</span>
+                      </div>
+
+                      <div className="text-sm font-medium text-gray-900">{t.name}</div>
+                      <div className="text-sm text-gray-700">{t.description}</div>
+                      <div className="text-right text-sm tabular-nums text-gray-600 pr-1">{t.sort_order ?? ''}</div>
+
+                      {/* Subthemes */}
+                      {tOpen && sList.length > 0 && (
+                        <div className="col-span-4 pl-10 pb-3">
+                          <div className="divide-y divide-gray-100 overflow-hidden rounded-md border border-gray-200">
+                            {sList.map((s) => (
+                              <div key={s.code} className="grid grid-cols-[auto_1fr_2fr_auto] items-center gap-4 bg-gray-50 px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge>Subtheme</Badge>
+                                  <span className="text-[11px] text-gray-400">[{s.code}]</span>
                                 </div>
-                                {s.description && <div className="meta" style={{ marginTop: '.25rem' }}>{s.description}</div>}
+                                <div className="text-sm text-gray-900">{s.name}</div>
+                                <div className="text-sm text-gray-700">{s.description}</div>
+                                <div className="text-right text-sm text-gray-600 pr-1">{s.sort_order ?? ''}</div>
                               </div>
                             ))}
                           </div>
                         </div>
-                      </details>
-                    )
-                  })}
-                </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            </details>
-          )
-        })}
+            );
+          })}
       </div>
     </div>
-  )
+  );
 }
