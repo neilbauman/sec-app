@@ -1,66 +1,70 @@
 // app/framework/api/list/route.ts
-import { NextResponse } from 'next/server';
-import { getServerClient } from '@/lib/supabaseServer';
+import { NextResponse } from 'next/server'
+import { getServerClient } from '@/lib/supabaseServer'
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
-function unauthorized(message = 'Unauthorized') {
-  return NextResponse.json({ ok: false, status: 401, message }, { status: 401 });
+function unauthorized() {
+  return NextResponse.json({ ok: false, status: 401, message: 'Unauthorized' }, { status: 401 })
 }
 
-function checkAuth(req: Request) {
-  const expected = process.env.INTERNAL_API_TOKEN || '';
-  const got = req.headers.get('x-internal-token') || '';
-  if (!expected || got !== expected) return false;
-  return true;
+function readAuthToken(request: Request) {
+  // Preferred custom header
+  const hdr = request.headers.get('x-internal-token') ?? ''
+  if (hdr) return hdr
+
+  // Fallback: Authorization header (Bearer or plain)
+  const auth = request.headers.get('authorization') ?? ''
+  if (auth) {
+    const parts = auth.split(' ')
+    return parts.length === 2 ? parts[1] : auth
+  }
+
+  return ''
 }
 
-export async function GET(req: Request) {
-  if (!checkAuth(req)) return unauthorized();
+export async function GET(request: Request) {
+  const envToken = process.env.INTERNAL_API_TOKEN ?? ''
+  const token = readAuthToken(request)
 
-  const supabase = getServerClient();
+  if (!envToken || token !== envToken) return unauthorized()
 
-  const counts = { pillars: 0, themes: 0, subthemes: 0 };
-  let pillars: any[] = [];
-  let themes: any[] = [];
-  let subthemes: any[] = [];
+  try {
+    const supabase = getServerClient()
 
-  // Pillars
-  {
-    const { data, error } = await supabase
+    const { data: pillars, error: pErr } = await supabase
       .from('pillars')
-      .select('code,name,description,sort_order')
-      .order('sort_order', { ascending: true });
-    if (!error && data) {
-      pillars = data;
-      counts.pillars = data.length;
-    }
-  }
+      .select('code, name, description, sort_order')
+      .order('sort_order', { ascending: true })
+      .limit(10000)
+    if (pErr) return NextResponse.json({ ok: false, message: pErr.message }, { status: 500 })
 
-  // Themes
-  {
-    const { data, error } = await supabase
+    const { data: themes, error: tErr } = await supabase
       .from('themes')
-      .select('code,pillar_code,name,description,sort_order')
-      .order('sort_order', { ascending: true });
-    if (!error && data) {
-      themes = data;
-      counts.themes = data.length;
-    }
-  }
+      .select('code, pillar_code, name, description, sort_order')
+      .order('sort_order', { ascending: true })
+      .limit(10000)
+    if (tErr) return NextResponse.json({ ok: false, message: tErr.message }, { status: 500 })
 
-  // Sub-themes
-  {
-    const { data, error } = await supabase
+    const { data: subthemes, error: sErr } = await supabase
       .from('subthemes')
-      .select('code,theme_code,name,description,sort_order')
-      .order('sort_order', { ascending: true });
-    if (!error && data) {
-      subthemes = data;
-      counts.subthemes = data.length;
-    }
-  }
+      .select('code, theme_code, name, description, sort_order')
+      .order('sort_order', { ascending: true })
+      .limit(10000)
+    if (sErr) return NextResponse.json({ ok: false, message: sErr.message }, { status: 500 })
 
-  return NextResponse.json({ ok: true, counts, pillars, themes, subthemes });
+    return NextResponse.json({
+      ok: true,
+      counts: {
+        pillars: pillars?.length ?? 0,
+        themes: themes?.length ?? 0,
+        subthemes: subthemes?.length ?? 0,
+      },
+      pillars: pillars ?? [],
+      themes: themes ?? [],
+      subthemes: subthemes ?? [],
+    })
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, message: e?.message ?? 'Server error' }, { status: 500 })
+  }
 }

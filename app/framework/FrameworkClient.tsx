@@ -1,30 +1,10 @@
-// app/framework/FrameworkClient.tsx
 'use client';
 
-import { useMemo } from 'react';
+import * as React from 'react';
 
-export type Pillar = {
-  id: string;
-  code: string | null;
-  name: string | null;
-  description: string | null;
-};
-
-export type Theme = {
-  id: string;
-  pillar_id: string;        // FK -> pillars.id
-  code: string | null;
-  name: string | null;
-  description: string | null;
-};
-
-export type Subtheme = {
-  id: string;
-  theme_id: string;         // FK -> themes.id
-  code: string | null;
-  name: string | null;
-  description: string | null;
-};
+type Pillar = { code: string; name: string; description?: string; sort_order?: number };
+type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order?: number };
+type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order?: number };
 
 type Props = {
   pillars: Pillar[];
@@ -32,90 +12,174 @@ type Props = {
   subthemes: Subtheme[];
 };
 
+function Badge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-200">
+      {children}
+    </span>
+  );
+}
+
+function IconChevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`h-5 w-5 shrink-0 text-gray-500 transition-transform ${open ? 'rotate-90' : 'rotate-0'}`}
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M6.293 17.293a1 1 0 0 0 1.414 0l6-6a1 1 0 0 0 0-1.414l-6-6A1 1 0 0 0 6.293 5.293L11.586 10l-5.293 5.293a1 1 0 0 0 0 1.414z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
 export default function FrameworkClient({ pillars, themes, subthemes }: Props) {
-  // Pre-index themes by pillar and subthemes by theme for cheap lookups.
-  const { themesByPillar, subthemesByTheme } = useMemo(() => {
-    const tByP = new Map<string, Theme[]>();
+  // which pillar/theme rows are expanded
+  const [openPillars, setOpenPillars] = React.useState<Record<string, boolean>>({});
+  const [openThemes, setOpenThemes] = React.useState<Record<string, boolean>>({});
+
+  // group themes by pillar + subthemes by theme
+  const themesByPillar = React.useMemo(() => {
+    const m = new Map<string, Theme[]>();
     for (const t of themes) {
-      const arr = tByP.get(t.pillar_id) ?? [];
-      arr.push(t);
-      tByP.set(t.pillar_id, arr);
+      const key = t.pillar_code;
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(t);
     }
+    for (const arr of m.values()) arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    return m;
+  }, [themes]);
 
-    const stByT = new Map<string, Subtheme[]>();
+  const subsByTheme = React.useMemo(() => {
+    const m = new Map<string, Subtheme[]>();
     for (const s of subthemes) {
-      const arr = stByT.get(s.theme_id) ?? [];
-      arr.push(s);
-      stByT.set(s.theme_id, arr);
+      const key = s.theme_code;
+      if (!m.has(key)) m.set(key, []);
+      m.get(key)!.push(s);
     }
-
-    // Optional: sort within groups by code then name for stable display
-    for (const arr of tByP.values()) {
-      arr.sort((a, b) =>
-        (a.code ?? '').localeCompare(b.code ?? '') ||
-        (a.name ?? '').localeCompare(b.name ?? '')
-      );
-    }
-    for (const arr of stByT.values()) {
-      arr.sort((a, b) =>
-        (a.code ?? '').localeCompare(b.code ?? '') ||
-        (a.name ?? '').localeCompare(b.name ?? '')
-      );
-    }
-
-    return { themesByPillar: tByP, subthemesByTheme: stByT };
-  }, [themes, subthemes]);
+    for (const arr of m.values()) arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    return m;
+  }, [subthemes]);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-semibold">Primary Framework Editor</h1>
+    <div className="mx-auto max-w-6xl px-4 py-6">
+      {/* Header row */}
+      <div className="mb-4 flex items-center gap-3">
+        <a href="/" className="text-sm text-gray-500 hover:text-gray-700">&larr; Dashboard</a>
+        <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => { setOpenPillars({}); setOpenThemes({}); }}
+            className="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Collapse all
+          </button>
+          <button
+            onClick={() => {
+              const p: Record<string, boolean> = {};
+              const t: Record<string, boolean> = {};
+              pillars.forEach(pl => (p[pl.code] = true));
+              themes.forEach(th => (t[th.code] = true));
+              setOpenPillars(p); setOpenThemes(t);
+            }}
+            className="inline-flex items-center rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Expand all
+          </button>
+        </div>
+      </div>
 
-      <div className="mt-6 space-y-4">
-        {pillars.map((p) => (
-          <div key={p.id} className="rounded-md border border-gray-200 p-3">
-            <div className="text-lg font-medium">
-              {p.code ? `[${p.code}] ` : ''}{p.name || 'Untitled Pillar'}
-            </div>
-            {p.description && (
-              <div className="text-sm text-gray-600 mt-1">{p.description}</div>
-            )}
+      {/* Table */}
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        {/* Table header */}
+        <div className="grid grid-cols-[auto_1fr_2fr_auto] items-center gap-4 border-b border-gray-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <div>Type / Code</div>
+          <div>Name</div>
+          <div>Description</div>
+          <div className="text-right pr-1">Sort</div>
+        </div>
 
-            <div className="mt-3 ml-3 space-y-3">
-              {(themesByPillar.get(p.id) || []).map((t) => (
-                <div key={t.id} className="border-l-2 border-gray-200 pl-3">
-                  <div className="text-sm font-medium">
-                    {t.code ? `[${t.code}] ` : ''}{t.name || 'Untitled Theme'}
+        {/* Pillar rows */}
+        {pillars
+          .slice()
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((p) => {
+            const tList = themesByPillar.get(p.code) ?? [];
+            const pOpen = !!openPillars[p.code];
+
+            return (
+              <div key={p.code} className="border-b border-gray-100">
+                <div className="grid grid-cols-[auto_1fr_2fr_auto] items-center gap-4 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setOpenPillars(s => ({ ...s, [p.code]: !s[p.code] }))}
+                      aria-label={pOpen ? 'Collapse pillar' : 'Expand pillar'}
+                      className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-50"
+                    >
+                      <IconChevron open={pOpen} />
+                    </button>
+                    <Badge>Pillar</Badge>
+                    <span className="text-xs text-gray-400">[{p.code}]</span>
                   </div>
-                  {t.description && (
-                    <div className="text-sm text-gray-600 mt-1">{t.description}</div>
-                  )}
 
-                  <div className="mt-2 ml-3 space-y-2">
-                    {(subthemesByTheme.get(t.id) || []).map((s) => (
-                      <div key={s.id} className="border-l border-gray-200 pl-3">
-                        <div className="text-sm">
-                          {s.code ? `[${s.code}] ` : ''}{s.name || 'Untitled Subtheme'}
-                        </div>
-                        {s.description && (
-                          <div className="text-xs text-gray-600 mt-1">{s.description}</div>
-                        )}
-                      </div>
-                    ))}
-                    {!(subthemesByTheme.get(t.id) || []).length && (
-                      <div className="text-xs text-gray-400 italic">No subthemes</div>
-                    )}
-                  </div>
+                  <div className="text-sm font-medium text-gray-900">{p.name}</div>
+                  <div className="text-sm text-gray-700">{p.description}</div>
+                  <div className="text-right text-sm tabular-nums text-gray-600 pr-1">{p.sort_order ?? ''}</div>
                 </div>
-              ))}
-              {!(themesByPillar.get(p.id) || []).length && (
-                <div className="text-sm text-gray-400 italic">No themes</div>
-              )}
-            </div>
-          </div>
-        ))}
-        {!pillars.length && (
-          <div className="text-gray-500 italic">No pillars found.</div>
-        )}
+
+                {/* Themes under pillar */}
+                {pOpen && tList.map((t) => {
+                  const sList = subsByTheme.get(t.code) ?? [];
+                  const tOpen = !!openThemes[t.code];
+
+                  return (
+                    <div key={t.code} className="grid grid-cols-[auto_1fr_2fr_auto] items-start gap-4 px-4 py-2 pl-9">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setOpenThemes(s => ({ ...s, [t.code]: !s[t.code] }))}
+                          aria-label={tOpen ? 'Collapse theme' : 'Expand theme'}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-50"
+                        >
+                          <IconChevron open={tOpen} />
+                        </button>
+                        <Badge>Theme</Badge>
+                        <span className="text-xs text-gray-400">[{t.code}]</span>
+                      </div>
+
+                      <div className="text-sm font-medium text-gray-900">{t.name}</div>
+                      <div className="text-sm text-gray-700">{t.description}</div>
+                      <div className="text-right text-sm tabular-nums text-gray-600 pr-1">{t.sort_order ?? ''}</div>
+
+                      {/* Subthemes */}
+                      {tOpen && sList.length > 0 && (
+                        <div className="col-span-4 pl-10 pb-3">
+                          <div className="divide-y divide-gray-100 overflow-hidden rounded-md border border-gray-200">
+                            {sList.map((s) => (
+                              <div key={s.code} className="grid grid-cols-[auto_1fr_2fr_auto] items-center gap-4 bg-gray-50 px-3 py-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge>Subtheme</Badge>
+                                  <span className="text-[11px] text-gray-400">[{s.code}]</span>
+                                </div>
+                                <div className="text-sm text-gray-900">{s.name}</div>
+                                <div className="text-sm text-gray-700">{s.description}</div>
+                                <div className="text-right text-sm text-gray-600 pr-1">{s.sort_order ?? ''}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
       </div>
     </div>
   );

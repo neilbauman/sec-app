@@ -1,8 +1,100 @@
-/* app/globals.css */
-html, body {
-  margin: 0;
-  padding: 0;
-  background: #f7f7f9;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+/* ---- Readability pass for Framework page ---- */
+:root {
+  --fg: #0b0b0c;
+  --muted: #60636a;
+  --line: #e5e7eb;
+  --bg: #fafafa;
+  --badge: #eef2ff;
+  --badge-text: #3730a3;
 }
-a { color: #1677ff; text-decoration: none; }
+/* Sans everywhere */
+:root, body {
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans,
+    Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+/* Smooth icon rotations */
+.rotate-0   { transform: rotate(0deg); }
+.rotate-90  { transform: rotate(90deg); }
+.transition-transform { transition: transform 150ms ease; }
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  color: var(--fg);
+  background: #fff;
+}
+
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+.h1 {
+  font-size: clamp(1.6rem, 2vw + 1rem, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.lead {
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+}
+
+.section + .section { margin-top: 1.25rem; }
+
+.details {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.details summary {
+  list-style: none;     /* hide default triangle */
+  cursor: pointer;
+  padding: .9rem 1rem;
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+  font-weight: 600;
+}
+
+.details summary::before {
+  content: "›";
+  display: inline-block;
+  transform: rotate(0deg);
+  transition: transform .15s ease;
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin-right: .25rem;
+}
+
+.details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.details .content {
+  padding: .5rem 1rem 1rem;
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+
+.stack > * + * { margin-top: .5rem; }
+
+.badge {
+  background: var(--badge);
+  color: var(--badge-text);
+  border-radius: 999px;
+  font-size: .75rem;
+  padding: .15rem .5rem;
+  font-weight: 600;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.kids { margin-left: 1rem; }
+.kids .details { background: #fff; }
+.kids .details + .details { margin-top: .5rem; }
