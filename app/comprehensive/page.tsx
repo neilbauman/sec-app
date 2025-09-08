@@ -1,72 +1,69 @@
-// app/comprehensive/page.tsx (server component)
-export const dynamic = 'force-dynamic';
+// app/comprehensive/page.tsx
+import { headers } from 'next/headers'
 
-function getBaseUrl() {
-  const v = process.env.VERCEL_URL;
-  if (v) return `https://${v}`;
-  return 'http://localhost:3000';
+export const dynamic = 'force-dynamic'
+
+type CompData = {
+  ok: boolean
+  counts?: { indicators: number }
+  sample?: any[]
+  message?: string
+}
+
+async function fetchComprehensive(): Promise<CompData> {
+  const token = process.env.INTERNAL_API_TOKEN!
+  const h = new Headers()
+  h.set('x-internal-api-token', token)
+
+  const host =
+    headers().get('x-forwarded-host') ??
+    headers().get('host') ??
+    process.env.VERCEL_URL ??
+    'localhost:3000'
+
+  const res = await fetch(`https://${host}/comprehensive/api/list`, {
+    method: 'GET',
+    headers: h,
+    next: { revalidate: 0 },
+  })
+
+  if (!res.ok) {
+    return { ok: false, message: `HTTP ${res.status}` }
+  }
+  return res.json()
 }
 
 export default async function ComprehensivePage() {
-  const base = getBaseUrl();
-  const res = await fetch(`${base}/comprehensive/api/list`, {
-    method: 'GET',
-    headers: {
-      'x-internal-token': process.env.INTERNAL_API_TOKEN || '',
-    },
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold">Comprehensive Framework (read-only)</h1>
-        <p className="mt-4">Failed to load comprehensive framework data.</p>
-        <p className="mt-2 text-sm text-gray-500">HTTP {res.status}</p>
-        <p className="mt-6 text-sm">
-          You can also inspect the raw endpoint at{' '}
-          <code>/comprehensive/api/list</code>.
-        </p>
-      </div>
-    );
-  }
-
-  const data = await res.json();
+  const data = await fetchComprehensive()
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Comprehensive Framework (read-only)</h1>
-
-      {data.mode === 'fallback-primary-only' ? (
+    <div className="p-6">
+      <h1 className="text-3xl font-bold">Comprehensive Framework (read-only)</h1>
+      {!data.ok ? (
         <>
-          <p className="text-sm">
-            Comprehensive tables not found yet. Showing fallback based on the
-            Primary framework.
+          <p className="mt-4 text-red-600">Failed to load comprehensive framework data.</p>
+          {data.message && <p className="mt-2 text-sm text-gray-600">{data.message}</p>}
+          <p className="mt-4 text-sm text-gray-500">
+            You can also inspect the raw endpoint at <code>/comprehensive/api/list</code>.
           </p>
-          <ul className="list-disc list-inside">
-            <li>Pillars: {data?.counts?.pillars ?? 0}</li>
-            <li>Themes: {data?.counts?.themes ?? 0}</li>
-            <li>Sub-themes: {data?.counts?.subthemes ?? 0}</li>
-            <li>Standards (P/T/ST combos): {data?.counts?.standards ?? 0}</li>
-          </ul>
         </>
       ) : (
         <>
-          <ul className="list-disc list-inside">
-            <li>Pillars: {data?.counts?.pillars ?? 0}</li>
-            <li>Themes: {data?.counts?.themes ?? 0}</li>
-            <li>Sub-themes: {data?.counts?.subthemes ?? 0}</li>
-            <li>Indicators: {data?.counts?.indicators ?? 0}</li>
-            <li>Levels: {data?.counts?.levels ?? 0}</li>
-            <li>Criteria: {data?.counts?.criteria ?? 0}</li>
+          <ul className="mt-4 list-disc pl-5 space-y-1">
+            <li>Indicators: {data.counts?.indicators ?? 0}</li>
           </ul>
+
+          <h2 className="mt-8 text-lg font-semibold">Sample rows</h2>
+          <pre className="mt-2 rounded bg-gray-100 p-4 text-sm overflow-auto">
+            {JSON.stringify(data.sample?.[0] ?? {}, null, 2)}
+          </pre>
+
+          <p className="mt-6 text-sm text-gray-500">
+            Data is fetched from <code>/comprehensive/api/list</code> using a server-injected secret
+            header. Once these counts/samples look correct, we’ll layer in the full UI.
+          </p>
         </>
       )}
-
-      <p className="text-sm text-gray-500">
-        Data is fetched from <code>/comprehensive/api/list</code> using a
-        private header.
-      </p>
     </div>
-  );
+  )
 }
