@@ -1,50 +1,66 @@
 // app/framework/api/list/route.ts
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getServerClient } from '@/lib/supabaseServer';
 
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!; // server-side only
-
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
-export async function GET() {
-  try {
-    if (!URL || !SERVICE_KEY) {
-      return NextResponse.json(
-        { ok: false, error: 'Missing SUPABASE env vars' },
-        { status: 500 }
-      );
+function unauthorized(message = 'Unauthorized') {
+  return NextResponse.json({ ok: false, status: 401, message }, { status: 401 });
+}
+
+function checkAuth(req: Request) {
+  const expected = process.env.INTERNAL_API_TOKEN || '';
+  const got = req.headers.get('x-internal-token') || '';
+  if (!expected || got !== expected) return false;
+  return true;
+}
+
+export async function GET(req: Request) {
+  if (!checkAuth(req)) return unauthorized();
+
+  const supabase = getServerClient();
+
+  const counts = { pillars: 0, themes: 0, subthemes: 0 };
+  let pillars: any[] = [];
+  let themes: any[] = [];
+  let subthemes: any[] = [];
+
+  // Pillars
+  {
+    const { data, error } = await supabase
+      .from('pillars')
+      .select('code,name,description,sort_order')
+      .order('sort_order', { ascending: true });
+    if (!error && data) {
+      pillars = data;
+      counts.pillars = data.length;
     }
-
-    const supabase = createClient(URL, SERVICE_KEY, { auth: { persistSession: false } });
-
-    const [{ data: pillars, error: pErr }, { data: themes, error: tErr }, { data: subthemes, error: sErr }] =
-      await Promise.all([
-        supabase.from('pillars').select('code, name, description, sort_order').order('sort_order', { ascending: true }),
-        supabase.from('themes').select('code, pillar_code, name, description, sort_order').order('sort_order', { ascending: true }),
-        supabase.from('subthemes').select('code, theme_code, name, description, sort_order').order('sort_order', { ascending: true }),
-      ]);
-
-    if (pErr || tErr || sErr) {
-      return NextResponse.json(
-        { ok: false, error: (pErr || tErr || sErr)?.message ?? 'Query error' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      ok: true,
-      pillars: pillars ?? [],
-      themes: themes ?? [],
-      subthemes: subthemes ?? [],
-      totals: {
-        pillars: pillars?.length ?? 0,
-        themes: themes?.length ?? 0,
-        subthemes: subthemes?.length ?? 0,
-      },
-    });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? 'Unknown error' }, { status: 500 });
   }
+
+  // Themes
+  {
+    const { data, error } = await supabase
+      .from('themes')
+      .select('code,pillar_code,name,description,sort_order')
+      .order('sort_order', { ascending: true });
+    if (!error && data) {
+      themes = data;
+      counts.themes = data.length;
+    }
+  }
+
+  // Sub-themes
+  {
+    const { data, error } = await supabase
+      .from('subthemes')
+      .select('code,theme_code,name,description,sort_order')
+      .order('sort_order', { ascending: true });
+    if (!error && data) {
+      subthemes = data;
+      counts.subthemes = data.length;
+    }
+  }
+
+  return NextResponse.json({ ok: true, counts, pillars, themes, subthemes });
 }
