@@ -1,11 +1,11 @@
 // app/framework/api/list/route.ts
 import { NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabaseServer' // your existing helper
+import { getServerClient } from '@/lib/supabaseServer'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const supabase = createServerClient()
+  const supabase = getServerClient()
 
   const { data: pillars = [], error: pErr } = await supabase
     .from('pillars')
