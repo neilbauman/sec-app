@@ -1,98 +1,76 @@
 // app/comprehensive/page.tsx
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-export const runtime = 'nodejs';
+import { headers } from 'next/headers'
 
-type ListOk =
-  | {
-      ok: true;
-      mode: string;
-      counts: { pillars: number; themes: number; subthemes: number; standards: number };
-      standards: Array<{
-        pillar_code: string;
-        pillar_name: string;
-        theme_code: string;
-        theme_name: string;
-        subtheme_code: string | null;
-        subtheme_name: string | null;
-      }>;
-    }
-  | { ok: false; message: string };
+async function loadData() {
+  // Build absolute URL to our internal route
+  const h = headers()
+  const host =
+    h.get('x-forwarded-host') ??
+    h.get('host') ??
+    process.env.VERCEL_URL ??
+    'localhost:3000'
+  const proto = (h.get('x-forwarded-proto') ?? (host.includes('localhost') ? 'http' : 'https'))
+  const base = `${proto}://${host}`
 
-async function getData(): Promise<ListOk> {
-  const token = process.env.INTERNAL_API_TOKEN ?? '';
-  // Use a RELATIVE path so we don’t need to build a host URL.
-  const res = await fetch('/comprehensive/api/list', {
+  const res = await fetch(`${base}/comprehensive/api/list`, {
     method: 'GET',
+    // Include our internal token header so the route authorizes us.
     headers: {
-      authorization: `Bearer ${token}`,
+      'x-internal-token': process.env.INTERNAL_API_TOKEN ?? '',
     },
+    // Avoid caching while we iterate
     cache: 'no-store',
-    // Keep it dynamic at runtime (no prerender).
-    next: { revalidate: 0, tags: ['comprehensive-list'] },
-  });
+  })
 
-  // If the API returns an error page (e.g., 401), surface a readable message.
   if (!res.ok) {
-    return { ok: false, message: `API error ${res.status}` };
+    return { ok: false, status: res.status, message: 'Failed to fetch' as const }
   }
-  return (await res.json()) as ListOk;
+  return (await res.json()) as any
 }
 
-export default async function ComprehensiveFrameworkPage() {
-  const data = await getData();
+export const dynamic = 'force-dynamic'
+
+export default async function ComprehensiveReadOnly() {
+  const data = await loadData()
+
+  if (!data?.ok) {
+    return (
+      <div className="p-6">
+        <h1 className="text-3xl font-bold mb-4">Comprehensive Framework (read-only)</h1>
+        <p className="text-red-600">Failed to load comprehensive framework data.</p>
+        {data?.status ? <p className="mt-2">HTTP {data.status}</p> : null}
+        <p className="mt-2">
+          You can also inspect the raw endpoint at <code>/comprehensive/api/list</code>.
+        </p>
+      </div>
+    )
+  }
+
+  const c = data.counts ?? {}
+  const sample = data.sample ?? []
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-semibold">Comprehensive Framework (read-only)</h1>
-      <p className="text-sm text-gray-500 mt-1">Primary standards + (future) indicators & levels</p>
+      <h1 className="text-3xl font-bold mb-6">Comprehensive Framework (read-only)</h1>
 
-      <div className="mt-4 rounded border p-4 bg-white">
-        {data.ok ? (
-          <>
-            <div className="text-sm text-gray-600 mb-3">
-              Mode: <code>{data.mode}</code> · Totals:&nbsp;
-              {data.counts.pillars} pillars, {data.counts.themes} themes, {data.counts.subthemes} sub-themes,{' '}
-              {data.counts.standards} standards
-            </div>
+      <ul className="list-disc pl-6 space-y-1">
+        <li>Pillars: {c.pillars ?? 0}</li>
+        <li>Themes: {c.themes ?? 0}</li>
+        <li>Sub–themes: {c.subthemes ?? 0}</li>
+        <li>Indicators: {c.indicators ?? 0}</li>
+        <li>Levels: {c.levels ?? 0}</li>
+        <li>Criteria: {c.criteria ?? 0}</li>
+      </ul>
 
-            <div className="space-y-2">
-              {data.standards.map((s, i) => (
-                <div
-                  key={`${s.pillar_code}-${s.theme_code}-${s.subtheme_code ?? i}`}
-                  className="rounded border px-3 py-2 text-sm"
-                >
-                  <div className="font-medium">
-                    [{s.pillar_code}] {s.pillar_name}
-                  </div>
-                  <div className="ml-3">
-                    <span className="font-medium">
-                      [{s.theme_code}] {s.theme_name}
-                    </span>
-                    {s.subtheme_code ? (
-                      <div className="ml-3">
-                        <span className="text-gray-700">
-                          [{s.subtheme_code}] {s.subtheme_name}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="ml-3 text-gray-500 italic">No sub-theme (standard ends at theme)</div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="text-red-600 text-sm">
-            Failed to load: <code>{data.message}</code>
-            <div className="mt-1 text-gray-600">
-              Check <code>INTERNAL_API_TOKEN</code> is set identically in this environment and that the API route is
-              deployed.
-            </div>
-          </div>
-        )}
-      </div>
+      <h2 className="text-xl font-semibold mt-8 mb-3">Sample rows</h2>
+      <pre className="bg-gray-100 rounded p-4 text-sm overflow-auto">
+        {JSON.stringify(sample[0] ?? { pillar: null, theme: null, subtheme: null, indicator: null, level: null, criterion: null }, null, 2)}
+      </pre>
+
+      <p className="text-sm text-gray-600 mt-4">
+        Data is fetched from <code>/comprehensive/api/list</code>. Once these counts/samples look
+        correct, we’ll layer in the rich UI.
+      </p>
     </div>
-  );
+  )
 }
