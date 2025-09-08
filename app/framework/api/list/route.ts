@@ -10,31 +10,45 @@ function unauthorized(detail?: any) {
   return NextResponse.json(body, { status: 401 })
 }
 
-export async function GET(request: Request) {
-  // --- temporary debug: compare env vs header without leaking secrets ---
-  const envToken = (process.env.INTERNAL_API_TOKEN ?? '')
-  const hdrToken = request.headers.get('x-internal-token') ?? ''
+function readAuthToken(request: Request) {
+  // 1) Preferred custom header
+  const hdr = request.headers.get('x-internal-token') ?? ''
 
-  // Only include debug info if caller asks ?debug=1
+  // 2) Fallback: Authorization header (Bearer or plain)
+  const auth = request.headers.get('authorization') ?? ''
+  let fromAuth = ''
+  if (auth) {
+    const parts = auth.split(' ')
+    fromAuth = parts.length === 2 ? parts[1] : auth
+  }
+
+  // 3) Debug fallback: query param token, only if debug=1
+  const url = new URL(request.url)
+  const wantDebug = url.searchParams.get('debug') === '1'
+  const qp = wantDebug ? (url.searchParams.get('token') ?? '') : ''
+
+  // choose first non-empty in priority order
+  return hdr || fromAuth || qp
+}
+
+export async function GET(request: Request) {
+  const envToken = process.env.INTERNAL_API_TOKEN ?? ''
+  const got = readAuthToken(request)
+
   const url = new URL(request.url)
   const wantDebug = url.searchParams.get('debug') === '1'
 
-  // auth check
-  const authed = envToken.length > 0 && hdrToken === envToken
+  const authed = envToken.length > 0 && got === envToken
   if (!authed) {
     const detail = wantDebug
       ? {
-          // safe previews (no full secrets)
           hasEnv: envToken.length > 0,
-          hasHeader: hdrToken.length > 0,
-          envLen: envToken.length,
-          headerLen: hdrToken.length,
-          // show first 3 chars only to spot whitespace/typos
-          envStart3: envToken.slice(0, 3),
-          headerStart3: hdrToken.slice(0, 3),
-          equal: envToken.length > 0 && hdrToken === envToken,
-          note:
-            'Using header name x-internal-token. Remove debug after tests pass.',
+          hasHeader_x_internal_token: !!(request.headers.get('x-internal-token') ?? ''),
+          hasHeader_authorization: !!(request.headers.get('authorization') ?? ''),
+          gotLen: got.length,
+          gotStart3: got.slice(0, 3),
+          equal: envToken.length > 0 && got === envToken,
+          note: 'Accepts x-internal-token, Authorization, or ?token= when debug=1',
         }
       : undefined
     return unauthorized(detail)
