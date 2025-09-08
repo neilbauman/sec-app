@@ -1,5 +1,5 @@
 // app/dashboard/page.tsx
-import DashTile from '../../components/DashTile' // ← relative import
+import DashTile from '@/components/DashTile'
 import { getCurrentRole, roleLabel } from '@/lib/role'
 
 export const dynamic = 'force-dynamic'
