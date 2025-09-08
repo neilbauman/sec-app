@@ -8,9 +8,10 @@ export default function DashTile(props: {
   disabled?: boolean
 }) {
   const { title, desc, href, disabled } = props
-  const base = (
+
+  const card = (
     <div
-      className={`border rounded-2xl p-5 h-full ${
+      className={`border rounded-2xl p-5 h-full transition ${
         disabled
           ? 'border-gray-200 bg-gray-50 text-gray-400'
           : 'border-gray-200 hover:border-gray-300'
@@ -23,7 +24,7 @@ export default function DashTile(props: {
   )
 
   if (disabled || !href) {
-    return <div className="pointer-events-none select-none">{base}</div>
+    return <div className="pointer-events-none select-none">{card}</div>
   }
-  return <Link href={href} className="block">{base}</Link>
+  return <Link href={href} className="block">{card}</Link>
 }
