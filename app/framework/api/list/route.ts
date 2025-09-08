@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   // 1) Check the shared-secret header
-  const token = request.headers.get('x-internal-api-token') || ''
+  const token = request.headers.get('x-internal-token') || ''
   if (!REQUIRED_TOKEN || token !== REQUIRED_TOKEN) {
     return unauthorized()
   }
@@ -21,6 +21,7 @@ export async function GET(request: Request) {
   // 2) Fetch primary framework (pillars/themes/subthemes) via service client
   try {
     const supabase = getServerClient() // already runs as service role on server
+
     const { data: pillars, error: pErr } = await supabase
       .from('pillars')
       .select('code, name, description, sort_order')
