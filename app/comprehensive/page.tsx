@@ -1,4 +1,5 @@
 // app/comprehensive/page.tsx
+
 import { headers } from 'next/headers';
 import ComprehensiveClient from './ComprehensiveClient';
 
