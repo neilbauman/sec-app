@@ -1,78 +1,63 @@
 // app/comprehensive/page.tsx
-import React from 'react'
+import { headers } from "next/headers";
 
-const buildOrigin = () => {
-  // Prefer VERCEL URLs in production
-  if (process.env.VERCEL_URL) {
-    // Vercel provides values without scheme
-    return `https://${process.env.VERCEL_URL}`
-  }
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
-  }
-  return 'http://localhost:3000'
-}
+export const dynamic = "force-dynamic"; // avoid prerender issues
 
 export default async function ComprehensivePage() {
-  const origin = buildOrigin()
+  const h = await headers();
 
-  let status = 0
-  let json: any = null
+  // Build absolute base URL for Vercel / localhost
+  const host =
+    h.get("x-forwarded-host") ??
+    h.get("host") ??
+    process.env.VERCEL_URL ??
+    "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.includes("localhost") ? "http" : "https");
+  const baseUrl =
+    process.env.NODE_ENV === "development" ? "http://localhost:3000" : `${proto}://${host}`;
 
-  try {
-    const res = await fetch(`${origin}/comprehensive/api/list`, {
-      // This page always calls the internal API (Option A)
-      headers: {
-        'X-Internal-Token': process.env.INTERNAL_API_TOKEN ?? '',
-        'Accept': 'application/json',
-      },
-      // Disable static caching – we want fresh reads (and to avoid prerender)
-      cache: 'no-store',
-      next: { revalidate: 0 },
-    })
-    status = res.status
-    json = await res.json()
-  } catch (e: any) {
-    json = { ok: false, message: e?.message ?? 'Fetch failed' }
-    status = 500
-  }
+  const token = process.env.INTERNAL_API_TOKEN ?? "";
 
-  if (!json?.ok) {
+  const res = await fetch(`${baseUrl}/comprehensive/api/list`, {
+    cache: "no-store",
+    headers: { "x-internal-token": token },
+  });
+
+  if (!res.ok) {
     return (
-      <div style={{ padding: 24 }}>
-        <h1>Comprehensive Framework (read-only)</h1>
+      <main className="p-6">
+        <h1 className="text-3xl font-bold mb-4">Comprehensive Framework (read-only)</h1>
         <p>Failed to load comprehensive framework data.</p>
-        {status ? <p><strong>HTTP {status}</strong></p> : null}
-        <p>You can also inspect the raw endpoint at <code>/comprehensive/api/list</code>.</p>
-      </div>
-    )
+        <p className="text-sm mt-2">HTTP {res.status}</p>
+        <p className="text-sm mt-2">
+          You can also inspect the raw endpoint at <code>/comprehensive/api/list</code>.
+        </p>
+      </main>
+    );
   }
 
-  const counts = json.counts ?? {}
-  const sample = Array.isArray(json.sample) ? json.sample[0] : (json.sample ?? null)
+  const data = await res.json();
 
   return (
-    <div style={{ padding: 24, lineHeight: 1.45 }}>
-      <h1>Comprehensive Framework (read-only)</h1>
-
-      <ul>
-        <li>Pillars: {counts.pillars ?? 0}</li>
-        <li>Themes: {counts.themes ?? 0}</li>
-        <li>Sub-themes: {counts.subthemes ?? 0}</li>
-        <li>Indicators: {counts.indicators ?? 0}</li>
-        <li>Levels: {counts.levels ?? 0}</li>
-        <li>Criteria: {counts.criteria ?? 0}</li>
+    <main className="p-6 space-y-3">
+      <h1 className="text-3xl font-bold">Comprehensive Framework (read-only)</h1>
+      <ul className="list-disc pl-6">
+        <li>Pillars: {data?.counts?.pillars ?? 0}</li>
+        <li>Themes: {data?.counts?.themes ?? 0}</li>
+        <li>Sub-themes: {data?.counts?.subthemes ?? 0}</li>
+        <li>Indicators: {data?.counts?.indicators ?? 0}</li>
+        <li>Levels: {data?.counts?.levels ?? 0}</li>
+        <li>Criteria: {data?.counts?.criteria ?? 0}</li>
       </ul>
 
-      <h2>Sample rows</h2>
-      <pre style={{ background: '#f6f7f9', padding: 16, borderRadius: 8, overflowX: 'auto' }}>
-{JSON.stringify(sample ?? { pillar:null, theme:null, indicator:null, level:null, criterion:null }, null, 2)}
+      <pre className="bg-gray-100 p-3 rounded text-sm overflow-auto">
+        {JSON.stringify(data?.sample?.[0] ?? data?.standards?.[0] ?? {}, null, 2)}
       </pre>
 
-      <p style={{ marginTop: 16 }}>
-        Data is fetched from <code>/comprehensive/api/list</code>. Once these counts/samples look correct,
-        we’ll layer in the rich UI.
+      <p className="text-sm text-gray-500">
+        Data is fetched from <code>/comprehensive/api/list</code>. (Uses <code>x-internal-token</code>
+        .)
       </p>
-    </div>
-  )
+    </main>
+  );
 }
