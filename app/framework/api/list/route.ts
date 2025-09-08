@@ -11,7 +11,7 @@ function unauthorized(detail?: any) {
 }
 
 function readAuthToken(request: Request) {
-  // 1) Preferred custom header
+  // 1) Preferred: custom header
   const hdr = request.headers.get('x-internal-token') ?? ''
 
   // 2) Fallback: Authorization header (Bearer or plain)
@@ -22,12 +22,11 @@ function readAuthToken(request: Request) {
     fromAuth = parts.length === 2 ? parts[1] : auth
   }
 
-  // 3) Debug fallback: query param token, only if debug=1
+  // 3) Fallback: query param ?token=
   const url = new URL(request.url)
-  const wantDebug = url.searchParams.get('debug') === '1'
-  const qp = wantDebug ? (url.searchParams.get('token') ?? '') : ''
+  const qp = url.searchParams.get('token') ?? ''
 
-  // choose first non-empty in priority order
+  // Choose first non-empty
   return hdr || fromAuth || qp
 }
 
@@ -35,23 +34,19 @@ export async function GET(request: Request) {
   const envToken = process.env.INTERNAL_API_TOKEN ?? ''
   const got = readAuthToken(request)
 
-  const url = new URL(request.url)
-  const wantDebug = url.searchParams.get('debug') === '1'
-
   const authed = envToken.length > 0 && got === envToken
   if (!authed) {
-    const detail = wantDebug
-      ? {
-          hasEnv: envToken.length > 0,
-          hasHeader_x_internal_token: !!(request.headers.get('x-internal-token') ?? ''),
-          hasHeader_authorization: !!(request.headers.get('authorization') ?? ''),
-          gotLen: got.length,
-          gotStart3: got.slice(0, 3),
-          equal: envToken.length > 0 && got === envToken,
-          note: 'Accepts x-internal-token, Authorization, or ?token= when debug=1',
-        }
-      : undefined
-    return unauthorized(detail)
+    // ALWAYS include diagnostics on 401 (safe, does not print secrets)
+    return unauthorized({
+      hasEnv: envToken.length > 0,
+      hasHeader_x_internal_token: !!(request.headers.get('x-internal-token') ?? ''),
+      hasHeader_authorization: !!(request.headers.get('authorization') ?? ''),
+      gotLen: got.length,
+      gotStart3: got.slice(0, 3),
+      envLen: envToken.length,
+      envStart3: envToken.slice(0, 3),
+      note: 'Accepts x-internal-token header, Authorization header, or ?token= in URL',
+    })
   }
 
   try {
