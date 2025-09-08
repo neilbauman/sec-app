@@ -1,12 +1,17 @@
 // lib/absUrl.ts
 import 'server-only'
-import { headers } from 'next/headers'
 
+/**
+ * Returns an absolute URL for server-side fetches.
+ * Priority:
+ * 1) NEXT_PUBLIC_SITE_URL (set this to your canonical domain if you like)
+ * 2) VERCEL_URL (auto-set on Vercel: e.g., my-app-abc123.vercel.app)
+ * 3) http://localhost:3000 (fallback for local dev)
+ */
 export function absUrl(path: string) {
-  if (path.startsWith('http://') || path.startsWith('https://')) return path
-  const h = headers()
-  const proto = h.get('x-forwarded-proto') ?? 'http'
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000'
   const p = path.startsWith('/') ? path : `/${path}`
-  return `${proto}://${host}${p}`
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  return `${base}${p}`
 }
