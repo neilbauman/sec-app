@@ -5,7 +5,7 @@ import { getCurrentRole, roleLabel } from '@/lib/role'
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const role = getCurrentRole()
+  const role = await getCurrentRole()
   const canSuper = role === 'super-admin'
   const canCountry = role === 'country-admin' || role === 'super-admin'
 
