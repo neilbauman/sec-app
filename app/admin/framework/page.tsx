@@ -8,7 +8,7 @@ type FrameworkList = { ok: boolean; counts: Counts }
 export const dynamic = 'force-dynamic'
 
 export default async function FrameworkAdminPage() {
-  const role = getCurrentRole()
+  const role = await getCurrentRole()
   const isSuper = role === 'super-admin'
   if (!isSuper) {
     return (
