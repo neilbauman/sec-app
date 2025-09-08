@@ -1,72 +1,91 @@
+// app/comprehensive/page.tsx
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-type Pillar = { code: string; name: string; description: string; sort_order: number };
-type Theme = { code: string; pillar_code: string; name: string; description: string; sort_order: number };
-type Subtheme = { code: string; theme_code: string; name: string; description: string; sort_order: number };
-
-type ListResponse = {
-  ok: boolean;
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
-  totals?: { pillars: number; themes: number; subthemes: number };
+type ApiOk = {
+  ok: true;
+  standards: any[];
+  indicators: any[];
+  levels: any[];
+  totals?: { standards?: number; indicators?: number; levels?: number };
 };
 
-function getOrigin() {
-  // Prefer explicit base URL if you set it in Vercel / .env.local
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    return process.env.NEXT_PUBLIC_BASE_URL.replace(/\/$/, '');
-  }
-  // Vercel environment domain
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  // Local dev fallback
-  return 'http://localhost:3000';
-}
+type ApiErr = {
+  ok: false;
+  stage?: string;
+  message?: string;
+  note?: string;
+};
 
-async function getData(): Promise<ListResponse> {
-  const origin = getOrigin();
-  const res = await fetch(`${origin}/comprehensive/api/list`, {
-    // prevent any static optimization / ISR
-    cache: 'no-store',
-    // and be explicit for Next
-    next: { revalidate: 0 },
-  });
-
+async function getData(): Promise<ApiOk | ApiErr> {
+  // Relative URL so we don’t need to build a host; force runtime request.
+  const res = await fetch('/comprehensive/api/list', { cache: 'no-store' });
+  // If the route threw, show status for easier debugging
   if (!res.ok) {
-    // keep page rendering even if API fails
-    return { ok: false, pillars: [], themes: [], subthemes: [] };
+    return { ok: false, message: `HTTP ${res.status} from /comprehensive/api/list` };
   }
   return res.json();
 }
 
-export default async function ComprehensiveFrameworkPage() {
-  const data = await getData();
+export default async function ComprehensivePage() {
+  const result = await getData();
+
+  if (!result.ok) {
+    return (
+      <div className="p-6">
+        <h1 className="text-3xl font-semibold mb-3">Comprehensive Framework (read-only)</h1>
+        <p className="text-red-600">Failed to load comprehensive framework data.</p>
+        {('message' in result || 'stage' in result) && (
+          <pre className="mt-3 rounded bg-neutral-100 p-3 text-sm overflow-auto">
+            {JSON.stringify(result, null, 2)}
+          </pre>
+        )}
+      </div>
+    );
+  }
+
+  const { totals, standards, indicators, levels } = result;
 
   return (
-    <main className="p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">Comprehensive Framework (read-only)</h1>
+    <div className="p-6 space-y-6">
+      <h1 className="text-3xl font-semibold">Comprehensive Framework (read-only)</h1>
 
-      {!data.ok ? (
-        <div className="text-red-600">Failed to load comprehensive framework data.</div>
-      ) : (
-        <>
-          <div className="text-sm text-gray-600">
-            Totals:&nbsp;
-            <span>Pillars: {data.totals?.pillars ?? data.pillars.length}</span>,&nbsp;
-            <span>Themes: {data.totals?.themes ?? data.themes.length}</span>,&nbsp;
-            <span>Sub-themes: {data.totals?.subthemes ?? data.subthemes.length}</span>
-          </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="rounded-lg border p-4">
+          <div className="text-xs uppercase text-neutral-500">Standards</div>
+          <div className="text-3xl font-semibold">{totals?.standards ?? standards.length}</div>
+        </div>
+        <div className="rounded-lg border p-4">
+          <div className="text-xs uppercase text-neutral-500">Indicators</div>
+          <div className="text-3xl font-semibold">{totals?.indicators ?? indicators.length}</div>
+        </div>
+        <div className="rounded-lg border p-4">
+          <div className="text-xs uppercase text-neutral-500">Levels</div>
+          <div className="text-3xl font-semibold">{totals?.levels ?? levels.length}</div>
+        </div>
+      </div>
 
-          <div className="rounded border p-4 bg-white">
-            <p className="text-sm text-gray-700">
-              Data is loading from <code>/comprehensive/api/list</code>. This page is intentionally simple and read-only for now.
-            </p>
-          </div>
-        </>
-      )}
-    </main>
+      {/* Minimal preview table – we’ll replace with real grid later */}
+      <div className="rounded-lg border">
+        <div className="px-4 py-3 border-b font-medium bg-neutral-50">Sample of Indicators</div>
+        <ul className="divide-y">
+          {(indicators ?? []).slice(0, 10).map((it: any) => (
+            <li key={it.id ?? `${it.pillar_code}-${it.theme_code}-${it.subtheme_code ?? '—'}-${it.code ?? it.name ?? Math.random()}`}
+                className="px-4 py-3">
+              <div className="text-sm font-medium">
+                {it.code ? `[${it.code}] ` : ''}{it.name ?? it.title ?? 'Untitled indicator'}
+              </div>
+              <div className="text-xs text-neutral-500">
+                {[
+                  it.pillar_code,
+                  it.theme_code,
+                  it.subtheme_code ?? '—',
+                ].filter(Boolean).join(' • ')}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }
