@@ -7,6 +7,15 @@
   --badge: #eef2ff;
   --badge-text: #3730a3;
 }
+/* Sans everywhere */
+:root, body {
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans,
+    Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+/* Smooth icon rotations */
+.rotate-0   { transform: rotate(0deg); }
+.rotate-90  { transform: rotate(90deg); }
+.transition-transform { transition: transform 150ms ease; }
 
 html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
