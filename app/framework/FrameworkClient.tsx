@@ -1,120 +1,111 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
 
-type Pillar = { code: string; name: string; description?: string; sort_order?: number };
-type Theme  = { code: string; pillar_code: string; name: string; description?: string; sort_order?: number };
-type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order?: number };
-
-type ApiPayload = {
-  ok: boolean;
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
-};
+type Pillar = { code: string; name?: string; description?: string; sort_order?: number }
+type Theme = { code: string; pillar_code: string; name?: string; description?: string; sort_order?: number }
+type Subtheme = { code: string; theme_code: string; name?: string; description?: string; sort_order?: number }
 
 export default function FrameworkClient() {
-  const [pillars, setPillars] = useState<Pillar[]>([]);
-  const [themes, setThemes] = useState<Theme[]>([]);
-  const [subthemes, setSubthemes] = useState<Subtheme[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
+  const [pillars, setPillars] = useState<Pillar[]>([])
+  const [themes, setThemes] = useState<Theme[]>([])
+  const [subs, setSubs] = useState<Subtheme[]>([])
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
+    let alive = true
+    ;(async () => {
       try {
-        const res = await fetch('/framework/api/list', { cache: 'no-store' });
-        if (!res.ok) throw new Error(`API ${res.status}`);
-        const data: ApiPayload = await res.json();
-        if (!mounted) return;
-        setPillars((data.pillars || []).sort((a,b)=>(a.sort_order ?? 0)-(b.sort_order ?? 0)));
-        setThemes((data.themes || []).sort((a,b)=>(a.sort_order ?? 0)-(b.sort_order ?? 0)));
-        setSubthemes((data.subthemes || []).sort((a,b)=>(a.sort_order ?? 0)-(b.sort_order ?? 0)));
-      } catch (e:any) {
-        if (mounted) setErr(e?.message || 'Failed to load');
+        const res = await fetch('/framework/api/list', { cache: 'no-store' })
+        const data = await res.json()
+        if (!alive) return
+        setPillars((data.pillars ?? []).sort((a: Pillar, b: Pillar) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
+        setThemes((data.themes ?? []).sort((a: Theme, b: Theme) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
+        setSubs((data.subthemes ?? []).sort((a: Subtheme, b: Subtheme) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
+      } catch (e: any) {
+        setErr(e?.message || 'Failed to load framework')
       } finally {
-        if (mounted) setLoading(false);
+        if (alive) setLoading(false)
       }
-    })();
-    return () => { mounted = false; };
-  }, []);
+    })()
+    return () => { alive = false }
+  }, [])
 
-  // lookup helpers (by *code*, matching your schema)
-  const themesByPillar = new Map<string, Theme[]>();
-  for (const p of pillars) {
-    themesByPillar.set(
-      p.code,
-      themes.filter(t => t.pillar_code === p.code)
-    );
-  }
-  const subthemesByTheme = new Map<string, Subtheme[]>();
-  for (const t of themes) {
-    subthemesByTheme.set(
-      t.code,
-      subthemes.filter(st => st.theme_code === t.code)
-    );
-  }
+  const themesByPillar = new Map<string, Theme[]>()
+  themes.forEach(t => {
+    const arr = themesByPillar.get(t.pillar_code) ?? []
+    arr.push(t)
+    themesByPillar.set(t.pillar_code, arr)
+  })
+
+  const subsByTheme = new Map<string, Subtheme[]>()
+  subs.forEach(s => {
+    const arr = subsByTheme.get(s.theme_code) ?? []
+    arr.push(s)
+    subsByTheme.set(s.theme_code, arr)
+  })
 
   return (
-    <div className="fw-wrap">
-      <h1 className="fw-title">Primary Framework Editor</h1>
+    <div className="page">
+      <h1 className="h1">Primary Framework Editor</h1>
+      <p className="lead">Read-only view for now. Expand/collapse to browse pillars, themes, and sub-themes.</p>
 
-      <div className="fw-stats">
-        <div><div className="stat-label">Pillars</div><div className="stat-num">{pillars.length}</div></div>
-        <div><div className="stat-label">Themes</div><div className="stat-num">{themes.length}</div></div>
-        <div><div className="stat-label">Sub-themes</div><div className="stat-num">{subthemes.length}</div></div>
+      <div className="meta section">
+        <strong>Pillars</strong> {pillars.length} &middot; <strong>Themes</strong> {themes.length} &middot{' '}
+        <strong>Sub-themes</strong> {subs.length}
       </div>
 
-      {loading && <div className="note">Loading…</div>}
-      {err && <div className="error">Error: {err}</div>}
+      {err && <p className="meta">Error: {err}</p>}
+      {loading && <p className="meta">Loading…</p>}
 
-      {!loading && !err && (
-        <div className="tree">
-          {pillars.map(p => (
-            <details key={p.code} className="node">
-              <summary className="row">
-                <span className="tag tag-pillar">{p.code}</span>
-                <span className="name">{p.name || 'Untitled Pillar'}</span>
-                {p.description ? <span className="desc">{p.description}</span> : null}
+      <div className="stack section">
+        {pillars.map(p => {
+          const tlist = (themesByPillar.get(p.code) ?? [])
+          return (
+            <details key={p.code} className="details">
+              <summary>
+                {p.code ? `${p.code} ` : ''}{p.name || 'Untitled Pillar'}
+                <span className="badge">{tlist.length} theme{tlist.length === 1 ? '' : 's'}</span>
               </summary>
+              <div className="content">
+                {p.description && <p className="meta" style={{ marginBottom: '.5rem' }}>{p.description}</p>}
 
-              <div className="children">
-                {(themesByPillar.get(p.code) || []).map(t => (
-                  <details key={t.code} className="node">
-                    <summary className="row">
-                      <span className="tag tag-theme">{t.code}</span>
-                      <span className="name">{t.name || 'Untitled Theme'}</span>
-                      {t.description ? <span className="desc">{t.description}</span> : null}
-                    </summary>
+                <div className="kids">
+                  {tlist.length === 0 && <p className="meta">No themes.</p>}
 
-                    <div className="children">
-                      {(subthemesByTheme.get(t.code) || []).map(st => (
-                        <div key={st.code} className="row leaf">
-                          <span className="tag tag-subtheme">{st.code}</span>
-                          <span className="name">{st.name || 'Untitled Sub-theme'}</span>
-                          {st.description ? <span className="desc">{st.description}</span> : null}
+                  {tlist.map(t => {
+                    const slist = subsByTheme.get(t.code) ?? []
+                    return (
+                      <details key={t.code} className="details">
+                        <summary>
+                          {t.code ? `${t.code} ` : ''}{t.name || 'Untitled Theme'}
+                          <span className="badge">{slist.length} subtheme{slist.length === 1 ? '' : 's'}</span>
+                        </summary>
+                        <div className="content">
+                          {t.description && <p className="meta" style={{ marginBottom: '.5rem' }}>{t.description}</p>}
+
+                          <div className="kids">
+                            {slist.length === 0 && <p className="meta">No sub-themes.</p>}
+                            {slist.map(s => (
+                              <div key={s.code} className="details" style={{ padding: '.6rem .8rem', background: '#fff' }}>
+                                <div style={{ fontWeight: 600 }}>
+                                  {s.code ? `${s.code} ` : ''}{s.name || 'Untitled Sub-theme'}
+                                </div>
+                                {s.description && <div className="meta" style={{ marginTop: '.25rem' }}>{s.description}</div>}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
-                      {(subthemesByTheme.get(t.code) || []).length === 0 && (
-                        <div className="row leaf muted">No sub-themes</div>
-                      )}
-                    </div>
-                  </details>
-                ))}
-                {(themesByPillar.get(p.code) || []).length === 0 && (
-                  <div className="row muted">No themes</div>
-                )}
+                      </details>
+                    )
+                  })}
+                </div>
               </div>
             </details>
-          ))}
-        </div>
-      )}
-
-      <p className="footnote">
-        Read-only scaffold. Data comes from <code>/framework/api/list</code>.  
-        We’ll add actions (add/edit/delete, CSV, etc.) next.
-      </p>
+          )
+        })}
+      </div>
     </div>
-  );
+  )
 }
