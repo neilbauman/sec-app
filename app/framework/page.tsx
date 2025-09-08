@@ -1,73 +1,48 @@
-// app/framework/page.tsx
-import { unstable_noStore as noStore } from 'next/cache'
-import { getServerClient } from '@/lib/supabaseServer'
-import FrameworkTree from './FrameworkTree'
+// app/framework/page.tsx (server component)
+export const dynamic = 'force-dynamic';
 
-// Simple shared shapes (kept inline to avoid imports that could confuse the build)
-type Pillar = {
-  code: string
-  name: string | null
-  description: string | null
-  sort_order: number | null
-}
-type Theme = {
-  code: string
-  pillar_code: string | null
-  name: string | null
-  description: string | null
-  sort_order: number | null
-}
-type Subtheme = {
-  code: string
-  theme_code: string | null
-  name: string | null
-  description: string | null
-  sort_order: number | null
+function getBaseUrl() {
+  // Works for Vercel preview/prod and local dev
+  const v = process.env.VERCEL_URL;
+  if (v) return `https://${v}`;
+  return 'http://localhost:3000';
 }
 
 export default async function FrameworkPage() {
-  // Force dynamic rendering to avoid any prerender/static export attempts
-  noStore()
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/framework/api/list`, {
+    method: 'GET',
+    headers: {
+      // This never reaches the browser; it’s used server-to-server.
+      'x-internal-token': process.env.INTERNAL_API_TOKEN || '',
+    },
+    cache: 'no-store',
+  });
 
-  const supabase = getServerClient()
+  if (!res.ok) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold">Primary Framework (read-only)</h1>
+        <p className="mt-4">Failed to load primary framework data.</p>
+        <p className="mt-2 text-sm text-gray-500">HTTP {res.status}</p>
+      </div>
+    );
+  }
 
-  // Pull everything needed for the hierarchy, ordered for stable display
-  const [{ data: pillars = [] }, { data: themes = [] }, { data: subthemes = [] }] =
-    await Promise.all([
-      supabase
-        .from('pillars')
-        .select('code,name,description,sort_order')
-        .order('sort_order', { ascending: true })
-        .order('code', { ascending: true }),
-
-      supabase
-        .from('themes')
-        .select('code,pillar_code,name,description,sort_order')
-        .order('sort_order', { ascending: true })
-        .order('code', { ascending: true }),
-
-      supabase
-        .from('subthemes')
-        .select('code,theme_code,name,description,sort_order')
-        .order('sort_order', { ascending: true })
-        .order('code', { ascending: true }),
-    ])
+  const data = await res.json();
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8 font-sans">
-      <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
-
-      <p className="mt-2 text-sm text-gray-500">
-        Read-only view for now. Expand/collapse to browse pillars, themes, and sub-themes.
+    <div className="p-6 space-y-4">
+      <h1 className="text-2xl font-bold">Primary Framework (read-only)</h1>
+      <ul className="list-disc list-inside">
+        <li>Pillars: {data?.counts?.pillars ?? 0}</li>
+        <li>Themes: {data?.counts?.themes ?? 0}</li>
+        <li>Sub-themes: {data?.counts?.subthemes ?? 0}</li>
+      </ul>
+      <p className="text-sm text-gray-500">
+        Data is fetched from <code>/framework/api/list</code> using a private
+        header.
       </p>
-
-      <div className="mt-6">
-        <FrameworkTree
-          pillars={pillars as Pillar[]}
-          themes={themes as Theme[]}
-          subthemes={subthemes as Subtheme[]}
-        />
-      </div>
     </div>
-  )
+  );
 }
