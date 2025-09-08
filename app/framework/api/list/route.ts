@@ -1,35 +1,66 @@
 // app/framework/api/list/route.ts
-import { NextResponse } from 'next/server'
-import { getServerClient } from '@/lib/supabaseServer'
+import { NextResponse } from 'next/server';
+import { getServerClient } from '@/lib/supabaseServer';
 
-export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  const supabase = getServerClient()
+function unauthorized(message = 'Unauthorized') {
+  return NextResponse.json({ ok: false, status: 401, message }, { status: 401 });
+}
 
-  const { data: pillars = [], error: pErr } = await supabase
-    .from('pillars')
-    .select('code,name,description,sort_order')
-    .order('sort_order', { ascending: true })
+function checkAuth(req: Request) {
+  const expected = process.env.INTERNAL_API_TOKEN || '';
+  const got = req.headers.get('x-internal-token') || '';
+  if (!expected || got !== expected) return false;
+  return true;
+}
 
-  const { data: themes = [], error: tErr } = await supabase
-    .from('themes')
-    .select('code,pillar_code,name,description,sort_order')
-    .order('sort_order', { ascending: true })
+export async function GET(req: Request) {
+  if (!checkAuth(req)) return unauthorized();
 
-  const { data: subthemes = [], error: sErr } = await supabase
-    .from('subthemes')
-    .select('code,theme_code,name,description,sort_order')
-    .order('sort_order', { ascending: true })
+  const supabase = getServerClient();
 
-  const body = {
-    ok: !(pErr || tErr || sErr),
-    pillars, themes, subthemes,
-    totals: { pillars: pillars.length, themes: themes.length, subthemes: subthemes.length }
+  const counts = { pillars: 0, themes: 0, subthemes: 0 };
+  let pillars: any[] = [];
+  let themes: any[] = [];
+  let subthemes: any[] = [];
+
+  // Pillars
+  {
+    const { data, error } = await supabase
+      .from('pillars')
+      .select('code,name,description,sort_order')
+      .order('sort_order', { ascending: true });
+    if (!error && data) {
+      pillars = data;
+      counts.pillars = data.length;
+    }
   }
 
-  const res = NextResponse.json(body)
-  // Kill any caching so the client always sees latest
-  res.headers.set('Cache-Control', 'no-store, max-age=0')
-  return res
+  // Themes
+  {
+    const { data, error } = await supabase
+      .from('themes')
+      .select('code,pillar_code,name,description,sort_order')
+      .order('sort_order', { ascending: true });
+    if (!error && data) {
+      themes = data;
+      counts.themes = data.length;
+    }
+  }
+
+  // Sub-themes
+  {
+    const { data, error } = await supabase
+      .from('subthemes')
+      .select('code,theme_code,name,description,sort_order')
+      .order('sort_order', { ascending: true });
+    if (!error && data) {
+      subthemes = data;
+      counts.subthemes = data.length;
+    }
+  }
+
+  return NextResponse.json({ ok: true, counts, pillars, themes, subthemes });
 }
