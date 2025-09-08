@@ -1,141 +1,120 @@
-// app/comprehensive/api/list/route.ts
+// app/comprehensive/internal/list/route.ts
 import { NextResponse } from 'next/server'
 import { getServerClient } from '@/lib/supabaseServer'
 
+// avoid static prerender
 export const dynamic = 'force-dynamic'
 
-// Small helper to keep responses consistent
-function err(message: string, extra: Record<string, unknown> = {}) {
-  return NextResponse.json({ ok: false, message, ...extra }, { status: 200 })
+type Row = Record<string, any>
+
+function isMissingRelation(err?: { message?: string }) {
+  return !!err?.message && /does not exist|relation .* does not exist/i.test(err.message)
 }
 
-export async function GET() {
-  try {
-    const supabase = getServerClient()
+async function safeSelect<T = Row>(
+  from: ReturnType<ReturnType<typeof getServerClient>['from']>,
+  preferredSelect: string
+): Promise<{ ok: true; data: T[] } | { ok: false; data: T[]; error: string }> {
+  // try only specific columns first; fall back to "*"
+  let { data, error } = await from.select(preferredSelect).order('sort_order', { ascending: true }).limit(10000)
+  if (!error) return { ok: true, data: (data ?? []) as T[] }
 
-    // --- First: try the optional comprehensive view if you’ve added it
-    // Expecting columns like:
-    // pillar_code, pillar_name, theme_code, theme_name, subtheme_code (nullable), subtheme_name (nullable),
-    // indicator_code (nullable), indicator_name (nullable), level_code (nullable), level_name (nullable), default_score (nullable), sort_order
-    const viewAttempt = await supabase
-      .from('comprehensive_items')
-      .select('*')
-      .order('pillar_code', { ascending: true })
-      .order('theme_code', { ascending: true })
-      .order('subtheme_code', { ascending: true, nullsFirst: true })
-      .order('indicator_code', { ascending: true, nullsFirst: true })
-      .limit(100000)
+  // if table exists but columns mismatch, try "*"
+  const anySel = await from.select('*').order('sort_order', { ascending: true }).limit(10000)
+  if (!anySel.error) return { ok: true, data: (anySel.data ?? []) as T[] }
 
-    if (viewAttempt.data && !viewAttempt.error) {
-      return NextResponse.json({
-        ok: true,
-        mode: 'view',
-        count: viewAttempt.data.length,
-        items: viewAttempt.data,
-      })
-    }
+  // swallow "relation does not exist" so we can ship partial results
+  return { ok: false, data: [], error: anySel.error?.message || error?.message || 'unknown' }
+}
 
-    // If the view doesn’t exist (Postgres code 42P01) or any other error, fall back to Primary-only
-    // We’ll return “standards” as the lowest available depth (pillar+theme+optional subtheme)
-    // without indicators/levels so the UI can render something stable today.
-    const [pillarsRes, themesRes, subthemesRes] = await Promise.all([
-      supabase
-        .from('pillars')
-        .select('code,name,description,sort_order')
-        .order('sort_order', { ascending: true }),
-      supabase
-        .from('themes')
-        .select('code,name,description,sort_order,pillar_code')
-        .order('sort_order', { ascending: true }),
-      supabase
-        .from('subthemes')
-        .select('code,name,description,sort_order,theme_code')
-        .order('sort_order', { ascending: true }),
-    ])
-
-    if (pillarsRes.error) {
-      return err('Failed to read pillars', { stage: 'pillars', detail: pillarsRes.error.message })
-    }
-    if (themesRes.error) {
-      return err('Failed to read themes', { stage: 'themes', detail: themesRes.error.message })
-    }
-    if (subthemesRes.error) {
-      return err('Failed to read subthemes', { stage: 'subthemes', detail: subthemesRes.error.message })
-    }
-
-    const pillars = pillarsRes.data ?? []
-    const themes = themesRes.data ?? []
-    const subthemes = subthemesRes.data ?? []
-
-    // Build a flattened list of “standards” at the lowest depth available:
-    // - If subthemes exist for a theme, each (pillar, theme, subtheme) is a standard
-    // - If no subthemes for a theme, (pillar, theme) is a standard
-    const themesByPillar = new Map<string, typeof themes>()
-    for (const t of themes) {
-      const arr = themesByPillar.get(t.pillar_code) || []
-      arr.push(t)
-      themesByPillar.set(t.pillar_code, arr)
-    }
-
-    const subthemesByTheme = new Map<string, typeof subthemes>()
-    for (const st of subthemes) {
-      const arr = subthemesByTheme.get(st.theme_code) || []
-      arr.push(st)
-      subthemesByTheme.set(st.theme_code, arr)
-    }
-
-    const standards: Array<{
-      pillar_code: string
-      pillar_name: string
-      theme_code: string
-      theme_name: string
-      subtheme_code: string | null
-      subtheme_name: string | null
-      // indicators/levels intentionally omitted in fallback
-    }> = []
-
-    for (const p of pillars) {
-      const ts = themesByPillar.get(p.code) || []
-      for (const t of ts) {
-        const sts = subthemesByTheme.get(t.code) || []
-        if (sts.length === 0) {
-          standards.push({
-            pillar_code: p.code,
-            pillar_name: p.name,
-            theme_code: t.code,
-            theme_name: t.name,
-            subtheme_code: null,
-            subtheme_name: null,
-          })
-        } else {
-          for (const st of sts) {
-            standards.push({
-              pillar_code: p.code,
-              pillar_name: p.name,
-              theme_code: t.code,
-              theme_name: t.name,
-              subtheme_code: st.code,
-              subtheme_name: st.name,
-            })
-          }
-        }
-      }
-    }
-
-    return NextResponse.json({
-      ok: true,
-      mode: 'fallback-primary-only',
-      counts: {
-        pillars: pillars.length,
-        themes: themes.length,
-        subthemes: subthemes.length,
-        standards: standards.length,
-      },
-      standards,
-    })
-  } catch (e: any) {
-    return err('Unexpected error in comprehensive/api/list', {
-      detail: e?.message ?? String(e),
-    })
+export async function GET(req: Request) {
+  // ---- token guard ----
+  const token = req.headers.get('x-internal-token') || ''
+  if (!process.env.INTERNAL_API_TOKEN || token !== process.env.INTERNAL_API_TOKEN) {
+    return NextResponse.json({ ok: false, status: 401, message: 'Unauthorized' }, { status: 401 })
   }
+
+  const supabase = getServerClient() // service role inside getServerClient()
+
+  // ---------- primary framework ----------
+  const pillarsRes = await safeSelect(
+    supabase.from('pillars'),
+    'code, name, description, sort_order'
+  )
+  const themesRes = await safeSelect(
+    supabase.from('themes'),
+    'code, pillar_code, name, description, sort_order'
+  )
+  const subthemesRes = await safeSelect(
+    supabase.from('subthemes'),
+    'code, theme_code, name, description, sort_order'
+  )
+
+  // ---------- comprehensive (best-effort / optional) ----------
+  const indicatorsRes = await safeSelect(
+    supabase.from('indicators'),
+    'id, code, theme_code, subtheme_code, name, description, sort_order'
+  )
+
+  const levelsRes = await safeSelect(
+    supabase.from('levels'),
+    'id, indicator_id, name, description, default_score, sort_order'
+  )
+
+  const criteriaRes = await safeSelect(
+    supabase.from('criteria'),
+    'id, level_id, description, sort_order'
+  )
+
+  // standards (pillar + theme + subtheme tuples) from primary
+  const pillars = (pillarsRes.ok ? pillarsRes.data : []) as Row[]
+  const themes = (themesRes.ok ? themesRes.data : []) as Row[]
+  const subthemes = (subthemesRes.ok ? subthemesRes.data : []) as Row[]
+
+  const themeByCode = new Map(themes.map(t => [t.code, t]))
+  const pillarByCode = new Map(pillars.map(p => [p.code, p]))
+
+  const standards = subthemes.map(st => {
+    const theme = themeByCode.get(st.theme_code)
+    const pillar = theme ? pillarByCode.get(theme.pillar_code) : undefined
+    return {
+      pillar_code: pillar?.code ?? null,
+      pillar_name: pillar?.name ?? null,
+      theme_code: theme?.code ?? null,
+      theme_name: theme?.name ?? null,
+      subtheme_code: st.code ?? null,
+      subtheme_name: st.name ?? null,
+    }
+  })
+
+  const payload = {
+    ok: true,
+    counts: {
+      pillars: pillars.length,
+      themes: themes.length,
+      subthemes: subthemes.length,
+      indicators: indicatorsRes.ok ? indicatorsRes.data.length : 0,
+      levels: levelsRes.ok ? levelsRes.data.length : 0,
+      criteria: criteriaRes.ok ? criteriaRes.data.length : 0,
+    },
+    standards,
+    notes: {
+      indicatorsTable:
+        indicatorsRes.ok ? 'ok' :
+        (isMissingRelation({ message: (indicatorsRes as any).error }) ? 'missing' : 'error'),
+      levelsTable:
+        levelsRes.ok ? 'ok' :
+        (isMissingRelation({ message: (levelsRes as any).error }) ? 'missing' : 'error'),
+      criteriaTable:
+        criteriaRes.ok ? 'ok' :
+        (isMissingRelation({ message: (criteriaRes as any).error }) ? 'missing' : 'error'),
+    },
+    samples: {
+      indicator: indicatorsRes.ok ? indicatorsRes.data.slice(0, 3) : [],
+      level: levelsRes.ok ? levelsRes.data.slice(0, 3) : [],
+      criterion: criteriaRes.ok ? criteriaRes.data.slice(0, 3) : [],
+    },
+  }
+
+  return NextResponse.json(payload, { status: 200 })
 }
