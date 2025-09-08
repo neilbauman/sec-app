@@ -1,5 +1,6 @@
 // app/framework/page.tsx
 import { headers } from 'next/headers'
+import { absUrl } from '@/lib/absUrl';
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +22,7 @@ async function fetchList(): Promise<FrameworkList> {
     process.env.VERCEL_URL ??
     'localhost:3000'
 
-  const url = `https://${host}/framework/api/list`
+  const url = absUrl('/framework/api/list');
   const res = await fetch(url, {
     method: 'GET',
     headers: h,
