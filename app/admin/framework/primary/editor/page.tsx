@@ -35,20 +35,23 @@ export default async function PrimaryEditorPage() {
     )
   }
 
-  const res = await internalGet('/framework/api/list')
-  if (!res.ok) {
-    return (
-      <main className="mx-auto max-w-6xl p-6">
-        <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">
-          ← Dashboard
-        </a>
-        <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
-        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900">
-          Could not load framework data.
-        </p>
-      </main>
-    )
-  }
+  const res: FrameworkList = await internalGet('/framework/api/list') as FrameworkList
+
+if (!res.ok) {
+  return (
+    <main className="mx-auto max-w-6xl p-6">
+      <a
+        href="/dashboard"
+        className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900"
+      >
+        ← Back to Dashboard
+      </a>
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+        Failed to load framework data.
+      </div>
+    </main>
+  )
+}
 
   const data = (await res.json()) as FrameworkList
 
