@@ -49,11 +49,7 @@ export default async function PrimaryEditorPage() {
       <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">← Dashboard</a>
       <h1 className="text-2xl font-bold mb-4">Primary Framework Editor</h1>
 
-      {/* Tailwind smoke test */}
-      <div className="mb-4 rounded-lg bg-indigo-50 px-4 py-3 text-indigo-900 ring-1 ring-indigo-200">
-        Tailwind check: this box should look purple with rounded corners.
-      </div>
-
+     
       <PrimaryFrameworkCards
         role={role}
         pillars={data.pillars}
