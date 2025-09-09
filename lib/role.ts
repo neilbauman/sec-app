@@ -1,20 +1,21 @@
 // lib/role.ts
-import 'server-only'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers';
 
-export type AppRole = 'public' | 'country-admin' | 'super-admin'
+export type AppRole = 'super-admin' | 'country-admin' | 'public';
 
 export async function getCurrentRole(): Promise<AppRole> {
-  // Priority: cookie → env (for quick demos) → 'public'
-  const c = (await cookies()).get('role')?.value as AppRole | undefined
-  if (c === 'super-admin' || c === 'country-admin' || c === 'public') return c
-  const env = (process.env.NEXT_PUBLIC_DEMO_ROLE || '').toLowerCase()
-  if (env === 'super-admin' || env === 'country-admin' || env === 'public') return env as AppRole
-  return 'public'
-}
+  // 1) Temporary dev bypass: header or cookie (easy to flip off later)
+  const h = headers();
+  const bypass = h.get('x-dev-role') || cookies().get('role')?.value;
 
-export function roleLabel(role: AppRole) {
-  if (role === 'super-admin') return 'Super Admin'
-  if (role === 'country-admin') return 'Country Admin'
-  return 'Public'
+  if (bypass === 'super-admin' || bypass === 'country-admin' || bypass === 'public') {
+    return bypass as AppRole;
+  }
+
+  // 2) Your “real” logic (keep this intact for later)
+  // e.g. verify JWT/session/user… for now just fall back:
+  const env = (process.env.NEXT_PUBLIC_DEMO_ROLE || '').toLowerCase();
+  if (env === 'super-admin' || env === 'country-admin' || env === 'public') return env as AppRole;
+
+  return 'public';
 }
