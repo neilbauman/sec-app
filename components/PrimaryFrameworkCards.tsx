@@ -37,7 +37,7 @@ export default function PrimaryFrameworkCards({ role, pillars, themes, subthemes
   const [openPillars, setOpenPillars] = React.useState<Record<string, boolean>>({})
   const [openThemes, setOpenThemes] = React.useState<Record<string, boolean>>({})
 
-  const canEdit = role === 'super-admin'
+  const canEdit = role === 'super-admin' || false
   const action = (msg: string) => () => {
     // placeholder—no DB writes yet
     window.alert(msg)
