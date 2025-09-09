@@ -1,31 +1,21 @@
-import { supabaseServer } from "@/lib/supabase";
+// lib/framework.ts
+import { supabase } from '@/lib/supabase'
 
-export type Pillar = { code: string; name: string; description?: string | null; sort?: number | null; };
-export type Theme = { code: string; pillar_code: string; name: string; description?: string | null; sort?: number | null; };
-export type Subtheme = { code: string; theme_code: string; name: string; description?: string | null; sort?: number | null; };
+export async function fetchFrameworkList() {
+  // expect pillars, themes, subthemes tables/views you already have
+  const [pillars, themes, subthemes] = await Promise.all([
+    supabase.from('pillars').select('*').order('order'),
+    supabase.from('themes').select('*').order('order'),
+    supabase.from('subthemes').select('*').order('order'),
+  ])
 
-export type FrameworkList = {
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
-};
-
-export async function getFrameworkList(): Promise<FrameworkList> {
-  const supabase = supabaseServer();
-
-  // Adjust table names/columns to your schema if different.
-  const { data: pillars, error: pErr } = await supabase.from("pillars").select("*").order("sort", { ascending: true });
-  if (pErr) throw pErr;
-
-  const { data: themes, error: tErr } = await supabase.from("themes").select("*").order("sort", { ascending: true });
-  if (tErr) throw tErr;
-
-  const { data: subthemes, error: sErr } = await supabase.from("subthemes").select("*").order("sort", { ascending: true });
-  if (sErr) throw sErr;
+  if (pillars.error || themes.error || subthemes.error) {
+    throw new Error('Failed to load framework data')
+  }
 
   return {
-    pillars: (pillars ?? []) as Pillar[],
-    themes: (themes ?? []) as Theme[],
-    subthemes: (subthemes ?? []) as Subtheme[],
-  };
+    pillars: pillars.data ?? [],
+    themes: themes.data ?? [],
+    subthemes: subthemes.data ?? [],
+  }
 }
