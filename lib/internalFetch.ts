@@ -1,49 +1,43 @@
 // lib/internalFetch.ts
-import { cookies, headers } from 'next/headers'
 
 /**
- * Compute an absolute base URL the server can use to call itself.
- * - On Vercel: https://<vercel-url>
- * - Else: http://localhost:3000 (fallback)
+ * Internal fetch helper for server components.
+ * Calls API routes relative to this Next.js app.
+ * Keeps things simple for now — no forwarding headers/cookies until needed.
  */
-function internalBaseUrl(): string {
-  // Prefer explicit env if present
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
 
-  // Vercel provides VERCEL_URL (no protocol)
-  const vercel = process.env.VERCEL_URL
-  if (vercel) return `https://${vercel}`
-
-  // Fallback to localhost in dev/unknown
-  return 'http://localhost:3000'
-}
-
-/**
- * Server-only helper to GET your own Next routes and return JSON typed as T.
- * It forwards the caller's cookies to preserve session/role.
- */
 export async function internalGet<T>(path: string): Promise<T> {
-  // forward cookies and host header (Next 15: these are async in RSC/route handlers)
-  const cookieHeader = (await cookies()).toString()
-  const h = await headers()
-  const host = h.get('host') ?? ''
-  const url = new URL(path, internalBaseUrl()).toString()
+  const url = path.startsWith("/") ? path : `/${path}`;
 
   const res = await fetch(url, {
-    method: 'GET',
-    headers: {
-      cookie: cookieHeader,
-      host, // helpful for some middlewares
-      accept: 'application/json',
-    },
-    cache: 'no-store',
-  })
+    method: "GET",
+    cache: "no-store", // always fresh data
+  });
 
   if (!res.ok) {
-    // surface a meaningful error to the caller
-    const text = await res.text().catch(() => '')
-    throw new Error(`GET ${path} failed: ${res.status}${text ? ` — ${text}` : ''}`)
+    throw new Error(`GET ${url} failed: ${res.status} ${res.statusText}`);
   }
 
-  return res.json() as Promise<T>
+  return (await res.json()) as T;
+}
+
+export async function internalPost<T>(
+  path: string,
+  body: any
+): Promise<T> {
+  const url = path.startsWith("/") ? path : `/${path}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    throw new Error(`POST ${url} failed: ${res.status} ${res.statusText}`);
+  }
+
+  return (await res.json()) as T;
 }
