@@ -1,6 +1,9 @@
 // app/admin/framework/primary/page.tsx
-import { getCurrentRole } from '@/lib/role'
-import { internalGet } from '@/lib/internalFetch'
+import { internalGet } from '@/app/lib/internalFetch'
+import { getCurrentRole } from '@/app/lib/role'
+
+// IMPORTANT: your cards live in app/components/, so use this relative path:
+import PrimaryFrameworkCards from '../../../components/PrimaryFrameworkCards'
 
 type Pillar = { code: string; name: string; description?: string; sort_order: number }
 type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
@@ -15,95 +18,47 @@ type FrameworkList = {
 
 export const dynamic = 'force-dynamic'
 
-export default async function PrimaryFrameworkPage() {
+export default async function PrimaryEditorPage() {
   const role = await getCurrentRole()
-  const isSuper = role === 'super-admin'
-  if (!isSuper) {
+  if (role !== 'super-admin') {
     return (
-      <main className="p-6 max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2">Primary SSC Framework</h1>
+      <main className="p-6 max-w-6xl mx-auto">
+        <h1 className="text-2xl font-bold mb-2">Primary Framework Editor</h1>
         <div className="border rounded-xl p-4 bg-yellow-50 border-yellow-200 text-yellow-900">
           Super Admin access required.
         </div>
+        <div className="mt-4"><a className="underline" href="/dashboard">Back to Dashboard</a></div>
       </main>
     )
   }
 
   const data = await internalGet<FrameworkList>('/framework/api/list')
 
-  // groupings
-  const themesByPillar = new Map<string, Theme[]>()
-  data.themes.forEach((t) => {
-    const arr = themesByPillar.get(t.pillar_code) ?? []
-    arr.push(t)
-    themesByPillar.set(t.pillar_code, arr)
-  })
-  const subsByTheme = new Map<string, Subtheme[]>()
-  data.subthemes.forEach((s) => {
-    const arr = subsByTheme.get(s.theme_code) ?? []
-    arr.push(s)
-    subsByTheme.set(s.theme_code, arr)
-  })
-
   return (
-    <main className="p-6 max-w-5xl mx-auto">
-      <header className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Primary SSC Framework</h1>
-          <p className="text-sm text-gray-600">Pillars → Themes → Sub-themes (global defaults)</p>
+    <main className="p-4 sm:p-6 max-w-6xl mx-auto">
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        <a href="/dashboard" className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300">← Dashboard</a>
+        <h1 className="text-xl sm:text-2xl font-bold ml-1">Primary Framework Editor</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <a href="/admin/framework/primary" className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300">⟳ Refresh</a>
+          <a href="/admin/framework/primary/export" className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300">⭳ Export CSV</a>
         </div>
-        <nav className="text-sm">
-          <a className="underline" href="/admin/framework">Back to Framework Admin</a>
-        </nav>
-      </header>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        <Stat label="Pillars" value={data.counts.pillars} />
-        <Stat label="Themes" value={data.counts.themes} />
-        <Stat label="Sub-themes" value={data.counts.subthemes} />
       </div>
 
-      {/* Read-only tree for now; next step we'll add CRUD */}
-      {data.pillars
-        .slice()
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((p) => (
-          <article key={p.code} className="border border-gray-200 rounded-xl p-4 mb-4">
-            <h2 className="text-lg font-semibold">{p.code} — {p.name}</h2>
-            {p.description && <p className="text-gray-600 mt-1">{p.description}</p>}
+      {/* TEMP: visual check that Tailwind is active (remove after confirming) */}
+      <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-indigo-800 mb-4">
+        Tailwind check: this box should look purple with rounded corners.
+      </div>
 
-            {(themesByPillar.get(p.code) ?? [])
-              .slice()
-              .sort((a, b) => a.sort_order - b.sort_order)
-              .map((t) => (
-                <div key={t.code} className="border-l-4 border-gray-300 pl-3 mt-3">
-                  <h3 className="font-medium">{t.code} — {t.name}</h3>
-                  {t.description && <p className="text-gray-600 mt-1">{t.description}</p>}
+      <PrimaryFrameworkCards
+        pillars={data.pillars}
+        themes={data.themes}
+        subthemes={data.subthemes}
+      />
 
-                  <ul className="list-disc pl-5 mt-2">
-                    {(subsByTheme.get(t.code) ?? [])
-                      .slice()
-                      .sort((a, b) => a.sort_order - b.sort_order)
-                      .map((s) => (
-                        <li key={s.code} className="mb-1">
-                          <strong>{s.code}</strong> — {s.name}
-                          {s.description ? <span className="text-gray-600"> — {s.description}</span> : null}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              ))}
-          </article>
-        ))}
+      <p className="text-xs text-gray-500 mt-4">
+        Click the chevrons to expand. Actions and CSV import will come next.
+      </p>
     </main>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="border border-gray-200 rounded-xl p-4">
-      <div className="text-xs text-gray-600">{label}</div>
-      <div className="text-xl font-bold">{value}</div>
-    </div>
   )
 }
