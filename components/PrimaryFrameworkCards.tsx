@@ -7,7 +7,7 @@ type Theme = { code: string; pillar_code: string; name: string; description?: st
 type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number }
 
 type Props = {
-  role: 'super-admin' | 'country-admin' | 'public'
+  role?: AppRole
   pillars: Pillar[]
   themes: Theme[]
   subthemes: Subtheme[]
