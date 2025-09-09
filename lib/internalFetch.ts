@@ -1,39 +1,20 @@
-// lib/internalFetch.ts
-import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, headers } from "next/headers";
 
-function internalBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return 'http://localhost:3000';
-}
-
-/**
- * GET a JSON payload from an internal API route.
- * Returns the parsed body (typed), not a Response, to avoid Response/Promise type confusion.
- */
 export async function internalGet<T>(path: string): Promise<T> {
-  const cookieHeader = (await cookies()).toString();
-  const url = new URL(path, internalBaseUrl()).toString();
+  const cookieHeader = cookies().toString();
+  const host = headers().get("host") ?? "";
+  const url = new URL(path, `http://${host}`).toString();
 
   const res = await fetch(url, {
-    method: 'GET',
-    headers: { cookie: cookieHeader },
-    cache: 'no-store',
-    next: { revalidate: 0 },
+    headers: {
+      cookie: cookieHeader,
+    },
+    cache: "no-store",
   });
 
   if (!res.ok) {
-    const msg = await safeText(res);
-    throw new Error(`GET ${path} failed: ${res.status}${msg ? ` – ${msg}` : ''}`);
+    throw new Error(`GET ${path} failed: ${res.status}`);
   }
-  return (await res.json()) as T;
-}
 
-async function safeText(res: Response) {
-  try {
-    return await res.text();
-  } catch {
-    return '';
-  }
+  return (await res.json()) as T;
 }
