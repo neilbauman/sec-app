@@ -7,10 +7,10 @@ type Theme = { code: string; pillar_code: string; name: string; description?: st
 type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number }
 
 type Props = {
-  role?: AppRole
-  pillars: Pillar[]
-  themes: Theme[]
-  subthemes: Subtheme[]
+  role: 'super-admin' | 'country-admin' | 'public';
+  pillars: Pillar[];
+  themes: Theme[];
+  subthemes: Subtheme[];
 }
 
 type Grouped = Record<string, Theme[]>
