@@ -1,31 +1,22 @@
-// Force dynamic so this route always runs at the edge/server
-export const dynamic = 'force-dynamic';
-
+// app/auth/set-role/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
-type AppRole = 'public' | 'country-admin' | 'super-admin';
+export const dynamic = 'force-dynamic';
 
-export function GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const url = new URL(req.url);
-  const q = (url.searchParams.get('role') || '').toLowerCase();
+  const role = (url.searchParams.get('role') || 'public') as
+    | 'super-admin'
+    | 'country-admin'
+    | 'public';
 
-  // Validate/normalize role
-  const role: AppRole =
-    q === 'super-admin' || q === 'country-admin' || q === 'public'
-      ? (q as AppRole)
-      : 'public';
-
-  // Build redirect response and set cookie on the response
   const res = NextResponse.redirect(new URL('/dashboard', req.url));
-  res.cookies.set({
-    name: 'role',
-    value: role,
+  // Set cookie on the response (route handlers cannot mutate cookies() directly in Next 15)
+  res.cookies.set('role', role, {
     path: '/',
-    httpOnly: false,   // keep it client-readable for your quick-switch UI
+    httpOnly: false,
     sameSite: 'lax',
-    secure: true,      // safe default on Vercel HTTPS
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 365,
   });
-
   return res;
 }
