@@ -3,21 +3,22 @@ import { cookies } from 'next/headers'
 
 export type AppRole = 'super-admin' | 'country-admin' | 'public'
 
-export async function getCurrentRole(): Promise<AppRole> {
-  // Priority: cookie → env (for demos) → 'public'
+export function roleLabel(r: AppRole) {
+  return r === 'super-admin' ? 'Super Admin'
+    : r === 'country-admin' ? 'Country Admin'
+    : 'Public'
+}
+
+// Safe in both RSC and route handlers (cookies() is sync in Next 15)
+export function getCurrentRole(): AppRole {
+  // Priority: cookie → env (for quick demos) → 'public'
   try {
     const c = cookies().get('role')?.value as AppRole | undefined
     if (c === 'super-admin' || c === 'country-admin' || c === 'public') return c
   } catch {
-    // no-op (cookies() may not be available in some contexts)
+    // non-request contexts: ignore
   }
   const env = (process.env.NEXT_PUBLIC_DEMO_ROLE || '').toLowerCase()
-  if (env === 'super-admin' || env === 'country-admin' || env === 'public') return env as AppRole
+  if (env === 'super-admin' || env === 'country-admin' || env === 'public') return env
   return 'public'
-}
-
-export function roleLabel(role: AppRole) {
-  if (role === 'super-admin') return 'Super Admin'
-  if (role === 'country-admin') return 'Country Admin'
-  return 'Public'
 }
