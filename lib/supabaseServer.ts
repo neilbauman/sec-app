@@ -1,33 +1,21 @@
 // lib/supabaseServer.ts
-import { cookies } from 'next/headers';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js'
 
-/**
- * Server-side Supabase client for Route Handlers / Server Components.
- * Uses the request cookie jar managed by Next.js.
- */
-export function createClient() {
-  const cookieStore = cookies();
+export function getServerClient() {
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    ''
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    ''
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          // Next’s cookies() API writes back to the response
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
-        },
-      },
-    }
-  );
+  if (!url || !key) {
+    throw new Error('Supabase URL/Key missing in environment')
+  }
+
+  return createClient(url, key, {
+    auth: { persistSession: false },
+  })
 }
-
-// Helpful type if you need it elsewhere
-export type SupabaseServerClient = ReturnType<typeof createClient>;
