@@ -13,6 +13,13 @@ export default async function Dashboard() {
       </div>
       <p className="text-sm text-slate-600">You are <span className="font-medium">{roleLabel(role)}</span>.</p>
 
+      <Link
+  href="/auth/set-role?role=super-admin"
+  className="text-blue-600 underline"
+>
+  Switch to Super Admin
+</Link>
+
       <div className="grid sm:grid-cols-2 gap-4">
         <Link href="/admin/framework/primary/editor" className="rounded-xl border p-4 hover:bg-white bg-white">
           <div className="text-lg font-semibold">Primary Framework Editor</div>
