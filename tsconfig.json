@@ -7,12 +7,10 @@
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-
-    "baseUrl": ".",                     // <-- IMPORTANT
-    "paths": {                          // <-- OPTIONAL alias
-      "@/*": ["./*"]
+    "baseUrl": ".",                       // <-- enables root-relative imports
+    "paths": {
+      "@/*": ["./*"]                      // <-- optional alias style: '@/...'
     },
-
     "strict": false,
     "plugins": [{ "name": "next" }]
   },
