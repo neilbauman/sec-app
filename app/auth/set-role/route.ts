@@ -1,22 +1,20 @@
-// app/auth/set-role/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import type { AppRole } from "@/lib/role";
 
-export const dynamic = 'force-dynamic';
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const role = searchParams.get("role") as AppRole | null;
 
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const role = (url.searchParams.get('role') || 'public') as
-    | 'super-admin'
-    | 'country-admin'
-    | 'public';
+  if (!role) {
+    return NextResponse.json({ error: "Missing role" }, { status: 400 });
+  }
 
-  const res = NextResponse.redirect(new URL('/dashboard', req.url));
-  // Set cookie on the response (route handlers cannot mutate cookies() directly in Next 15)
-  res.cookies.set('role', role, {
-    path: '/',
+  // Write cookie
+  const res = NextResponse.redirect(new URL("/dashboard", req.url));
+  res.cookies.set("role", role, {
+    path: "/",
     httpOnly: false,
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 365,
   });
   return res;
 }
