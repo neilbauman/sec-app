@@ -1,22 +1,23 @@
-'use client'
+// components/PrimaryFrameworkCards.tsx
+'use client';
+import * as React from 'react';
+import type { AppRole } from '@/lib/role';
 
-import * as React from 'react'
-
-type Pillar = { code: string; name: string; description?: string; sort_order: number }
-type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
-type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number }
+type Pillar    = { code: string; name: string; description?: string; sort_order: number };
+type Theme     = { code: string; pillar_code: string; name: string; description?: string; sort_order: number };
+type Subtheme  = { code: string; theme_code: string; name: string; description?: string; sort_order: number };
 
 type Props = {
-  role: 'super-admin' | 'country-admin' | 'public';
+  role?: AppRole;               // <- optional, defaults to 'public' at runtime
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
-}
+};
 
 type Grouped = Record<string, Theme[]>
 type GroupedSubs = Record<string, Subtheme[]>
 
-export default function PrimaryFrameworkCards({ role, pillars, themes, subthemes }: Props) {
+export default function PrimaryFrameworkCards({ role ='public', pillars, themes, subthemes }: Props) {
   // group themes by pillar
   const themesByPillar = React.useMemo(() => {
     const r: Grouped = {}
