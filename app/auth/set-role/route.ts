@@ -1,20 +1,23 @@
+// app/auth/set-role/route.ts
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import type { AppRole } from "@/lib/role";
 
+type AppRole = "public" | "country-admin" | "super-admin";
+
+// We use a route param ?role=super-admin and set a cookie via the response
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const role = searchParams.get("role") as AppRole | null;
+  const url = new URL(req.url);
+  const role = (url.searchParams.get("role") || "public") as AppRole;
 
-  if (!role) {
-    return NextResponse.json({ error: "Missing role" }, { status: 400 });
-  }
-
-  // Write cookie
   const res = NextResponse.redirect(new URL("/dashboard", req.url));
+
+  // Set a non-HttpOnly cookie so your server components and client can read it if needed.
+  // (If you plan to use this for real auth later, you’ll switch to HttpOnly + JWT/session.)
   res.cookies.set("role", role, {
     path: "/",
     httpOnly: false,
+    sameSite: "lax",
+    // Session cookie by default
   });
+
   return res;
 }
