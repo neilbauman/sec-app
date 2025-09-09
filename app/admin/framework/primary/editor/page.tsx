@@ -55,6 +55,7 @@ export default async function PrimaryEditorPage() {
       </div>
 
       <PrimaryFrameworkCards
+        roll={role};
         pillars={data.pillars}
         themes={data.themes}
         subthemes={data.subthemes}
