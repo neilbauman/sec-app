@@ -1,31 +1,38 @@
 // app/framework/api/list/route.ts
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+// Public read-only list endpoint (no roles, no cookies)
 
-export const dynamic = "force-dynamic";
+import { NextResponse } from 'next/server';
+import { getServerClient } from '@/lib/supabaseServer';
 
-// Mirror the shapes you use in the editor
-export type Pillar = {
+export const dynamic = 'force-dynamic';
+
+type Pillar = {
+  id: string;
   code: string;
   name: string;
   description?: string | null;
+  sort_order?: number | null;
 };
 
-export type Theme = {
+type Theme = {
+  id: string;
   code: string;
-  name: string;
   pillar_code: string;
-  description?: string | null;
-};
-
-export type Subtheme = {
-  code: string;
   name: string;
-  theme_code: string;
   description?: string | null;
+  sort_order?: number | null;
 };
 
-export type FrameworkList = {
+type Subtheme = {
+  id: string;
+  code: string;
+  theme_code: string;
+  name: string;
+  description?: string | null;
+  sort_order?: number | null;
+};
+
+type FrameworkList = {
   ok: true;
   counts: { pillars: number; themes: number; subthemes: number };
   pillars: Pillar[];
@@ -33,57 +40,36 @@ export type FrameworkList = {
   subthemes: Subtheme[];
 };
 
-// NOTE:
-// To keep builds stable and avoid the Next 15 cookies()/headers() typing changes,
-// we construct a plain Supabase client with anon key here. This assumes your RLS
-// allows read for anon or you’re otherwise making the data publicly readable.
-// (No schema changes are made here.)
-
 export async function GET() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  try {
+    const supabase = getServerClient();
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json(
-      { ok: false, message: "Supabase env vars missing" },
-      { status: 500 }
-    );
+    const [{ data: pillars, error: pErr }, { data: themes, error: tErr }, { data: subthemes, error: sErr }] =
+      await Promise.all([
+        supabase.from('pillars').select('*').order('sort_order', { ascending: true }),
+        supabase.from('themes').select('*').order('sort_order', { ascending: true }),
+        supabase.from('subthemes').select('*').order('sort_order', { ascending: true }),
+      ]);
+
+    if (pErr || tErr || sErr) {
+      const firstErr = pErr ?? tErr ?? sErr;
+      return NextResponse.json({ ok: false, message: firstErr?.message ?? 'Query error' }, { status: 500 });
+    }
+
+    const response: FrameworkList = {
+      ok: true,
+      counts: {
+        pillars: pillars?.length ?? 0,
+        themes: themes?.length ?? 0,
+        subthemes: subthemes?.length ?? 0,
+      },
+      pillars: pillars ?? [],
+      themes: themes ?? [],
+      subthemes: subthemes ?? [],
+    };
+
+    return NextResponse.json(response, { status: 200 });
+  } catch (err: any) {
+    return NextResponse.json({ ok: false, message: err?.message ?? 'Unexpected error' }, { status: 500 });
   }
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-  // Fetch data in parallel
-  const [pillarsRes, themesRes, subthemesRes] = await Promise.all([
-    supabase.from("pillars").select("*"),
-    supabase.from("themes").select("*"),
-    supabase.from("subthemes").select("*"),
-  ]);
-
-  // Handle any one failing
-  const anyError = pillarsRes.error || themesRes.error || subthemesRes.error;
-  if (anyError) {
-    return NextResponse.json(
-      { ok: false, message: anyError!.message },
-      // 401 if you’re hitting RLS, or 500 otherwise — 401 tends to be more useful here
-      { status: 401 }
-    );
-  }
-
-  const pillars = (pillarsRes.data ?? []) as Pillar[];
-  const themes = (themesRes.data ?? []) as Theme[];
-  const subthemes = (subthemesRes.data ?? []) as Subtheme[];
-
-  const payload: FrameworkList = {
-    ok: true,
-    counts: {
-      pillars: pillars.length,
-      themes: themes.length,
-      subthemes: subthemes.length,
-    },
-    pillars,
-    themes,
-    subthemes,
-  };
-
-  return NextResponse.json(payload, { status: 200 });
 }
