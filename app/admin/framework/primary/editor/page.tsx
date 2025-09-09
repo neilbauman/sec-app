@@ -34,7 +34,6 @@ export default async function PrimaryEditorPage() {
 
   const data = await internalGet<FrameworkList>('/framework/api/list')
 
-  // prepare groupings for the client component
   const themesByPillar = new Map<string, Theme[]>()
   data.themes.forEach((t) => {
     const arr = themesByPillar.get(t.pillar_code) ?? []
@@ -51,7 +50,7 @@ export default async function PrimaryEditorPage() {
   return (
     <main className="p-4 sm:p-6 max-w-6xl mx-auto">
       {/* Top bar */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         <a
           href="/dashboard"
           className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
@@ -59,13 +58,46 @@ export default async function PrimaryEditorPage() {
           ← Dashboard
         </a>
 
+        <h1 className="text-xl sm:text-2xl font-bold ml-1">Primary Framework Editor</h1>
+
         <div className="ml-auto flex items-center gap-2">
           <a
             href="/admin/framework/primary/editor"
             className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
+            title="Refresh"
           >
             ⟳ Refresh
           </a>
+
+          {/* Expand/Collapse hints (these toggle via localStorage keys) */}
+          <button
+            onClick={() => {
+              localStorage.setItem('pe_openPillars', JSON.stringify({}))
+              localStorage.setItem('pe_openThemes', JSON.stringify({}))
+              location.reload()
+            }}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
+            title="Collapse all"
+          >
+            ▸ Collapse all
+          </button>
+          <button
+            onClick={() => {
+              // open all: set every pillar/theme to true
+              const p: Record<string, boolean> = {}
+              const t: Record<string, boolean> = {}
+              for (const pl of data.pillars) p[pl.code] = true
+              for (const th of data.themes) t[th.code] = true
+              localStorage.setItem('pe_openPillars', JSON.stringify(p))
+              localStorage.setItem('pe_openThemes', JSON.stringify(t))
+              location.reload()
+            }}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
+            title="Expand all"
+          >
+            ▾ Expand all
+          </button>
+
           <button
             disabled
             title="Import (coming soon)"
@@ -76,6 +108,7 @@ export default async function PrimaryEditorPage() {
           <a
             href="/admin/framework/primary/export"
             className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
+            title="Export CSV"
           >
             ⭳ Export CSV
           </a>
@@ -89,8 +122,6 @@ export default async function PrimaryEditorPage() {
         </div>
       </div>
 
-      <h1 className="text-2xl font-bold mb-3">Primary Framework Editor</h1>
-
       <PrimaryEditorTable
         pillars={data.pillars}
         themesByPillar={themesByPillar}
@@ -98,7 +129,7 @@ export default async function PrimaryEditorPage() {
       />
 
       <p className="text-xs text-gray-500 mt-3">
-        Click the ▸/▾ caret to expand/collapse groups. Actions are disabled in this read-only version.
+        Use ▸/▾ to expand rows. Actions are disabled in this read-only version.
       </p>
     </main>
   )
