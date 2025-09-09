@@ -1,86 +1,56 @@
-// lib/framework.ts
-// Server-side helpers to fetch the Primary Framework from Supabase
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from "@/lib/supabase";
 
-export type Pillar = {
-  code: string;
-  label: string;
-  description?: string | null;
-  sort?: number | null;
-};
-
-export type Theme = {
-  code: string;
-  label: string;
-  pillar_code: string; // FK -> pillars.code
-  description?: string | null;
-  sort?: number | null;
-};
-
-export type Subtheme = {
-  code: string;
-  label: string;
-  theme_code: string; // FK -> themes.code
-  description?: string | null;
-  sort?: number | null;
-};
+export type Pillar = { code: string; name: string; description?: string; };
+export type Theme = { code: string; pillar_code: string; name: string; description?: string; };
+export type Subtheme = { code: string; theme_code: string; name: string; description?: string; };
 
 export type FrameworkList = {
-  counts: { pillars: number; themes: number; subthemes: number };
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
 };
 
-// Create a vanilla Supabase client (works fine in a server component)
-// Make sure you have NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY set.
-function supabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  return createClient(url, anon);
-}
-
 /**
- * Fetches all pillars, themes, and subthemes needed for the Primary Framework editor.
- * Assumes RLS allows read for anon OR you are using a service role in your environment (not required).
+ * By default we use mock data. Set USE_SUPABASE=1 to fetch real tables.
  */
-export async function getFrameworkList(): Promise<FrameworkList> {
-  const sb = supabase();
+export async function fetchFrameworkList(): Promise<FrameworkList> {
+  if (process.env.USE_SUPABASE === "1") {
+    const supabase = getSupabase();
+    const [{ data: pillars, error: pe }, { data: themes, error: te }, { data: subthemes, error: se }] =
+      await Promise.all([
+        supabase.from("pillars").select("code,name,description").order("code"),
+        supabase.from("themes").select("code,pillar_code,name,description").order("pillar_code").order("code"),
+        supabase.from("subthemes").select("code,theme_code,name,description").order("theme_code").order("code")
+      ]);
 
-  // Pull pillars
-  const { data: pillars, error: pErr } = await sb
-    .from('pillars')
-    .select('code,label,description,sort')
-    .order('sort', { nullsFirst: false, ascending: true });
+    if (pe || te || se) {
+      throw new Error(
+        `Supabase error: ${pe?.message || ""} ${te?.message || ""} ${se?.message || ""}`.trim()
+      );
+    }
 
-  if (pErr) throw new Error(`Supabase pillars error: ${pErr.message}`);
+    return {
+      pillars: (pillars ?? []) as Pillar[],
+      themes: (themes ?? []) as Theme[],
+      subthemes: (subthemes ?? []) as Subtheme[]
+    };
+  }
 
-  // Pull themes
-  const { data: themes, error: tErr } = await sb
-    .from('themes')
-    .select('code,label,description,sort,pillar_code')
-    .order('pillar_code', { ascending: true })
-    .order('sort', { nullsFirst: false, ascending: true });
-
-  if (tErr) throw new Error(`Supabase themes error: ${tErr.message}`);
-
-  // Pull subthemes
-  const { data: subthemes, error: sErr } = await sb
-    .from('subthemes')
-    .select('code,label,description,sort,theme_code')
-    .order('theme_code', { ascending: true })
-    .order('sort', { nullsFirst: false, ascending: true });
-
-  if (sErr) throw new Error(`Supabase subthemes error: ${sErr.message}`);
-
+  // Mock data
   return {
-    counts: {
-      pillars: pillars?.length ?? 0,
-      themes: themes?.length ?? 0,
-      subthemes: subthemes?.length ?? 0,
-    },
-    pillars: pillars ?? [],
-    themes: themes ?? [],
-    subthemes: subthemes ?? [],
+    pillars: [
+      { code: "P1", name: "Safety", description: "People have a dwelling." },
+      { code: "P2", name: "Dignity", description: "Privacy, tenure, protection." }
+    ],
+    themes: [
+      { code: "T1.1", pillar_code: "P1", name: "Physical safety" },
+      { code: "T1.2", pillar_code: "P1", name: "Overcrowding and privacy" },
+      { code: "T2.1", pillar_code: "P2", name: "Habitability and health" }
+    ],
+    subthemes: [
+      { code: "ST1.1.1", theme_code: "T1.1", name: "Adequate structure" },
+      { code: "ST1.2.1", theme_code: "T1.2", name: "Sufficient space" },
+      { code: "ST2.1.1", theme_code: "T2.1", name: "Ventilation" }
+    ]
   };
 }

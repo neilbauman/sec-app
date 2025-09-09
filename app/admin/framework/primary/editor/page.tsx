@@ -1,63 +1,38 @@
-// app/admin/framework/primary/editor/page.tsx
-import Link from 'next/link';
-import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards';
-import { getFrameworkList } from '@/lib/framework';
+import Link from "next/link";
+import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+import { fetchFrameworkList } from "@/lib/framework";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export default async function PrimaryFrameworkEditorPage() {
-  // Load the complete framework directly from Supabase
-  let data: Awaited<ReturnType<typeof getFrameworkList>> | null = null;
-
+export default async function PrimaryFrameworkEditor() {
+  let data;
   try {
-    data = await getFrameworkList();
+    data = await fetchFrameworkList();
   } catch (err: any) {
     return (
-      <main className="mx-auto max-w-5xl p-6">
-        <Link
-          href="/dashboard"
-          className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
-        >
-          ← Back to Dashboard
-        </Link>
-
-        <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
-
-        <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-800">
-          <p className="font-medium">Couldn&apos;t load data from Supabase.</p>
-          <p className="text-sm mt-1">
-            {err?.message ?? 'Unknown error'} — check your environment variables
-            (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY), table names,
-            and RLS policies.
-          </p>
+      <main className="container">
+        <Link href="/" className="underline">← Back to Dashboard</Link>
+        <h1 className="mt-4 text-3xl font-bold">Primary Framework Editor</h1>
+        <div className="mt-6 border border-red-200 bg-red-50 text-red-700 rounded-xl p-4">
+          <p className="font-medium">Couldn't load data.</p>
+          <p className="text-sm mt-1">{String(err?.message || err)}</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
-      <Link
-        href="/dashboard"
-        className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
-      >
-        ← Back to Dashboard
-      </Link>
+    <main className="container">
+      <Link href="/" className="underline">← Back to Dashboard</Link>
+      <h1 className="mt-4 text-3xl font-bold">Primary Framework Editor</h1>
 
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
-        <p className="text-sm text-slate-600 mt-1">
-          {data.counts.pillars} pillars · {data.counts.themes} themes ·{' '}
-          {data.counts.subthemes} subthemes
-        </p>
-      </header>
-
-      {/* No role/auth props — just the data */}
-      <PrimaryFrameworkCards
-        pillars={data.pillars}
-        themes={data.themes}
-        subthemes={data.subthemes}
-      />
+      <div className="mt-6">
+        <PrimaryFrameworkCards
+          pillars={data.pillars}
+          themes={data.themes}
+          subthemes={data.subthemes}
+        />
+      </div>
     </main>
   );
 }

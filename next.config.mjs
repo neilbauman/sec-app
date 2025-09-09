@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: false,
   experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb'
-    }
+    typedRoutes: true
   }
 };
 export default nextConfig;

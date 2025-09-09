@@ -1,86 +1,71 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import type { Pillar, Theme, Subtheme } from '@/lib/framework';
+import { useState } from "react";
+import { ChevronRight } from "lucide-react";
 
-type Props = {
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
-};
+export type Pillar = { code: string; name: string; description?: string; };
+export type Theme = { code: string; pillar_code: string; name: string; description?: string; };
+export type Subtheme = { code: string; theme_code: string; name: string; description?: string; };
+
+type Props = { pillars: Pillar[]; themes: Theme[]; subthemes: Subtheme[]; };
 
 export default function PrimaryFrameworkCards({ pillars, themes, subthemes }: Props) {
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
 
-  // Group themes by pillar, and subthemes by theme
-  const themesByPillar: Record<string, Theme[]> = {};
+  const byPillar: Record<string, Theme[]> = {};
   for (const t of themes) {
-    const key = (t as any).pillar_code ?? (t as any).pillarCode ?? (t as any).pillar_id ?? "";
-    if (!themesByPillar[key]) themesByPillar[key] = [];
-    themesByPillar[key].push(t);
+    (byPillar[t.pillar_code] ||= []).push(t);
   }
 
-  const subsByTheme: Record<string, Subtheme[]> = {};
+  const byTheme: Record<string, Subtheme[]> = {};
   for (const s of subthemes) {
-    const key = (s as any).theme_code ?? (s as any).themeCode ?? (s as any).theme_id ?? "";
-    if (!subsByTheme[key]) subsByTheme[key] = [];
-    subsByTheme[key].push(s);
+    (byTheme[s.theme_code] ||= []).push(s);
   }
 
   return (
-    <div>
-      {pillars.map(p => {
-        const pKey = (p as any).code ?? (p as any).id ?? '';
-        const isOpen = openPillars[pKey] ?? false;
+    <div className="space-y-3">
+      {pillars.map((p) => {
+        const isOpen = openPillars[p.code] ?? false;
         return (
-          <div key={pKey} style={{ border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 12 }}>
+          <div key={p.code} className="card">
             <button
-              onClick={() => setOpenPillars({ ...openPillars, [pKey]: !isOpen })}
-              style={{ width: "100%", textAlign: "left", padding: 12, background: "white", border: "none", cursor: "pointer" }}
+              className="w-full text-left px-4 py-3 flex items-center justify-between"
+              onClick={() => setOpenPillars((m) => ({ ...m, [p.code]: !isOpen }))}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ fontSize: 14, color: "#6b7280" }}>Pillar</div>
-                  <div style={{ fontSize: 18, fontWeight: 700 }}>{(p as any).name ?? pKey}</div>
-                  {(p as any).description ? <div style={{ color: "#374151" }}>{(p as any).description}</div> : null}
-                </div>
-                <div>{isOpen ? "▾" : "▸"}</div>
+              <div>
+                <div className="badge mr-2">Pillar</div>
+                <span className="font-semibold">{p.name}</span>
+                {p.description && <p className="text-sm text-slate-600">{p.description}</p>}
               </div>
+              <ChevronRight className={`transition-transform ${isOpen ? "rotate-90" : ""}`} size={18} />
             </button>
 
             {isOpen && (
-              <div style={{ borderTop: "1px solid #e5e7eb" }}>
-                {(themesByPillar[pKey] ?? []).map(t => {
-                  const tKey = (t as any).code ?? (t as any).id ?? '';
-                  const tOpen = openThemes[tKey] ?? false;
+              <div className="divide-y">
+                {(byPillar[p.code] ?? []).map((t) => {
+                  const tOpen = openThemes[t.code] ?? false;
                   return (
-                    <div key={tKey} style={{ padding: "12px 16px", borderTop: "1px dashed #e5e7eb" }}>
+                    <div key={t.code} className="px-4 py-3">
                       <button
-                        onClick={() => setOpenThemes({ ...openThemes, [tKey]: !tOpen })}
-                        style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer" }}
+                        className="w-full text-left flex items-center justify-between"
+                        onClick={() => setOpenThemes((m) => ({ ...m, [t.code]: !tOpen }))}
                       >
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <div>
-                            <span style={{ fontSize: 12, color: "#6b7280", marginRight: 8 }}>Theme</span>
-                            <span style={{ fontSize: 16, fontWeight: 600 }}>{(t as any).name ?? tKey}</span>
-                          </div>
-                          <div>{tOpen ? "▾" : "▸"}</div>
+                        <div>
+                          <div className="badge mr-2">Theme</div>
+                          <span className="font-medium">{t.name}</span>
+                          {t.description && <p className="text-sm text-slate-600">{t.description}</p>}
                         </div>
+                        <ChevronRight className={`transition-transform ${tOpen ? "rotate-90" : ""}`} size={16} />
                       </button>
 
                       {tOpen && (
-                        <ul style={{ marginTop: 8, marginLeft: 8 }}>
-                          {(subsByTheme[tKey] ?? []).map(s => {
-                            const sKey = (s as any).code ?? (s as any).id ?? '';
-                            return (
-                              <li key={sKey} style={{ padding: "6px 0", color: "#111827" }}>
-                                <span style={{ fontSize: 12, color: "#6b7280", marginRight: 8 }}>Subtheme</span>
-                                <span style={{ fontWeight: 500 }}>{(s as any).name ?? sKey}</span>
-                                {(s as any).description ? <div style={{ color: "#374151" }}>{(s as any).description}</div> : null}
-                              </li>
-                            );
-                          })}
+                        <ul className="mt-2 ml-4 list-disc text-slate-700">
+                          {(byTheme[t.code] ?? []).map((s) => (
+                            <li key={s.code} className="py-0.5">
+                              <span className="text-sm">{s.name}</span>
+                            </li>
+                          ))}
                         </ul>
                       )}
                     </div>
