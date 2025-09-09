@@ -1,8 +1,8 @@
 // app/admin/framework/primary/editor/page.tsx
 import Link from 'next/link'
-import { getCurrentRole } from '@/lib/role'
-import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards'
-import { internalGet } from '@/lib/internalFetch'
+import { internalGet } from '../../../../lib/internalFetch';
+import { getCurrentRole } from '../../../../lib/role';
+import PrimaryFrameworkCards from '../../../../components/PrimaryFrameworkCards';
 
 type Pillar = { code: string; name: string; description?: string; sort_order: number }
 type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
