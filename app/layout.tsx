@@ -1,3 +1,5 @@
+import './globals.css';
+
 export const metadata = {
   title: 'SSC',
   description: 'Shelter Severity Classification',
