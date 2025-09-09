@@ -1,4 +1,5 @@
-import './globals.css'    // ← this line must be present
+import './globals.css' // must be here
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
