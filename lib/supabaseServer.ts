@@ -1,16 +1,33 @@
 // lib/supabaseServer.ts
-import { createClient } from '@supabase/supabase-js'
+import { cookies } from 'next/headers';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-export function getServerClient() {
-  const url = process.env.SUPABASE_URL!
-  // IMPORTANT: service role key
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+/**
+ * Server-side Supabase client for Route Handlers / Server Components.
+ * Uses the request cookie jar managed by Next.js.
+ */
+export function createClient() {
+  const cookieStore = cookies();
 
-  if (!url || !serviceKey) {
-    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
-  }
-
-  return createClient(url, serviceKey, {
-    auth: { persistSession: false },
-  })
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // Next’s cookies() API writes back to the response
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options });
+        },
+      },
+    }
+  );
 }
+
+// Helpful type if you need it elsewhere
+export type SupabaseServerClient = ReturnType<typeof createClient>;
