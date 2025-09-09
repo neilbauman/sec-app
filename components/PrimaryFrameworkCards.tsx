@@ -1,44 +1,27 @@
+// components/PrimaryFrameworkCards.tsx
 'use client';
 
-import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, FolderTree } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 
-/**
- * Local structural types so we don't depend on external imports.
- * As long as the API objects have these fields, TS will be happy.
- */
-type Pillar = {
-  code: string;
-  name: string;
-  description?: string | null;
-};
+//
+// Local types so this file is self-contained.
+// If you already have shared types, you can delete these and import yours.
+//
+type Pillar = { code: string; name: string; description?: string | null };
+type Theme = { code: string; name: string; pillar_code: string };
+type Subtheme = { code: string; name: string; theme_code: string };
 
-type Theme = {
-  code: string;
-  name: string;
-  pillar_code: string; // associates to Pillar.code
-  description?: string | null;
-};
-
-type Subtheme = {
-  code: string;
-  name: string;
-  theme_code: string; // associates to Theme.code
-  description?: string | null;
-};
-
-type Props = {
+export type Props = {
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
 };
 
 export default function PrimaryFrameworkCards({ pillars, themes, subthemes }: Props) {
-  // track expanded/collapsed state
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
 
-  // index themes by pillar, subthemes by theme
+  // Precompute groupings for quick renders
   const themesByPillar = useMemo(() => {
     const map: Record<string, Theme[]> = {};
     for (const t of themes) {
@@ -57,93 +40,59 @@ export default function PrimaryFrameworkCards({ pillars, themes, subthemes }: Pr
     return map;
   }, [subthemes]);
 
-  const togglePillar = (code: string) =>
-    setOpenPillars(prev => ({ ...prev, [code]: !prev[code] }));
-
-  const toggleTheme = (code: string) =>
-    setOpenThemes(prev => ({ ...prev, [code]: !prev[code] }));
-
   return (
-    <section className="space-y-4">
+    <div className="space-y-4">
       {pillars.map((p) => {
-        const isPillarOpen = openPillars[p.code] ?? true;
-        const pThemes = themesByPillar[p.code] ?? [];
-
+        const isOpen = openPillars[p.code] ?? true;
         return (
-          <div key={p.code} className="rounded-xl border bg-white shadow-sm">
+          <div key={p.code} className="rounded-lg border">
             <button
               type="button"
-              onClick={() => togglePillar(p.code)}
-              className="flex w-full items-center justify-between px-4 py-3"
+              className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-t-lg flex items-center justify-between"
+              onClick={() =>
+                setOpenPillars((prev) => ({ ...prev, [p.code]: !(prev[p.code] ?? true) }))
+              }
             >
-              <div className="flex items-center gap-2 text-left">
-                {isPillarOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                <span className="font-semibold">{p.name}</span>
-              </div>
-              <div className="text-xs text-slate-500">
-                {pThemes.length} theme{pThemes.length === 1 ? '' : 's'}
-              </div>
+              <span className="font-semibold">{p.name}</span>
+              <span className="text-xs text-gray-500">{isOpen ? 'Collapse' : 'Expand'}</span>
             </button>
 
-            {isPillarOpen && (
+            {isOpen && (
               <div className="divide-y">
-                {pThemes.map((t) => {
-                  const isThemeOpen = openThemes[t.code] ?? true;
-                  const tSubs = subthemesByTheme[t.code] ?? [];
+                {(themesByPillar[p.code] ?? []).map((t) => {
+                  const tOpen = openThemes[t.code] ?? true;
                   return (
                     <div key={t.code} className="px-4 py-3">
                       <button
                         type="button"
-                        onClick={() => toggleTheme(t.code)}
-                        className="flex w-full items-center justify-between"
+                        className="w-full text-left flex items-center justify-between"
+                        onClick={() =>
+                          setOpenThemes((prev) => ({ ...prev, [t.code]: !(prev[t.code] ?? true) }))
+                        }
                       >
-                        <div className="flex items-center gap-2 text-left">
-                          {isThemeOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                          <span className="font-medium">{t.name}</span>
-                        </div>
-                        <div className="text-[11px] text-slate-500">
-                          {tSubs.length} subtheme{tSubs.length === 1 ? '' : 's'}
-                        </div>
+                        <span className="font-medium">{t.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {tOpen ? 'Hide subthemes' : 'Show subthemes'}
+                        </span>
                       </button>
 
-                      {isThemeOpen && (
-                        <ul className="mt-2 grid gap-2 sm:grid-cols-2">
-                          {tSubs.map((s) => (
-                            <li
-                              key={s.code}
-                              className="flex items-start gap-2 rounded-lg border p-2 text-sm"
-                            >
-                              <FolderTree className="mt-0.5" size={14} />
-                              <div>
-                                <div className="font-medium">{s.name}</div>
-                                {s.description ? (
-                                  <div className="text-xs text-slate-500">{s.description}</div>
-                                ) : null}
-                              </div>
+                      {tOpen && (
+                        <ul className="mt-2 list-disc pl-6 space-y-1">
+                          {(subthemesByTheme[t.code] ?? []).map((s) => (
+                            <li key={s.code} className="text-sm">
+                              {s.name}
                             </li>
                           ))}
-                          {tSubs.length === 0 && (
-                            <li className="text-xs italic text-slate-500">No subthemes.</li>
-                          )}
                         </ul>
                       )}
                     </div>
                   );
                 })}
-                {pThemes.length === 0 && (
-                  <div className="px-4 py-3 text-sm italic text-slate-500">No themes.</div>
-                )}
               </div>
             )}
           </div>
         );
       })}
-
-      {pillars.length === 0 && (
-        <div className="rounded-xl border bg-white p-6 text-sm text-slate-500">
-          No pillars found.
-        </div>
-      )}
-    </section>
+    </div>
   );
 }
