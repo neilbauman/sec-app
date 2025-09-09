@@ -1,65 +1,74 @@
 // app/admin/framework/primary/editor/page.tsx
-import Link from 'next/link';
-import { internalGet } from '../../../../../lib/internalFetch';
-import PrimaryFrameworkCards from '../../../../../components/PrimaryFrameworkCards';
+import { internalGet } from '@/lib/internalFetch'
+import { getCurrentRole } from '@/lib/role'
+import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards'
 
-type AppRole = 'super-admin' | 'country-admin' | 'public';
-
-type Pillar = { code: string; name: string; description?: string; sort_order: number };
-type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number };
-type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number };
+type Pillar = { code: string; name: string; description?: string; sort_order: number }
+type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
+type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number }
 
 type FrameworkList = {
-  ok: boolean;
-  counts: { pillars: number; themes: number; subthemes: number };
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
-};
+  ok: boolean
+  counts: { pillars: number; themes: number; subthemes: number }
+  pillars: Pillar[]
+  themes: Theme[]
+  subthemes: Subtheme[]
+  message?: string
+}
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
 export default async function PrimaryEditorPage() {
-  // DEV MODE: force role to super-admin (we’ll wire real auth later)
-  const role: AppRole = 'super-admin';
+  // read role from cookie (server)
+  const role = getCurrentRole()
 
-  let data: FrameworkList | null = null;
-  try {
-    data = await internalGet<FrameworkList>('/framework/api/list');
-  } catch (err: any) {
+  // fetch list (public right now; later you can re-enable auth gates on the API)
+  const res = await internalGet('/framework/api/list')
+
+  if (!res.ok) {
+    const status = res.status
+    const txt = (await safeText(res)) || res.statusText || 'Error'
     return (
       <main className="mx-auto max-w-6xl p-6">
-        <Link href="/dashboard" className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
-          ← Back to Dashboard
-        </Link>
-        <h1 className="text-2xl font-bold mb-2">Primary Framework Editor</h1>
-        <div className="border rounded-xl p-4 bg-red-50 border-red-200 text-red-800">
-          Could not load framework ({err?.status ?? 'error'}). {String(err?.message ?? '')}
+        <a href="/dashboard" className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">← Back to Dashboard</a>
+        <h1 className="mb-3 text-2xl font-bold">Primary Framework Editor</h1>
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-800">
+          Could not load framework ({status}). {txt}
         </div>
       </main>
-    );
+    )
   }
+
+  const data = (await res.json()) as FrameworkList
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
-          ← Back to Dashboard
-        </Link>
-        <div className="text-xs text-slate-500">Role: <span className="font-medium">{role}</span></div>
+      <a href="/dashboard" className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">← Back to Dashboard</a>
+      <h1 className="mb-3 text-2xl font-bold">Primary Framework Editor</h1>
+
+      <div className="mb-4 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-indigo-900">
+        Tailwind check: this box should look purple with rounded corners.
       </div>
 
-      <h1 className="text-2xl font-bold mb-1">Primary Framework Editor</h1>
-      <p className="text-sm text-slate-600 mb-6">
-        Manage Pillars, Themes, and Sub-themes. CSV import/export and actions coming next.
-      </p>
-
       <PrimaryFrameworkCards
-        role={role}
         pillars={data.pillars}
         themes={data.themes}
         subthemes={data.subthemes}
       />
     </main>
-  );
+  )
+}
+
+async function safeText(res: Response) {
+  try {
+    const ct = res.headers.get('content-type') || ''
+    if (ct.includes('application/json')) {
+      const j = await res.json().catch(() => null)
+      if (j && typeof j.message === 'string') return j.message
+      return JSON.stringify(j)
+    }
+    return await res.text()
+  } catch {
+    return null
+  }
 }
