@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function PrimaryEditorPage() {
   const role = await getCurrentRole()
+
   if (role !== 'super-admin') {
     return (
       <main className="p-6 max-w-6xl mx-auto">
@@ -25,7 +26,9 @@ export default async function PrimaryEditorPage() {
         <div className="border rounded-xl p-4 bg-yellow-50 border-yellow-200 text-yellow-900">
           Super Admin access required.
         </div>
-        <div className="mt-4"><a className="underline" href="/dashboard">Back to Dashboard</a></div>
+        <div className="mt-4">
+          <a className="underline" href="/dashboard">Back to Dashboard</a>
+        </div>
       </main>
     )
   }
@@ -35,18 +38,33 @@ export default async function PrimaryEditorPage() {
   return (
     <main className="p-4 sm:p-6 max-w-6xl mx-auto">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <a href="/dashboard" className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300">
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+        <a
+          href="/dashboard"
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
+        >
           ← Dashboard
         </a>
         <h1 className="text-xl sm:text-2xl font-bold ml-1">Primary Framework Editor</h1>
         <div className="ml-auto flex items-center gap-2">
-          <a href="/admin/framework/primary/editor" className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300" title="Refresh">⟳ Refresh</a>
-          <a href="/admin/framework/primary/export" className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300" title="Export CSV">⭳ Export CSV</a>
+          <a
+            href="/admin/framework/primary/editor"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
+            title="Refresh"
+          >
+            ⟳ Refresh
+          </a>
+          <a
+            href="/admin/framework/primary/export"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
+            title="Export CSV"
+          >
+            ⭳ Export CSV
+          </a>
         </div>
       </div>
 
-      {/* Cards */}
+      {/* Cards (JSON-safe arrays only) */}
       <PrimaryFrameworkCards
         pillars={data.pillars}
         themes={data.themes}
