@@ -10,16 +10,16 @@ export function roleLabel(role: AppRole) {
 }
 
 /**
- * Server-only helper. Reads the 'role' cookie.
- * Falls back to process.env.DEMO_ROLE (for demos) or 'public'.
+ * Get role for the current request (server-only).
+ * Priority: cookie → env (for demos) → 'public'
  */
 export function getCurrentRole(): AppRole {
   try {
     const c = cookies().get('role')?.value as AppRole | undefined
     if (c === 'super-admin' || c === 'country-admin' || c === 'public') return c
-  } catch { /* non-request contexts */ }
-
-  const env = (process.env.DEMO_ROLE || 'public').toLowerCase()
-  if (env === 'super-admin' || env === 'country-admin' || env === 'public') return env
-  return 'public'
+  } catch {
+    // no-op: cookies() not available outside request – we fall back below
+  }
+  const env = (process.env.DEMO_ROLE as AppRole | undefined) ?? 'public'
+  return env
 }
