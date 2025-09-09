@@ -1,12 +1,12 @@
 // app/admin/framework/primary/editor/page.tsx
-import Link from 'next/link'
-import { internalGet } from '../../../../lib/internalFetch';
-import { getCurrentRole } from '../../../../lib/role';
-import PrimaryFrameworkCards from '../../../../components/PrimaryFrameworkCards';
+import { internalGet } from '../../../../lib/internalFetch'
+import { getCurrentRole } from '../../../../lib/role'
+import PrimaryFrameworkCards from '../../../../components/PrimaryFrameworkCards'
 
 type Pillar = { code: string; name: string; description?: string; sort_order: number }
 type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
 type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number }
+
 type FrameworkList = {
   ok: boolean
   counts: { pillars: number; themes: number; subthemes: number }
@@ -18,25 +18,41 @@ type FrameworkList = {
 export const dynamic = 'force-dynamic'
 
 export default async function PrimaryEditorPage() {
-  const role = await getCurrentRole()
+  const role = getCurrentRole() // synchronous (see lib/role.ts)
 
-  // Fetch list (public during dev)
+  // Public list endpoint while we iterate UI
   let data: FrameworkList | null = null
   try {
-    const res = await internalGet('/framework/api/list')
-    data = (await res.json()) as FrameworkList
-  } catch {
-    // keep null -> error UI below
+    data = await internalGet<FrameworkList>('/framework/api/list')
+  } catch (e: any) {
+    return (
+      <main className="mx-auto max-w-6xl p-6">
+        <a
+          href="/dashboard"
+          className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+        >
+          ← Back to Dashboard
+        </a>
+        <h1 className="text-2xl font-bold mb-2">Primary Framework Editor</h1>
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900">
+          Failed to fetch framework list: {String(e?.message || e)}
+        </div>
+      </main>
+    )
   }
 
   if (!data?.ok) {
     return (
       <main className="mx-auto max-w-6xl p-6">
-        <Link href="/dashboard" className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
+        <a
+          href="/dashboard"
+          className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+        >
           ← Back to Dashboard
-        </Link>
-        <div className="rounded-xl border p-4 bg-amber-50 border-amber-200 text-amber-900">
-          Couldn’t load framework list. If you recently migrated files, wait a moment and retry.
+        </a>
+        <h1 className="text-2xl font-bold mb-2">Primary Framework Editor</h1>
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-yellow-900">
+          The list endpoint returned an error.
         </div>
       </main>
     )
@@ -44,19 +60,32 @@ export default async function PrimaryEditorPage() {
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <div className="flex items-center justify-between mb-4">
+      <a
+        href="/dashboard"
+        className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+      >
+        ← Back to Dashboard
+      </a>
+
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
-        <Link href="/dashboard" className="text-sm text-slate-600 hover:text-slate-900 underline">
-          Back to Dashboard
-        </Link>
+        <a className="underline text-sm" href="/auth/set-role?role=super-admin&redirect=/admin/framework/primary/editor">
+          Switch to Super Admin
+        </a>
       </div>
 
-      <PrimaryFrameworkCards
-        role={role}
-        pillars={data.pillars}
-        themes={data.themes}
-        subthemes={data.subthemes}
-      />
+      <p className="text-sm text-slate-600">
+        Pillars, Themes, and Subthemes (read-only for now; actions come next).
+      </p>
+
+      <div className="mt-6">
+        <PrimaryFrameworkCards
+          role={role}
+          pillars={data.pillars}
+          themes={data.themes}
+          subthemes={data.subthemes}
+        />
+      </div>
     </main>
   )
 }
