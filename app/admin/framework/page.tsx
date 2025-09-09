@@ -27,54 +27,41 @@ export default async function FrameworkAdminPage() {
   return (
     <main className="p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold mb-2">Global SSC Framework (Admin)</h1>
-      <p className="text-sm text-gray-600 mb-4">Define pillars, themes, and sub-themes. Countries inherit these and may adapt as needed.</p>
+      <p className="text-sm text-gray-600 mb-4">
+        Configure the primary structure (pillars, themes, sub-themes) and, separately, the comprehensive layer
+        (indicators, levels, default scoring).
+      </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        <Stat label="Pillars" value={data.counts.pillars} href="/admin/framework/pillars" />
-        <Stat label="Themes" value={data.counts.themes} href="/admin/framework/themes" />
-        <Stat label="Sub-themes" value={data.counts.subthemes} href="/admin/framework/subthemes" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <a href="/admin/framework/primary" className="border border-gray-200 rounded-2xl p-5 hover:border-gray-300">
+          <div className="text-lg font-semibold mb-1">Primary SSC Framework</div>
+          <p className="text-sm text-gray-700 mb-3">
+            Pillars, themes, sub-themes and their descriptions — the global structure countries inherit.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <Stat label="Pillars" value={data.counts.pillars} />
+            <Stat label="Themes" value={data.counts.themes} />
+            <Stat label="Sub-themes" value={data.counts.subthemes} />
+          </div>
+        </a>
+
+        <a href="/admin/framework/comprehensive" className="border border-gray-200 rounded-2xl p-5 hover:border-gray-300">
+          <div className="text-lg font-semibold mb-1">Comprehensive SSC Framework</div>
+          <p className="text-sm text-gray-700">
+            Indicators, levels/severity definitions, default scoring, and mapping to data sources.
+          </p>
+          <div className="mt-3 text-sm text-gray-600">Indicators: soon • Levels: soon • Scoring: soon</div>
+        </a>
       </div>
-
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <AdminCard
-          title="Manage Pillars"
-          desc="Create, rename, re-order and describe pillars."
-          href="/admin/framework/pillars"
-        />
-        <AdminCard
-          title="Manage Themes"
-          desc="Attach themes to pillars; edit names, descriptions and order."
-          href="/admin/framework/themes"
-        />
-        <AdminCard
-          title="Manage Sub-themes"
-          desc="Attach sub-themes to themes; edit details and order."
-          href="/admin/framework/subthemes"
-        />
-        <AdminCard
-          title="Versioning (coming soon)"
-          desc="Save, compare and publish framework versions."
-        />
-      </section>
     </main>
   )
 }
 
-function Stat({ label, value, href }: { label: string; value: number; href: string }) {
+function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <a href={href} className="border border-gray-200 rounded-xl p-4 hover:border-gray-300">
+    <div className="border border-gray-200 rounded-xl p-4">
       <div className="text-xs text-gray-600">{label}</div>
       <div className="text-xl font-bold">{value}</div>
-    </a>
-  )
-}
-
-function AdminCard({ title, desc, href }: { title: string; desc: string; href?: string }) {
-  const content = (
-    <div className="border border-gray-200 rounded-2xl p-5 h-full">
-      <div className="text-lg font-semibold mb-1">{title}</div>
-      <div className="text-sm text-gray-700">{desc}</div>
     </div>
   )
-  return href ? <a href={href}>{content}</a> : content
 }
