@@ -1,7 +1,9 @@
-// app/admin/framework/primary/editor/page.tsx  (SERVER component)
-import { internalGet } from '../../../../lib/internalFetch'
-import { getCurrentRole } from '../../../../lib/role'
-import PrimaryFrameworkCards from '../../../../components/PrimaryFrameworkCards'
+// app/admin/framework/primary/editor/page.tsx
+
+// ✅ correct (three .. to get back to app/)
+import { internalGet } from '../../../lib/internalFetch'
+import { getCurrentRole } from '../../../lib/role'
+import PrimaryFrameworkCards from '../../../components/PrimaryFrameworkCards'
 
 type Pillar = { code: string; name: string; description?: string; sort_order: number }
 type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
