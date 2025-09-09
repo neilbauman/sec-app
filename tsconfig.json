@@ -9,7 +9,7 @@
     "isolatedModules": true,
     "baseUrl": ".",                       // <-- enables root-relative imports
     "paths": {
-      "@/*": ["./*"]                      // <-- optional alias style: '@/...'
+      "@/*": ["*"]                      // <-- optional alias style: '@/...'
     },
     "strict": false,
     "plugins": [{ "name": "next" }]
