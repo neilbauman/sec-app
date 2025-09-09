@@ -1,65 +1,60 @@
 // app/admin/framework/primary/editor/page.tsx
-import { internalGet } from '@/lib/internalFetch';
-import { getCurrentRole } from '@/lib/role';
-import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards';
+import { getCurrentRole } from '@/lib/role'
+import { internalGet } from '@/lib/internalFetch'
+import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards'
 
-type Pillar = { code: string; name: string; description?: string; sort_order: number };
-type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number };
-type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number };
-
+type Pillar = { code: string; name: string; description?: string; sort_order: number }
+type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
+type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number }
 type FrameworkList = {
-  ok: boolean;
-  counts: { pillars: number; themes: number; subthemes: number };
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
-};
+  ok: boolean
+  counts: { pillars: number; themes: number; subthemes: number }
+  pillars: Pillar[]
+  themes: Theme[]
+  subthemes: Subtheme[]
+}
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
 export default async function PrimaryEditorPage() {
-  const role = await getCurrentRole();
+  const role = await getCurrentRole()
 
-  if (role !== 'super-admin') {
+  // fetch list (publicly accessible for now)
+  const res = await internalGet('/framework/api/list')
+  if (!res.ok) {
     return (
       <main className="mx-auto max-w-6xl p-6">
-        <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">← Dashboard</a>
-        <h1 className="text-2xl font-bold mb-3">Primary Framework Editor</h1>
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-yellow-900">
-          Super Admin access required.
+        <a href="/dashboard" className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">← Back to Dashboard</a>
+        <h1 className="mb-2 text-2xl font-bold">Primary Framework Editor</h1>
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
+          Failed to load framework list. Please try again. (status {res.status})
         </div>
       </main>
-    );
+    )
   }
 
-  // robust fetch + parse
-  const res = await internalGet('/framework/api/list'); // this returns a plain object already
-
-  // Defensive checks
-  if (!res || typeof res !== 'object' || (res as any).ok !== true) {
-    const status = (res as any)?.status ?? 'unknown';
-    const message = (res as any)?.message ?? 'Failed to load framework list';
-    throw new Error(`framework/api/list failed: status=${status} message=${message}`);
-  }
-
-  const data = res as FrameworkList;
+  const data = (await res.json()) as FrameworkList
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">← Dashboard</a>
-      <h1 className="text-2xl font-bold mb-4">Primary Framework Editor</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <a href="/dashboard" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">← Back to Dashboard</a>
+        <div className="text-xs text-slate-500">
+          Pillars: {data.counts.pillars} · Themes: {data.counts.themes} · Sub-themes: {data.counts.subthemes}
+        </div>
+      </div>
 
-     
+      <h1 className="mb-1 text-2xl font-bold">Primary Framework (read-only)</h1>
+      <p className="mb-6 text-slate-600">
+        Browse the current global framework. Editing actions will be added after we finish the read-only pass.
+      </p>
+
       <PrimaryFrameworkCards
         role={role}
         pillars={data.pillars}
         themes={data.themes}
         subthemes={data.subthemes}
       />
-
-      <p className="mt-6 text-slate-500 text-sm">
-        Click the chevrons to expand. Actions and CSV import will come next.
-      </p>
     </main>
-  );
+  )
 }
