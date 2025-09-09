@@ -1,10 +1,11 @@
 // app/admin/framework/primary/editor/page.tsx
 
-// ✅ correct relative paths from app/admin/framework/primary/editor/page.tsx
+// root/lib
+import { internalGet } from '../../../../../lib/internalFetch'
+import { getCurrentRole } from '../../../../../lib/role'
 
-import { internalGet } from '../../../../lib/internalFetch'       // root/lib/internalFetch.ts
-import { getCurrentRole } from '../../../../lib/role'             // root/lib/role.ts
-import PrimaryFrameworkCards from '../../../../app/components/PrimaryFrameworkCards' // app/components/PrimaryFrameworkCards.tsx
+// app/components
+import PrimaryFrameworkCards from '../../../../components/PrimaryFrameworkCards'
 
 type Pillar = { code: string; name: string; description?: string; sort_order: number }
 type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
