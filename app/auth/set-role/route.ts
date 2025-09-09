@@ -1,22 +1,25 @@
 // app/auth/set-role/route.ts
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import type { AppRole } from '@/lib/role'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const role = searchParams.get('role') || 'public'
-  const allowed = new Set(['super-admin', 'country-admin', 'public'])
+  const url = new URL(req.url)
+  const role = (url.searchParams.get('role') ?? 'public') as AppRole
+  const allowed: AppRole[] = ['super-admin', 'country-admin', 'public']
+  const target = allowed.includes(role) ? role : 'public'
 
-  const r = allowed.has(role) ? role : 'public'
-
-  const res = NextResponse.redirect(new URL('/dashboard', req.url))
-  // Cookie for whole site, 7 days
-  res.cookies.set('role', r, {
-    path: '/',
+  // set role cookie (httpOnly false is fine here since this is a simple demo switch)
+  cookies().set('role', target, {
     httpOnly: false,
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7,
+    secure: true,
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365,
   })
-  return res
+
+  const redirectTo = url.searchParams.get('redirect') || '/dashboard'
+  return NextResponse.redirect(new URL(redirectTo, url.origin))
 }
