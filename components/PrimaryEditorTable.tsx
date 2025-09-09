@@ -8,16 +8,37 @@ type Subtheme = { code: string; theme_code: string; name: string; description?: 
 
 export default function PrimaryEditorTable(props: {
   pillars: Pillar[]
-  themesByPillar: Map<string, Theme[]>
-  subsByTheme: Map<string, Subtheme[]>
+  themes: Theme[]
+  subthemes: Subtheme[]
 }) {
-  const { pillars, themesByPillar, subsByTheme } = props
+  const { pillars, themes, subthemes } = props
 
-  // Collapsed by default
+  // Build groupings on the client (from JSON-safe arrays)
+  const themesByPillar = React.useMemo(() => {
+    const m = new Map<string, Theme[]>()
+    for (const t of themes) {
+      const arr = m.get(t.pillar_code) ?? []
+      arr.push(t)
+      m.set(t.pillar_code, arr)
+    }
+    for (const arr of m.values()) arr.sort((a, b) => a.sort_order - b.sort_order)
+    return m
+  }, [themes])
+
+  const subsByTheme = React.useMemo(() => {
+    const m = new Map<string, Subtheme[]>()
+    for (const s of subthemes) {
+      const arr = m.get(s.theme_code) ?? []
+      arr.push(s)
+      m.set(s.theme_code, arr)
+    }
+    for (const arr of m.values()) arr.sort((a, b) => a.sort_order - b.sort_order)
+    return m
+  }, [subthemes])
+
+  // Collapsed by default (remember with localStorage)
   const [openPillars, setOpenPillars] = React.useState<Record<string, boolean>>({})
   const [openThemes, setOpenThemes] = React.useState<Record<string, boolean>>({})
-
-  // Optional: remember state between page loads
   React.useEffect(() => {
     try {
       const p = localStorage.getItem('pe_openPillars')
@@ -33,31 +54,13 @@ export default function PrimaryEditorTable(props: {
     } catch {}
   }, [openPillars, openThemes])
 
-  const togglePillar = (code: string) =>
-    setOpenPillars((s) => ({ ...s, [code]: !s[code] }))
-  const toggleTheme = (code: string) =>
-    setOpenThemes((s) => ({ ...s, [code]: !s[code] }))
+  const togglePillar = (code: string) => setOpenPillars(s => ({ ...s, [code]: !s[code] }))
+  const toggleTheme  = (code: string) => setOpenThemes(s => ({ ...s, [code]: !s[code] }))
 
-  // Helpers
   const Caret = ({ open }: { open: boolean }) => (
-    <span
-      className={`inline-block transition-transform ${
-        open ? 'rotate-90 text-gray-700' : 'text-gray-400'
-      }`}
-    >
-      ▶
-    </span>
+    <span className={`inline-block transition-transform ${open ? 'rotate-90 text-gray-700' : 'text-gray-400'}`}>▶</span>
   )
-
-  const ToggleBtn = ({
-    open,
-    onClick,
-    label,
-  }: {
-    open: boolean
-    onClick: () => void
-    label: string
-  }) => (
+  const ToggleBtn = ({ open, onClick, label }: { open: boolean; onClick: () => void; label: string }) => (
     <button
       onClick={onClick}
       className="inline-flex items-center gap-2 rounded-md px-2 py-1 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
@@ -81,20 +84,15 @@ export default function PrimaryEditorTable(props: {
             <th className="px-4 py-3 text-right w-[120px] font-semibold">Actions</th>
           </tr>
         </thead>
-
         <tbody>
           {pillars
             .slice()
             .sort((a, b) => a.sort_order - b.sort_order)
             .map((p, i) => {
-              const pOpen = !!openPillars[p.code] // default collapsed
-              const themes = (themesByPillar.get(p.code) ?? [])
-                .slice()
-                .sort((a, b) => a.sort_order - b.sort_order)
-
+              const pOpen = !!openPillars[p.code]
+              const pillarThemes = themesByPillar.get(p.code) ?? []
               return (
                 <React.Fragment key={p.code}>
-                  {/* Pillar row (group header) */}
                   <tr className={`border-t ${i === 0 ? '' : 'border-gray-200'} hover:bg-gray-50`}>
                     <td className="px-4 py-3 align-top">
                       <div className="flex items-center gap-2">
@@ -103,70 +101,50 @@ export default function PrimaryEditorTable(props: {
                         <CodeSmall>{p.code}</CodeSmall>
                       </div>
                     </td>
-                    <td className="px-4 py-3 align-top">
-                      <div className="font-medium text-gray-900">{p.name}</div>
-                    </td>
+                    <td className="px-4 py-3 align-top"><div className="font-medium text-gray-900">{p.name}</div></td>
                     <td className="px-4 py-3 align-top text-gray-700">{p.description}</td>
                     <td className="px-4 py-3 align-top text-right tabular-nums">{p.sort_order}</td>
-                    <td className="px-4 py-3 align-top">
-                      <ActionsDisabled />
-                    </td>
+                    <td className="px-4 py-3 align-top"><ActionsDisabled /></td>
                   </tr>
 
-                  {/* Themes under pillar */}
-                  {pOpen &&
-                    themes.map((t) => {
-                      const tOpen = !!openThemes[t.code] // default collapsed
-                      const subs = (subsByTheme.get(t.code) ?? [])
-                        .slice()
-                        .sort((a, b) => a.sort_order - b.sort_order)
+                  {pOpen && pillarThemes.map(t => {
+                    const tOpen = !!openThemes[t.code]
+                    const subrows = subsByTheme.get(t.code) ?? []
+                    return (
+                      <React.Fragment key={t.code}>
+                        <tr className="border-t border-gray-100 hover:bg-gray-50">
+                          <td className="px-4 py-3 align-top">
+                            <div className="flex items-center">
+                              <Indent w={24} />
+                              <ToggleBtn open={tOpen} onClick={() => toggleTheme(t.code)} label="Toggle theme" />
+                              <LevelBadge color="green">Theme</LevelBadge>
+                              <CodeSmall>{t.code}</CodeSmall>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 align-top"><div className="font-medium text-gray-900">{t.name}</div></td>
+                          <td className="px-4 py-3 align-top text-gray-700">{t.description}</td>
+                          <td className="px-4 py-3 align-top text-right tabular-nums">{t.sort_order}</td>
+                          <td className="px-4 py-3 align-top"><ActionsDisabled /></td>
+                        </tr>
 
-                      return (
-                        <React.Fragment key={t.code}>
-                          <tr className="border-t border-gray-100 hover:bg-gray-50">
+                        {tOpen && subrows.map(s => (
+                          <tr key={s.code} className="border-t border-gray-100 hover:bg-gray-50">
                             <td className="px-4 py-3 align-top">
                               <div className="flex items-center">
-                                <Indent w={24} />
-                                <ToggleBtn open={tOpen} onClick={() => toggleTheme(t.code)} label="Toggle theme" />
-                                <LevelBadge color="green">Theme</LevelBadge>
-                                <CodeSmall>{t.code}</CodeSmall>
+                                <Indent w={48} />
+                                <LevelBadge color="red">Subtheme</LevelBadge>
+                                <CodeSmall>{s.code}</CodeSmall>
                               </div>
                             </td>
-                            <td className="px-4 py-3 align-top">
-                              <div className="font-medium text-gray-900">{t.name}</div>
-                            </td>
-                            <td className="px-4 py-3 align-top text-gray-700">{t.description}</td>
-                            <td className="px-4 py-3 align-top text-right tabular-nums">{t.sort_order}</td>
-                            <td className="px-4 py-3 align-top">
-                              <ActionsDisabled />
-                            </td>
+                            <td className="px-4 py-3 align-top"><div className="font-medium text-gray-900">{s.name}</div></td>
+                            <td className="px-4 py-3 align-top text-gray-700">{s.description}</td>
+                            <td className="px-4 py-3 align-top text-right tabular-nums">{s.sort_order}</td>
+                            <td className="px-4 py-3 align-top"><ActionsDisabled /></td>
                           </tr>
-
-                          {/* Subthemes */}
-                          {tOpen &&
-                            subs.map((s) => (
-                              <tr key={s.code} className="border-t border-gray-100 hover:bg-gray-50">
-                                <td className="px-4 py-3 align-top">
-                                  <div className="flex items-center">
-                                    <Indent w={48} />
-                                    {/* no caret at leaf */}
-                                    <LevelBadge color="red">Subtheme</LevelBadge>
-                                    <CodeSmall>{s.code}</CodeSmall>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3 align-top">
-                                  <div className="font-medium text-gray-900">{s.name}</div>
-                                </td>
-                                <td className="px-4 py-3 align-top text-gray-700">{s.description}</td>
-                                <td className="px-4 py-3 align-top text-right tabular-nums">{s.sort_order}</td>
-                                <td className="px-4 py-3 align-top">
-                                  <ActionsDisabled />
-                                </td>
-                              </tr>
-                            ))}
-                        </React.Fragment>
-                      )
-                    })}
+                        ))}
+                      </React.Fragment>
+                    )
+                  })}
                 </React.Fragment>
               )
             })}
@@ -176,37 +154,20 @@ export default function PrimaryEditorTable(props: {
   )
 }
 
-function Indent({ w }: { w: number }) {
-  return <div style={{ width: w }} />
-}
+function Indent({ w }: { w: number }) { return <div style={{ width: w }} /> }
 
-function LevelBadge({
-  color,
-  children,
-}: {
-  color: 'blue' | 'green' | 'red'
-  children: React.ReactNode
-}) {
+function LevelBadge({ color, children }: { color: 'blue' | 'green' | 'red'; children: React.ReactNode }) {
   const styles =
-    color === 'blue'
-      ? 'bg-blue-100 text-blue-700 border-blue-200'
-      : color === 'green'
-      ? 'bg-green-100 text-green-700 border-green-200'
-      : 'bg-red-100 text-red-700 border-red-200'
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${styles}`}>
-      {children}
-    </span>
-  )
+    color === 'blue' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+    color === 'green' ? 'bg-green-100 text-green-700 border-green-200' :
+                        'bg-red-100 text-red-700 border-red-200'
+  return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${styles}`}>{children}</span>
 }
-
 function CodeSmall({ children }: { children: React.ReactNode }) {
   return <span className="text-[11px] text-gray-500 ml-2">[{children}]</span>
 }
-
 function ActionsDisabled() {
-  const btn =
-    'inline-flex items-center rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-400 bg-white'
+  const btn = 'inline-flex items-center rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-400 bg-white'
   return (
     <div className="flex justify-end gap-1">
       <button className={btn} disabled title="Edit (coming soon)">✎</button>
