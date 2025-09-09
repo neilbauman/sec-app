@@ -1,7 +1,15 @@
 // lib/internalFetch.ts
-export async function internalGet(path: string, init?: RequestInit): Promise<Response> {
-  // relative to this Next app
-  const url = path.startsWith('/') ? path : `/${path}`
-  // force dynamic (no cache) for admin screens; adjust if you later add caching
-  return fetch(url, { ...init, cache: 'no-store' })
+import { absUrl } from '@/lib/absUrl'
+
+/**
+ * Fetch JSON from an internal API route as a typed value.
+ * Throws on non-2xx.
+ */
+export async function internalGet<T = unknown>(path: string): Promise<T> {
+  const url = absUrl(path)
+  const res = await fetch(url, { cache: 'no-store' })
+  if (!res.ok) {
+    throw new Error(`${res.status}`)
+  }
+  return res.json() as Promise<T>
 }
