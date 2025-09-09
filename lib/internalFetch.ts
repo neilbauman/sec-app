@@ -1,29 +1,36 @@
 // lib/internalFetch.ts
-import { absUrl } from './absUrl'
+// Small helper for server-side fetch to your own routes with absolute URL handling
 
-/**
- * Fetch JSON from a local API route using an absolute URL that works on Vercel.
- * Throws if HTTP status is not OK. Returns typed JSON.
- */
-export async function internalGetJSON<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = absUrl(path)
+import { headers } from 'next/headers'
+
+function absUrl(path: string) {
+  if (path.startsWith('http://') || path.startsWith('https://')) return path
+  const h = headers()
+  const proto = (h.get('x-forwarded-proto') ?? 'http')
+  const host = (h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000')
+  const p = path.startsWith('/') ? path : `/${path}`
+  return `${proto}://${host}${p}`
+}
+
+export async function internalGet(input: string, init?: RequestInit) {
+  const url = absUrl(input)
+  // Type-safe Response
   const res = await fetch(url, { ...init, cache: 'no-store' })
-  if (!res.ok) {
-    const body = await safeJson(res)
-    throw new Error(`Fetch failed ${res.status} ${res.statusText}. Body: ${JSON.stringify(body)}`)
-  }
-  return (await res.json()) as T
+  return res
 }
 
-/**
- * Optional: raw Response helper, if you ever need it.
- * (Use this if you truly want to check res.ok yourself.)
- */
-export async function internalGetResponse(path: string, init?: RequestInit): Promise<Response> {
-  const url = absUrl(path)
-  return fetch(url, { ...init, cache: 'no-store' })
-}
-
-async function safeJson(res: Response) {
-  try { return await res.json() } catch { return null }
+export async function internalPostJSON<TBody extends object>(
+  input: string,
+  body: TBody,
+  init?: RequestInit
+) {
+  const url = absUrl(input)
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...(init?.headers || {}) },
+    body: JSON.stringify(body),
+    cache: 'no-store',
+    ...init,
+  })
+  return res
 }
