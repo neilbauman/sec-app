@@ -1,91 +1,68 @@
-import { internalGet } from '@/lib/internalFetch'
-import { getCurrentRole } from '@/lib/role'
-import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards'
+// app/admin/framework/primary/editor/page.tsx
+import { internalGet } from '@/lib/internalFetch';
+import { getCurrentRole } from '@/lib/role';
+import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards';
 
-type Pillar = { code: string; name: string; description?: string; sort_order: number }
-type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
-type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number }
+type Pillar = { code: string; name: string; description?: string; sort_order: number };
+type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number };
+type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number };
+
 type FrameworkList = {
-  ok: boolean
-  counts: { pillars: number; themes: number; subthemes: number }
-  pillars: Pillar[]
-  themes: Theme[]
-  subthemes: Subtheme[]
-}
+  ok: boolean;
+  counts: { pillars: number; themes: number; subthemes: number };
+  pillars: Pillar[];
+  themes: Theme[];
+  subthemes: Subtheme[];
+};
 
-export const dynamic = 'force-dynamic' 
+export const dynamic = 'force-dynamic';
 
 export default async function PrimaryEditorPage() {
-  const role = await getCurrentRole()
+  const role = await getCurrentRole();
+
   if (role !== 'super-admin') {
     return (
       <main className="mx-auto max-w-6xl p-6">
-        <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">
-          ← Dashboard
-        </a>
-        <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
-        <p className="mt-3 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-yellow-900">
+        <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">← Dashboard</a>
+        <h1 className="text-2xl font-bold mb-3">Primary Framework Editor</h1>
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-yellow-900">
           Super Admin access required.
-        </p>
+        </div>
       </main>
-    )
+    );
   }
 
-  // ✅ internalGet returns a Response
-  const res = (await internalGet('/framework/api/list')) as Response
-  if (!res.ok) {
-    return (
-      <main className="mx-auto max-w-6xl p-6">
-        <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">
-          ← Dashboard
-        </a>
-        <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
-        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900">
-          Could not load framework data.
-        </p>
-      </main>
-    )
+  // robust fetch + parse
+  const res = await internalGet('/framework/api/list'); // this returns a plain object already
+
+  // Defensive checks
+  if (!res || typeof res !== 'object' || (res as any).ok !== true) {
+    const status = (res as any)?.status ?? 'unknown';
+    const message = (res as any)?.message ?? 'Failed to load framework list';
+    throw new Error(`framework/api/list failed: status=${status} message=${message}`);
   }
 
-  // ✅ Now parse JSON into our typed shape
-  const data = (await res.json()) as FrameworkList
+  const data = res as FrameworkList;
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <a href="/dashboard" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
-          ← Dashboard
-        </a>
-        <div className="flex items-center gap-2">
-          <a
-            href="/admin/framework/primary/editor"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
-          >
-            ⟳ Refresh
-          </a>
-          <a
-            href="/admin/framework/primary/export"
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
-          >
-            ⬇︎ Export CSV
-          </a>
-        </div>
+      <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">← Dashboard</a>
+      <h1 className="text-2xl font-bold mb-4">Primary Framework Editor</h1>
+
+      {/* Tailwind smoke test */}
+      <div className="mb-4 rounded-lg bg-indigo-50 px-4 py-3 text-indigo-900 ring-1 ring-indigo-200">
+        Tailwind check: this box should look purple with rounded corners.
       </div>
 
-      <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
+      <PrimaryFrameworkCards
+        pillars={data.pillars}
+        themes={data.themes}
+        subthemes={data.subthemes}
+      />
 
-      <div className="mt-6">
-        <PrimaryFrameworkCards
-          role={role}
-          pillars={data.pillars}
-          themes={data.themes}
-          subthemes={data.subthemes}
-        />
-      </div>
-
-      <p className="mt-6 text-sm text-slate-500">
-        Click the chevrons to expand. Actions are enabled for Super Admins but are placeholders (no data is changed yet).
+      <p className="mt-6 text-slate-500 text-sm">
+        Click the chevrons to expand. Actions and CSV import will come next.
       </p>
     </main>
-  )
+  );
 }
