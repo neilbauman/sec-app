@@ -1,23 +1,18 @@
 // app/_auth/set-role/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-const VALID = new Set(['public', 'country-admin', 'super-admin'])
+export async function GET(req: Request) {
+  const url = new URL(req.url)
+  const role = url.searchParams.get('role') ?? 'public'
+  if (!['public', 'country-admin', 'super-admin'].includes(role)) {
+    return NextResponse.json({ ok: false, message: 'Invalid role' }, { status: 400 })
+  }
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const role = (searchParams.get('role') || 'public').toLowerCase()
-
-  // sanitize
-  const value = VALID.has(role) ? role : 'public'
-
-  const res = NextResponse.redirect(new URL('/dashboard', req.url))
-  // httpOnly not set so you can flip roles easily from client during dev
-  res.cookies.set('role', value, {
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-    sameSite: 'lax',
-  })
+  const redirectTo = url.searchParams.get('redirect') ?? '/dashboard'
+  const res = NextResponse.redirect(new URL(redirectTo, req.url))
+  // session cookie – tweak maxAge as you like
+  res.cookies.set('role', role, { httpOnly: true, sameSite: 'lax', path: '/' })
   return res
 }
