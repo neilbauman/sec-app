@@ -1,10 +1,8 @@
 // app/admin/framework/primary/editor/page.tsx
 
-// root-based imports (thanks to baseUrl:".")
-
-import { internalGet } from 'lib/internalFetch'
-import { getCurrentRole } from 'lib/role'
-import PrimaryFrameworkCards from 'components/PrimaryFrameworkCards'
+import { internalGet } from '../../../../lib/internalFetch'
+import { getCurrentRole } from '../../../../lib/role'
+import PrimaryFrameworkCards from '../../../../components/PrimaryFrameworkCards'
 
 type Pillar = { code: string; name: string; description?: string; sort_order: number }
 type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
@@ -21,63 +19,73 @@ export const dynamic = 'force-dynamic'
 
 export default async function PrimaryEditorPage() {
   const role = await getCurrentRole()
-
   if (role !== 'super-admin') {
     return (
-      <main className="p-6 max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2">Primary Framework Editor</h1>
-        <div className="border rounded-xl p-4 bg-yellow-50 border-yellow-200 text-yellow-900">
+      <main className="mx-auto max-w-6xl p-6">
+        <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">
+          ← Dashboard
+        </a>
+
+        <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
+        <p className="mt-3 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-yellow-900">
           Super Admin access required.
-        </div>
-        <div className="mt-4">
-          <a className="underline" href="/dashboard">Back to Dashboard</a>
-        </div>
+        </p>
       </main>
     )
   }
 
-  const data = await internalGet<FrameworkList>('/framework/api/list')
-
-  return (
-    <main className="p-4 sm:p-6 max-w-6xl mx-auto">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 mb-5">
-        <a
-          href="/dashboard"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
-        >
+  const res = await internalGet('/framework/api/list')
+  if (!res.ok) {
+    return (
+      <main className="mx-auto max-w-6xl p-6">
+        <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">
           ← Dashboard
         </a>
-        <h1 className="text-xl sm:text-2xl font-bold ml-1">Primary Framework Editor</h1>
-        <div className="ml-auto flex items-center gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
+        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900">
+          Could not load framework data.
+        </p>
+      </main>
+    )
+  }
+
+  const data = (await res.json()) as FrameworkList
+
+  return (
+    <main className="mx-auto max-w-6xl p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <a href="/dashboard" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
+          ← Dashboard
+        </a>
+        <div className="flex items-center gap-2">
           <a
             href="/admin/framework/primary/editor"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
-            title="Refresh"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
           >
             ⟳ Refresh
           </a>
           <a
             href="/admin/framework/primary/export"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
-            title="Export CSV"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
           >
-            ⭳ Export CSV
+            ⬇︎ Export CSV
           </a>
         </div>
       </div>
-<div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-indigo-800 mb-4">
-  Tailwind check: this box should look purple with rounded corners.
-</div>
-      {/* Cards (JSON-safe arrays only) */}
-      <PrimaryFrameworkCards
-        pillars={data.pillars}
-        themes={data.themes}
-        subthemes={data.subthemes}
-      />
 
-      <p className="text-xs text-gray-500 mt-4">
-        Click the chevrons to expand. Actions and CSV import will come next.
+      <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
+
+      <div className="mt-6">
+        <PrimaryFrameworkCards
+          role={role}
+          pillars={data.pillars}
+          themes={data.themes}
+          subthemes={data.subthemes}
+        />
+      </div>
+
+      <p className="mt-6 text-sm text-slate-500">
+        Click the chevrons to expand. Actions are enabled for Super Admins but are placeholders (no data is changed yet).
       </p>
     </main>
   )
