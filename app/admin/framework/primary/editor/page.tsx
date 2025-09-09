@@ -1,6 +1,3 @@
-// app/admin/framework/primary/editor/page.tsx
-
-// ✅ stable, root-relative aliases that match your repo layout
 import { internalGet } from '@/lib/internalFetch'
 import { getCurrentRole } from '@/lib/role'
 import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards'
@@ -26,7 +23,6 @@ export default async function PrimaryEditorPage() {
         <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">
           ← Dashboard
         </a>
-
         <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
         <p className="mt-3 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-yellow-900">
           Super Admin access required.
@@ -35,24 +31,23 @@ export default async function PrimaryEditorPage() {
     )
   }
 
-  const res: FrameworkList = await internalGet('/framework/api/list') as FrameworkList
+  // ✅ internalGet returns a Response
+  const res = (await internalGet('/framework/api/list')) as Response
+  if (!res.ok) {
+    return (
+      <main className="mx-auto max-w-6xl p-6">
+        <a href="/dashboard" className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900">
+          ← Dashboard
+        </a>
+        <h1 className="text-2xl font-semibold tracking-tight">Primary Framework Editor</h1>
+        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900">
+          Could not load framework data.
+        </p>
+      </main>
+    )
+  }
 
-if (!res.ok) {
-  return (
-    <main className="mx-auto max-w-6xl p-6">
-      <a
-        href="/dashboard"
-        className="inline-flex items-center gap-2 mb-4 text-sm text-slate-600 hover:text-slate-900"
-      >
-        ← Back to Dashboard
-      </a>
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
-        Failed to load framework data.
-      </div>
-    </main>
-  )
-}
-
+  // ✅ Now parse JSON into our typed shape
   const data = (await res.json()) as FrameworkList
 
   return (
