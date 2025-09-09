@@ -1,17 +1,9 @@
-// components/PrimaryFrameworkCards.tsx
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import { useState } from 'react';
+import type { Pillar, Theme, Subtheme } from '@/lib/framework';
 
-//
-// Local types so this file is self-contained.
-// If you already have shared types, you can delete these and import yours.
-//
-type Pillar = { code: string; name: string; description?: string | null };
-type Theme = { code: string; name: string; pillar_code: string };
-type Subtheme = { code: string; name: string; theme_code: string };
-
-export type Props = {
+type Props = {
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
@@ -21,68 +13,74 @@ export default function PrimaryFrameworkCards({ pillars, themes, subthemes }: Pr
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
 
-  // Precompute groupings for quick renders
-  const themesByPillar = useMemo(() => {
-    const map: Record<string, Theme[]> = {};
-    for (const t of themes) {
-      if (!map[t.pillar_code]) map[t.pillar_code] = [];
-      map[t.pillar_code].push(t);
-    }
-    return map;
-  }, [themes]);
+  // Group themes by pillar, and subthemes by theme
+  const themesByPillar: Record<string, Theme[]> = {};
+  for (const t of themes) {
+    const key = (t as any).pillar_code ?? (t as any).pillarCode ?? (t as any).pillar_id ?? "";
+    if (!themesByPillar[key]) themesByPillar[key] = [];
+    themesByPillar[key].push(t);
+  }
 
-  const subthemesByTheme = useMemo(() => {
-    const map: Record<string, Subtheme[]> = {};
-    for (const s of subthemes) {
-      if (!map[s.theme_code]) map[s.theme_code] = [];
-      map[s.theme_code].push(s);
-    }
-    return map;
-  }, [subthemes]);
+  const subsByTheme: Record<string, Subtheme[]> = {};
+  for (const s of subthemes) {
+    const key = (s as any).theme_code ?? (s as any).themeCode ?? (s as any).theme_id ?? "";
+    if (!subsByTheme[key]) subsByTheme[key] = [];
+    subsByTheme[key].push(s);
+  }
 
   return (
-    <div className="space-y-4">
-      {pillars.map((p) => {
-        const isOpen = openPillars[p.code] ?? true;
+    <div>
+      {pillars.map(p => {
+        const pKey = (p as any).code ?? (p as any).id ?? '';
+        const isOpen = openPillars[pKey] ?? false;
         return (
-          <div key={p.code} className="rounded-lg border">
+          <div key={pKey} style={{ border: "1px solid #e5e7eb", borderRadius: 12, marginBottom: 12 }}>
             <button
-              type="button"
-              className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-t-lg flex items-center justify-between"
-              onClick={() =>
-                setOpenPillars((prev) => ({ ...prev, [p.code]: !(prev[p.code] ?? true) }))
-              }
+              onClick={() => setOpenPillars({ ...openPillars, [pKey]: !isOpen })}
+              style={{ width: "100%", textAlign: "left", padding: 12, background: "white", border: "none", cursor: "pointer" }}
             >
-              <span className="font-semibold">{p.name}</span>
-              <span className="text-xs text-gray-500">{isOpen ? 'Collapse' : 'Expand'}</span>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: 14, color: "#6b7280" }}>Pillar</div>
+                  <div style={{ fontSize: 18, fontWeight: 700 }}>{(p as any).name ?? pKey}</div>
+                  {(p as any).description ? <div style={{ color: "#374151" }}>{(p as any).description}</div> : null}
+                </div>
+                <div>{isOpen ? "▾" : "▸"}</div>
+              </div>
             </button>
 
             {isOpen && (
-              <div className="divide-y">
-                {(themesByPillar[p.code] ?? []).map((t) => {
-                  const tOpen = openThemes[t.code] ?? true;
+              <div style={{ borderTop: "1px solid #e5e7eb" }}>
+                {(themesByPillar[pKey] ?? []).map(t => {
+                  const tKey = (t as any).code ?? (t as any).id ?? '';
+                  const tOpen = openThemes[tKey] ?? false;
                   return (
-                    <div key={t.code} className="px-4 py-3">
+                    <div key={tKey} style={{ padding: "12px 16px", borderTop: "1px dashed #e5e7eb" }}>
                       <button
-                        type="button"
-                        className="w-full text-left flex items-center justify-between"
-                        onClick={() =>
-                          setOpenThemes((prev) => ({ ...prev, [t.code]: !(prev[t.code] ?? true) }))
-                        }
+                        onClick={() => setOpenThemes({ ...openThemes, [tKey]: !tOpen })}
+                        style={{ background: "transparent", border: "none", width: "100%", textAlign: "left", cursor: "pointer" }}
                       >
-                        <span className="font-medium">{t.name}</span>
-                        <span className="text-xs text-gray-500">
-                          {tOpen ? 'Hide subthemes' : 'Show subthemes'}
-                        </span>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <div>
+                            <span style={{ fontSize: 12, color: "#6b7280", marginRight: 8 }}>Theme</span>
+                            <span style={{ fontSize: 16, fontWeight: 600 }}>{(t as any).name ?? tKey}</span>
+                          </div>
+                          <div>{tOpen ? "▾" : "▸"}</div>
+                        </div>
                       </button>
 
                       {tOpen && (
-                        <ul className="mt-2 list-disc pl-6 space-y-1">
-                          {(subthemesByTheme[t.code] ?? []).map((s) => (
-                            <li key={s.code} className="text-sm">
-                              {s.name}
-                            </li>
-                          ))}
+                        <ul style={{ marginTop: 8, marginLeft: 8 }}>
+                          {(subsByTheme[tKey] ?? []).map(s => {
+                            const sKey = (s as any).code ?? (s as any).id ?? '';
+                            return (
+                              <li key={sKey} style={{ padding: "6px 0", color: "#111827" }}>
+                                <span style={{ fontSize: 12, color: "#6b7280", marginRight: 8 }}>Subtheme</span>
+                                <span style={{ fontWeight: 500 }}>{(s as any).name ?? sKey}</span>
+                                {(s as any).description ? <div style={{ color: "#374151" }}>{(s as any).description}</div> : null}
+                              </li>
+                            );
+                          })}
                         </ul>
                       )}
                     </div>

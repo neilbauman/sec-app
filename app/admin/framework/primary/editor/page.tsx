@@ -1,45 +1,31 @@
-import PrimaryFrameworkCards, { Pillar, Theme, Subtheme } from "@/components/PrimaryFrameworkCards";
-import { internalGet } from "@/lib/internalFetch";
+import Link from 'next/link';
+import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards';
+import { getFrameworkList } from '@/lib/framework';
 
-type FrameworkList = {
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
-};
+export const dynamic = 'force-dynamic';
 
-export const dynamic = "force-dynamic";
-
-export default async function PrimaryEditor() {
-  let data: FrameworkList | null = null;
+export default async function PrimaryFrameworkEditorPage() {
   try {
-    data = await internalGet<FrameworkList>("/framework/api/list");
-  } catch (e) {
+    const data = await getFrameworkList();
     return (
-      <main style={{ padding: 24, maxWidth: 1040, margin: "0 auto" }}>
-        <a href="/dashboard" style={{ display: "inline-block", marginBottom: 12 }}>← Back to Dashboard</a>
-        <h1 style={{ fontSize: 24, fontWeight: 700 }}>Primary Framework Editor</h1>
-        <div style={{ marginTop: 16, color: "#b91c1c" }}>
-          Could not load framework list. Ensure NEXT_PUBLIC_BASE_URL is set to your deployment URL.
+      <main>
+        <p><Link href="/admin/framework">← Back to Dashboard</Link></p>
+        <h1 style={{ fontSize: 28, fontWeight: 800, marginTop: 8 }}>Primary Framework Editor</h1>
+        <div style={{ marginTop: 12 }}>
+          <PrimaryFrameworkCards pillars={data.pillars} themes={data.themes} subthemes={data.subthemes} />
+        </div>
+      </main>
+    );
+  } catch (err: any) {
+    return (
+      <main>
+        <p><Link href="/admin/framework">← Back to Dashboard</Link></p>
+        <h1 style={{ fontSize: 28, fontWeight: 800, marginTop: 8 }}>Primary Framework Editor</h1>
+        <div style={{ marginTop: 12, padding: 16, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12 }}>
+          <div style={{ color: "#991b1b", fontWeight: 600 }}>Failed to load framework list.</div>
+          <div style={{ marginTop: 6, color: "#7f1d1d", whiteSpace: "pre-wrap" }}>{String(err?.message || err)}</div>
         </div>
       </main>
     );
   }
-
-  return (
-    <main style={{ padding: 24, maxWidth: 1040, margin: "0 auto" }}>
-      <a href="/dashboard" style={{ display: "inline-block", marginBottom: 12 }}>← Back to Dashboard</a>
-      <h1 style={{ fontSize: 24, fontWeight: 700 }}>Primary Framework Editor</h1>
-      <p style={{ color: "#6b7280", marginTop: 4 }}>
-        Loaded {data.pillars.length} pillar(s), {data.themes.length} theme(s), {data.subthemes.length} subtheme(s).
-      </p>
-
-      <div style={{ marginTop: 24 }}>
-        <PrimaryFrameworkCards
-          pillars={data.pillars}
-          themes={data.themes}
-          subthemes={data.subthemes}
-        />
-      </div>
-    </main>
-  );
 }
