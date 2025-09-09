@@ -1,37 +1,24 @@
 {
   "name": "ssc-app",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start -p 3000",
+    "start": "next start",
     "lint": "next lint"
   },
-  "engines": { "node": "20.x" },
   "dependencies": {
-    "@supabase/supabase-js": "^2.47.10",
-    "@supabase/ssr": "^0.5.1",
-    "antd": "^5.20.1",
-    "@ant-design/icons": "^5.3.7",
-    "dayjs": "^1.11.13",
     "next": "15.5.2",
     "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "zod": "^3.23.8",
-    "papaparse": "^5.4.1",
-    "lucide-react": "^0.469.0",
-    "@types/papaparse": "^5.3.14"
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
-    "@types/node": "^22.7.5",
-    "@types/react": "^18.3.5",
-    "@types/react-dom": "^18.3.0",
-    "eslint": "^8.57.1",
-    "eslint-config-next": "15.5.2",
-    "typescript": "^5.6.3",
-    "tailwindcss": "3.4.10",
-    "postcss": "8.4.39",
-    "autoprefixer": "10.4.20"
+    "autoprefixer": "10.4.18",
+    "postcss": "8.4.35",
+    "tailwindcss": "3.4.7",
+    "typescript": "5.5.4",
+    "@types/node": "20.11.30",
+    "@types/react": "18.3.3"
   }
 }

@@ -1,67 +1,24 @@
-# SSC App (Clean, with CSV Import)
+# SSC App (Clean Starter)
 
-**Home page** is an Ant Design tree table (browse + edit indicators inline).
+**Goal:** stable deploy on Vercel with Primary Framework Editor UI, no Supabase coupling yet.
 
-**APIs:**
-- `GET /api/framework` — hierarchical tree data
-- `GET /api/export` — CSV export
-- `POST /api/indicators` — create indicator
-- `PUT /api/indicators/[id]` / `DELETE /api/indicators/[id]`
-- `POST /api/import/pillars?mode=upsert|replace` — CSV import
-- `POST /api/import/themes?mode=upsert|replace` — CSV import
-- `POST /api/import/subthemes?mode=upsert|replace` — CSV import
-- `POST /api/import/standards?mode=upsert|replace` — CSV import
-- `POST /api/import/indicators?mode=upsert|replace` — CSV import
+## What's included
+- `/auth/set-role` route to set `role` cookie (Dashboard has a link)
+- `/framework/api/list` serves static demo data for pillars/themes/subthemes
+- Primary editor UI in `components/PrimaryFrameworkCards.tsx` (default collapsed, tags, simple chevrons)
+- `internalGet<T>()` returns parsed JSON to avoid Response typing issues
+- Async `getCurrentRole()` compatible with Next 15 cookies()
 
-### CSV Columns
+## Dev notes
+- Keep using the clean `/app/auth/*` path. The old `/_auth` is removed.
+- Swap `/framework/api/list` to your real data later.
+- When you reintroduce Supabase, do it behind `lib/supabaseServer.ts` (not shipping here).
 
-**pillars.csv**
-- id (optional)
-- code (optional, unique if used)
-- name (required)
-- description (optional)
-- sort_order (optional number)
+## Scripts
+- `npm run build` on Vercel should be green
+- `npm run dev` locally if you want to try local
 
-**themes.csv**
-- id (optional)
-- pillar_id OR pillar_code (one required)
-- code (optional, unique if used)
-- name (required)
-- description (optional)
-- sort_order (optional number)
+## Tailwind
+Already configured (globals loaded via `app/layout.tsx`).
 
-**subthemes.csv**
-- id (optional)
-- theme_id OR theme_code (one required)
-- code (optional, unique if used)
-- name (required)
-- description (optional)
-- sort_order (optional number)
-
-**standards.csv**
-- id (optional)
-- subtheme_id OR subtheme_code (one required)
-- code (optional)
-- description (required; this is the "standard statement")
-- notes (optional)
-- sort_order (optional number)
-
-**indicators.csv**
-- id (optional)
-- (one parent ref) pillar_id|pillar_code|theme_id|theme_code|subtheme_id|subtheme_code|standard_id|standard_code
-- code (optional)
-- name (required)
-- description (optional)
-- is_default (optional boolean)
-- weight (optional number)
-- sort_order (optional number)
-
-`mode=upsert` (default): insert new or update existing rows by `id` if provided, otherwise by `code` when available.  
-`mode=replace`: clears the target table before importing.
-
-## Env
-`.env.local`
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+Enjoy 🚀
