@@ -36,3 +36,4 @@ html, body {
 .hover\\:bg-gray-50:hover {
   background-color: #f9fafb !important;
 }
+body { border: 6px solid hotpink; }
