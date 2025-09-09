@@ -1,109 +1,84 @@
-'use client'
+'use client';
 
-import { useMemo, useState } from 'react'
-import type { AppRole } from '@/lib/role'
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
-export type Pillar = { code: string; name: string; description?: string; sort_order: number }
-export type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
-export type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number }
+export type Pillar = { code: string; name: string };
+export type Theme = { code: string; name: string; pillar: string };
+export type Subtheme = { code: string; name: string; theme: string };
 
 type Props = {
-  role: AppRole
-  pillars: Pillar[]
-  themes: Theme[]
-  subthemes: Subtheme[]
-}
+  pillars: Pillar[];
+  themes: Theme[];
+  subthemes: Subtheme[];
+};
 
-export default function PrimaryFrameworkCards({ role, pillars, themes, subthemes }: Props) {
-  const themesByPillar = useMemo(() => {
-    const m: Record<string, Theme[]> = {}
-    for (const t of themes) {
-      (m[t.pillar_code] ??= []).push(t)
-    }
-    for (const k of Object.keys(m)) m[k].sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-    return m
-  }, [themes])
+export default function PrimaryFrameworkCards({ pillars, themes, subthemes }: Props) {
+  const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
+  const [openThemes, setOpenThemes] = useState<Record[string, boolean>>({} as any);
 
-  const subsByTheme = useMemo(() => {
-    const m: Record<string, Subtheme[]> = {}
-    for (const s of subthemes) {
-      (m[s.theme_code] ??= []).push(s)
-    }
-    for (const k of Object.keys(m)) m[k].sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-    return m
-  }, [subthemes])
-
-  // default collapsed
-  const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({})
-  const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({})
-
-  const toggleP = (code: string) => setOpenPillars(o => ({ ...o, [code]: !o[code] }))
-  const toggleT = (code: string) => setOpenThemes(o => ({ ...o, [code]: !o[code] }))
+  const byPillar: Record<string, Theme[]> = {};
+  for (const t of themes) {
+    byPillar[t.pillar] ??= [];
+    byPillar[t.pillar].push(t);
+  }
+  const byTheme: Record<string, Subtheme[]> = {};
+  for (const s of subthemes) {
+    byTheme[s.theme] ??= [];
+    byTheme[s.theme].push(s);
+  }
 
   return (
-    <section className="space-y-4">
-      {pillars.sort((a,b)=>a.sort_order-b.sort_order).map(p => {
-        const isOpen = !!openPillars[p.code]
+    <div style={{ display: "grid", gap: 16 }}>
+      {pillars.map((p) => {
+        const isOpen = openPillars[p.code] ?? true;
         return (
-          <div key={p.code} className="rounded-xl border bg-white">
+          <div key={p.code} style={{ border: "1px solid #e5e7eb", borderRadius: 12 }}>
             <button
-              onClick={() => toggleP(p.code)}
-              className="w-full flex items-center justify-between px-4 py-3"
+              onClick={() => setOpenPillars(prev => ({ ...prev, [p.code]: !isOpen }))}
+              style={{ width: "100%", textAlign: "left", padding: 12, display: "flex", alignItems: "center", gap: 8 }}
             >
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center rounded-full bg-badge-primary/10 text-badge-primary text-xs px-2 py-0.5">
-                  Pillar
-                </span>
-                <span className="font-medium">{p.name}</span>
-              </div>
-              <svg className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-90' : ''}`} viewBox="0 0 20 20" fill="currentColor">
-                <path d="M7 5l6 5-6 5V5z" />
-              </svg>
+              {isOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+              <strong>{p.name}</strong>
+              <span style={{ marginLeft: 8, color: "#6b7280" }}>({p.code})</span>
             </button>
 
             {isOpen && (
-              <div className="divide-y">
-                {(themesByPillar[p.code] ?? []).map(t => {
-                  const tOpen = !!openThemes[t.code]
+              <div style={{ borderTop: "1px solid #e5e7eb" }}>
+                {(byPillar[p.code] ?? []).map((t) => {
+                  const tOpen = openThemes[t.code] ?? true;
                   return (
-                    <div key={t.code} className="px-4 py-3">
-                      <button onClick={() => toggleT(t.code)} className="w-full flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex items-center rounded-full bg-badge-theme/10 text-badge-theme text-xs px-2 py-0.5">
-                            Theme
-                          </span>
-                          <span className="font-medium">{t.name}</span>
-                        </div>
-                        <svg className={`h-4 w-4 transition-transform ${tOpen ? 'rotate-90' : ''}`} viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M7 5l6 5-6 5V5z" />
-                        </svg>
+                    <div key={t.code} style={{ padding: "8px 12px", borderTop: "1px solid #f3f4f6" }}>
+                      <button
+                        onClick={() => setOpenThemes(prev => ({ ...prev, [t.code]: !tOpen }))}
+                        style={{ display: "flex", alignItems: "center", gap: 8 }}
+                      >
+                        {tOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        <span><strong>{t.name}</strong> <span style={{ color: "#6b7280" }}>({t.code})</span></span>
                       </button>
-
                       {tOpen && (
-                        <div className="mt-3 grid gap-2">
-                          {(subsByTheme[t.code] ?? []).map(s => (
-                            <div key={s.code} className="rounded-lg border px-3 py-2 flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="inline-flex items-center rounded-full bg-badge-subtheme/10 text-badge-subtheme text-[10px] px-2 py-0.5">
-                                  Subtheme
-                                </span>
-                                <span>{s.name}</span>
-                              </div>
-                              {role === 'super-admin' && (
-                                <div className="text-xs text-slate-500">admin actions coming soon</div>
-                              )}
-                            </div>
+                        <ul style={{ marginTop: 8, paddingLeft: 28 }}>
+                          {(byTheme[t.code] ?? []).map((s) => (
+                            <li key={s.code} style={{ padding: "4px 0" }}>
+                              {s.name} <span style={{ color: "#6b7280" }}>({s.code})</span>
+                            </li>
                           ))}
-                        </div>
+                          {((byTheme[t.code] ?? []).length === 0) && (
+                            <li style={{ color: "#9ca3af" }}>No subthemes yet.</li>
+                          )}
+                        </ul>
                       )}
                     </div>
-                  )
+                  );
                 })}
+                {((byPillar[p.code] ?? []).length === 0) && (
+                  <div style={{ padding: 12, color: "#9ca3af" }}>No themes yet.</div>
+                )}
               </div>
             )}
           </div>
-        )
+        );
       })}
-    </section>
-  )
+    </div>
+  );
 }

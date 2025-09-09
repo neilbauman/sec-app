@@ -1,12 +1,9 @@
-export async function internalGet<T = any>(path: string, init?: RequestInit): Promise<T> {
-  const url = path.startsWith('http') ? path : `${process.env.NEXT_PUBLIC_BASE_URL ?? ''}${path}` || path
-  const res = await fetch(url, {
-    method: 'GET',
-    cache: 'no-store',
-    ...init,
-  })
+export async function internalGet<T>(path: string): Promise<T> {
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const url = new URL(path, base).toString();
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
-    throw new Error(`GET ${path} failed: ${res.status}`)
+    throw new Error(`GET ${path} failed: ${res.status}`);
   }
-  return res.json() as Promise<T>
+  return res.json() as Promise<T>;
 }

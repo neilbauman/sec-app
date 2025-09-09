@@ -1,35 +1,34 @@
-import Link from 'next/link'
-import { getCurrentRole, roleLabel } from '@/lib/role'
-import { internalGet } from '@/lib/internalFetch'
+import Link from "next/link";
+import { internalGet } from "@/lib/internalFetch";
 
-type Pillar = { code: string; name: string; description?: string; sort_order: number }
-type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
-type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number }
 type FrameworkList = {
-  ok: boolean
-  counts: { pillars: number; themes: number; subthemes: number }
-  pillars: Pillar[]
-  themes: Theme[]
-  subthemes: Subtheme[]
-}
+  pillars: { code: string; name: string }[];
+  themes: { code: string; name: string; pillar: string }[];
+  subthemes: { code: string; name: string; theme: string }[];
+};
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
-export default async function FrameworkHome() {
-  const role = await getCurrentRole()
-  const data = await internalGet<FrameworkList>('/framework/api/list')
+export default async function FrameworkLanding() {
+  let data: FrameworkList | null = null;
+  try {
+    data = await internalGet<FrameworkList>("/framework/api/list");
+  } catch (e) {
+    // show friendly error on page
+  }
 
   return (
-    <main className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold">Framework</h1>
-      <p className="text-sm text-slate-600 mt-1">You are <span className="font-medium">{roleLabel(role)}</span>.</p>
+    <main style={{ padding: 24, maxWidth: 960, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700 }}>Framework</h1>
+      <p style={{ color: "#6b7280", marginTop: 4 }}>
+        {data ? `Loaded ${data.pillars.length} pillar(s), ${data.themes.length} theme(s).` : "API not reachable yet."}
+      </p>
 
-      <div className="grid sm:grid-cols-2 gap-4 mt-6">
-        <Link href="/admin/framework/primary/editor" className="rounded-xl border p-4 hover:bg-white bg-white">
-          <div className="text-lg font-semibold">Primary Framework Editor</div>
-          <div className="text-sm text-slate-600">Pillars: {data.counts.pillars} · Themes: {data.counts.themes} · Subthemes: {data.counts.subthemes}</div>
+      <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
+        <Link href="/admin/framework/primary/editor" style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16 }}>
+          Open Primary Framework Editor
         </Link>
       </div>
     </main>
-  )
+  );
 }

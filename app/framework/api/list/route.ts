@@ -1,27 +1,24 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const data = {
-    ok: true,
-    counts: { pillars: 2, themes: 3, subthemes: 5 },
+  // Mock data. Replace later with a DB client call.
+  return NextResponse.json({
     pillars: [
-      { code: 'P1', name: 'Safety', description: '', sort_order: 1 },
-      { code: 'P2', name: 'Dignity', description: '', sort_order: 2 }
+      { code: "P1", name: "Shelter" },
+      { code: "P2", name: "WASH" }
     ],
     themes: [
-      { code: 'T1', pillar_code: 'P1', name: 'Shelter Quality', sort_order: 1 },
-      { code: 'T2', pillar_code: 'P1', name: 'Security', sort_order: 2 },
-      { code: 'T3', pillar_code: 'P2', name: 'Accessibility', sort_order: 1 }
+      { code: "T1", name: "Living Conditions", pillar: "P1" },
+      { code: "T2", name: "Safety", pillar: "P1" },
+      { code: "T3", name: "Access", pillar: "P2" }
     ],
     subthemes: [
-      { code: 'S1', theme_code: 'T1', name: 'Roofing', sort_order: 1 },
-      { code: 'S2', theme_code: 'T1', name: 'Insulation', sort_order: 2 },
-      { code: 'S3', theme_code: 'T2', name: 'Locks', sort_order: 1 },
-      { code: 'S4', theme_code: 'T3', name: 'Ramps', sort_order: 1 },
-      { code: 'S5', theme_code: 'T3', name: 'Signage', sort_order: 2 }
+      { code: "S1", name: "Habitability", theme: "T1" },
+      { code: "S2", name: "Overcrowding", theme: "T1" },
+      { code: "S3", name: "Protection", theme: "T2" },
+      { code: "S4", name: "Water Points", theme: "T3" }
     ]
-  }
-  return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } })
+  });
 }

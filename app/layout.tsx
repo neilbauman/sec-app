@@ -1,14 +1,12 @@
-import './globals.css'
-
 export const metadata = {
-  title: 'SSC App',
-  description: 'Shelter Severity Classification Admin'
-}
+  title: "SSC Editor Clean",
+  description: "Primary Framework Editor (no auth)"
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body style={{ fontFamily: "Inter, system-ui, Arial, sans-serif" }}>{children}</body>
     </html>
-  )
+  );
 }

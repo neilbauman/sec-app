@@ -1,24 +1,29 @@
-# SSC App (Clean Starter)
+# SSC Editor (Clean, No Auth)
 
-**Goal:** stable deploy on Vercel with Primary Framework Editor UI, no Supabase coupling yet.
+This repository is a clean baseline to get the **Primary Framework Editor** working without any authentication/role logic.
 
 ## What's included
-- `/auth/set-role` route to set `role` cookie (Dashboard has a link)
-- `/framework/api/list` serves static demo data for pillars/themes/subthemes
-- Primary editor UI in `components/PrimaryFrameworkCards.tsx` (default collapsed, tags, simple chevrons)
-- `internalGet<T>()` returns parsed JSON to avoid Response typing issues
-- Async `getCurrentRole()` compatible with Next 15 cookies()
+- App Router (Next.js 15)
+- Mock API at `/framework/api/list`
+- Simple dashboard and editor pages
+- No auth, no cookies
+- `lucide-react` preinstalled to avoid missing module errors
 
-## Dev notes
-- Keep using the clean `/app/auth/*` path. The old `/_auth` is removed.
-- Swap `/framework/api/list` to your real data later.
-- When you reintroduce Supabase, do it behind `lib/supabaseServer.ts` (not shipping here).
+## Run locally
+```bash
+npm i
+cp .env.example .env.local
+npm run dev
+```
+Visit:
+- http://localhost:3000/dashboard
+- http://localhost:3000/admin/framework/primary/editor
 
-## Scripts
-- `npm run build` on Vercel should be green
-- `npm run dev` locally if you want to try local
+## Deploy to Vercel
+1. Create a new Vercel project, import this repo.
+2. Add **Environment Variable**: `NEXT_PUBLIC_BASE_URL` = your Vercel URL (e.g. `https://your-project.vercel.app`).
+3. Deploy.
 
-## Tailwind
-Already configured (globals loaded via `app/layout.tsx`).
-
-Enjoy 🚀
+## Hook up real data (later)
+- Replace the mock in `app/framework/api/list/route.ts` with your Supabase query, then point the editor to it.
+- Keep `lib/internalFetch` as-is to avoid cookie/header issues until auth is reintroduced deliberately.
