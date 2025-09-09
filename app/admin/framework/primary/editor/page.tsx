@@ -63,7 +63,9 @@ export default async function PrimaryEditorPage() {
           </a>
         </div>
       </div>
-
+<div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-indigo-800 mb-4">
+  Tailwind check: this box should look purple with rounded corners.
+</div>
       {/* Cards (JSON-safe arrays only) */}
       <PrimaryFrameworkCards
         pillars={data.pillars}
