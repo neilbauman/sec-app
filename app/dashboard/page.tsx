@@ -1,19 +1,31 @@
-import Link from "next/link";
+import Link from 'next/link'
+import { getCurrentRole, roleLabel } from '@/lib/role'
 
-export default function Dashboard() {
+export const dynamic = 'force-dynamic'
+
+export default async function Dashboard() {
+  const role = await getCurrentRole()
   return (
-    <main style={{ padding: 24, maxWidth: 960, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700 }}>SSC Dashboard</h1>
-      <p style={{ color: "#4b5563", marginTop: 4 }}>Clean build, no authentication. Use the links below.</p>
+    <main className="mx-auto max-w-5xl p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">SSC Dashboard</h1>
+        <a className="text-sm underline" href="/auth/set-role?role=super-admin">Become Super Admin</a>
+      </div>
+      <p className="text-sm text-slate-600">You are <span className="font-medium">{roleLabel(role)}</span>.</p>
 
-      <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
-        <Link href="/admin/framework" style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16 }}>
-          Framework Admin
-        </Link>
-        <Link href="/admin/framework/primary/editor" style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16 }}>
-          Primary Framework Editor
+      <Link
+  href="/auth/set-role?role=super-admin"
+  className="text-blue-600 underline"
+>
+  Switch to Super Admin
+</Link>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Link href="/admin/framework/primary/editor" className="rounded-xl border p-4 hover:bg-white bg-white">
+          <div className="text-lg font-semibold">Primary Framework Editor</div>
+          <div className="text-sm text-slate-600">Manage pillars, themes, and subthemes</div>
         </Link>
       </div>
     </main>
-  );
+  )
 }
