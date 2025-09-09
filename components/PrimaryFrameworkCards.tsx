@@ -1,11 +1,31 @@
 'use client';
 
-import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, FolderTree } from 'lucide-react';
 
-export type Pillar = { code: string; name: string };
-export type Theme = { code: string; name: string; pillar: string };
-export type Subtheme = { code: string; name: string; theme: string };
+/**
+ * Local structural types so we don't depend on external imports.
+ * As long as the API objects have these fields, TS will be happy.
+ */
+type Pillar = {
+  code: string;
+  name: string;
+  description?: string | null;
+};
+
+type Theme = {
+  code: string;
+  name: string;
+  pillar_code: string; // associates to Pillar.code
+  description?: string | null;
+};
+
+type Subtheme = {
+  code: string;
+  name: string;
+  theme_code: string; // associates to Theme.code
+  description?: string | null;
+};
 
 type Props = {
   pillars: Pillar[];
@@ -14,71 +34,116 @@ type Props = {
 };
 
 export default function PrimaryFrameworkCards({ pillars, themes, subthemes }: Props) {
+  // track expanded/collapsed state
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
-  const [openThemes, setOpenThemes] = useState<Record[string, boolean>>({} as any);
+  const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
 
-  const byPillar: Record<string, Theme[]> = {};
-  for (const t of themes) {
-    byPillar[t.pillar] ??= [];
-    byPillar[t.pillar].push(t);
-  }
-  const byTheme: Record<string, Subtheme[]> = {};
-  for (const s of subthemes) {
-    byTheme[s.theme] ??= [];
-    byTheme[s.theme].push(s);
-  }
+  // index themes by pillar, subthemes by theme
+  const themesByPillar = useMemo(() => {
+    const map: Record<string, Theme[]> = {};
+    for (const t of themes) {
+      if (!map[t.pillar_code]) map[t.pillar_code] = [];
+      map[t.pillar_code].push(t);
+    }
+    return map;
+  }, [themes]);
+
+  const subthemesByTheme = useMemo(() => {
+    const map: Record<string, Subtheme[]> = {};
+    for (const s of subthemes) {
+      if (!map[s.theme_code]) map[s.theme_code] = [];
+      map[s.theme_code].push(s);
+    }
+    return map;
+  }, [subthemes]);
+
+  const togglePillar = (code: string) =>
+    setOpenPillars(prev => ({ ...prev, [code]: !prev[code] }));
+
+  const toggleTheme = (code: string) =>
+    setOpenThemes(prev => ({ ...prev, [code]: !prev[code] }));
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <section className="space-y-4">
       {pillars.map((p) => {
-        const isOpen = openPillars[p.code] ?? true;
+        const isPillarOpen = openPillars[p.code] ?? true;
+        const pThemes = themesByPillar[p.code] ?? [];
+
         return (
-          <div key={p.code} style={{ border: "1px solid #e5e7eb", borderRadius: 12 }}>
+          <div key={p.code} className="rounded-xl border bg-white shadow-sm">
             <button
-              onClick={() => setOpenPillars(prev => ({ ...prev, [p.code]: !isOpen }))}
-              style={{ width: "100%", textAlign: "left", padding: 12, display: "flex", alignItems: "center", gap: 8 }}
+              type="button"
+              onClick={() => togglePillar(p.code)}
+              className="flex w-full items-center justify-between px-4 py-3"
             >
-              {isOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-              <strong>{p.name}</strong>
-              <span style={{ marginLeft: 8, color: "#6b7280" }}>({p.code})</span>
+              <div className="flex items-center gap-2 text-left">
+                {isPillarOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                <span className="font-semibold">{p.name}</span>
+              </div>
+              <div className="text-xs text-slate-500">
+                {pThemes.length} theme{pThemes.length === 1 ? '' : 's'}
+              </div>
             </button>
 
-            {isOpen && (
-              <div style={{ borderTop: "1px solid #e5e7eb" }}>
-                {(byPillar[p.code] ?? []).map((t) => {
-                  const tOpen = openThemes[t.code] ?? true;
+            {isPillarOpen && (
+              <div className="divide-y">
+                {pThemes.map((t) => {
+                  const isThemeOpen = openThemes[t.code] ?? true;
+                  const tSubs = subthemesByTheme[t.code] ?? [];
                   return (
-                    <div key={t.code} style={{ padding: "8px 12px", borderTop: "1px solid #f3f4f6" }}>
+                    <div key={t.code} className="px-4 py-3">
                       <button
-                        onClick={() => setOpenThemes(prev => ({ ...prev, [t.code]: !tOpen }))}
-                        style={{ display: "flex", alignItems: "center", gap: 8 }}
+                        type="button"
+                        onClick={() => toggleTheme(t.code)}
+                        className="flex w-full items-center justify-between"
                       >
-                        {tOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                        <span><strong>{t.name}</strong> <span style={{ color: "#6b7280" }}>({t.code})</span></span>
+                        <div className="flex items-center gap-2 text-left">
+                          {isThemeOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                          <span className="font-medium">{t.name}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {tSubs.length} subtheme{tSubs.length === 1 ? '' : 's'}
+                        </div>
                       </button>
-                      {tOpen && (
-                        <ul style={{ marginTop: 8, paddingLeft: 28 }}>
-                          {(byTheme[t.code] ?? []).map((s) => (
-                            <li key={s.code} style={{ padding: "4px 0" }}>
-                              {s.name} <span style={{ color: "#6b7280" }}>({s.code})</span>
+
+                      {isThemeOpen && (
+                        <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                          {tSubs.map((s) => (
+                            <li
+                              key={s.code}
+                              className="flex items-start gap-2 rounded-lg border p-2 text-sm"
+                            >
+                              <FolderTree className="mt-0.5" size={14} />
+                              <div>
+                                <div className="font-medium">{s.name}</div>
+                                {s.description ? (
+                                  <div className="text-xs text-slate-500">{s.description}</div>
+                                ) : null}
+                              </div>
                             </li>
                           ))}
-                          {((byTheme[t.code] ?? []).length === 0) && (
-                            <li style={{ color: "#9ca3af" }}>No subthemes yet.</li>
+                          {tSubs.length === 0 && (
+                            <li className="text-xs italic text-slate-500">No subthemes.</li>
                           )}
                         </ul>
                       )}
                     </div>
                   );
                 })}
-                {((byPillar[p.code] ?? []).length === 0) && (
-                  <div style={{ padding: 12, color: "#9ca3af" }}>No themes yet.</div>
+                {pThemes.length === 0 && (
+                  <div className="px-4 py-3 text-sm italic text-slate-500">No themes.</div>
                 )}
               </div>
             )}
           </div>
         );
       })}
-    </div>
+
+      {pillars.length === 0 && (
+        <div className="rounded-xl border bg-white p-6 text-sm text-slate-500">
+          No pillars found.
+        </div>
+      )}
+    </section>
   );
 }
