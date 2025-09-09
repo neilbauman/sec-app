@@ -4,8 +4,8 @@ import { getCurrentRole, roleLabel } from '@/lib/role'
 
 export const dynamic = 'force-dynamic'
 
-export default async function DashboardPage() {
-  const role = await getCurrentRole()
+export default function DashboardPage() {
+  const role = getCurrentRole()
 
   return (
     <main className="p-6 max-w-5xl mx-auto">
@@ -20,20 +20,10 @@ export default async function DashboardPage() {
             <Link className="underline" href="/auth/set-role?role=super-admin">Super Admin</Link>
           </span>
         </p>
-        {/* Somewhere visible in /app/dashboard/page.tsx */}
-<p className="text-sm mt-2">
-  Quick switch role:{' '}
-  <a className="underline" href="/auth/set-role?role=super-admin">Super Admin</a>{' · '}
-  <a className="underline" href="/auth/set-role?role=country-admin">Country Admin</a>{' · '}
-  <a className="underline" href="/auth/set-role?role=public">Public</a>
-</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Link
-          href="/admin/framework"
-          className="rounded-xl border p-4 hover:shadow-sm transition"
-        >
+        <Link href="/admin/framework" className="rounded-xl border p-4 hover:shadow-sm transition">
           <div className="font-semibold mb-1">Framework Admin</div>
           <div className="text-sm text-gray-600">
             Manage the Primary & Comprehensive SSC frameworks.
