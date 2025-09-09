@@ -34,22 +34,8 @@ export default async function PrimaryEditorPage() {
 
   const data = await internalGet<FrameworkList>('/framework/api/list')
 
-  const themesByPillar = new Map<string, Theme[]>()
-  data.themes.forEach((t) => {
-    const arr = themesByPillar.get(t.pillar_code) ?? []
-    arr.push(t)
-    themesByPillar.set(t.pillar_code, arr)
-  })
-  const subsByTheme = new Map<string, Subtheme[]>()
-  data.subthemes.forEach((s) => {
-    const arr = subsByTheme.get(s.theme_code) ?? []
-    arr.push(s)
-    subsByTheme.set(s.theme_code, arr)
-  })
-
   return (
     <main className="p-4 sm:p-6 max-w-6xl mx-auto">
-      {/* Top bar */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <a
           href="/dashboard"
@@ -69,31 +55,21 @@ export default async function PrimaryEditorPage() {
             ⟳ Refresh
           </a>
 
-          {/* Expand/Collapse hints (these toggle via localStorage keys) */}
           <button
             onClick={() => {
-              localStorage.setItem('pe_openPillars', JSON.stringify({}))
-              localStorage.setItem('pe_openThemes', JSON.stringify({}))
-              location.reload()
+              // collapse all via localStorage
+              // (no-op on server; runs in browser after hydration)
             }}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
-            title="Collapse all"
+            disabled
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-gray-400"
+            title="Collapse all (available after load)"
           >
             ▸ Collapse all
           </button>
           <button
-            onClick={() => {
-              // open all: set every pillar/theme to true
-              const p: Record<string, boolean> = {}
-              const t: Record<string, boolean> = {}
-              for (const pl of data.pillars) p[pl.code] = true
-              for (const th of data.themes) t[th.code] = true
-              localStorage.setItem('pe_openPillars', JSON.stringify(p))
-              localStorage.setItem('pe_openThemes', JSON.stringify(t))
-              location.reload()
-            }}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 hover:border-gray-300"
-            title="Expand all"
+            disabled
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-gray-400"
+            title="Expand all (available after load)"
           >
             ▾ Expand all
           </button>
@@ -122,15 +98,49 @@ export default async function PrimaryEditorPage() {
         </div>
       </div>
 
+      {/* Pass JSON-safe arrays; client builds Maps */}
       <PrimaryEditorTable
         pillars={data.pillars}
-        themesByPillar={themesByPillar}
-        subsByTheme={subsByTheme}
+        themes={data.themes}
+        subthemes={data.subthemes}
       />
 
       <p className="text-xs text-gray-500 mt-3">
         Use ▸/▾ to expand rows. Actions are disabled in this read-only version.
       </p>
+
+      {/* Small script to wire Expand/Collapse all after hydration */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            window.addEventListener('pageshow', function() {
+              var collapse = document.querySelector('[title="Collapse all (available after load)"]');
+              var expand = document.querySelector('[title="Expand all (available after load)"]');
+              if (collapse) {
+                collapse.removeAttribute('disabled');
+                collapse.addEventListener('click', function() {
+                  localStorage.setItem('pe_openPillars', JSON.stringify({}));
+                  localStorage.setItem('pe_openThemes', JSON.stringify({}));
+                  location.reload();
+                });
+              }
+              if (expand) {
+                expand.removeAttribute('disabled');
+                expand.addEventListener('click', function() {
+                  try {
+                    var p = {}; var t = {};
+                    ${JSON.stringify(data.pillars)}.forEach(pl => p[pl.code] = true);
+                    ${JSON.stringify(data.themes)}.forEach(th => t[th.code] = true);
+                    localStorage.setItem('pe_openPillars', JSON.stringify(p));
+                    localStorage.setItem('pe_openThemes', JSON.stringify(t));
+                    location.reload();
+                  } catch {}
+                });
+              }
+            });
+          `,
+        }}
+      />
     </main>
   )
 }
