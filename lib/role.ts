@@ -1,28 +1,21 @@
-// lib/role.ts
-import { cookies } from 'next/headers'
+import { cookies } from "next/headers";
 
-export type AppRole = 'super-admin' | 'country-admin' | 'public'
+export type AppRole = "super-admin" | "country-admin" | "public";
 
-export function roleLabel(role: AppRole): string {
-  if (role === 'super-admin') return 'Super Admin'
-  if (role === 'country-admin') return 'Country Admin'
-  return 'Public'
+export function getCurrentRole(): AppRole {
+  try {
+    const role = cookies().get("role")?.value as AppRole | undefined;
+    if (role === "super-admin" || role === "country-admin" || role === "public") {
+      return role;
+    }
+  } catch {
+    // cookie not available (e.g. build-time)
+  }
+  return "public";
 }
 
-/**
- * Read the current role from the cookie (async on Next 15).
- * Falls back to env (for quick demos) then to 'public'.
- */
-export async function getCurrentRole(): Promise<AppRole> {
-  try {
-    const c = (await cookies()).get('role')?.value as AppRole | undefined
-    if (c === 'super-admin' || c === 'country-admin' || c === 'public') return c
-  } catch {
-    // non-request contexts: ignore and fall through
-  }
-  const envRole = process.env.DEMO_ROLE as AppRole | undefined
-  if (envRole === 'super-admin' || envRole === 'country-admin' || envRole === 'public') {
-    return envRole
-  }
-  return 'public'
+export function roleLabel(role: AppRole): string {
+  if (role === "super-admin") return "Super Admin";
+  if (role === "country-admin") return "Country Admin";
+  return "Public";
 }
