@@ -1,90 +1,89 @@
 // app/framework/api/list/route.ts
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-type Pillar = { code: string; name: string; description?: string | null; sort_order?: number | null };
-type Theme = { code: string; pillar_code: string; name: string; description?: string | null; sort_order?: number | null };
-type Subtheme = { code: string; theme_code: string; name: string; description?: string | null; sort_order?: number | null };
+// Mirror the shapes you use in the editor
+export type Pillar = {
+  code: string;
+  name: string;
+  description?: string | null;
+};
 
-type FrameworkList = {
+export type Theme = {
+  code: string;
+  name: string;
+  pillar_code: string;
+  description?: string | null;
+};
+
+export type Subtheme = {
+  code: string;
+  name: string;
+  theme_code: string;
+  description?: string | null;
+};
+
+export type FrameworkList = {
+  ok: true;
   counts: { pillars: number; themes: number; subthemes: number };
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
 };
 
-function getSupabaseServerClient() {
-  const cookieStore = cookies();
-
-  // NOTE: @supabase/ssr v0.5 – only cookies, no headers
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        // no-ops are fine; we only read in this route
-        set() {},
-        remove() {},
-      },
-    }
-  );
-}
+// NOTE:
+// To keep builds stable and avoid the Next 15 cookies()/headers() typing changes,
+// we construct a plain Supabase client with anon key here. This assumes your RLS
+// allows read for anon or you’re otherwise making the data publicly readable.
+// (No schema changes are made here.)
 
 export async function GET() {
-  try {
-    // If env isn’t configured, return an empty shape (keeps UI working)
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      const empty: FrameworkList = {
-        counts: { pillars: 0, themes: 0, subthemes: 0 },
-        pillars: [],
-        themes: [],
-        subthemes: [],
-      };
-      return NextResponse.json(empty, { status: 200 });
-    }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    const supabase = getSupabaseServerClient();
-
-    // Adjust table names/columns here to match your schema.
-    const { data: pillars, error: pErr } = await supabase
-      .from("pillars")
-      .select("code,name,description,sort_order")
-      .order("sort_order", { ascending: true });
-
-    const { data: themes, error: tErr } = await supabase
-      .from("themes")
-      .select("code,pillar_code,name,description,sort_order")
-      .order("sort_order", { ascending: true });
-
-    const { data: subthemes, error: sErr } = await supabase
-      .from("subthemes")
-      .select("code,theme_code,name,description,sort_order")
-      .order("sort_order", { ascending: true });
-
-    // If RLS blocks anonymous reads you’ll see 401/permission errors here.
-    // We still return 200 with whatever succeeded so the UI can render.
-    const payload: FrameworkList = {
-      counts: {
-        pillars: pillars?.length ?? 0,
-        themes: themes?.length ?? 0,
-        subthemes: subthemes?.length ?? 0,
-      },
-      pillars: (pillars as Pillar[]) ?? [],
-      themes: (themes as Theme[]) ?? [],
-      subthemes: (subthemes as Subtheme[]) ?? [],
-    };
-
-    // You can inspect pErr/tErr/sErr in server logs if needed
-    return NextResponse.json(payload, { status: 200 });
-  } catch (err: any) {
-    // Defensive default – keeps the page rendering and surfaces error in logs
-    console.error("GET /framework/api/list failed:", err);
-    return NextResponse.json({ ok: false, message: "Failed to load framework list" }, { status: 500 });
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.json(
+      { ok: false, message: "Supabase env vars missing" },
+      { status: 500 }
+    );
   }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  // Fetch data in parallel
+  const [pillarsRes, themesRes, subthemesRes] = await Promise.all([
+    supabase.from("pillars").select("*"),
+    supabase.from("themes").select("*"),
+    supabase.from("subthemes").select("*"),
+  ]);
+
+  // Handle any one failing
+  const anyError = pillarsRes.error || themesRes.error || subthemesRes.error;
+  if (anyError) {
+    return NextResponse.json(
+      { ok: false, message: anyError!.message },
+      // 401 if you’re hitting RLS, or 500 otherwise — 401 tends to be more useful here
+      { status: 401 }
+    );
+  }
+
+  const pillars = (pillarsRes.data ?? []) as Pillar[];
+  const themes = (themesRes.data ?? []) as Theme[];
+  const subthemes = (subthemesRes.data ?? []) as Subtheme[];
+
+  const payload: FrameworkList = {
+    ok: true,
+    counts: {
+      pillars: pillars.length,
+      themes: themes.length,
+      subthemes: subthemes.length,
+    },
+    pillars,
+    themes,
+    subthemes,
+  };
+
+  return NextResponse.json(payload, { status: 200 });
 }
