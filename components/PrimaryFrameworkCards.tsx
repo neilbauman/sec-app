@@ -1,152 +1,217 @@
-// components/PrimaryFrameworkCards.tsx
-'use client'
+'use client';
 
-import * as React from 'react'
-import type { AppRole } from '@/lib/role'
-import { ChevronDown, ChevronRight, ArrowUp, ArrowDown, Plus, Tag, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
-type Pillar =  { code: string; name: string; description?: string; sort_order: number }
-type Theme =   { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
-type Subtheme ={ code: string; theme_code: string; name: string; description?: string; sort_order: number }
+export type Pillar = { code: string; name: string; description?: string; sort_order: number };
+export type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number };
+export type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number };
+
+type AppRole = 'super-admin' | 'country-admin' | 'public';
 
 type Props = {
-  role: AppRole
-  pillars: Pillar[]
-  themes: Theme[]
-  subthemes: Subtheme[]
+  role: AppRole;
+  pillars: Pillar[];
+  themes: Theme[];
+  subthemes: Subtheme[];
+};
+
+function LevelTag({ level }: { level: 'Pillar' | 'Theme' | 'Subtheme' }) {
+  const styles =
+    level === 'Pillar'
+      ? 'bg-indigo-100 text-indigo-700 ring-1 ring-inset ring-indigo-200'
+      : level === 'Theme'
+      ? 'bg-teal-100 text-teal-700 ring-1 ring-inset ring-teal-200'
+      : 'bg-amber-100 text-amber-700 ring-1 ring-inset ring-amber-200';
+
+  return (
+    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${styles}`}>
+      {level}
+    </span>
+  );
+}
+
+function RowHeader({
+  isOpen,
+  onToggle,
+  leftIndent = 0,
+  tag,
+  code,
+  name,
+  description,
+  metaRight,
+}: {
+  isOpen: boolean;
+  onToggle: () => void;
+  leftIndent?: number;
+  tag: 'Pillar' | 'Theme' | 'Subtheme';
+  code: string;
+  name: string;
+  description?: string;
+  metaRight?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`flex items-start gap-3 ${leftIndent ? `pl-${leftIndent}` : ''}`}
+      role="button"
+      onClick={onToggle}
+      aria-expanded={isOpen}
+    >
+      <div className="h-6 w-6 flex items-center justify-center mt-0.5">
+        {isOpen ? <ChevronDown className="h-4 w-4 text-slate-500" /> : <ChevronRight className="h-4 w-4 text-slate-500" />}
+      </div>
+
+      <div className="flex-1 space-y-1">
+        <div className="flex items-center gap-2">
+          <LevelTag level={tag} />
+          <span className="text-[11px] text-slate-500 tracking-wide">{code}</span>
+          <h3 className="text-sm font-medium text-slate-900">{name}</h3>
+        </div>
+        {description ? <p className="text-sm text-slate-600">{description}</p> : null}
+      </div>
+
+      {metaRight ? <div className="text-xs text-slate-500">{metaRight}</div> : null}
+    </div>
+  );
 }
 
 export default function PrimaryFrameworkCards({ role, pillars, themes, subthemes }: Props) {
-  // Group on the client (props are JSON-safe)
-  const themesByPillar = React.useMemo(() => {
-    const r: Record<string, Theme[]> = {}
-    for (const t of themes) (r[t.pillar_code] ??= []).push(t)
-    for (const k in r) r[k].sort((a,b)=>a.sort_order-b.sort_order)
-    return r
-  }, [themes])
+  // Group themes by pillar, and subthemes by theme
+  const themesByPillar = useMemo(() => {
+    const m: Record<string, Theme[]> = {};
+    for (const t of themes) {
+      (m[t.pillar_code] ||= []).push(t);
+    }
+    // keep theme order stable
+    for (const k of Object.keys(m)) {
+      m[k].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+    }
+    return m;
+  }, [themes]);
 
-  const subsByTheme = React.useMemo(() => {
-    const r: Record<string, Subtheme[]> = {}
-    for (const s of subthemes) (r[s.theme_code] ??= []).push(s)
-    for (const k in r) r[k].sort((a,b)=>a.sort_order-b.sort_order)
-    return r
-  }, [subthemes])
+  const subsByTheme = useMemo(() => {
+    const m: Record<string, Subtheme[]> = {};
+    for (const s of subthemes) {
+      (m[s.theme_code] ||= []).push(s);
+    }
+    // keep subtheme order stable
+    for (const k of Object.keys(m)) {
+      m[k].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+    }
+    return m;
+  }, [subthemes]);
 
-  // Collapse state
-  const [openPillars, setOpenPillars] = React.useState<Record<string, boolean>>({})
-  const [openThemes, setOpenThemes]   = React.useState<Record<string, boolean>>({})
+  // Default to collapsed per your request
+  const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
+  const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
 
-  const canEdit = role === 'super-admin'
+  const togglePillar = (code: string) => setOpenPillars((s) => ({ ...s, [code]: !s[code] }));
+  const toggleTheme = (code: string) => setOpenThemes((s) => ({ ...s, [code]: !s[code] }));
 
   return (
-    <div className="space-y-6">
-      {pillars
-        .slice()
-        .sort((a,b)=>a.sort_order-b.sort_order)
-        .map((p) => {
-          const isOpen = openPillars[p.code] ?? true
-          return (
-            <div key={p.code} className="rounded-2xl border bg-white shadow-sm">
-              {/* Pillar header */}
-              <div className="flex items-start justify-between p-4">
-                <div className="flex items-start gap-3">
-                  <button
-                    aria-label={isOpen ? 'Collapse pillar' : 'Expand pillar'}
-                    className="rounded-full border p-1 hover:bg-gray-50"
-                    onClick={() => setOpenPillars(s => ({...s, [p.code]: !isOpen}))}
-                  >
-                    {isOpen ? <ChevronDown size={18}/> : <ChevronRight size={18}/>}
-                  </button>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs rounded-full bg-slate-100 px-2 py-0.5">Pillar</span>
-                      <span className="text-xs text-slate-500">[P{p.sort_order}]</span>
-                    </div>
-                    <h2 className="font-semibold text-lg mt-1">{p.name}</h2>
-                    {p.description && <p className="text-slate-600 text-sm mt-1">{p.description}</p>}
-                  </div>
+    <div className="space-y-4">
+      {/* header bar */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-slate-600">
+          Role: <span className="font-medium text-slate-900">{role}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <a href="/admin/framework/primary/export" className="underline hover:no-underline">
+            Export CSV
+          </a>
+          {/* Import CSV button can be wired later */}
+          <span className="text-slate-400">·</span>
+          <a href="/dashboard" className="underline hover:no-underline">
+            Back to Dashboard
+          </a>
+        </div>
+      </div>
+
+      {/* cards */}
+      <div className="grid grid-cols-1 gap-4">
+        {pillars
+          .slice()
+          .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+          .map((p) => {
+            const isOpen = !!openPillars[p.code];
+            const pillarThemes = themesByPillar[p.code] ?? []; // ✅ use p.code here
+            const countsRight = (
+              <div className="inline-flex items-center gap-3">
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700">
+                  {pillarThemes.length} theme{pillarThemes.length === 1 ? '' : 's'}
+                </span>
+              </div>
+            );
+
+            return (
+              <div key={p.code} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="p-4">
+                  <RowHeader
+                    isOpen={isOpen}
+                    onToggle={() => togglePillar(p.code)}
+                    tag="Pillar"
+                    code={p.code}
+                    name={p.name}
+                    description={p.description}
+                    metaRight={countsRight}
+                  />
                 </div>
-                <div className="text-xs text-slate-500">Sort {p.sort_order}</div>
-              </div>
 
-              {/* Pillar actions */}
-              <div className="flex items-center gap-2 px-4 pb-3">
-                {canEdit && (
-                  <>
-                    <button className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50" title="Tag"><Tag size={14}/></button>
-                    <button className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50" title="Move up"><ArrowUp size={14}/></button>
-                    <button className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50" title="Move down"><ArrowDown size={14}/></button>
-                    <button className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50" title="Add"><Plus size={14}/></button>
-                    <button className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50" title="Delete"><Trash2 size={14}/></button>
-                  </>
-                )}
-              </div>
+                {isOpen && pillarThemes.length > 0 && (
+                  <div className="border-t border-slate-200">
+                    {pillarThemes.map((t) => {
+                      const tOpen = !!openThemes[t.code];
+                      const tSubthemes = subsByTheme[t.code] ?? [];
+                      const tCounts = (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700">
+                          {tSubthemes.length} subtheme{tSubthemes.length === 1 ? '' : 's'}
+                        </span>
+                      );
+                      return (
+                        <div key={t.code} className="px-4 py-3 border-b last:border-b-0 border-slate-200">
+                          <RowHeader
+                            isOpen={tOpen}
+                            onToggle={() => toggleTheme(t.code)}
+                            leftIndent={6}
+                            tag="Theme"
+                            code={t.code}
+                            name={t.name}
+                            description={t.description}
+                            metaRight={tCounts}
+                          />
 
-              {/* Themes list */}
-              {isOpen && (
-                <div className="divide-y">
-                  {(themesByPillar[p.pillar_code ?? p.code] ?? []).map((t) => {
-                    const tOpen = openThemes[t.code] ?? true
-                    return (
-                      <div key={t.code} className="px-4 py-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3">
-                            <button
-                              aria-label={tOpen ? 'Collapse theme' : 'Expand theme'}
-                              className="rounded-full border p-1 hover:bg-gray-50 mt-0.5"
-                              onClick={() => setOpenThemes(s => ({...s, [t.code]: !tOpen}))}
-                            >
-                              {tOpen ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
-                            </button>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5">Theme</span>
-                                <span className="text-xs text-slate-500">[T{t.sort_order}]</span>
-                              </div>
-                              <div className="font-medium mt-0.5">{t.name}</div>
-                              {t.description && <div className="text-slate-600 text-sm">{t.description}</div>}
-                            </div>
-                          </div>
-                          <div className="text-xs text-slate-500">Sort {t.sort_order}</div>
-                        </div>
-
-                        {/* Theme actions */}
-                        {canEdit && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <button className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50" title="Tag"><Tag size={14}/></button>
-                            <button className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50" title="Move up"><ArrowUp size={14}/></button>
-                            <button className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50" title="Move down"><ArrowDown size={14}/></button>
-                            <button className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50" title="Add"><Plus size={14}/></button>
-                            <button className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50" title="Delete"><Trash2 size={14}/></button>
-                          </div>
-                        )}
-
-                        {/* Subthemes */}
-                        {tOpen && (
-                          <div className="mt-3 pl-7 space-y-2">
-                            {(subsByTheme[t.code] ?? []).map((s) => (
-                              <div key={s.code} className="rounded-lg border p-3 bg-gray-50">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs rounded-full bg-sky-50 text-sky-700 border border-sky-200 px-2 py-0.5">Subtheme</span>
+                          {tOpen && tSubthemes.length > 0 && (
+                            <div className="mt-3 ml-12 space-y-2">
+                              {tSubthemes.map((s) => (
+                                <div
+                                  key={s.code}
+                                  className="rounded-xl border border-slate-200 bg-slate-50 p-3 hover:bg-slate-100 transition-colors"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <LevelTag level="Subtheme" />
+                                        <span className="text-[11px] text-slate-500 tracking-wide">{s.code}</span>
+                                        <h4 className="text-sm font-medium text-slate-900">{s.name}</h4>
+                                      </div>
+                                      {s.description ? (
+                                        <p className="mt-1 text-sm text-slate-700">{s.description}</p>
+                                      ) : null}
                                     </div>
-                                    <div className="font-medium mt-0.5">{s.name}</div>
-                                    {s.description && <div className="text-slate-600 text-sm">{s.description}</div>}
                                   </div>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )
-        })}
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+      </div>
     </div>
-  )
+  );
 }
