@@ -1,33 +1,28 @@
+// app/admin/framework/page.tsx
 import Link from 'next/link'
 import { getCurrentRole, roleLabel } from '@/lib/role'
-import { internalGet } from '@/lib/internalFetch'
-
-type Pillar = { code: string; name: string; description?: string; sort_order: number }
-type Theme = { code: string; pillar_code: string; name: string; description?: string; sort_order: number }
-type Subtheme = { code: string; theme_code: string; name: string; description?: string; sort_order: number }
-type FrameworkList = {
-  ok: boolean
-  counts: { pillars: number; themes: number; subthemes: number }
-  pillars: Pillar[]
-  themes: Theme[]
-  subthemes: Subtheme[]
-}
 
 export const dynamic = 'force-dynamic'
 
-export default async function FrameworkHome() {
+export default async function FrameworkAdminPage() {
   const role = await getCurrentRole()
-  const data = await internalGet<FrameworkList>('/framework/api/list')
 
   return (
     <main className="p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold">Framework</h1>
-      <p className="text-sm text-slate-600 mt-1">You are <span className="font-medium">{roleLabel(role)}</span>.</p>
+      <p className="text-sm text-slate-600 mt-1">
+        You are <span className="font-medium">{roleLabel(role)}</span>.
+        {' '}
+        Quick switch:{' '}
+        <a className="underline" href="/_auth/set-role?role=public">Public</a>{' · '}
+        <a className="underline" href="/_auth/set-role?role=country-admin">Country Admin</a>{' · '}
+        <a className="underline" href="/_auth/set-role?role=super-admin">Super Admin</a>
+      </p>
 
       <div className="grid sm:grid-cols-2 gap-4 mt-6">
-        <Link href="/admin/framework/primary/editor" className="rounded-xl border p-4 hover:bg-white bg-white">
-          <div className="text-lg font-semibold">Primary Framework Editor</div>
-          <div className="text-sm text-slate-600">Pillars: {data.counts.pillars} · Themes: {data.counts.themes} · Subthemes: {data.counts.subthemes}</div>
+        <Link href="/admin/framework/primary/editor" className="rounded-xl border p-4 hover:bg-gray-50">
+          <h2 className="font-medium">Primary Framework Editor</h2>
+          <p className="text-sm text-slate-600 mt-1">Manage pillars, themes, and subthemes.</p>
         </Link>
       </div>
     </main>
