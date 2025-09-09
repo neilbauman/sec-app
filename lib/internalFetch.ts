@@ -1,37 +1,49 @@
 // lib/internalFetch.ts
-import { cookies, headers } from 'next/headers';
+import { cookies, headers } from 'next/headers'
 
 /**
- * Same-origin fetch that forwards the request cookies to Route Handlers.
- * Use absolute URL so Node fetch will send the Cookie header we attach.
+ * Compute an absolute base URL the server can use to call itself.
+ * - On Vercel: https://<vercel-url>
+ * - Else: http://localhost:3000 (fallback)
  */
-function internalBaseUrl() {
-  // Vercel provides VERCEL_URL at runtime (no protocol)
+function internalBaseUrl(): string {
+  // Prefer explicit env if present
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
+
+  // Vercel provides VERCEL_URL (no protocol)
   const vercel = process.env.VERCEL_URL
-  if (vercel) return `https://${vercel}`;
-  // Fallback for local dev
-  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  if (vercel) return `https://${vercel}`
+
+  // Fallback to localhost in dev/unknown
+  return 'http://localhost:3000'
 }
 
+/**
+ * Server-only helper to GET your own Next routes and return JSON typed as T.
+ * It forwards the caller's cookies to preserve session/role.
+ */
 export async function internalGet<T>(path: string): Promise<T> {
-  const cookieHeader = cookies().toString(); // forward the caller's cookies
-  const host = headers().get('host') ?? '';
-  const url = new URL(path, internalBaseUrl()).toString();
+  // forward cookies and host header (Next 15: these are async in RSC/route handlers)
+  const cookieHeader = (await cookies()).toString()
+  const h = await headers()
+  const host = h.get('host') ?? ''
+  const url = new URL(path, internalBaseUrl()).toString()
 
   const res = await fetch(url, {
     method: 'GET',
     headers: {
       cookie: cookieHeader,
-      // helps some setups behind proxies
-      'x-forwarded-host': host,
+      host, // helpful for some middlewares
+      accept: 'application/json',
     },
     cache: 'no-store',
-    next: { revalidate: 0 },
-  });
+  })
 
   if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`GET ${path} failed: ${res.status}${body ? ` – ${body}` : ''}`);
+    // surface a meaningful error to the caller
+    const text = await res.text().catch(() => '')
+    throw new Error(`GET ${path} failed: ${res.status}${text ? ` — ${text}` : ''}`)
   }
-  return res.json() as Promise<T>;
+
+  return res.json() as Promise<T>
 }
