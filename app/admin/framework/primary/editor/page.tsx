@@ -13,7 +13,7 @@ type FrameworkList = {
   subthemes: Subtheme[]
 }
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic' 
 
 export default async function PrimaryEditorPage() {
   const role = await getCurrentRole()
