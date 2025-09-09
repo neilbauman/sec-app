@@ -1,22 +1,26 @@
 // lib/supabaseServer.ts
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+// Minimal, auth-free server client (no cookies, no roles)
 
-export function getServerClient() {
-  const cookieStore = cookies();
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-  // @supabase/ssr v0.5 requires only cookies {get,set,remove}. No headers object here.
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set() {},
-        remove() {},
-      },
-    }
-  );
+let client: SupabaseClient | null = null;
+
+export function getServerClient(): SupabaseClient {
+  if (client) return client;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anon) {
+    throw new Error(
+      'Missing Supabase env vars. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+    );
+  }
+
+  client = createClient(url, anon, {
+    auth: { persistSession: false },
+    global: { fetch }, // use Next.js native fetch
+  });
+
+  return client;
 }
