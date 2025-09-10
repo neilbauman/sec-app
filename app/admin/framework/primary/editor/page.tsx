@@ -75,6 +75,7 @@ export default async function Page() {
         pillars={pillars}
         themes={themes}
         subthemes={subthemes}
+        actions={{}}
       />
     </main>
   );
