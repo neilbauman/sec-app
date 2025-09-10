@@ -1,30 +1,24 @@
 // lib/framework.ts
-import { createClient } from "@/lib/supabase";
-import type { FrameworkList } from "@/types/framework";
+import { createClient } from "@supabase/supabase-js";
 
-export async function fetchFrameworkList(): Promise<FrameworkList> {
-  const supabase = createClient();
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  const { data: pillars, error: pErr } = await supabase
-    .from("pillars")
-    .select("id, code, name, description, sort_order")
-    .order("sort_order", { ascending: true });
+/**
+ * Returns raw DB rows shaped for the editor page.
+ * Uses only columns we render in the UI to avoid type drift.
+ */
+export async function fetchFrameworkList(): Promise<{
+  pillars: Array<{ code: string; name: string; description: string | null; sort_order: number | null }>;
+  themes: Array<{ code: string; name: string; description: string | null; sort_order: number | null; pillar_code: string }>;
+  subthemes: Array<{ code: string; name: string; description: string | null; sort_order: number | null; theme_code: string }>;
+}> {
+  const [{ data: pillars = [] }, { data: themes = [] }, { data: subthemes = [] }] = await Promise.all([
+    supabase.from("pillars").select("code,name,description,sort_order").order("sort_order", { ascending: true }),
+    supabase.from("themes").select("code,name,description,sort_order,pillar_code").order("sort_order", { ascending: true }),
+    supabase.from("subthemes").select("code,name,description,sort_order,theme_code").order("sort_order", { ascending: true }),
+  ]);
 
-  const { data: themes, error: tErr } = await supabase
-    .from("themes")
-    .select("id, code, name, description, sort_order, pillar_code, pillar_id")
-    .order("sort_order", { ascending: true });
-
-  const { data: subthemes, error: sErr } = await supabase
-    .from("subthemes")
-    .select("id, code, name, description, sort_order, theme_code, theme_id")
-    .order("sort_order", { ascending: true });
-
-  if (pErr || tErr || sErr) {
-    throw new Error(
-      `Supabase load failed: ${pErr?.message ?? ""} ${tErr?.message ?? ""} ${sErr?.message ?? ""}`.trim()
-    );
-  }
-
-  return { pillars: pillars ?? [], themes: themes ?? [], subthemes: subthemes ?? [] };
+  return { pillars, themes, subthemes };
 }
