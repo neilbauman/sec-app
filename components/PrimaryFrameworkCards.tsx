@@ -35,29 +35,27 @@ export default function PrimaryFrameworkCards({
     ...(actions ?? {}),
   };
 
-  // Map themes by their parent pillar
-  const themesByPillar = useMemo(() => {
-    const m: Record<string, Theme[]> = {};
-    for (const t of themes) {
-      // IMPORTANT: use snake_case so it matches your declared types
-      const key = t.pillar_code ?? t.parent_code ?? "";
-      if (!m[key]) m[key] = [];
-      m[key].push(t);
-    }
-    return m;
-  }, [themes]);
+// Group themes under their parent pillar
+const themesByPillar: Record<string, Theme[]> = useMemo(() => {
+  const m: Record<string, Theme[]> = {};
+  for (const t of themes) {
+    const key = t.pillar_code ?? ""; // <-- Theme has pillar_code
+    if (!m[key]) m[key] = [];
+    m[key].push(t);
+  }
+  return m;
+}, [themes]);
 
-  // Map subthemes by their parent theme
-  const subthemesByTheme = useMemo(() => {
-    const m: Record<string, Subtheme[]> = {};
-    for (const s of subthemes) {
-      // IMPORTANT: use snake_case so it matches your declared types
-      const key = s.theme_code ?? s.parent_code ?? "";
-      if (!m[key]) m[key] = [];
-      m[key].push(s);
-    }
-    return m;
-  }, [subthemes]);
+ // Group subthemes under their parent theme
+const subthemesByTheme: Record<string, Subtheme[]> = useMemo(() => {
+  const m: Record<string, Subtheme[]> = {};
+  for (const s of subthemes) {
+    const key = s.theme_code ?? ""; // <-- Subtheme has theme_code
+    if (!m[key]) m[key] = [];
+    m[key].push(s);
+  }
+  return m;
+}, [subthemes]);
 
   // collapsed/expanded state
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>(
