@@ -1,44 +1,34 @@
 // /lib/framework.ts
-import { createClient } from '@/lib/supabase';
-import type { FrameworkList, Pillar, Theme, Subtheme } from '@/types/framework';
+import { createClient } from '@/lib/supabase'
+import type { FrameworkList, Pillar, Theme, Subtheme } from '@/types/framework'
 
 /**
- * Fetches the full framework lists (pillars, themes, subthemes)
- * using your existing column names (sort_order).
+ * Fetches pillars, themes, subthemes for the Primary Framework Editor.
+ * Read-only; relies on public RLS or anon-accessible rows.
  */
 export async function fetchFrameworkList(): Promise<FrameworkList> {
-  const supabase = createClient();
+  const supabase = createClient()
 
-  // Pillars
-  const { data: pillarsData, error: pillarsErr } = await supabase
-    .from('pillars')
-    .select('code,name,description,sort_order')
-    .order('sort_order', { ascending: true });
+  const [{ data: pillars, error: pErr }, { data: themes, error: tErr }, { data: subthemes, error: sErr }] =
+    await Promise.all([
+      supabase.from('pillars').select('code,name,description,sort_order').order('sort_order', { ascending: true }),
+      supabase.from('themes').select('code,pillar_code,name,description,sort_order').order('sort_order', { ascending: true }),
+      supabase.from('subthemes').select('code,theme_code,name,description,sort_order').order('sort_order', { ascending: true }),
+    ])
 
-  if (pillarsErr) throw new Error(`pillars error: ${pillarsErr.message}`);
+  if (pErr || tErr || sErr) {
+    const msg = (pErr ?? tErr ?? sErr)?.message ?? 'Unknown Supabase error'
+    throw new Error(`Supabase fetch error: ${msg}`)
+  }
 
-  // Themes
-  const { data: themesData, error: themesErr } = await supabase
-    .from('themes')
-    .select('code,pillar_code,name,description,sort_order')
-    .order('pillar_code', { ascending: true })
-    .order('sort_order', { ascending: true });
-
-  if (themesErr) throw new Error(`themes error: ${themesErr.message}`);
-
-  // Subthemes
-  const { data: subsData, error: subsErr } = await supabase
-    .from('subthemes')
-    .select('code,theme_code,name,description,sort_order')
-    .order('theme_code', { ascending: true })
-    .order('sort_order', { ascending: true });
-
-  if (subsErr) throw new Error(`subthemes error: ${subsErr.message}`);
-
-  // Strongly type the outputs
-  const pillars = (pillarsData ?? []) as Pillar[];
-  const themes = (themesData ?? []) as Theme[];
-  const subthemes = (subsData ?? []) as Subtheme[];
-
-  return { pillars, themes, subthemes };
+  return {
+    counts: {
+      pillars: pillars?.length ?? 0,
+      themes: themes?.length ?? 0,
+      subthemes: subthemes?.length ?? 0,
+    },
+    pillars: (pillars ?? []) as Pillar[],
+    themes: (themes ?? []) as Theme[],
+    subthemes: (subthemes ?? []) as Subtheme[],
+  }
 }
