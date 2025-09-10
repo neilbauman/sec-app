@@ -1,77 +1,73 @@
 // app/admin/framework/primary/editor/page.tsx
 import Link from "next/link";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-// If you need types, import them from your canonical source:
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+import { fetchFrameworkList } from "@/lib/framework";
+
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  // Fetch raw data from Supabase via your existing helper
+  // 1) Load raw data (DB shapes)
   const data = await fetchFrameworkList();
 
-  // Helpers to coerce possibly-null inputs into arrays of the exact shapes our UI wants.
+  // 2) Coerce to UI-friendly, defensive defaults (no “id” required in UI)
   const asArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 
-  // Pillars
-  const pillars: UIPillar[] = asArray<any>(data?.pillars).map((p) => ({
-    // PrimaryFrameworkCards expects an `id`; we derive a stable one from code.
-    id: String(p?.id ?? p?.code ?? ""),
-    code: String(p?.code ?? ""),
-    name: String(p?.name ?? ""),
-    description: String(p?.description ?? ""),
-    sort_order: Number(p?.sort_order ?? 0),
+  const pillars = asArray<{ code: string; name: string; description?: string | null; sort_order?: number | null }>(
+    data?.pillars
+  ).map((p) => ({
+    code: String((p as any)?.code ?? ""),
+    name: String((p as any)?.name ?? ""),
+    description: (p as any)?.description ?? "",
+    sort_order: (p as any)?.sort_order ?? 0,
   }));
 
-  // Themes
-  const themes: UITheme[] = asArray<any>(data?.themes).map((t) => ({
-    id: String(t?.id ?? t?.code ?? ""),
-    code: String(t?.code ?? ""),
-    name: String(t?.name ?? ""),
-    description: String(t?.description ?? ""),
-    sort_order: Number(t?.sort_order ?? 0),
-    // match the snake_case the component uses for grouping
-    pillar_code: String(t?.pillar_code ?? t?.parent_code ?? ""),
+  const themes = asArray<{ code: string; name: string; description?: string | null; sort_order?: number | null; pillar_code?: string }>(
+    data?.themes
+  ).map((t) => ({
+    code: String((t as any)?.code ?? ""),
+    name: String((t as any)?.name ?? ""),
+    description: (t as any)?.description ?? "",
+    sort_order: (t as any)?.sort_order ?? 0,
+    pillar_code: String((t as any)?.pillar_code ?? ""),
   }));
 
-  // Subthemes
-  const subthemes: UISubtheme[] = asArray<any>(data?.subthemes).map((s) => ({
-    id: String(s?.id ?? s?.code ?? ""),
-    code: String(s?.code ?? ""),
-    name: String(s?.name ?? ""),
-    description: String(s?.description ?? ""),
-    sort_order: Number(s?.sort_order ?? 0),
-    // match the snake_case the component uses for grouping
-    theme_code: String(s?.theme_code ?? s?.parent_code ?? ""),
-    pillar_code: String(s?.pillar_code ?? ""),
+  const subthemes = asArray<{ code: string; name: string; description?: string | null; sort_order?: number | null; theme_code?: string }>(
+    data?.subthemes
+  ).map((s) => ({
+    code: String((s as any)?.code ?? ""),
+    name: String((s as any)?.name ?? ""),
+    description: (s as any)?.description ?? "",
+    sort_order: (s as any)?.sort_order ?? 0,
+    theme_code: String((s as any)?.theme_code ?? ""),
   }));
 
   return (
     <main className="mx-auto max-w-6xl p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Primary Framework</h1>
+        <h1 className="text-xl font-semibold">Primary Framework</h1>
         <div className="flex items-center gap-3">
-          {/* CSV placeholders (non-functional, per your request) */}
+          {/* CSV placeholders (non-functional) */}
           <button
             type="button"
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
-            aria-disabled="true"
+            disabled
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-500"
             title="CSV Import (coming soon)"
           >
             Import CSV
           </button>
           <button
             type="button"
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
-            aria-disabled="true"
+            disabled
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-500"
             title="CSV Export (coming soon)"
           >
             Export CSV
           </button>
           <Link
-            href="/dashboard"
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
+            href="/"
+            className="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-800"
           >
-            Back to Dashboard
+            Dashboard
           </Link>
         </div>
       </div>
@@ -81,7 +77,7 @@ export default async function Page() {
         pillars={pillars}
         themes={themes}
         subthemes={subthemes}
-        // no `actions` prop: read-only for now
+        actions={{}} // read-only for now
       />
     </main>
   );
