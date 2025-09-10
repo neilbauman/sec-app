@@ -1,313 +1,357 @@
 // components/PrimaryFrameworkCards.tsx
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
-import { Download, FileUp, Pencil, Plus, Trash2 } from "lucide-react";
+"use client";
 
-/** Small colored chip for hierarchy level */
-function TagBadge({ level }: { level: "pillar" | "theme" | "subtheme" }) {
-  const palette =
-    level === "pillar"
-      ? "bg-blue-50 text-blue-700 ring-blue-200"
-      : level === "theme"
-      ? "bg-green-50 text-green-700 ring-green-200"
-      : "bg-red-50 text-red-700 ring-red-200";
-  const label =
-    level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
+import React from "react";
+import { ChevronRight, Download, Upload, Pencil, Trash2 } from "lucide-react";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
+
+// Small color-coded tag for hierarchy labels
+function Tag({
+  kind,
+  children,
+}: {
+  kind: "pillar" | "theme" | "subtheme";
+  children: React.ReactNode;
+}) {
+  const cls =
+    kind === "pillar"
+      ? "bg-blue-100 text-blue-700 ring-1 ring-blue-200"
+      : kind === "theme"
+      ? "bg-green-100 text-green-700 ring-1 ring-green-200"
+      : "bg-red-100 text-red-700 ring-1 ring-red-200";
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${palette}`}
+      className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold ${cls}`}
     >
-      {label}
+      {children}
     </span>
   );
 }
 
-/** Minimal icon button with native title tooltip */
-function IconBtn({
-  title,
-  onClick,
-  children,
-  disabled,
-}: {
-  title: string;
-  onClick?: () => void;
-  children: React.ReactNode;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      aria-label={title}
-      onClick={onClick}
-      disabled={!onClick || disabled}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-md border text-gray-600 transition
-        ${onClick && !disabled ? "bg-white hover:bg-gray-50 border-gray-200" : "bg-gray-100 border-gray-200 opacity-60 cursor-not-allowed"}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-type Actions = {
-  // CSV
-  onImportCSV?: () => void;
-  onExportCSV?: () => void;
-
-  // Pillars
-  onAddPillar?: () => void;
-  onEditPillar?: (pillar: Pillar) => void;
-  onDeletePillar?: (pillar: Pillar) => void;
-  onAddTheme?: (pillar: Pillar) => void;
-
-  // Themes
-  onEditTheme?: (theme: Theme) => void;
-  onDeleteTheme?: (theme: Theme) => void;
-  onAddSubtheme?: (theme: Theme) => void;
-
-  // Subthemes
-  onEditSubtheme?: (subtheme: Subtheme) => void;
-  onDeleteSubtheme?: (subtheme: Subtheme) => void;
-};
-
-export default function PrimaryFrameworkCards({
-  pillars,
-  themes,
-  subthemes,
-  defaultOpen = false,
-  actions = {},
-}: {
+type Props = {
+  defaultOpen?: boolean;
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
-  defaultOpen?: boolean;
-  actions?: Actions;
-}) {
-  // Group helpers (sorted by sort_order then name for stability)
-  const themesForPillar = (pillarId: string) =>
-    themes
-      .filter((t) => t.pillar_id === pillarId)
-      .sort((a, b) =>
-        a.sort_order === b.sort_order
-          ? a.name.localeCompare(b.name)
-          : a.sort_order - b.sort_order
-      );
+  // Optional action handlers (still placeholders — safe no-ops if omitted)
+  actions?: {
+    onEditPillar?: (p: Pillar) => void;
+    onDeletePillar?: (p: Pillar) => void;
+    onEditTheme?: (t: Theme) => void;
+    onDeleteTheme?: (t: Theme) => void;
+    onEditSubtheme?: (s: Subtheme) => void;
+    onDeleteSubtheme?: (s: Subtheme) => void;
+  };
+};
 
-  const subthemesForTheme = (themeId: string) =>
-    subthemes
-      .filter((s) => s.theme_id === themeId)
-      .sort((a, b) =>
-        a.sort_order === b.sort_order
-          ? a.name.localeCompare(b.name)
-          : a.sort_order - b.sort_order
-      );
+export default function PrimaryFrameworkCards({
+  defaultOpen = false,
+  pillars,
+  themes,
+  subthemes,
+  actions = {},
+}: Props) {
+  // Track expanded pillar/theme rows with Sets — preserves the “small caret” visual
+  const [openPillars, setOpenPillars] = React.useState<Set<string>>(
+    () => new Set(defaultOpen ? pillars.map((p) => p.id) : [])
+  );
+  const [openThemes, setOpenThemes] = React.useState<Set<string>>(
+    () => new Set()
+  );
+
+  const togglePillar = (id: string) =>
+    setOpenPillars((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const toggleTheme = (id: string) =>
+    setOpenThemes((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const byPillar: Record<string, Theme[]> = React.useMemo(() => {
+    const m: Record<string, Theme[]> = {};
+    for (const t of themes) {
+      if (!t.pillar_id) continue;
+      (m[t.pillar_id] ??= []).push(t);
+    }
+    // keep incoming order; if you want strict sort use sort_order
+    Object.values(m).forEach((arr) =>
+      arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    );
+    return m;
+  }, [themes]);
+
+  const byTheme: Record<string, Subtheme[]> = React.useMemo(() => {
+    const m: Record<string, Subtheme[]> = {};
+    for (const s of subthemes) {
+      if (!s.theme_id) continue;
+      (m[s.theme_id] ??= []).push(s);
+    }
+    Object.values(m).forEach((arr) =>
+      arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    );
+    return m;
+  }, [subthemes]);
 
   return (
     <section className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
-      {/* Card toolbar (CSV placeholders) */}
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+      {/* Top utility bar with CSV placeholders */}
+      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
         <div className="text-sm font-medium text-gray-700">Primary Framework</div>
         <div className="flex items-center gap-2">
-          <IconBtn title="Import CSV" onClick={actions.onImportCSV}>
-            <FileUp size={16} />
-          </IconBtn>
-          <IconBtn title="Export CSV" onClick={actions.onExportCSV}>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            title="Import CSV (placeholder)"
+            aria-label="Import CSV"
+            onClick={() => alert("CSV Import placeholder")}
+          >
+            <Upload size={16} />
+            Import CSV
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            title="Export CSV (placeholder)"
+            aria-label="Export CSV"
+            onClick={() => alert("CSV Export placeholder")}
+          >
             <Download size={16} />
-          </IconBtn>
+            Export CSV
+          </button>
         </div>
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[1fr,96px,120px] items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2.5 text-xs font-semibold tracking-wide text-gray-600">
-        <div>Name & Description</div>
-        <div className="text-right pr-2">Sort</div>
-        <div className="text-right">Actions</div>
+      <div className="grid grid-cols-[1fr,110px,110px] items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2.5 text-xs font-semibold text-gray-600">
+        <div>Name & description</div>
+        <div className="text-center">Code</div>
+        <div className="text-center">Sort</div>
       </div>
 
-      <div className="divide-y divide-gray-100">
+      {/* Pillars */}
+      <ul className="divide-y divide-gray-200">
         {pillars
-          .sort((a, b) =>
-            a.sort_order === b.sort_order
-              ? a.name.localeCompare(b.name)
-              : a.sort_order - b.sort_order
-          )
-          .map((pillar) => (
-            <PillarBlock
-              key={pillar.id}
-              pillar={pillar}
-              childrenThemes={themesForPillar(pillar.id)}
-              childrenSubthemes={subthemesForTheme}
-              defaultOpen={defaultOpen}
-              actions={actions}
-            />
-          ))}
-      </div>
+          ?.slice()
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((p) => {
+            const expanded = openPillars.has(p.id);
+            const childThemes = byPillar[p.id] ?? [];
+            return (
+              <li key={p.id}>
+                {/* Pillar row */}
+                <div className="grid grid-cols-[1fr,110px,110px] items-start gap-2 px-4 py-3">
+                  <div>
+                    <div className="flex items-start gap-2">
+                      <button
+                        type="button"
+                        aria-label={expanded ? "Collapse pillar" : "Expand pillar"}
+                        className="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded hover:bg-gray-100"
+                        onClick={() => togglePillar(p.id)}
+                        title={expanded ? "Collapse" : "Expand"}
+                      >
+                        <ChevronRight
+                          size={16} // keep caret size SMALL (as requested)
+                          className={`transition-transform ${
+                            expanded ? "rotate-90 text-gray-700" : "text-gray-500"
+                          }`}
+                        />
+                      </button>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Tag kind="pillar">Pillar</Tag>
+                          <span className="truncate text-sm font-semibold text-gray-900">
+                            {p.name}
+                          </span>
+                        </div>
+                        {/* Description aligned directly under name */}
+                        {p.description ? (
+                          <p className="mt-0.5 line-clamp-2 text-sm text-gray-600">
+                            {p.description}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      {/* Quick actions (icons + native tooltips) */}
+                      <div className="ml-2 flex flex-none items-center gap-1.5">
+                        <button
+                          type="button"
+                          className="rounded p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                          title="Edit pillar"
+                          aria-label="Edit pillar"
+                          onClick={() => actions.onEditPillar?.(p)}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded p-1 text-red-600 hover:bg-red-50"
+                          title="Delete pillar"
+                          aria-label="Delete pillar"
+                          onClick={() => actions.onDeletePillar?.(p)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Code */}
+                  <div className="self-center text-center text-sm text-gray-700">
+                    {p.code}
+                  </div>
+
+                  {/* Sort */}
+                  <div className="self-center text-center text-sm text-gray-700">
+                    {p.sort_order ?? ""}
+                  </div>
+                </div>
+
+                {/* Themes under pillar */}
+                {expanded && childThemes.length > 0 && (
+                  <div className="bg-gray-50/40">
+                    <ul className="divide-y divide-gray-200">
+                      {childThemes.map((t) => {
+                        const tOpen = openThemes.has(t.id);
+                        const childSubs = byTheme[t.id] ?? [];
+                        return (
+                          <li key={t.id} className="pl-8">
+                            {/* Theme row */}
+                            <div className="grid grid-cols-[1fr,110px,110px] items-start gap-2 px-4 py-2.5">
+                              <div className="flex items-start gap-2">
+                                <button
+                                  type="button"
+                                  aria-label={tOpen ? "Collapse theme" : "Expand theme"}
+                                  className="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded hover:bg-gray-100"
+                                  onClick={() => toggleTheme(t.id)}
+                                  title={tOpen ? "Collapse" : "Expand"}
+                                >
+                                  <ChevronRight
+                                    size={16}
+                                    className={`transition-transform ${
+                                      tOpen
+                                        ? "rotate-90 text-gray-700"
+                                        : "text-gray-500"
+                                    }`}
+                                  />
+                                </button>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <Tag kind="theme">Theme</Tag>
+                                    <span className="truncate text-sm font-medium text-gray-900">
+                                      {t.name}
+                                    </span>
+                                  </div>
+                                  {t.description ? (
+                                    <p className="mt-0.5 line-clamp-2 text-sm text-gray-600">
+                                      {t.description}
+                                    </p>
+                                  ) : null}
+                                </div>
+
+                                <div className="ml-2 flex flex-none items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    className="rounded p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                    title="Edit theme"
+                                    aria-label="Edit theme"
+                                    onClick={() => actions.onEditTheme?.(t)}
+                                  >
+                                    <Pencil size={16} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="rounded p-1 text-red-600 hover:bg-red-50"
+                                    title="Delete theme"
+                                    aria-label="Delete theme"
+                                    onClick={() => actions.onDeleteTheme?.(t)}
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="self-center text-center text-sm text-gray-700">
+                                {t.code}
+                              </div>
+                              <div className="self-center text-center text-sm text-gray-700">
+                                {t.sort_order ?? ""}
+                              </div>
+                            </div>
+
+                            {/* Subthemes under theme */}
+                            {tOpen && childSubs.length > 0 && (
+                              <ul className="divide-y divide-gray-200 bg-white">
+                                {childSubs.map((s) => (
+                                  <li key={s.id} className="pl-16">
+                                    <div className="grid grid-cols-[1fr,110px,110px] items-start gap-2 px-4 py-2.5">
+                                      <div className="flex items-start gap-2">
+                                        {/* spacer to align with carets above */}
+                                        <div className="h-5 w-5 flex-none" />
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-center gap-2">
+                                            <Tag kind="subtheme">Subtheme</Tag>
+                                            <span className="truncate text-sm text-gray-900">
+                                              {s.name}
+                                            </span>
+                                          </div>
+                                          {s.description ? (
+                                            <p className="mt-0.5 line-clamp-2 text-sm text-gray-600">
+                                              {s.description}
+                                            </p>
+                                          ) : null}
+                                        </div>
+
+                                        <div className="ml-2 flex flex-none items-center gap-1.5">
+                                          <button
+                                            type="button"
+                                            className="rounded p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                            title="Edit subtheme"
+                                            aria-label="Edit subtheme"
+                                            onClick={() => actions.onEditSubtheme?.(s)}
+                                          >
+                                            <Pencil size={16} />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="rounded p-1 text-red-600 hover:bg-red-50"
+                                            title="Delete subtheme"
+                                            aria-label="Delete subtheme"
+                                            onClick={() => actions.onDeleteSubtheme?.(s)}
+                                          >
+                                            <Trash2 size={16} />
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      <div className="self-center text-center text-sm text-gray-700">
+                                        {s.code}
+                                      </div>
+                                      <div className="self-center text-center text-sm text-gray-700">
+                                        {s.sort_order ?? ""}
+                                      </div>
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+      </ul>
     </section>
-  );
-}
-
-/** One pillar + nested themes/subthemes using native <details>/<summary> so caret stays tiny */
-function PillarBlock({
-  pillar,
-  childrenThemes,
-  childrenSubthemes,
-  defaultOpen,
-  actions,
-}: {
-  pillar: Pillar;
-  childrenThemes: Theme[];
-  childrenSubthemes: (themeId: string) => Subtheme[];
-  defaultOpen: boolean;
-  actions: Actions;
-}) {
-  return (
-    <details open={defaultOpen} className="group">
-      {/* Summary row — caret (native), tag right next to it, then name/description block.
-          Description aligns with the left edge of the name (not under the tag). */}
-      <summary className="grid cursor-pointer select-none grid-cols-[1fr,96px,120px] items-start gap-2 px-4 py-3">
-        <div className="flex items-start gap-2">
-          {/* native marker caret is automatic here */}
-          <TagBadge level="pillar" />
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium text-gray-900">
-              {pillar.name}
-            </div>
-            {pillar.description ? (
-              <div className="mt-0.5 line-clamp-2 text-xs text-gray-600">
-                {pillar.description}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Sort order (tabular) */}
-        <div className="text-right font-mono text-sm text-gray-600 pr-2">
-          {pillar.sort_order}
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-2">
-          <IconBtn title="Add Theme" onClick={actions.onAddTheme?.bind(null, pillar)}>
-            <Plus size={16} />
-          </IconBtn>
-          <IconBtn title="Edit Pillar" onClick={actions.onEditPillar?.bind(null, pillar)}>
-            <Pencil size={16} />
-          </IconBtn>
-          <IconBtn
-            title="Delete Pillar"
-            onClick={actions.onDeletePillar?.bind(null, pillar)}
-          >
-            <Trash2 size={16} />
-          </IconBtn>
-        </div>
-      </summary>
-
-      {/* Themes */}
-      {childrenThemes.length > 0 && (
-        <div className="border-t border-gray-100 pl-6">
-          {childrenThemes.map((theme) => (
-            <ThemeBlock
-              key={theme.id}
-              theme={theme}
-              subthemes={childrenSubthemes(theme.id)}
-              actions={actions}
-            />
-          ))}
-        </div>
-      )}
-    </details>
-  );
-}
-
-function ThemeBlock({
-  theme,
-  subthemes,
-  actions,
-}: {
-  theme: Theme;
-  subthemes: Subtheme[];
-  actions: Actions;
-}) {
-  return (
-    <details className="group">
-      <summary className="grid cursor-pointer select-none grid-cols-[1fr,96px,120px] items-start gap-2 px-4 py-3">
-        <div className="flex items-start gap-2">
-          <TagBadge level="theme" />
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium text-gray-900">
-              {theme.name}
-            </div>
-            {theme.description ? (
-              <div className="mt-0.5 line-clamp-2 text-xs text-gray-600">
-                {theme.description}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="text-right font-mono text-sm text-gray-600 pr-2">
-          {theme.sort_order}
-        </div>
-
-        <div className="flex items-center justify-end gap-2">
-          <IconBtn title="Add Subtheme" onClick={actions.onAddSubtheme?.bind(null, theme)}>
-            <Plus size={16} />
-          </IconBtn>
-          <IconBtn title="Edit Theme" onClick={actions.onEditTheme?.bind(null, theme)}>
-            <Pencil size={16} />
-          </IconBtn>
-          <IconBtn title="Delete Theme" onClick={actions.onDeleteTheme?.bind(null, theme)}>
-            <Trash2 size={16} />
-          </IconBtn>
-        </div>
-      </summary>
-
-      {/* Subthemes */}
-      {subthemes.length > 0 && (
-        <div className="border-t border-gray-100 pl-6">
-          {subthemes.map((s) => (
-            <SubthemeRow key={s.id} subtheme={s} actions={actions} />
-          ))}
-        </div>
-      )}
-    </details>
-  );
-}
-
-function SubthemeRow({ subtheme, actions }: { subtheme: Subtheme; actions: Actions }) {
-  return (
-    <div className="grid grid-cols-[1fr,96px,120px] items-start gap-2 px-4 py-3">
-      <div className="flex items-start gap-2">
-        <TagBadge level="subtheme" />
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium text-gray-900">
-            {subtheme.name}
-          </div>
-          {subtheme.description ? (
-            <div className="mt-0.5 line-clamp-2 text-xs text-gray-600">
-              {subtheme.description}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="text-right font-mono text-sm text-gray-600 pr-2">
-        {subtheme.sort_order}
-      </div>
-
-      <div className="flex items-center justify-end gap-2">
-        <IconBtn
-          title="Edit Subtheme"
-          onClick={actions.onEditSubtheme?.bind(null, subtheme)}
-        >
-          <Pencil size={16} />
-        </IconBtn>
-        <IconBtn
-          title="Delete Subtheme"
-          onClick={actions.onDeleteSubtheme?.bind(null, subtheme)}
-        >
-          <Trash2 size={16} />
-        </IconBtn>
-      </div>
-    </div>
   );
 }
