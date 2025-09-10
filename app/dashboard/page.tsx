@@ -15,7 +15,12 @@ export default function DashboardPage() {
             <span className="text-gray-700">Dashboard</span>
           </div>
         }
-        actions={<CsvActions disabled />}
+       actions={
+  <CsvActions
+    onImport={() => {/* TODO: hook up CSV import */}}
+    onExport={() => {/* TODO: hook up CSV export */}}
+  />
+}
       />
 
       <div className="mx-auto max-w-6xl px-4 py-6 space-y-6">
