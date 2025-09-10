@@ -2,6 +2,9 @@
 import { createServerSupabase } from "@/lib/supabase-server";
 // ... (types etc.)
 
+/ Re-export shared types so callers can import them from here too.
+export type { Pillar, Theme, Subtheme } from "@/types/framework";
+
 export async function fetchFrameworkList() {
   const supabase = createServerSupabase();
 
