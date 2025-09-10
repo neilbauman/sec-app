@@ -1,74 +1,56 @@
 // app/dashboard/page.tsx
 import Link from "next/link";
-import { AppHeader, PageContainer } from "@/lib/ui";
-import { Upload, Download } from "lucide-react";
+import { PageHeader, CsvActions } from "@/lib/ui";
+import { ArrowRight } from "lucide-react";
 
 export default function DashboardPage() {
   return (
     <main className="min-h-dvh bg-gray-50">
       <PageHeader
         title="Dashboard"
-        breadcrumb={
-          <div className="flex items-center gap-2">
-            <Link href="/" className="text-blue-600 hover:underline">
-              Home
-            </Link>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-700">Dashboard</span>
-          </div>
-        }
-        actions={
-          <>
-            <button
-              type="button"
-              title="Import CSV (placeholder)"
-              className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <span className="inline-flex items-center gap-1">
-                <Upload className="h-4 w-4" />
-                Import CSV
-              </span>
-            </button>
-            <button
-              type="button"
-              title="Export CSV (placeholder)"
-              className="rounded border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <span className="inline-flex items-center gap-1">
-                <Download className="h-4 w-4" />
-                Export CSV
-              </span>
-            </button>
-          </>
-        }
+        breadcrumb={[{ label: "Home", href: "/" }, { label: "Dashboard" }]}
+        actions={<CsvActions disabled />}
       />
 
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          <Link
-            href="/admin/framework/primary/editor"
-            className="block rounded-xl border border-gray-200 bg-white p-4 hover:border-gray-300 hover:shadow-sm"
-          >
-            <div className="text-sm font-semibold text-gray-900">
-              Primary Framework Editor
-            </div>
+      <div className="mx-auto max-w-6xl px-4 pb-12">
+        <section className="grid gap-4 md:grid-cols-2">
+          {/* Card: Framework Editor */}
+          <div className="rounded-xl border bg-white p-5 shadow-sm">
+            <div className="mb-2 text-sm text-gray-500">Manage framework</div>
+            <h2 className="text-lg font-semibold text-gray-900">Primary Framework Editor</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Manage pillars, themes, and subthemes.
+              View and organize pillars, themes, and subthemes. Add, edit, and reorder items.
             </p>
-          </Link>
+            <div className="mt-4">
+              <Link
+                href="/admin/framework/primary/editor"
+                className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                title="Open Framework Editor"
+              >
+                Open Editor <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
 
-          <Link
-            href="/framework"
-            className="block rounded-xl border border-gray-200 bg-white p-4 hover:border-gray-300 hover:shadow-sm"
-          >
-            <div className="text-sm font-semibold text-gray-900">
-              Public Framework View
-            </div>
+          {/* Card: Indicators (future) */}
+          <div className="rounded-xl border bg-white p-5 shadow-sm">
+            <div className="mb-2 text-sm text-gray-500">Manage data</div>
+            <h2 className="text-lg font-semibold text-gray-900">Indicators</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Browse the hierarchy as users will see it.
+              Define and maintain indicators mapped to subthemes. (Coming soon)
             </p>
-          </Link>
-        </div>
+            <div className="mt-4">
+              <button
+                type="button"
+                className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border px-3 py-1.5 text-sm text-gray-400"
+                title="Coming soon"
+                disabled
+              >
+                Configure <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );
