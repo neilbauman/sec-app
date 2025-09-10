@@ -1,13 +1,17 @@
-import { createClient } from "@supabase/supabase-js";
+// lib/supabase.ts
+import { createClient } from '@supabase/supabase-js'
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-/**
- * Returns a browser-safe supabase client. We only use it on the server for now,
- * but this form keeps options minimal and avoids cookie APIs entirely.
- */
-export function getSupabase() {
-  if (!url || !key) throw new Error("Supabase env vars missing");
-  return createClient(url, key);
+// Server-side supabase client for simple read operations
+export function supabaseServer() {
+  if (!url || !anonKey) {
+    throw new Error(
+      'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY env vars.'
+    )
+  }
+  return createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
 }
