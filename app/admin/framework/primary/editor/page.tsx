@@ -6,68 +6,80 @@ import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Server actions MUST return void | Promise<void>.
- * These are placeholders (no-ops) for now.
- */
-async function actionImportCsv(_formData: FormData): Promise<void> {
-  "use server";
-  // TODO: implement CSV import later
-}
-
-async function actionExportCsv(_formData: FormData): Promise<void> {
-  "use server";
-  // TODO: implement CSV export later
-}
+// Local action types expected by PrimaryFrameworkCards
+type Entity = "pillar" | "theme" | "subtheme";
+type Actions = {
+  updateName: (entity: Entity, code: string, name: string) => Promise<void>;
+  updateDescription: (
+    entity: Entity,
+    code: string,
+    description: string
+  ) => Promise<void>;
+  updateSort: (entity: Entity, code: string, sort: number) => Promise<void>;
+  bumpSort: (entity: Entity, code: string, delta: number) => Promise<void>;
+};
 
 export default async function Page() {
+  // Fetch data (already wired to real DB in your repo)
   const data = await fetchFrameworkList();
 
+  // Normalize types for the component props
   const pillars = (data?.pillars ?? []) as Pillar[];
   const themes = (data?.themes ?? []) as Theme[];
   const subthemes = (data?.subthemes ?? []) as Subtheme[];
 
+  // NO-OP actions (placeholders) – keep builds green, no DB writes yet
+  const actions: Actions = {
+    updateName: async () => {},
+    updateDescription: async () => {},
+    updateSort: async () => {},
+    bumpSort: async () => {},
+  };
+
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <Link
-        href="/dashboard"
-        className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
-      >
-        ← Back to Dashboard
-      </Link>
-
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
-
-        {/* CSV placeholders (not wired yet) */}
-        <div className="flex items-center gap-2">
-          {/* Import CSV (no-op) */}
-          <form action={actionImportCsv}>
-            <input
-              id="csvFile"
-              type="file"
-              name="csv"
-              accept=".csv"
-              className="hidden"
-            />
-            <label
-              htmlFor="csvFile"
-              className="cursor-pointer rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50"
-            >
-              Import CSV
-            </label>
-          </form>
-
-          {/* Export CSV (no-op) */}
-          <form action={actionExportCsv}>
-            <button
-              type="submit"
-              className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50"
-            >
-              Export CSV
-            </button>
-          </form>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Primary Framework</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Edit Pillars, Themes, and Subthemes. (Edits are disabled for now.)
+          </p>
         </div>
+
+        <div className="flex items-center gap-2">
+          {/* CSV placeholders (non-functional for now) */}
+          <button
+            type="button"
+            disabled
+            className="rounded-md border px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 disabled:opacity-60"
+            title="Coming soon"
+          >
+            Import CSV
+          </button>
+          <button
+            type="button"
+            disabled
+            className="rounded-md border px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 disabled:opacity-60"
+            title="Coming soon"
+          >
+            Export CSV
+          </button>
+
+          {/* Back to dashboard */}
+          <Link
+            href="/dashboard"
+            className="rounded-md border px-3 py-2 text-sm hover:bg-slate-50"
+          >
+            Back
+          </Link>
+        </div>
+      </div>
+
+      {/* Table header */}
+      <div className="mt-6 grid grid-cols-[1fr_110px_120px] items-center gap-2 border-b px-2 pb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+        <div>Name / Description</div>
+        <div className="text-center">Sort</div>
+        <div className="text-right">Actions</div>
       </div>
 
       <PrimaryFrameworkCards
@@ -75,7 +87,7 @@ export default async function Page() {
         pillars={pillars}
         themes={themes}
         subthemes={subthemes}
-        actions={{}}
+        actions={actions}
       />
     </main>
   );
