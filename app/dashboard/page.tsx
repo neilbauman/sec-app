@@ -1,6 +1,6 @@
 // app/dashboard/page.tsx
 import Link from "next/link";
-import { PageHeader, CsvActions } from "@/lib/ui";
+import { PageHeader, CsvActions, Crumb } from "@/lib/ui";
 import { ArrowRight } from "lucide-react";
 
 export default function DashboardPage() {
