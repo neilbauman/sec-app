@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { hierarchyTagClasses } from "@/lib/styles";
+import { hierarchyTagClasses } from "@/lib/ui";
 import {
   Plus,
   Pencil,
