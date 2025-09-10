@@ -1,15 +1,54 @@
+// components/PrimaryFrameworkCards.tsx
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
-import { ChevronRight, Edit3, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
+
+/**
+ * Lightweight local shapes so we don't fight cross-module type nominal issues.
+ * These must match your DB payload shape (structural typing will accept them).
+ */
+type Pillar = {
+  id?: string;              // uuid
+  code: string;
+  name: string;
+  description?: string | null;
+  sort_order?: number | null;
+};
+
+type Theme = {
+  id?: string;              // uuid
+  code: string;             // "T1.1" etc
+  pillar_id?: string | null;
+  pillar_code?: string | null;
+  name: string;
+  description?: string | null;
+  sort_order?: number | null;
+};
+
+type Subtheme = {
+  id?: string;              // uuid
+  code: string;
+  theme_id?: string | null;
+  theme_code?: string | null;
+  name: string;
+  description?: string | null;
+  sort_order?: number | null;
+};
 
 type Entity = "pillar" | "theme" | "subtheme";
 
-export type FrameworkActions = {
+type Actions = {
   updateName?: (entity: Entity, code: string, name: string) => Promise<void>;
-  updateDescription?: (entity: Entity, code: string, description: string) => Promise<void>;
-  updateSort?: (entity: Entity, code: string, sort: number) => Promise<void>;
+  updateDescription?: (
+    entity: Entity,
+    code: string,
+    description: string
+  ) => Promise<void>;
+  updateSort?: (
+    entity: Entity,
+    code: string,
+    sort_order: number
+  ) => Promise<void>;
   bumpSort?: (entity: Entity, code: string, delta: number) => Promise<void>;
 };
 
@@ -18,7 +57,7 @@ type Props = {
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
-  actions?: FrameworkActions; // optional => safe to pass {}
+  actions?: Actions; // optional; if absent we render disabled/hidden controls
 };
 
 export default function PrimaryFrameworkCards({
@@ -28,105 +67,351 @@ export default function PrimaryFrameworkCards({
   subthemes,
   actions,
 }: Props) {
-  const isReadOnly = !actions || (!actions.updateName && !actions.updateDescription && !actions.updateSort && !actions.bumpSort);
+  // open state maps
+  const [openPillar, setOpenPillar] = useState<Record<string, boolean>>({});
+  const [openTheme, setOpenTheme] = useState<Record<string, boolean>>({});
 
-  // group themes by pillar_code
-  const themesByPillar = useMemo(() => {
-    const m: Record<string, Theme[]> = {};
+  // Index themes by pillar_id (fallback pillar_code) and subthemes by theme_id (fallback theme_code)
+  const { themesByPillar, subthemesByTheme } = useMemo(() => {
+    const tByP: Record<string, Theme[]> = {};
     for (const t of themes ?? []) {
-      const key = (t as any).pillar_code ?? "";
-      if (!m[key]) m[key] = [];
-      m[key].push(t);
+      const key =
+        (t.pillar_id ?? undefined) ||
+        (t.pillar_code ?? undefined) ||
+        ""; // empty means "unassigned"
+      if (!tByP[key]) tByP[key] = [];
+      tByP[key].push(t);
     }
-    return m;
-  }, [themes]);
 
-  // group subthemes by theme_code
-  const subthemesByTheme = useMemo(() => {
-    const m: Record<string, Subtheme[]> = {};
+    const sByT: Record<string, Subtheme[]> = {};
     for (const s of subthemes ?? []) {
-      const key = (s as any).theme_code ?? "";
-      if (!m[key]) m[key] = [];
-      m[key].push(s);
+      const key =
+        (s.theme_id ?? undefined) || (s.theme_code ?? undefined) || "";
+      if (!sByT[key]) sByT[key] = [];
+      sByT[key].push(s);
     }
-    return m;
-  }, [subthemes]);
 
-  const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
-  const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
+    // Sort by sort_order (null/undefined last), then by code as stable tie-breaker
+    const bySort = <T extends { sort_order?: number | null; code: string }>(
+      a: T,
+      b: T
+    ) => {
+      const sa = a.sort_order ?? Number.MAX_SAFE_INTEGER;
+      const sb = b.sort_order ?? Number.MAX_SAFE_INTEGER;
+      if (sa !== sb) return sa - sb;
+      return a.code.localeCompare(b.code);
+    };
 
-  const togglePillar = (code: string) =>
-    setOpenPillars((prev) => ({ ...prev, [code]: !(prev[code] ?? defaultOpen) }));
-  const toggleTheme = (code: string) =>
-    setOpenThemes((prev) => ({ ...prev, [code]: !(prev[code] ?? defaultOpen) }));
+    for (const k of Object.keys(tByP)) tByP[k].sort(bySort);
+    for (const k of Object.keys(sByT)) sByT[k].sort(bySort);
+
+    return { themesByPillar: tByP, subthemesByTheme: sByT };
+  }, [themes, subthemes]);
+
+  const Toggle = ({
+    open,
+    onClick,
+  }: {
+    open: boolean;
+    onClick: () => void;
+  }) => (
+    <button
+      type="button"
+      aria-label={open ? "Collapse" : "Expand"}
+      onClick={onClick}
+      className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-100"
+    >
+      {/* simple inline chevron, sized a bit larger */}
+      <svg
+        className={`h-4 w-4 transition-transform ${
+          open ? "rotate-90" : ""
+        }`}
+        viewBox="0 0 20 20"
+        fill="currentColor"
+      >
+        <path d="M7 5l6 5-6 5V5z" />
+      </svg>
+    </button>
+  );
+
+  const ActionIcon = ({
+    title,
+    onClick,
+    children,
+    disabled,
+  }: {
+    title: string;
+    onClick?: () => void;
+    children: React.ReactNode;
+    disabled?: boolean;
+  }) => (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded hover:bg-gray-100 ${
+        disabled ? "opacity-40 cursor-not-allowed" : ""
+      }`}
+    >
+      {children}
+    </button>
+  );
+
+  const canAct = Boolean(actions);
 
   return (
-    <div className="mt-4 rounded-xl border shadow-sm">
-      {/* Header row */}
-      <div className="grid grid-cols-[1fr,96px,112px] items-center border-b bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700">
-        <div>Name & description</div>
-        <div className="text-right pr-2">Sort</div>
-        <div className="text-right">Actions</div>
+    <section className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
+      {/* Header */}
+      <div className="grid grid-cols-[1fr,120px,120px] items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+        <div>Name & Description</div>
+        <div className="text-center">Sort Order</div>
+        <div className="text-right pr-1">Actions</div>
       </div>
 
-      <div className="divide-y">
-        {/* Pillars */}
+      {/* Rows */}
+      <div className="divide-y divide-gray-100">
         {(pillars ?? [])
           .slice()
-          .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .sort((a, b) => {
+            const sa = a.sort_order ?? Number.MAX_SAFE_INTEGER;
+            const sb = b.sort_order ?? Number.MAX_SAFE_INTEGER;
+            if (sa !== sb) return sa - sb;
+            return a.code.localeCompare(b.code);
+          })
           .map((p) => {
-            const pOpen = openPillars[p.code] ?? defaultOpen;
-            const pillarThemes = (themesByPillar[p.code] ?? []).slice().sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+            const pKey = p.id ?? p.code ?? "";
+            const pOpen = openPillar[pKey] ?? defaultOpen;
+            const tList =
+              themesByPillar[p.id ?? ""] ||
+              themesByPillar[p.code ?? ""] ||
+              [];
+
             return (
-              <div key={p.code} className="bg-white">
-                <Row
-                  level="pillar"
-                  code={p.code}
-                  name={p.name}
-                  description={p.description ?? ""}
-                  sort={Number((p as any).sort_order ?? 0)}
-                  open={pOpen}
-                  onToggle={() => togglePillar(p.code)}
-                  readOnly={isReadOnly}
-                  actions={actions}
-                />
+              <div key={`pillar-${pKey}`} className="bg-white">
+                {/* Pillar row */}
+                <div className="grid grid-cols-[1fr,120px,120px] items-center gap-2 px-4 py-3">
+                  <div className="flex items-start">
+                    <Toggle
+                      open={pOpen}
+                      onClick={() =>
+                        setOpenPillar((s) => ({ ...s, [pKey]: !pOpen }))
+                      }
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                          Pillar
+                        </span>
+                        <span className="text-[11px] font-semibold text-gray-400">
+                          {p.code}
+                        </span>
+                        <span className="ml-1 text-sm font-medium text-gray-900">
+                          {p.name}
+                        </span>
+                      </div>
+                      {p.description ? (
+                        <p className="mt-1 text-[13px] leading-snug text-gray-600">
+                          {p.description}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
 
-                {/* Themes under this pillar */}
+                  <div className="text-center text-sm text-gray-700">
+                    {p.sort_order ?? ""}
+                  </div>
+
+                  <div className="flex justify-end gap-1 pr-1">
+                    {/* icons only, optional actions */}
+                    <ActionIcon
+                      title="Move up"
+                      onClick={
+                        canAct ? () => actions!.bumpSort?.("pillar", p.code, -1) : undefined
+                      }
+                      disabled={!canAct}
+                    >
+                      {/* up chevron */}
+                      <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">
+                        <path d="M10 6l-6 6h12L10 6z" />
+                      </svg>
+                    </ActionIcon>
+                    <ActionIcon
+                      title="Move down"
+                      onClick={
+                        canAct ? () => actions!.bumpSort?.("pillar", p.code, +1) : undefined
+                      }
+                      disabled={!canAct}
+                    >
+                      {/* down chevron */}
+                      <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">
+                        <path d="M10 14l6-6H4l6 6z" />
+                      </svg>
+                    </ActionIcon>
+                  </div>
+                </div>
+
+                {/* Themes under pillar */}
                 {pOpen &&
-                  pillarThemes.map((t) => {
-                    const tOpen = openThemes[t.code] ?? defaultOpen;
-                    const tSubthemes = (subthemesByTheme[t.code] ?? [])
-                      .slice()
-                      .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-                    return (
-                      <div key={t.code} className="bg-white">
-                        <Row
-                          level="theme"
-                          code={t.code}
-                          name={t.name}
-                          description={t.description ?? ""}
-                          sort={Number((t as any).sort_order ?? 0)}
-                          open={tOpen}
-                          onToggle={() => toggleTheme(t.code)}
-                          readOnly={isReadOnly}
-                          actions={actions}
-                        />
+                  tList.map((t) => {
+                    const tKey = t.id ?? t.code ?? "";
+                    const tOpen = openTheme[tKey] ?? defaultOpen;
+                    const sList =
+                      subthemesByTheme[t.id ?? ""] ||
+                      subthemesByTheme[t.code ?? ""] ||
+                      [];
 
-                        {/* Subthemes directly under this theme */}
-                        {tOpen &&
-                          tSubthemes.map((s) => (
-                            <Row
-                              key={s.code}
-                              level="subtheme"
-                              code={s.code}
-                              name={s.name}
-                              description={s.description ?? ""}
-                              sort={Number((s as any).sort_order ?? 0)}
-                              open={false}
-                              onToggle={undefined}
-                              readOnly={isReadOnly}
-                              actions={actions}
+                    return (
+                      <div
+                        key={`theme-${tKey}`}
+                        className="border-t border-gray-100 bg-white"
+                      >
+                        {/* Theme row */}
+                        <div className="grid grid-cols-[1fr,120px,120px] items-center gap-2 px-4 py-3">
+                          <div className="flex items-start pl-8">
+                            <Toggle
+                              open={tOpen}
+                              onClick={() =>
+                                setOpenTheme((s) => ({ ...s, [tKey]: !tOpen }))
+                              }
                             />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center rounded border border-green-200 bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                                  Theme
+                                </span>
+                                <span className="text-[11px] font-semibold text-gray-400">
+                                  {t.code}
+                                </span>
+                                <span className="ml-1 text-sm font-medium text-gray-900">
+                                  {t.name}
+                                </span>
+                              </div>
+                              {t.description ? (
+                                <p className="mt-1 text-[13px] leading-snug text-gray-600">
+                                  {t.description}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div className="text-center text-sm text-gray-700">
+                            {t.sort_order ?? ""}
+                          </div>
+
+                          <div className="flex justify-end gap-1 pr-1">
+                            <ActionIcon
+                              title="Move up"
+                              onClick={
+                                canAct
+                                  ? () => actions!.bumpSort?.("theme", t.code, -1)
+                                  : undefined
+                              }
+                              disabled {!canAct}
+                            >
+                              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">
+                                <path d="M10 6l-6 6h12L10 6z" />
+                              </svg>
+                            </ActionIcon>
+                            <ActionIcon
+                              title="Move down"
+                              onClick={
+                                canAct
+                                  ? () => actions!.bumpSort?.("theme", t.code, +1)
+                                  : undefined
+                              }
+                              disabled={!canAct}
+                            >
+                              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">
+                                <path d="M10 14l6-6H4l6 6z" />
+                              </svg>
+                            </ActionIcon>
+                          </div>
+                        </div>
+
+                        {/* Subthemes under theme */}
+                        {tOpen &&
+                          sList.map((s) => (
+                            <div
+                              key={`subtheme-${s.id ?? s.code ?? ""}`}
+                              className="border-t border-gray-100 bg-white"
+                            >
+                              <div className="grid grid-cols-[1fr,120px,120px] items-center gap-2 px-4 py-3">
+                                <div className="flex items-start pl-16">
+                                  {/* spacer where caret would be */}
+                                  <div className="mr-2 h-6 w-6" />
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="inline-flex items-center rounded border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-700">
+                                        Subtheme
+                                      </span>
+                                      <span className="text-[11px] font-semibold text-gray-400">
+                                        {s.code}
+                                      </span>
+                                      <span className="ml-1 text-sm font-medium text-gray-900">
+                                        {s.name}
+                                      </span>
+                                    </div>
+                                    {s.description ? (
+                                      <p className="mt-1 text-[13px] leading-snug text-gray-600">
+                                        {s.description}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                </div>
+
+                                <div className="text-center text-sm text-gray-700">
+                                  {s.sort_order ?? ""}
+                                </div>
+
+                                <div className="flex justify-end gap-1 pr-1">
+                                  <ActionIcon
+                                    title="Move up"
+                                    onClick={
+                                      canAct
+                                        ? () =>
+                                            actions!.bumpSort?.(
+                                              "subtheme",
+                                              s.code,
+                                              -1
+                                            )
+                                        : undefined
+                                    }
+                                    disabled={!canAct}
+                                  >
+                                    <svg
+                                      viewBox="0 0 20 20"
+                                      className="h-4 w-4"
+                                      fill="currentColor"
+                                    >
+                                      <path d="M10 6l-6 6h12L10 6z" />
+                                    </svg>
+                                  </ActionIcon>
+                                  <ActionIcon
+                                    title="Move down"
+                                    onClick={
+                                      canAct
+                                        ? () =>
+                                            actions!.bumpSort?.(
+                                              "subtheme",
+                                              s.code,
+                                              +1
+                                            )
+                                        : undefined
+                                    }
+                                    disabled={!canAct}
+                                  >
+                                    <svg
+                                      viewBox="0 0 20 20"
+                                      className="h-4 w-4"
+                                      fill="currentColor"
+                                    >
+                                      <path d="M10 14l6-6H4l6 6z" />
+                                    </svg>
+                                  </ActionIcon>
+                                </div>
+                              </div>
+                            </div>
                           ))}
                       </div>
                     );
@@ -135,140 +420,6 @@ export default function PrimaryFrameworkCards({
             );
           })}
       </div>
-    </div>
-  );
-}
-
-/** Single row renderer with tighter spacing and bigger chevrons */
-function Row({
-  level,
-  code,
-  name,
-  description,
-  sort,
-  open,
-  onToggle,
-  readOnly,
-  actions,
-}: {
-  level: Entity;
-  code: string;
-  name: string;
-  description: string;
-  sort: number;
-  open: boolean;
-  onToggle?: () => void;
-  readOnly: boolean;
-  actions?: FrameworkActions;
-}) {
-  const tagStyles =
-    level === "pillar"
-      ? "bg-blue-100 text-blue-700"
-      : level === "theme"
-      ? "bg-green-100 text-green-700"
-      : "bg-red-100 text-red-700";
-
-  const indent =
-    level === "pillar" ? "" : level === "theme" ? "pl-6" : "pl-12";
-
-  return (
-    <div className={`grid grid-cols-[1fr,96px,112px] items-center px-3 py-2`}>
-      {/* name / description cell */}
-      <div className={`flex items-start gap-2 ${indent}`}>
-        {/* chevron */}
-        <button
-          type="button"
-          onClick={onToggle}
-          disabled={!onToggle}
-          className={`mt-0.5 h-6 w-6 flex-none rounded hover:bg-slate-100 transition disabled:opacity-30 disabled:hover:bg-transparent`}
-          aria-label={onToggle ? (open ? "Collapse" : "Expand") : "No children"}
-        >
-          <ChevronRight
-            className={`mx-auto h-5 w-5 transition-transform ${open ? "rotate-90" : ""} ${onToggle ? "text-slate-600" : "text-slate-300"}`}
-          />
-        </button>
-
-        {/* tag + code + name/description */}
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className={`inline-flex h-5 items-center rounded px-2 text-[11px] font-medium ${tagStyles}`}>
-              {level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme"}
-            </span>
-            <span className="text-xs font-medium text-slate-400">{code}</span>
-            <span className="truncate text-[15px] font-medium text-slate-900">{name}</span>
-          </div>
-          {description && (
-            <div className="mt-0.5 line-clamp-2 text-[13px] text-slate-600">{description}</div>
-          )}
-        </div>
-      </div>
-
-      {/* sort */}
-      <div className="pr-2 text-right text-sm tabular-nums text-slate-600">{sort}</div>
-
-      {/* actions */}
-      <div className="flex justify-end gap-1">
-        {/* drag handle (placeholder) */}
-        <IconButton title="Reorder (placeholder)" disabled>
-          <GripVertical className="h-4 w-4" />
-        </IconButton>
-
-        {/* bump sort */}
-        <IconButton
-          title="Move up"
-          disabled={readOnly || !actions?.bumpSort}
-          onClick={async () => actions?.bumpSort?.(level, code, -1)}
-        >
-          <ArrowUp className="h-4 w-4" />
-        </IconButton>
-        <IconButton
-          title="Move down"
-          disabled={readOnly || !actions?.bumpSort}
-          onClick={async () => actions?.bumpSort?.(level, code, +1)}
-        >
-          <ArrowDown className="h-4 w-4" />
-        </IconButton>
-
-        {/* edit (placeholder if read-only) */}
-        <IconButton
-          title={readOnly ? "Edit (disabled)" : "Edit"}
-          disabled={readOnly || !actions?.updateName}
-          onClick={async () => {
-            if (!actions?.updateName) return;
-            // trivial prompt-based edit to keep UI minimal for now
-            const newName = window.prompt("New name:", name);
-            if (newName && newName.trim() !== name) {
-              await actions.updateName(level, code, newName.trim());
-            }
-          }}
-        >
-          <Edit3 className="h-4 w-4" />
-        </IconButton>
-      </div>
-    </div>
-  );
-}
-
-function IconButton({
-  children,
-  title,
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode;
-  title: string;
-  onClick?: () => void | Promise<void>;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      onClick={onClick}
-      disabled={disabled}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-    >
-      {children}
-    </button>
+    </section>
   );
 }
