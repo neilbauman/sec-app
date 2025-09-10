@@ -2,56 +2,103 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { Info, Upload, Download } from "lucide-react";
 import * as React from "react";
-import clsx from "clsx";
 
-export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <div className={clsx("rounded-xl border bg-white shadow-sm", className)}>
-      {children}
-    </div>
-  );
+// ---------- Small helpers ----------
+export function cn(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
 }
 
-export function Tooltip({
-  content,
+// ---------- Tag (color-coded chips for hierarchy) ----------
+type TagColor = "blue" | "green" | "red" | "gray";
+export function Tag({
   children,
+  color = "gray",
   className,
 }: {
-  content: string;
   children: React.ReactNode;
+  color?: TagColor;
   className?: string;
 }) {
-  // Simple title-based tooltip (no external deps)
+  const palette: Record<TagColor, string> = {
+    blue: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
+    green: "bg-green-50 text-green-700 ring-1 ring-green-200",
+    red: "bg-red-50 text-red-700 ring-1 ring-red-200",
+    gray: "bg-gray-50 text-gray-700 ring-1 ring-gray-200",
+  };
   return (
-    <span className={className} title={content}>
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
+        palette[color],
+        className
+      )}
+    >
       {children}
     </span>
   );
 }
 
-export function ActionIcon({
-  onClick,
-  "aria-label": ariaLabel,
+// ---------- Simple Card (optional wrapper) ----------
+export function Card({
   children,
   className,
-  disabled,
 }: {
-  onClick?: () => void;
-  "aria-label"?: string;
   children: React.ReactNode;
   className?: string;
-  disabled?: boolean;
+}) {
+  return (
+    <div className={cn("rounded-xl border bg-white shadow-sm", className)}>
+      {children}
+    </div>
+  );
+}
+
+// ---------- Tooltip (very small, no portal) ----------
+export function Tooltip({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <span className="relative inline-flex">
+      <span className="group inline-flex">{children}</span>
+      <span
+        className={cn(
+          "pointer-events-none absolute left-1/2 z-10 hidden -translate-x-1/2 translate-y-2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs text-white group-hover:block",
+          className
+        )}
+      >
+        {label}
+      </span>
+    </span>
+  );
+}
+
+// ---------- ActionIcon ----------
+export function ActionIcon({
+  children,
+  onClick,
+  "aria-label": ariaLabel,
+  className,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  "aria-label"?: string;
+  className?: string;
 }) {
   return (
     <button
       type="button"
       aria-label={ariaLabel}
       onClick={onClick}
-      disabled={disabled}
-      className={clsx(
-        "inline-flex h-8 w-8 items-center justify-center rounded-md border text-gray-700 hover:bg-gray-50 disabled:opacity-50",
+      className={cn(
+        "inline-flex h-8 w-8 items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-50",
         className
       )}
     >
@@ -60,52 +107,38 @@ export function ActionIcon({
   );
 }
 
-export function CaretButton({
-  open,
-  onToggle,
+// ---------- Breadcrumb (rendered from items) ----------
+export function Breadcrumb({
+  items,
   className,
 }: {
-  open: boolean;
-  onToggle: () => void;
+  items: Array<{ label: string; href?: string }>;
   className?: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-label={open ? "Collapse" : "Expand"}
-      className={clsx("mr-2 inline-flex h-5 w-5 items-center justify-center", className)}
-    >
-      {/* Keep caret tiny per your request */}
-      <span className="block text-gray-500">{open ? "▾" : "▸"}</span>
-    </button>
+    <nav aria-label="Breadcrumb" className={cn("text-sm text-gray-500", className)}>
+      <ol className="flex items-center gap-2">
+        {items.map((it, i) => {
+          const last = i === items.length - 1;
+          return (
+            <li key={`${it.label}-${i}`} className="flex items-center gap-2">
+              {it.href && !last ? (
+                <Link href={it.href} className="hover:text-gray-700">
+                  {it.label}
+                </Link>
+              ) : (
+                <span className="text-gray-700">{it.label}</span>
+              )}
+              {!last && <span className="text-gray-300">/</span>}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }
 
-/** Tags — fixed colors */
-export function TagPillar({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={clsx("inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200", className)}>
-      {children}
-    </span>
-  );
-}
-export function TagTheme({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={clsx("inline-flex items-center rounded-md bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-green-200", className)}>
-      {children}
-    </span>
-  );
-}
-export function TagSubtheme({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={clsx("inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-red-200", className)}>
-      {children}
-    </span>
-  );
-}
-
-/** Page header + breadcrumb (reusable on all pages) */
+// ---------- PageHeader (site title + breadcrumb + page title + actions) ----------
 export function PageHeader({
   title,
   breadcrumb,
@@ -122,48 +155,18 @@ export function PageHeader({
           Shelter and Settlements Vulnerability Index
         </div>
         <div className="flex items-center justify-between">
-          <div>
+          <div className="space-y-1">
             {breadcrumb}
-            <h1 className="mt-1 text-2xl font-semibold text-gray-900">{title}</h1>
+            <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
           </div>
-          {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
       </div>
     </header>
   );
 }
 
-export function Breadcrumb({
-  items,
-  className,
-}: {
-  items: Array<{ label: string; href?: string }>;
-  className?: string;
-}) {
-  return (
-    <nav aria-label="Breadcrumb" className={clsx("text-sm text-gray-500", className)}>
-      <ol className="flex items-center gap-1">
-        {items.map((it, i) => {
-          const last = i === items.length - 1;
-          return (
-            <li key={i} className="flex items-center">
-              {it.href && !last ? (
-                <Link href={it.href} className="hover:text-gray-700">
-                  {it.label}
-                </Link>
-              ) : (
-                <span className={clsx(last ? "text-gray-900" : "text-gray-600")}>{it.label}</span>
-              )}
-              {!last ? <ChevronRight className="mx-1 h-3.5 w-3.5 text-gray-400" /> : null}
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
-  );
-}
-
-/** CSV placeholders — use disableImport/disableExport instead of `disabled` */
+// ---------- CSV Actions (placeholders; wire up later) ----------
 export function CsvActions({
   onImport,
   onExport,
@@ -178,23 +181,30 @@ export function CsvActions({
   className?: string;
 }) {
   return (
-    <div className={clsx("flex items-center gap-2", className)}>
-      <button
-        type="button"
-        disabled={disableImport}
+    <div className={cn("flex items-center gap-2", className)}>
+      <ActionIcon
+        aria-label="Import CSV"
         onClick={onImport}
-        className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm hover:bg-gray-50 disabled:opacity-50"
+        className={disableImport ? "opacity-50 cursor-not-allowed" : ""}
       >
-        Import CSV
-      </button>
-      <button
-        type="button"
-        disabled={disableExport}
+        <Tooltip label="Import CSV">
+          <Upload className="h-4 w-4" />
+        </Tooltip>
+      </ActionIcon>
+      <ActionIcon
+        aria-label="Export CSV"
         onClick={onExport}
-        className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm hover:bg-gray-50 disabled:opacity-50"
+        className={disableExport ? "opacity-50 cursor-not-allowed" : ""}
       >
-        Export CSV
-      </button>
+        <Tooltip label="Export CSV">
+          <Download className="h-4 w-4" />
+        </Tooltip>
+      </ActionIcon>
+      <Tooltip label="More info">
+        <span className="inline-flex h-8 w-8 items-center justify-center text-gray-400">
+          <Info className="h-4 w-4" />
+        </span>
+      </Tooltip>
     </div>
   );
 }
