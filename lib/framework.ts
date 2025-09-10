@@ -1,13 +1,12 @@
 // lib/framework.ts
 import { createServerSupabase } from "@/lib/supabase-server";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+export type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export async function fetchFrameworkList(): Promise<{
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
+  pillars: import("@/types/framework").Pillar[];
+  themes: import("@/types/framework").Theme[];
+  subthemes: import("@/types/framework").Subtheme[];
 }> {
-  // IMPORTANT: createServerSupabase is async in your repo right now → await it
   const supabase = await createServerSupabase();
 
   const { data: pillars } = await supabase
@@ -17,12 +16,12 @@ export async function fetchFrameworkList(): Promise<{
 
   const { data: themes } = await supabase
     .from("themes")
-    .select("id, code, name, description, sort_order, pillar_id")
+    .select("id, code, name, description, pillar_id, sort_order")
     .order("sort_order", { ascending: true });
 
   const { data: subthemes } = await supabase
     .from("subthemes")
-    .select("id, code, name, description, sort_order, theme_id")
+    .select("id, code, name, description, theme_id, sort_order")
     .order("sort_order", { ascending: true });
 
   return {
