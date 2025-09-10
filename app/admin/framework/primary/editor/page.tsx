@@ -1,50 +1,42 @@
 // app/admin/framework/primary/editor/page.tsx
-import Link from 'next/link'
-import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards'
-import { fetchFrameworkList } from '@/lib/framework'
+import Link from "next/link";
+import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+import { fetchFrameworkList } from "@/lib/framework";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function PrimaryFrameworkEditorPage() {
-  try {
-    const data = await fetchFrameworkList()
+  // Pull from lib; keep server-only. No auth/roles involved.
+  const data = await fetchFrameworkList();
 
-    return (
-      <main className="mx-auto max-w-6xl p-6">
-        <Link href="/dashboard" className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
-          ← Back to Dashboard
-        </Link>
+  // Hard guard in case the lib returns unexpected shape during wiring
+  const pillars = (data?.pillars ?? []) as Pillar[];
+  const themes = (data?.themes ?? []) as Theme[];
+  const subthemes = (data?.subthemes ?? []) as Subtheme[];
 
-        <h1 className="text-3xl font-bold tracking-tight">Primary Framework Editor</h1>
-        <p className="mt-1 text-slate-600">
-          Manage pillars, themes, and subthemes.
+  return (
+    <main className="mx-auto max-w-6xl p-6">
+      <Link
+        href="/dashboard"
+        className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+      >
+        ← Back to Dashboard
+      </Link>
+
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
+        <p className="text-sm text-slate-600 mt-1">
+          Manage pillars, themes, and subthemes. (All collapsed by default)
         </p>
+      </header>
 
-        <div className="mt-6">
-          <PrimaryFrameworkCards
-            pillars={data.pillars}
-            themes={data.themes}
-            subthemes={data.subthemes}
-          />
-        </div>
-      </main>
-    )
-  } catch (err: any) {
-    return (
-      <main className="mx-auto max-w-6xl p-6">
-        <Link href="/dashboard" className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
-          ← Back to Dashboard
-        </Link>
-
-        <h1 className="text-3xl font-bold tracking-tight">Primary Framework Editor</h1>
-
-        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-          <p className="font-medium">Couldn’t load data from Supabase.</p>
-          <p className="mt-1 text-sm">
-            {(err?.message as string) || 'Unknown error'}
-          </p>
-        </div>
-      </main>
-    )
-  }
+      <PrimaryFrameworkCards
+        pillars={pillars}
+        themes={themes}
+        subthemes={subthemes}
+        defaultOpen={false}
+      />
+    </main>
+  );
 }
