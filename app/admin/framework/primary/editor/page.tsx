@@ -1,83 +1,65 @@
 // app/admin/framework/primary/editor/page.tsx
 import Link from "next/link";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import { fetchFrameworkList } from "@/lib/framework";
+import { fetchFrameworkList } from "@/lib/framework"; // existing helper
 
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  // 1) Load raw data (DB shapes)
+  // 1) fetch raw data
   const data = await fetchFrameworkList();
 
-  // 2) Coerce to UI-friendly, defensive defaults (no “id” required in UI)
-  const asArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
-
-  const pillars = asArray<{ code: string; name: string; description?: string | null; sort_order?: number | null }>(
-    data?.pillars
-  ).map((p) => ({
-    code: String((p as any)?.code ?? ""),
-    name: String((p as any)?.name ?? ""),
-    description: (p as any)?.description ?? "",
-    sort_order: (p as any)?.sort_order ?? 0,
-  }));
-
-  const themes = asArray<{ code: string; name: string; description?: string | null; sort_order?: number | null; pillar_code?: string }>(
-    data?.themes
-  ).map((t) => ({
-    code: String((t as any)?.code ?? ""),
-    name: String((t as any)?.name ?? ""),
-    description: (t as any)?.description ?? "",
-    sort_order: (t as any)?.sort_order ?? 0,
-    pillar_code: String((t as any)?.pillar_code ?? ""),
-  }));
-
-  const subthemes = asArray<{ code: string; name: string; description?: string | null; sort_order?: number | null; theme_code?: string }>(
-    data?.subthemes
-  ).map((s) => ({
-    code: String((s as any)?.code ?? ""),
-    name: String((s as any)?.name ?? ""),
-    description: (s as any)?.description ?? "",
-    sort_order: (s as any)?.sort_order ?? 0,
-    theme_code: String((s as any)?.theme_code ?? ""),
-  }));
+  // 2) coerce to arrays; keep snake_case to align with DB
+  const pillars = Array.isArray(data?.pillars) ? data!.pillars : [];
+  const themes = Array.isArray(data?.themes) ? data!.themes : [];
+  const subthemes = Array.isArray(data?.subthemes) ? data!.subthemes : [];
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Primary Framework</h1>
-        <div className="flex items-center gap-3">
-          {/* CSV placeholders (non-functional) */}
+      <Link href="/admin" className="text-sm text-indigo-600 hover:text-indigo-800">
+        ← Back to Dashboard
+      </Link>
+
+      <h1 className="mt-3 text-2xl font-semibold tracking-tight text-gray-900">Primary Framework Editor</h1>
+
+      {/* toolbar */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3 text-sm text-gray-600">
+          <span>Pillars: {pillars.length}</span>
+          <span>•</span>
+          <span>Themes: {themes.length}</span>
+          <span>•</span>
+          <span>Subthemes: {subthemes.length}</span>
+        </div>
+
+        {/* CSV placeholders (non-functional) */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm hover:bg-gray-50"
+            title="Bulk import CSV (placeholder)"
             disabled
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-500"
-            title="CSV Import (coming soon)"
           >
             Import CSV
           </button>
           <button
             type="button"
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm hover:bg-gray-50"
+            title="Bulk export CSV (placeholder)"
             disabled
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-500"
-            title="CSV Export (coming soon)"
           >
             Export CSV
           </button>
-          <Link
-            href="/"
-            className="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-800"
-          >
-            Dashboard
-          </Link>
         </div>
       </div>
 
+      {/* cards */}
       <PrimaryFrameworkCards
         defaultOpen={false}
-        pillars={pillars}
-        themes={themes}
-        subthemes={subthemes}
-        actions={{}} // read-only for now
+        pillars={pillars as any}
+        themes={themes as any}
+        subthemes={subthemes as any}
+        // actions omitted → read-only, keeps build green
       />
     </main>
   );
