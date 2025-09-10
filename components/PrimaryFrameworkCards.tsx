@@ -8,6 +8,7 @@ import {
   Card,
   Tooltip,
   ActionIcon,
+  Tag,
   CaretButton,
   TagPillar,
   TagTheme,
@@ -19,11 +20,7 @@ type Props = {
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
-  actions?: {
-    onEditPillar?: (p: Pillar) => void;
-    onEditTheme?: (t: Theme) => void;
-    onEditSubtheme?: (s: Subtheme) => void;
-  };
+  actions?: React.ReactNode;
 };
 
 export default function PrimaryFrameworkCards({
