@@ -1,13 +1,52 @@
 // lib/framework.ts
-import { createClientOnServer } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase-server";
 
-export async function fetchFrameworkList() {
-  const supabase = await createClientOnServer();
+export type Pillar = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+};
 
-  // ...rest unchanged...
-  const { data: pillars } = await supabase.from("pillars").select("id, code, name, description, sort_order").order("sort_order", { ascending: true });
-  const { data: themes } = await supabase.from("themes").select("id, code, name, description, sort_order, pillar_id").order("sort_order", { ascending: true });
-  const { data: subthemes } = await supabase.from("subthemes").select("id, code, name, description, sort_order, theme_id").order("sort_order", { ascending: true });
+export type Theme = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  pillar_id: string | null;
+  pillar_code?: string | null;
+};
 
-  return { pillars: pillars ?? [], themes: themes ?? [], subthemes: subthemes ?? [] };
+export type Subtheme = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  theme_id: string | null;
+  theme_code?: string | null;
+};
+
+// Fetches data on the server (page/route handlers)
+export async function fetchFrameworkList(): Promise<{
+  pillars: Pillar[];
+  themes: Theme[];
+  subthemes: Subtheme[];
+}> {
+  const supabase = createServerSupabase();
+
+  const [{ data: pillars }, { data: themes }, { data: subthemes }] =
+    await Promise.all([
+      supabase.from("pillars").select("*").order("sort_order", { ascending: true }),
+      supabase.from("themes").select("*").order("sort_order", { ascending: true }),
+      supabase.from("subthemes").select("*").order("sort_order", { ascending: true }),
+    ]);
+
+  return {
+    pillars: (pillars ?? []) as Pillar[],
+    themes: (themes ?? []) as Theme[],
+    subthemes: (subthemes ?? []) as Subtheme[],
+  };
 }
