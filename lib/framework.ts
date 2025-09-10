@@ -1,14 +1,14 @@
 // lib/framework.ts
 import { createServerSupabase } from "@/lib/supabase-server";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
-export type { Pillar, Theme, Subtheme };
 
 export async function fetchFrameworkList(): Promise<{
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
 }> {
-  const supabase = createServerSupabase();
+  // IMPORTANT: createServerSupabase is async in your repo right now → await it
+  const supabase = await createServerSupabase();
 
   const { data: pillars } = await supabase
     .from("pillars")
