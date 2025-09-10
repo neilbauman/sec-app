@@ -1,31 +1,43 @@
 // lib/supabase-server.ts
-import { cookies, type CookieOptions } from "next/headers";
+"use server";
+
+import { cookies } from "next/headers";
 import {
   createServerClient,
-  type CookieOptions as SSR_CookieOptions, // not all versions export this; keep ours above
+  type CookieOptions, // <- comes from @supabase/ssr, not next/headers
 } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-// Keep types very permissive to avoid “GenericSchema vs 'public'” build errors on Vercel.
-// Consumers shouldn't re-export these types; just use the returned client.
-export function createServerSupabase() {
+/**
+ * Server-side Supabase client for Route Handlers, Server Components, and Server Actions.
+ * No async/await needed here; cookies() is sync in Next 15.
+ */
+export function createServerSupabase(): SupabaseClient {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  // In Next 15, cookies() is sync and returns a jar with .get/.set
-  const jar = cookies();
+  const jar = cookies(); // synchronous cookie jar
 
+  // Note: some environments restrict set/remove; we wrap in try/catch to be safe.
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
         return jar.get(name)?.value;
       },
       set(name: string, value: string, options: CookieOptions) {
-        // This is allowed in route handlers/server actions. Elsewhere it’s a no-op.
-        jar.set(name, value, options);
+        try {
+          jar.set(name, value, options as any);
+        } catch {
+          /* no-op outside actions/route handlers */
+        }
       },
       remove(name: string, options: CookieOptions) {
-        jar.set(name, "", { ...options, maxAge: 0 });
+        try {
+          jar.set(name, "", { ...(options as any), maxAge: 0 });
+        } catch {
+          /* no-op outside actions/route handlers */
+        }
       },
     },
-  }) as any; // keep loose to avoid schema generic narrowing issues on Vercel
+  }) as unknown as SupabaseClient;
 }
