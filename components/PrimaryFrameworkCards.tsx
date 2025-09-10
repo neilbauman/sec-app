@@ -2,323 +2,257 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AppHeader, PageContainer, HierTag, IconButton } from "@/lib/ui";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Upload,
-  Download,
-  ChevronRight,
-} from "lucide-react";
-
-/** Local UI shapes to avoid import/type conflicts */
-export type Pillar = {
-  id?: string;
-  code: string;
-  name: string;
-  description?: string | null;
-  sort_order?: number | null;
-};
-export type Theme = {
-  id?: string;
-  code: string;
-  name: string;
-  description?: string | null;
-  sort_order?: number | null;
-  pillar_id?: string | null;
-  pillar_code?: string | null;
-};
-export type Subtheme = {
-  id?: string;
-  code: string;
-  name: string;
-  description?: string | null;
-  sort_order?: number | null;
-  theme_id?: string | null;
-  theme_code?: string | null;
-};
-
-type Actions = Partial<{
-  onAddPillar: () => void;
-  onEditPillar: (p: Pillar) => void;
-  onDeletePillar: (p: Pillar) => void;
-
-  onAddTheme: (pillar: Pillar) => void;
-  onEditTheme: (t: Theme) => void;
-  onDeleteTheme: (t: Theme) => void;
-
-  onAddSubtheme: (theme: Theme) => void;
-  onEditSubtheme: (s: Subtheme) => void;
-  onDeleteSubtheme: (s: Subtheme) => void;
-
-  onImportCsv?: () => void; // placeholder hook
-  onExportCsv?: () => void; // placeholder hook
-}>;
+import { ChevronRight, ChevronDown, Edit, Trash2, Plus } from "lucide-react";
+import { HierTag } from "@/lib/ui";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default function PrimaryFrameworkCards({
-  pillars = [],
-  themes = [],
-  subthemes = [],
-  defaultOpen = true,
-  actions = {},
+  pillars,
+  themes,
+  subthemes,
+  defaultOpen = false,
+  actions,
 }: {
-  pillars?: Pillar[];
-  themes?: Theme[];
-  subthemes?: Subtheme[];
+  pillars: Pillar[];
+  themes: Theme[];
+  subthemes: Subtheme[];
   defaultOpen?: boolean;
-  actions?: Actions;
+  actions?: {
+    onAddPillar?: () => void;
+    onEditPillar?: (p: Pillar) => void;
+    onDeletePillar?: (p: Pillar) => void;
+
+    onAddTheme?: (pillar: Pillar) => void;
+    onEditTheme?: (t: Theme) => void;
+    onDeleteTheme?: (t: Theme) => void;
+
+    onAddSubtheme?: (theme: Theme) => void;
+    onEditSubtheme?: (s: Subtheme) => void;
+    onDeleteSubtheme?: (s: Subtheme) => void;
+  };
 }) {
-  // open state
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
 
-  const sortedPillars = useMemo(
-    () =>
-      [...pillars].sort(
-        (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-      ),
+  const pillarsSorted = useMemo(
+    () => [...(pillars ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
     [pillars]
   );
 
-  // Map pillar_code -> themes
   const themesByPillar = useMemo(() => {
     const map: Record<string, Theme[]> = {};
-    for (const t of themes) {
-      const key = t.pillar_code ?? "";
+    for (const t of themes ?? []) {
+      const key = t.pillar_id ?? "";
       if (!map[key]) map[key] = [];
       map[key].push(t);
     }
-    for (const key of Object.keys(map)) {
-      map[key].sort(
-        (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-      );
-    }
+    Object.values(map).forEach((arr) => arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
     return map;
   }, [themes]);
 
-  // Map theme_code -> subthemes
   const subthemesByTheme = useMemo(() => {
     const map: Record<string, Subtheme[]> = {};
-    for (const s of subthemes) {
-      const key = s.theme_code ?? "";
+    for (const s of subthemes ?? []) {
+      const key = s.theme_id ?? "";
       if (!map[key]) map[key] = [];
       map[key].push(s);
     }
-    for (const key of Object.keys(map)) {
-      map[key].sort(
-        (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-      );
-    }
+    Object.values(map).forEach((arr) => arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
     return map;
   }, [subthemes]);
 
-  const togglePillar = (code: string) =>
-    setOpenPillars((prev) => ({
-      ...prev,
-      [code]: prev[code] ?? defaultOpen ? !prev[code] : true,
-    }));
+  // Initialize defaults
+  useMemo(() => {
+    if (!defaultOpen) return;
+    const p: Record<string, boolean> = {};
+    const t: Record<string, boolean> = {};
+    pillarsSorted.forEach((x) => (p[x.id] = true));
+    (themes ?? []).forEach((x) => (t[x.id] = true));
+    setOpenPillars(p);
+    setOpenThemes(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultOpen]);
 
-  const toggleTheme = (code: string) =>
-    setOpenThemes((prev) => ({
-      ...prev,
-      [code]: prev[code] ?? defaultOpen ? !prev[code] : true,
-    }));
-
-  const IconBtn = ({
-    title,
-    onClick,
-    children,
-  }: {
-    title: string;
-    onClick?: () => void;
-    children: React.ReactNode;
-  }) => (
-    <button
-      type="button"
-      title={title}
-      onClick={onClick}
-      className="rounded p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-    >
-      {children}
-    </button>
-  );
-
-  const HierarchyTag = ({
-    level,
-    text,
-  }: {
-    level: "pillar" | "theme" | "subtheme";
-    text: string;
-  }) => (
-    <span
-      className={`rounded px-2 py-0.5 text-xs font-medium ${hierarchyTagClasses[level]}`}
-    >
-      {text}
-    </span>
-  );
-
-  const Caret = ({ open }: { open: boolean }) => (
-    <ChevronRight
-      className={`h-4 w-4 transition-transform ${
-        open ? "rotate-90" : ""
-      }`}
-    />
-  );
+  const canAct = Boolean(actions);
 
   return (
     <section className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-4 py-3">
-        <div className="text-sm font-medium text-gray-600">
-          Name & Description
-        </div>
-        <div className="flex items-center gap-2">
-          <IconBtn title="Import CSV (placeholder)" onClick={actions.onImportCsv}>
-            <Upload className="h-4 w-4" />
-          </IconBtn>
-          <IconBtn title="Export CSV (placeholder)" onClick={actions.onExportCsv}>
-            <Download className="h-4 w-4" />
-          </IconBtn>
-          <IconBtn title="Add Pillar" onClick={actions.onAddPillar}>
-            <Plus className="h-4 w-4" />
-          </IconBtn>
-        </div>
+      <div className="grid grid-cols-[1fr,120px,120px] items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+        <div>Name & Description</div>
+        <div className="text-center">Hierarchy</div>
+        <div className="text-right pr-2">Actions</div>
       </div>
 
-      {/* Body */}
+      {/* Content */}
       <div className="divide-y">
-        {sortedPillars.map((p) => {
-          const isOpen = openPillars[p.code] ?? defaultOpen;
-          const pillarThemes = themesByPillar[p.code] ?? [];
+        {pillarsSorted.map((p) => {
+          const isPillarOpen = openPillars[p.id] ?? defaultOpen;
+          const pillarThemes = themesByPillar[p.id] ?? [];
 
           return (
-            <div key={p.code} className="px-4 py-3">
+            <div key={p.id} className="px-4 py-3">
               {/* Pillar row */}
-              <div className="flex items-start justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => togglePillar(p.code)}
-                  className="group flex min-w-0 items-start gap-2"
-                >
-                  {/* caret + tag block (unchanged size) */}
-                  <div className="mt-0.5 flex items-center gap-2">
-                    <Caret open={isOpen} />
-                    <HierarchyTag level="pillar" text="Pillar" />
-                  </div>
+              <div className="grid grid-cols-[1fr,120px,120px] items-start gap-2">
+                {/* Left: caret + name + description */}
+                <div>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 text-left"
+                    onClick={() => setOpenPillars((m) => ({ ...m, [p.id]: !isPillarOpen }))}
+                    title={isPillarOpen ? "Collapse Pillar" : "Expand Pillar"}
+                    aria-expanded={isPillarOpen}
+                  >
+                    <span className="inline-flex items-center">
+                      {isPillarOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </span>
+                    <span className="font-medium text-gray-900">{p.name}</span>
+                  </button>
+                  {/* Description directly under the name, aligned with name’s left edge */}
+                  {p.description && (
+                    <p className="ml-6 mt-1 text-sm text-gray-600">{p.description}</p>
+                  )}
+                </div>
 
-                  {/* name + description block (description aligns under name) */}
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-gray-900">
-                      {p.name}
-                    </div>
-                    {p.description ? (
-                      <div className="mt-0.5 line-clamp-2 text-sm text-gray-600">
-                        {p.description}
-                      </div>
-                    ) : null}
-                  </div>
-                </button>
+                {/* Middle: Tag */}
+                <div className="mt-1 text-center">
+                  <HierTag level="pillar" />
+                </div>
 
-                <div className="shrink-0">
-                  <IconBtn title="Edit Pillar" onClick={() => actions.onEditPillar?.(p)}>
-                    <Pencil className="h-4 w-4" />
-                  </IconBtn>
-                  <IconBtn title="Delete Pillar" onClick={() => actions.onDeletePillar?.(p)}>
-                    <Trash2 className="h-4 w-4" />
-                  </IconBtn>
-                  <IconBtn title="Add Theme" onClick={() => actions.onAddTheme?.(p)}>
-                    <Plus className="h-4 w-4" />
-                  </IconBtn>
+                {/* Right: actions */}
+                <div className="mt-1 flex items-center justify-end gap-2 pr-2">
+                  {canAct && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => actions?.onAddTheme?.(p)}
+                        title="Add Theme"
+                        className="rounded-md border p-1.5 text-gray-700 hover:bg-gray-50"
+                      >
+                        <Plus size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => actions?.onEditPillar?.(p)}
+                        title="Edit Pillar"
+                        className="rounded-md border p-1.5 text-gray-700 hover:bg-gray-50"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => actions?.onDeletePillar?.(p)}
+                        title="Delete Pillar"
+                        className="rounded-md border p-1.5 text-gray-700 hover:bg-gray-50"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 
               {/* Themes */}
-              {isOpen && pillarThemes.length > 0 && (
-                <div className="mt-2 space-y-2 border-l pl-4">
+              {isPillarOpen && pillarThemes.length > 0 && (
+                <div className="mt-2 space-y-2 border-l-2 border-gray-100 pl-4">
                   {pillarThemes.map((t) => {
-                    const tOpen = openThemes[t.code] ?? defaultOpen;
-                    const tSubs = subthemesByTheme[t.code] ?? [];
+                    const isThemeOpen = openThemes[t.id] ?? defaultOpen;
+                    const themeSubs = subthemesByTheme[t.id] ?? [];
                     return (
-                      <div key={t.code} className="pt-2">
-                        <div className="flex items-start justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={() => toggleTheme(t.code)}
-                            className="group flex min-w-0 items-start gap-2"
-                          >
-                            <div className="mt-0.5 flex items-center gap-2">
-                              <Caret open={tOpen} />
-                              <HierarchyTag level="theme" text="Theme" />
-                            </div>
-
-                            <div className="min-w-0">
-                              <div className="truncate text-sm font-medium text-gray-900">
-                                {t.name}
-                              </div>
-                              {t.description ? (
-                                <div className="mt-0.5 line-clamp-2 text-sm text-gray-600">
-                                  {t.description}
-                                </div>
-                              ) : null}
-                            </div>
-                          </button>
-
-                          <div className="shrink-0">
-                            <IconBtn title="Edit Theme" onClick={() => actions.onEditTheme?.(t)}>
-                              <Pencil className="h-4 w-4" />
-                            </IconBtn>
-                            <IconBtn
-                              title="Delete Theme"
-                              onClick={() => actions.onDeleteTheme?.(t)}
+                      <div key={t.id}>
+                        {/* Theme row */}
+                        <div className="grid grid-cols-[1fr,120px,120px] items-start gap-2">
+                          <div>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-2 text-left"
+                              onClick={() => setOpenThemes((m) => ({ ...m, [t.id]: !isThemeOpen }))}
+                              title={isThemeOpen ? "Collapse Theme" : "Expand Theme"}
+                              aria-expanded={isThemeOpen}
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </IconBtn>
-                            <IconBtn
-                              title="Add Subtheme"
-                              onClick={() => actions.onAddSubtheme?.(t)}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </IconBtn>
+                              <span className="inline-flex items-center">
+                                {isThemeOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                              </span>
+                              <span className="font-medium text-gray-900">{t.name}</span>
+                            </button>
+                            {t.description && (
+                              <p className="ml-6 mt-1 text-sm text-gray-600">{t.description}</p>
+                            )}
+                          </div>
+
+                          <div className="mt-1 text-center">
+                            <HierTag level="theme" />
+                          </div>
+
+                          <div className="mt-1 flex items-center justify-end gap-2 pr-2">
+                            {canAct && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => actions?.onAddSubtheme?.(t)}
+                                  title="Add Subtheme"
+                                  className="rounded-md border p-1.5 text-gray-700 hover:bg-gray-50"
+                                >
+                                  <Plus size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => actions?.onEditTheme?.(t)}
+                                  title="Edit Theme"
+                                  className="rounded-md border p-1.5 text-gray-700 hover:bg-gray-50"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => actions?.onDeleteTheme?.(t)}
+                                  title="Delete Theme"
+                                  className="rounded-md border p-1.5 text-gray-700 hover:bg-gray-50"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
 
                         {/* Subthemes */}
-                        {tOpen && tSubs.length > 0 && (
-                          <div className="mt-2 space-y-2 border-l pl-4">
-                            {tSubs.map((s) => (
-                              <div key={s.code} className="flex items-start justify-between gap-3">
-                                <div className="flex min-w-0 items-start gap-2">
-                                  <div className="mt-0.5 flex items-center gap-2">
-                                    {/* no caret at subtheme level */}
-                                    <span className="inline-block w-4" />
-                                    <HierarchyTag level="subtheme" text="Subtheme" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="truncate text-sm font-medium text-gray-900">
-                                      {s.name}
-                                    </div>
-                                    {s.description ? (
-                                      <div className="mt-0.5 line-clamp-2 text-sm text-gray-600">
-                                        {s.description}
-                                      </div>
-                                    ) : null}
+                        {isThemeOpen && themeSubs.length > 0 && (
+                          <div className="mt-2 space-y-2 border-l-2 border-gray-100 pl-4">
+                            {themeSubs.map((s) => (
+                              <div key={s.id} className="grid grid-cols-[1fr,120px,120px] items-start gap-2">
+                                <div className="">
+                                  <div className="ml-6">
+                                    <span className="font-medium text-gray-900">{s.name}</span>
+                                    {s.description && (
+                                      <p className="mt-1 text-sm text-gray-600">{s.description}</p>
+                                    )}
                                   </div>
                                 </div>
-
-                                <div className="shrink-0">
-                                  <IconBtn
-                                    title="Edit Subtheme"
-                                    onClick={() => actions.onEditSubtheme?.(s)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </IconBtn>
-                                  <IconBtn
-                                    title="Delete Subtheme"
-                                    onClick={() => actions.onDeleteSubtheme?.(s)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </IconBtn>
+                                <div className="mt-1 text-center">
+                                  <HierTag level="subtheme" />
+                                </div>
+                                <div className="mt-1 flex items-center justify-end gap-2 pr-2">
+                                  {canAct && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => actions?.onEditSubtheme?.(s)}
+                                        title="Edit Subtheme"
+                                        className="rounded-md border p-1.5 text-gray-700 hover:bg-gray-50"
+                                      >
+                                        <Edit size={16} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => actions?.onDeleteSubtheme?.(s)}
+                                        title="Delete Subtheme"
+                                        className="rounded-md border p-1.5 text-gray-700 hover:bg-gray-50"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
                               </div>
                             ))}
