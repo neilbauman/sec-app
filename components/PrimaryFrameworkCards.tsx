@@ -1,7 +1,7 @@
 "use client";
 
-// components/PrimaryFrameworkCards.tsx
 import { useMemo, useState } from "react";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export type Pillar = {
   id: string;
