@@ -1,33 +1,13 @@
 // lib/framework.ts
-import { getServerSupabase } from "@/lib/supabase";
+import { createClientOnServer } from "@/lib/supabase";
 
-export type Pillar = { id: string; code: string; name: string; description: string | null; sort_order: number };
-export type Theme  = { id: string; code: string; name: string; description: string | null; sort_order: number; pillar_id: string | null; pillar_code?: string | null };
-export type Subtheme = { id: string; code: string; name: string; description: string | null; sort_order: number; theme_id: string | null; theme_code?: string | null };
+export async function fetchFrameworkList() {
+  const supabase = await createClientOnServer();
 
-export async function fetchFrameworkList(): Promise<{
-  pillars: Pillar[]; themes: Theme[]; subthemes: Subtheme[];
-}> {
-  const supabase = getServerSupabase();
+  // ...rest unchanged...
+  const { data: pillars } = await supabase.from("pillars").select("id, code, name, description, sort_order").order("sort_order", { ascending: true });
+  const { data: themes } = await supabase.from("themes").select("id, code, name, description, sort_order, pillar_id").order("sort_order", { ascending: true });
+  const { data: subthemes } = await supabase.from("subthemes").select("id, code, name, description, sort_order, theme_id").order("sort_order", { ascending: true });
 
-  const { data: pillars } = await supabase
-    .from("pillars")
-    .select("id, code, name, description, sort_order")
-    .order("sort_order", { ascending: true });
-
-  const { data: themes } = await supabase
-    .from("themes")
-    .select("id, code, name, description, sort_order, pillar_id, pillar_code")
-    .order("sort_order", { ascending: true });
-
-  const { data: subthemes } = await supabase
-    .from("subthemes")
-    .select("id, code, name, description, sort_order, theme_id, theme_code")
-    .order("sort_order", { ascending: true });
-
-  return {
-    pillars: pillars ?? [],
-    themes: themes ?? [],
-    subthemes: subthemes ?? [],
-  };
+  return { pillars: pillars ?? [], themes: themes ?? [], subthemes: subthemes ?? [] };
 }
