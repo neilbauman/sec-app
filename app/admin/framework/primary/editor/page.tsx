@@ -1,83 +1,53 @@
 // app/admin/framework/primary/editor/page.tsx
 import Link from "next/link";
-import { PageHeader } from "@/lib/ui";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import { fetchFrameworkList } from "@/lib/framework";
-import { Download, Upload } from "lucide-react";
-import ActionIcon from "@/components/ActionIcon";
+import { fetchFrameworkList, type Pillar, type Theme, type Subtheme } from "@/lib/framework";
+import { PageHeader } from "@/lib/ui";
+import { Upload, Download } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const data = await fetchFrameworkList();
 
-  const pillars = (Array.isArray(data?.pillars) ? data!.pillars : []).map((p: any) => ({
-    id: String(p.id ?? ""),
-    code: String(p.code ?? ""),
-    name: String(p.name ?? ""),
-    description: p.description ?? "",
-    sort_order: Number(p.sort_order ?? 0),
-  }));
-
-  const themes = (Array.isArray(data?.themes) ? data!.themes : []).map((t: any) => ({
-    id: String(t.id ?? ""),
-    code: String(t.code ?? ""),
-    pillar_id: t.pillar_id ?? null,
-    pillar_code: t.pillar_code ?? null,
-    name: String(t.name ?? ""),
-    description: t.description ?? "",
-    sort_order: Number(t.sort_order ?? 0),
-  }));
-
-  const subthemes = (Array.isArray(data?.subthemes) ? data!.subthemes : []).map((s: any) => ({
-    id: String(s.id ?? ""),
-    code: String(s.code ?? ""),
-    theme_id: s.theme_id ?? null,
-    theme_code: s.theme_code ?? null,
-    name: String(s.name ?? ""),
-    description: s.description ?? "",
-    sort_order: Number(s.sort_order ?? 0),
-  }));
-
   return (
-    <>
+    <main className="min-h-dvh bg-gray-50">
       <PageHeader
-  title="Primary Framework Editor"
-  breadcrumb={
-    <div className="flex items-center gap-2 text-sm">
-      <Link href="/dashboard" className="text-blue-600 hover:underline">
-        Dashboard
-      </Link>
-      <span className="text-gray-400">/</span>
-      <span className="text-gray-700">Framework</span>
-      <span className="text-gray-400">/</span>
-      <span className="text-gray-900 font-medium">Primary</span>
-    </div>
-  }
-/>
-
-      <main className="mx-auto max-w-6xl px-4 pb-12 pt-6">
-        {/* Top actions row: CSV Import/Export placeholders */}
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            Manage pillars, themes, and subthemes.
-          </div>
+        title="Primary Framework Editor"
+        breadcrumb={
           <div className="flex items-center gap-2">
-            <ActionIcon title="Import CSV (coming soon)" disabled>
-              <Upload className="h-4 w-4" aria-hidden="true" />
-            </ActionIcon>
-            <ActionIcon title="Export CSV (coming soon)" disabled>
-              <Download className="h-4 w-4" aria-hidden="true" />
-            </ActionIcon>
+            <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
+              Dashboard
+            </Link>
+            <span className="text-gray-400">/</span>
+            <span className="text-gray-900">Primary Framework</span>
           </div>
-        </div>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            {/* CSV placeholders */}
+            <button className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">
+              <Upload className="h-4 w-4" />
+              Import CSV
+            </button>
+            <button className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">
+              <Download className="h-4 w-4" />
+              Export CSV
+            </button>
+          </div>
+        }
+      />
 
+      <div className="mx-auto max-w-6xl px-4">
         <PrimaryFrameworkCards
           defaultOpen={false}
-          pillars={pillars}
-          themes={themes}
-          subthemes={subthemes}
-          actions={{}} // read-only placeholders for now
+          pillars={data.pillars as Pillar[]}
+          themes={data.themes as Theme[]}
+          subthemes={data.subthemes as Subtheme[]}
+          // read-only for now; actions area stays aligned to the right
+          actions={{}}
         />
-      </main>
-    </>
+      </div>
+    </main>
   );
 }
