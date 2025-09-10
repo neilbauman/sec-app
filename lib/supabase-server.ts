@@ -1,20 +1,18 @@
 // lib/supabase-server.ts
-"use server";
+import { cookies, type CookieOptions } from "next/headers";
+import {
+  createServerClient,
+  type CookieOptions as SSR_CookieOptions, // not all versions export this; keep ours above
+} from "@supabase/ssr";
 
-import { cookies } from "next/headers";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-/**
- * Server-side Supabase client (Route Handlers, Server Components, Server Actions).
- * Note: async on purpose so we can `await cookies()` in environments where it's promise-typed.
- */
-export async function createClientOnServer(): Promise<SupabaseClient> {
+// Keep types very permissive to avoid “GenericSchema vs 'public'” build errors on Vercel.
+// Consumers shouldn't re-export these types; just use the returned client.
+export function createServerSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  // In some runtimes/types, cookies() is promise-typed — await to satisfy TS.
-  const jar = await cookies();
+  // In Next 15, cookies() is sync and returns a jar with .get/.set
+  const jar = cookies();
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -22,16 +20,12 @@ export async function createClientOnServer(): Promise<SupabaseClient> {
         return jar.get(name)?.value;
       },
       set(name: string, value: string, options: CookieOptions) {
-        try {
-          // set can be a no-op in some contexts; try/catch prevents build errors.
-          jar.set({ name, value, ...options });
-        } catch {}
+        // This is allowed in route handlers/server actions. Elsewhere it’s a no-op.
+        jar.set(name, value, options);
       },
       remove(name: string, options: CookieOptions) {
-        try {
-          jar.set({ name, value: "", ...options, maxAge: 0 });
-        } catch {}
+        jar.set(name, "", { ...options, maxAge: 0 });
       },
     },
-  }) as unknown as SupabaseClient;
+  }) as any; // keep loose to avoid schema generic narrowing issues on Vercel
 }
