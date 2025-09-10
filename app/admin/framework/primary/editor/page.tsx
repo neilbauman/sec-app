@@ -1,4 +1,3 @@
-// app/admin/framework/primary/editor/page.tsx
 import Link from "next/link";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { fetchFrameworkList } from "@/lib/framework";
@@ -6,89 +5,105 @@ import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export const dynamic = "force-dynamic";
 
-// Local action types expected by PrimaryFrameworkCards
-type Entity = "pillar" | "theme" | "subtheme";
-type Actions = {
-  updateName: (entity: Entity, code: string, name: string) => Promise<void>;
-  updateDescription: (
-    entity: Entity,
-    code: string,
-    description: string
-  ) => Promise<void>;
-  updateSort: (entity: Entity, code: string, sort: number) => Promise<void>;
-  bumpSort: (entity: Entity, code: string, delta: number) => Promise<void>;
-};
+function asArray<T>(v: unknown): T[] {
+  return Array.isArray(v) ? (v as T[]) : [];
+}
+function toInt(n: unknown, d = 0) {
+  const x = typeof n === "number" ? n : Number(n);
+  return Number.isFinite(x) ? x : d;
+}
 
 export default async function Page() {
-  // Fetch data (already wired to real DB in your repo)
-  const data = await fetchFrameworkList();
+  let pillars: Pillar[] = [];
+  let themes: Theme[] = [];
+  let subthemes: Subtheme[] = [];
+  let softError: string | null = null;
 
-  // Normalize types for the component props
-  const pillars = (data?.pillars ?? []) as Pillar[];
-  const themes = (data?.themes ?? []) as Theme[];
-  const subthemes = (data?.subthemes ?? []) as Subtheme[];
+  try {
+    const data = await fetchFrameworkList();
 
-  // NO-OP actions (placeholders) – keep builds green, no DB writes yet
-  const actions: Actions = {
-    updateName: async () => {},
-    updateDescription: async () => {},
-    updateSort: async () => {},
-    bumpSort: async () => {},
-  };
+    // Defensive coercion + stable defaults so accidental nulls don’t blow up SSR.
+    pillars = asArray<Pillar>(data?.pillars).map((p) => ({
+      code: String((p as any)?.code ?? ""),
+      name: String((p as any)?.name ?? ""),
+      description: String((p as any)?.description ?? ""),
+      sort_order: toInt((p as any)?.sort_order, 0),
+    }));
+
+    themes = asArray<Theme>(data?.themes).map((t) => ({
+      code: String((t as any)?.code ?? ""),
+      pillar_code: String((t as any)?.pillar_code ?? (t as any)?.pillarCode ?? ""),
+      name: String((t as any)?.name ?? ""),
+      description: String((t as any)?.description ?? ""),
+      sort_order: toInt((t as any)?.sort_order, 0),
+    }));
+
+    subthemes = asArray<Subtheme>(data?.subthemes).map((s) => ({
+      code: String((s as any)?.code ?? ""),
+      theme_code: String((s as any)?.theme_code ?? (s as any)?.themeCode ?? ""),
+      name: String((s as any)?.name ?? ""),
+      description: String((s as any)?.description ?? ""),
+      sort_order: toInt((s as any)?.sort_order, 0),
+    }));
+  } catch (err) {
+    // Do not rethrow: render a helpful message + keep the page alive.
+    const msg =
+      err instanceof Error ? err.message : "Unknown error fetching framework.";
+    softError = msg;
+    // Also log to server logs for visibility.
+    // eslint-disable-next-line no-console
+    console.error("fetchFrameworkList failed:", err);
+  }
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Primary Framework</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Edit Pillars, Themes, and Subthemes. (Edits are disabled for now.)
+      <div className="mb-4">
+        <Link href="/admin" className="text-sm text-slate-500 underline">
+          ← Back to Dashboard
+        </Link>
+      </div>
+
+      <h1 className="text-2xl font-semibold">Primary Framework Editor</h1>
+
+      {/* CSV placeholders (non-functional) */}
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          disabled
+          className="cursor-not-allowed rounded-md border px-3 py-1.5 text-sm text-slate-500"
+          title="CSV export (coming soon)"
+        >
+          Export CSV
+        </button>
+        <button
+          type="button"
+          disabled
+          className="cursor-not-allowed rounded-md border px-3 py-1.5 text-sm text-slate-500"
+          title="CSV import (coming soon)"
+        >
+          Import CSV
+        </button>
+      </div>
+
+      {softError ? (
+        <div className="mt-6 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p className="font-medium">Couldn’t load framework data</p>
+          <p className="mt-1">{softError}</p>
+          <p className="mt-2 text-xs text-red-500">
+            Check your Vercel Function logs for a stack trace.
           </p>
         </div>
-
-        <div className="flex items-center gap-2">
-          {/* CSV placeholders (non-functional for now) */}
-          <button
-            type="button"
-            disabled
-            className="rounded-md border px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 disabled:opacity-60"
-            title="Coming soon"
-          >
-            Import CSV
-          </button>
-          <button
-            type="button"
-            disabled
-            className="rounded-md border px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 disabled:opacity-60"
-            title="Coming soon"
-          >
-            Export CSV
-          </button>
-
-          {/* Back to dashboard */}
-          <Link
-            href="/dashboard"
-            className="rounded-md border px-3 py-2 text-sm hover:bg-slate-50"
-          >
-            Back
-          </Link>
+      ) : (
+        <div className="mt-6">
+          <PrimaryFrameworkCards
+            defaultOpen={false}
+            pillars={pillars}
+            themes={themes}
+            subthemes={subthemes}
+            actions={{}} // read-only for now; prevents type errors if actions are optional
+          />
         </div>
-      </div>
-
-      {/* Table header */}
-      <div className="mt-6 grid grid-cols-[1fr_110px_120px] items-center gap-2 border-b px-2 pb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-        <div>Name / Description</div>
-        <div className="text-center">Sort</div>
-        <div className="text-right">Actions</div>
-      </div>
-
-      <PrimaryFrameworkCards
-        defaultOpen={false}
-        pillars={pillars}
-        themes={themes}
-        subthemes={subthemes}
-        actions={actions}
-      />
+      )}
     </main>
   );
 }
