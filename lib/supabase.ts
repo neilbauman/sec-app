@@ -1,26 +1,37 @@
 // lib/supabase.ts
-import { createBrowserClient, createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+// Optional: you can keep this import for editor help, but we won’t over-annotate generics.
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+export function createClient(): SupabaseClient {
+  const cookieStore = cookies();
 
-// 1) Server-side client (Route Handlers / Server Components)
-export function createClientOnServer(cookies: {
-  get: (name: string) => string | undefined;
-  set: (name: string, value: string, options: CookieOptions) => void;
-  remove: (name: string, options: CookieOptions) => void;
-}): SupabaseClient {
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  // Let the helper infer schema types; avoid hard-coding "public" generics
+  const client = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get: (name: string) => cookies.get(name),
-      set: (name, value, options) => cookies.set(name, value, options),
-      remove: (name, options) => cookies.remove(name, options)
-    }
+      get(name: string) {
+        return cookieStore.get(name)?.value;
+      },
+      // In some Next runtimes cookies() is read-only; swallow set/remove if not allowed
+      set(name: string, value: string, options: CookieOptions) {
+        try {
+          // @ts-ignore: Next 15 types can mark this as readonly outside actions/handlers
+          cookieStore.set({ name, value, ...options });
+        } catch {}
+      },
+      remove(name: string, options: CookieOptions) {
+        try {
+          // @ts-ignore
+          cookieStore.set({ name, value: "", ...options });
+        } catch {}
+      },
+    },
   });
-}
 
-// 2) Browser client (use in client components only)
-export function createClientInBrowser(): SupabaseClient {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  // Cast to generic SupabaseClient to keep call sites happy without schema literals
+  return client as unknown as SupabaseClient;
 }
