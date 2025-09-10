@@ -1,8 +1,28 @@
-import { getSupabase } from "@/lib/supabase";
+// lib/framework.ts
+import { createClient } from '@supabase/supabase-js';
 
-export type Pillar = { code: string; name: string; description?: string; };
-export type Theme = { code: string; pillar_code: string; name: string; description?: string; };
-export type Subtheme = { code: string; theme_code: string; name: string; description?: string; };
+export type Pillar = {
+  code: string;
+  name: string;
+  description: string | null;
+  sort_order: number | null;
+};
+
+export type Theme = {
+  code: string;
+  pillar_code: string;
+  name: string;
+  description: string | null;
+  sort_order: number | null;
+};
+
+export type Subtheme = {
+  code: string;
+  theme_code: string;
+  name: string;
+  description: string | null;
+  sort_order: number | null;
+};
 
 export type FrameworkList = {
   pillars: Pillar[];
@@ -10,47 +30,43 @@ export type FrameworkList = {
   subthemes: Subtheme[];
 };
 
+function supabaseServer() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  return createClient(url, anon);
+}
+
 /**
- * By default we use mock data. Set USE_SUPABASE=1 to fetch real tables.
+ * fetchFrameworkList
+ * Reads pillars → themes → subthemes with simple .select()s, ordered for display.
+ * No RPCs, no auth — uses anon key + RLS read-only policies.
  */
 export async function fetchFrameworkList(): Promise<FrameworkList> {
-  if (process.env.USE_SUPABASE === "1") {
-    const supabase = getSupabase();
-    const [{ data: pillars, error: pe }, { data: themes, error: te }, { data: subthemes, error: se }] =
-      await Promise.all([
-        supabase.from("pillars").select("code,name,description").order("code"),
-        supabase.from("themes").select("code,pillar_code,name,description").order("pillar_code").order("code"),
-        supabase.from("subthemes").select("code,theme_code,name,description").order("theme_code").order("code")
-      ]);
+  const supabase = supabaseServer();
 
-    if (pe || te || se) {
-      throw new Error(
-        `Supabase error: ${pe?.message || ""} ${te?.message || ""} ${se?.message || ""}`.trim()
-      );
-    }
+  const [{ data: pillars, error: pillarsErr }, { data: themes, error: themesErr }, { data: subthemes, error: subthemesErr }] =
+    await Promise.all([
+      supabase.from('pillars')
+        .select('code,name,description,sort_order')
+        .order('sort_order', { ascending: true, nullsFirst: true })
+        .order('name', { ascending: true }),
+      supabase.from('themes')
+        .select('code,pillar_code,name,description,sort_order')
+        .order('sort_order', { ascending: true, nullsFirst: true })
+        .order('name', { ascending: true }),
+      supabase.from('subthemes')
+        .select('code,theme_code,name,description,sort_order')
+        .order('sort_order', { ascending: true, nullsFirst: true })
+        .order('name', { ascending: true }),
+    ]);
 
-    return {
-      pillars: (pillars ?? []) as Pillar[],
-      themes: (themes ?? []) as Theme[],
-      subthemes: (subthemes ?? []) as Subtheme[]
-    };
-  }
+  if (pillarsErr) throw new Error(`Supabase pillars error: ${pillarsErr.message}`);
+  if (themesErr) throw new Error(`Supabase themes error: ${themesErr.message}`);
+  if (subthemesErr) throw new Error(`Supabase subthemes error: ${subthemesErr.message}`);
 
-  // Mock data
   return {
-    pillars: [
-      { code: "P1", name: "Safety", description: "People have a dwelling." },
-      { code: "P2", name: "Dignity", description: "Privacy, tenure, protection." }
-    ],
-    themes: [
-      { code: "T1.1", pillar_code: "P1", name: "Physical safety" },
-      { code: "T1.2", pillar_code: "P1", name: "Overcrowding and privacy" },
-      { code: "T2.1", pillar_code: "P2", name: "Habitability and health" }
-    ],
-    subthemes: [
-      { code: "ST1.1.1", theme_code: "T1.1", name: "Adequate structure" },
-      { code: "ST1.2.1", theme_code: "T1.2", name: "Sufficient space" },
-      { code: "ST2.1.1", theme_code: "T2.1", name: "Ventilation" }
-    ]
+    pillars: pillars ?? [],
+    themes: themes ?? [],
+    subthemes: subthemes ?? [],
   };
 }
