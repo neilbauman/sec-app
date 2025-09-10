@@ -2,26 +2,25 @@
 
 export type Pillar = {
   code: string;
-  name: string;
-  description?: string | null;
-  order_index?: number | null;
+  name: string | null;
+  description: string | null;
+  sort_order: number | null; // <- matches your schema
 };
 
 export type Theme = {
   code: string;
-  pillar_code: string;   // <— required
-  name: string;
-  description?: string | null;
-  order_index?: number | null;
+  pillar_code: string;
+  name: string | null;
+  description: string | null;
+  sort_order: number | null; // <- matches your schema
 };
 
 export type Subtheme = {
   code: string;
-  theme_code: string;    // <— required
-  pillar_code: string;   // <— required (we’ll derive if DB doesn’t store it)
-  name: string;
-  description?: string | null;
-  order_index?: number | null;
+  theme_code: string;
+  name: string | null;
+  description: string | null;
+  sort_order: number | null; // <- matches your schema
 };
 
 export type FrameworkList = {
