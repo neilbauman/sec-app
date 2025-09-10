@@ -1,15 +1,15 @@
 // components/PrimaryFrameworkCards.tsx
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
-// Action signatures the server page passes down
-export type FrameworkActions = {
-  updateName: (entity: "pillar" | "theme" | "subtheme", code: string, name: string) => Promise<void>;
-  updateDescription: (entity: "pillar" | "theme" | "subtheme", code: string, description: string) => Promise<void>;
-  updateSort: (entity: "pillar" | "theme" | "subtheme", code: string, sort: number) => Promise<void>;
-  bumpSort: (entity: "pillar" | "theme" | "subtheme", code: string, delta: number) => Promise<void>;
+type Entity = "pillar" | "theme" | "subtheme";
+type Actions = {
+  updateName?: (entity: Entity, code: string, name: string) => Promise<void> | void;
+  updateDescription?: (entity: Entity, code: string, description: string) => Promise<void> | void;
+  updateSort?: (entity: Entity, code: string, sort: number) => Promise<void> | void;
+  bumpSort?: (entity: Entity, code: string, delta: number) => Promise<void> | void;
 };
 
 type Props = {
@@ -17,7 +17,7 @@ type Props = {
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
-  actions: FrameworkActions;
+  actions?: Actions;
 };
 
 export default function PrimaryFrameworkCards({
@@ -27,282 +27,219 @@ export default function PrimaryFrameworkCards({
   subthemes,
   actions,
 }: Props) {
-  const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
-  const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
-  const [isPending, startTransition] = useTransition();
+  const safeActions: Required<Actions> = {
+    updateName: async () => {},
+    updateDescription: async () => {},
+    updateSort: async () => {},
+    bumpSort: async () => {},
+    ...(actions ?? {}),
+  };
 
-  // Index themes and subthemes by parent
+  // Map themes by their parent pillar
   const themesByPillar = useMemo(() => {
     const m: Record<string, Theme[]> = {};
     for (const t of themes) {
-      const key = (t as any).pillar_code ?? t.pillarCode ?? t.pillar ?? t.parent_code ?? "";
+      // IMPORTANT: use snake_case so it matches your declared types
+      const key = t.pillar_code ?? t.parent_code ?? "";
       if (!m[key]) m[key] = [];
       m[key].push(t);
     }
     return m;
   }, [themes]);
 
+  // Map subthemes by their parent theme
   const subthemesByTheme = useMemo(() => {
     const m: Record<string, Subtheme[]> = {};
     for (const s of subthemes) {
-      const key = (s as any).theme_code ?? s.themeCode ?? s.theme ?? s.parent_code ?? "";
+      // IMPORTANT: use snake_case so it matches your declared types
+      const key = s.theme_code ?? s.parent_code ?? "";
       if (!m[key]) m[key] = [];
       m[key].push(s);
     }
     return m;
   }, [subthemes]);
 
-  const togglePillar = (code: string) =>
-    setOpenPillars((p) => ({ ...p, [code]: !(p[code] ?? defaultOpen) }));
-
-  const toggleTheme = (code: string) =>
-    setOpenThemes((p) => ({ ...p, [code]: !(p[code] ?? defaultOpen) }));
-
-  const Chevron = ({ open }: { open: boolean }) => (
-    <svg
-      aria-hidden
-      className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}
-      viewBox="0 0 20 20"
-      fill="currentColor"
-    >
-      <path d="M7 5l6 5-6 5V5z" />
-    </svg>
+  // collapsed/expanded state
+  const [openPillars, setOpenPillars] = useState<Record<string, boolean>>(
+    () =>
+      Object.fromEntries(pillars.map((p) => [p.code, !!defaultOpen]))
   );
+  const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
 
-  const RowShell = ({
-    level,
-    tag,
-    tagClass,
-    code,
-    name,
-    description,
-    sort,
-    onBump,
-    onSaveName,
-    onSaveDesc,
-    onSaveSort,
-    caret,
-  }: {
-    level: 0 | 1 | 2;
-    tag: string;
-    tagClass: string;
-    code: string;
-    name: string;
-    description: string | null | undefined;
-    sort: number | null | undefined;
-    onBump?: (delta: number) => void;
-    onSaveName?: (v: string) => void;
-    onSaveDesc?: (v: string) => void;
-    onSaveSort?: (v: number) => void;
-    caret?: React.ReactNode;
-  }) => {
-    const indent = level === 0 ? "" : level === 1 ? "pl-6" : "pl-12";
-    return (
-      <div className="grid grid-cols-[1fr,110px,120px] gap-3 border-b bg-white">
-        <div className={`flex items-start gap-2 px-4 py-3 ${indent}`}>
-          <div className="mt-1 text-slate-500">{caret}</div>
-          <span
-            className={`h-6 shrink-0 rounded-full px-2 text-xs font-medium leading-6 ${tagClass}`}
-          >
-            {tag}
-          </span>
-          <span className="self-center text-[11px] font-semibold text-slate-400">[{code}]</span>
-          <div className="min-w-0">
-            <input
-              defaultValue={name}
-              onBlur={(e) => onSaveName?.(e.currentTarget.value)}
-              className="w-full truncate bg-transparent text-sm font-medium outline-none"
-              aria-label={`${tag} name`}
-            />
-            <textarea
-              defaultValue={description ?? ""}
-              onBlur={(e) => onSaveDesc?.(e.currentTarget.value)}
-              className="w-full resize-none bg-transparent text-[13px] leading-snug text-slate-600 outline-none"
-              rows={1}
-              aria-label={`${tag} description`}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 px-2">
-          <button
-            type="button"
-            className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
-            onClick={() => onBump?.(-1)}
-            disabled={isPending}
-            title="Move up"
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
-            onClick={() => onBump?.(1)}
-            disabled={isPending}
-            title="Move down"
-          >
-            ↓
-          </button>
-          <input
-            type="number"
-            defaultValue={sort ?? 0}
-            onBlur={(e) => onSaveSort?.(Number(e.currentTarget.value))}
-            className="w-14 rounded border px-1 py-1 text-xs"
-            aria-label={`${tag} sort`}
-          />
-        </div>
-
-        <div className="flex items-center gap-2 px-2">
-          <button
-            type="button"
-            className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
-            disabled
-            title="Edit (coming soon)"
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            className="rounded border px-2 py-1 text-xs hover:bg-slate-50"
-            disabled
-            title="Delete (coming soon)"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    );
-  };
+  const togglePillar = (code: string) =>
+    setOpenPillars((prev) => ({ ...prev, [code]: !prev[code] }));
+  const toggleTheme = (code: string) =>
+    setOpenThemes((prev) => ({ ...prev, [code]: !prev[code] }));
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-white">
-      {/* header */}
-      <div className="grid grid-cols-[1fr,110px,120px] items-center gap-3 border-b bg-slate-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+    <div className="mt-6 overflow-hidden rounded-xl border">
+      {/* Header row */}
+      <div className="grid grid-cols-[1fr_120px_160px] items-center bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700">
         <div>Name / Description</div>
-        <div className="pl-2">Sort</div>
-        <div className="pl-2">Actions</div>
+        <div className="text-center">Sort</div>
+        <div className="text-right">Actions</div>
       </div>
 
-      {/* rows */}
-      <div>
+      <div className="divide-y">
         {pillars
-          .slice()
+          ?.slice()
           .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
           .map((p) => {
-            const pOpen = openPillars[p.code] ?? defaultOpen;
-            const pillarCaret = (
-              <button
-                type="button"
-                className="text-slate-400 hover:text-slate-600"
-                onClick={() => togglePillar(p.code)}
-                aria-label={pOpen ? "Collapse pillar" : "Expand pillar"}
-              >
-                <Chevron open={pOpen} />
-              </button>
-            );
-
-            const handlePillar = {
-              onBump: (delta: number) =>
-                startTransition(() => actions.bumpSort("pillar", p.code, delta)),
-              onSaveName: (v: string) =>
-                startTransition(() => actions.updateName("pillar", p.code, v)),
-              onSaveDesc: (v: string) =>
-                startTransition(() => actions.updateDescription("pillar", p.code, v)),
-              onSaveSort: (v: number) =>
-                startTransition(() => actions.updateSort("pillar", p.code, v)),
-            };
+            const isOpen = openPillars[p.code] ?? defaultOpen;
 
             return (
               <div key={p.code}>
-                <RowShell
-                  level={0}
-                  tag="Pillar"
-                  tagClass="bg-blue-50 text-blue-700 ring-1 ring-blue-200"
-                  code={p.code}
-                  name={p.name}
-                  description={p.description}
-                  sort={p.sort}
-                  caret={pillarCaret}
-                  {...handlePillar}
-                />
+                {/* Pillar row */}
+                <div className="grid grid-cols-[1fr_120px_160px] items-center px-4 py-3">
+                  <div className="flex items-start gap-2">
+                    <button
+                      type="button"
+                      onClick={() => togglePillar(p.code)}
+                      aria-label={isOpen ? "Collapse pillar" : "Expand pillar"}
+                      className="mt-1 shrink-0 rounded p-1 hover:bg-gray-100"
+                    >
+                      <span className="inline-block rotate-0 transition-transform" style={{ transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}>
+                        ▶
+                      </span>
+                    </button>
 
-                {pOpen &&
-                  (themesByPillar[p.code] ?? [])
-                    .slice()
-                    .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-                    .map((t) => {
-                      const tOpen = openThemes[t.code] ?? defaultOpen;
-                      const themeCaret = (
-                        <button
-                          type="button"
-                          className="text-slate-400 hover:text-slate-600"
-                          onClick={() => toggleTheme(t.code)}
-                          aria-label={tOpen ? "Collapse theme" : "Expand theme"}
-                        >
-                          <Chevron open={tOpen} />
-                        </button>
-                      );
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                          Pillar
+                        </span>
+                        <span className="text-xs font-semibold text-gray-400">{p.code}</span>
+                        <span className="ml-2 text-sm font-medium text-gray-900">{p.name}</span>
+                      </div>
+                      {p.description ? (
+                        <div className="mt-1 text-[13px] text-gray-700">{p.description}</div>
+                      ) : null}
+                    </div>
+                  </div>
 
-                      const handleTheme = {
-                        onBump: (delta: number) =>
-                          startTransition(() => actions.bumpSort("theme", t.code, delta)),
-                        onSaveName: (v: string) =>
-                          startTransition(() => actions.updateName("theme", t.code, v)),
-                        onSaveDesc: (v: string) =>
-                          startTransition(() => actions.updateDescription("theme", t.code, v)),
-                        onSaveSort: (v: number) =>
-                          startTransition(() => actions.updateSort("theme", t.code, v)),
-                      };
+                  <div className="text-center text-sm text-gray-600">{p.sort ?? 0}</div>
 
-                      return (
-                        <div key={t.code}>
-                          <RowShell
-                            level={1}
-                            tag="Theme"
-                            tagClass="bg-green-50 text-green-700 ring-1 ring-green-200"
-                            code={t.code}
-                            name={t.name}
-                            description={t.description}
-                            sort={t.sort}
-                            caret={themeCaret}
-                            {...handleTheme}
-                          />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                      onClick={() => safeActions.bumpSort("pillar", p.code, -1)}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                      onClick={() => safeActions.bumpSort("pillar", p.code, +1)}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </div>
 
-                          {tOpen &&
-                            (subthemesByTheme[t.code] ?? [])
-                              .slice()
-                              .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
-                              .map((s) => {
-                                const handleSub = {
-                                  onBump: (delta: number) =>
-                                    startTransition(() => actions.bumpSort("subtheme", s.code, delta)),
-                                  onSaveName: (v: string) =>
-                                    startTransition(() => actions.updateName("subtheme", s.code, v)),
-                                  onSaveDesc: (v: string) =>
-                                    startTransition(() =>
-                                      actions.updateDescription("subtheme", s.code, v),
-                                    ),
-                                  onSaveSort: (v: number) =>
-                                    startTransition(() => actions.updateSort("subtheme", s.code, v)),
-                                };
+                {/* Themes under this pillar */}
+                {isOpen && (
+                  <div className="divide-y">
+                    {(themesByPillar[p.code] ?? [])
+                      .slice()
+                      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+                      .map((t) => {
+                        const tOpen = openThemes[t.code] ?? false;
+                        return (
+                          <div key={t.code} className="bg-white">
+                            {/* Theme row */}
+                            <div className="grid grid-cols-[1fr_120px_160px] items-center px-4 py-3">
+                              <div className="ml-6 flex items-start gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleTheme(t.code)}
+                                  aria-label={tOpen ? "Collapse theme" : "Expand theme"}
+                                  className="mt-1 shrink-0 rounded p-1 hover:bg-gray-100"
+                                >
+                                  <span className="inline-block rotate-0 transition-transform" style={{ transform: tOpen ? "rotate(90deg)" : "rotate(0deg)" }}>
+                                    ▶
+                                  </span>
+                                </button>
 
-                                return (
-                                  <RowShell
-                                    key={s.code}
-                                    level={2}
-                                    tag="Subtheme"
-                                    tagClass="bg-red-50 text-red-700 ring-1 ring-red-200"
-                                    code={s.code}
-                                    name={s.name}
-                                    description={s.description}
-                                    sort={s.sort}
-                                    {...handleSub}
-                                  />
-                                );
-                              })}
-                        </div>
-                      );
-                    })}
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                                      Theme
+                                    </span>
+                                    <span className="text-xs font-semibold text-gray-400">{t.code}</span>
+                                    <span className="ml-2 text-sm font-medium text-gray-900">{t.name}</span>
+                                  </div>
+                                  {t.description ? (
+                                    <div className="mt-1 text-[13px] text-gray-700">{t.description}</div>
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              <div className="text-center text-sm text-gray-600">{t.sort ?? 0}</div>
+
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                                  onClick={() => safeActions.bumpSort("theme", t.code, -1)}
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                                  onClick={() => safeActions.bumpSort("theme", t.code, +1)}
+                                >
+                                  ↓
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Subthemes under this theme */}
+                            {tOpen && (
+                              <div className="divide-y">
+                                {(subthemesByTheme[t.code] ?? [])
+                                  .slice()
+                                  .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+                                  .map((s) => (
+                                    <div
+                                      key={s.code}
+                                      className="grid grid-cols-[1fr_120px_160px] items-center bg-white px-4 py-3"
+                                    >
+                                      <div className="ml-12">
+                                        <div className="flex items-center gap-2">
+                                          <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                                            Subtheme
+                                          </span>
+                                          <span className="text-xs font-semibold text-gray-400">{s.code}</span>
+                                          <span className="ml-2 text-sm font-medium text-gray-900">{s.name}</span>
+                                        </div>
+                                        {s.description ? (
+                                          <div className="mt-1 text-[13px] text-gray-700">{s.description}</div>
+                                        ) : null}
+                                      </div>
+
+                                      <div className="text-center text-sm text-gray-600">{s.sort ?? 0}</div>
+
+                                      <div className="flex justify-end gap-2">
+                                        <button
+                                          className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                                          onClick={() => safeActions.bumpSort("subtheme", s.code, -1)}
+                                        >
+                                          ↑
+                                        </button>
+                                        <button
+                                          className="rounded border px-2 py-1 text-xs hover:bg-gray-50"
+                                          onClick={() => safeActions.bumpSort("subtheme", s.code, +1)}
+                                        >
+                                          ↓
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
             );
           })}
