@@ -36,7 +36,7 @@ export async function fetchFrameworkList(): Promise<{
   subthemes: Subtheme[];
 }> {
   // NOTE: our helper takes no parameters
-  const supabase = createClientOnServer();
+  const supabase = await createClientOnServer();
 
   const { data: pillars } = await supabase
     .from("pillars")
