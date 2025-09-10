@@ -1,12 +1,8 @@
 // app/admin/framework/primary/editor/page.tsx
 import Link from "next/link";
-import PrimaryFrameworkCards, {
-  type Pillar as UIPillar,
-  type Theme as UITheme,
-  type Subtheme as UISubtheme,
-} from "@/components/PrimaryFrameworkCards";
-import { fetchFrameworkList } from "@/lib/framework";
-
+import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+// If you need types, import them from your canonical source:
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
