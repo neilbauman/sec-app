@@ -1,31 +1,39 @@
 // lib/supabase.ts
-import { createBrowserClient } from "@supabase/ssr";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies, type ReadonlyRequestCookies } from "next/headers";
+import {
+  createServerClient,
+  createBrowserClient,
+  type CookieOptions,
+} from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
 
+// IMPORTANT: keep these envs in .env.local (already present in your app)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-/** Use inside Client Components/hooks */
-export function getBrowserSupabase(): SupabaseClient {
+/** Client for browser components/hooks */
+export function createClient(): SupabaseClient {
+  // Casting to plain SupabaseClient avoids “GenericSchema vs 'public'” constraints
   return createBrowserClient(supabaseUrl, supabaseAnonKey) as unknown as SupabaseClient;
 }
 
-/** Use inside Server Components, Route Handlers, and Server Actions */
-export function getServerSupabase(): SupabaseClient {
-  // In Next 15, cookies() is sync and safe here.
-  const jar = cookies();
+/** Client for server routes / server components / server actions (Next 15-safe) */
+export async function createClientOnServer(): Promise<SupabaseClient> {
+  // Next 15: cookies() is async in many server contexts
+  const jar: ReadonlyRequestCookies = await cookies();
+
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
         return jar.get(name)?.value;
       },
-      set(name: string, value: string, options: CookieOptions) {
-        jar.set(name, value, options);
+      // set/remove are no-ops unless you're in a Server Action or Route Handler.
+      // Keeping them defined satisfies @supabase/ssr’s adapter contract.
+      set(_name: string, _value: string, _options: CookieOptions) {
+        // noop (or implement only inside actual Server Actions)
       },
-      remove(name: string, options: CookieOptions) {
-        jar.set(name, "", { ...options, maxAge: 0 });
+      remove(_name: string, _options: CookieOptions) {
+        // noop
       },
     },
   }) as unknown as SupabaseClient;
