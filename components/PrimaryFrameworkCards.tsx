@@ -1,257 +1,279 @@
-"use client";
+'use client';
 
-import React from "react";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
-import { ChevronRight, ChevronDown, Info } from "lucide-react";
-import { Card, Tooltip, ActionIcon, Tag } from "@/lib/ui";
+import React from 'react';
+import type { Pillar, Theme, Subtheme } from '@/types/framework';
+import { ChevronRight, ChevronDown, Info, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Tag, Tooltip, ActionIcon } from '@/lib/ui';
 
-type Props = {
-  defaultOpen?: boolean;
+type Data = {
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
-  // Optional row-level actions the page can pass in later (edit/delete etc.)
-  actions?: {
-    onPillarEdit?: (p: Pillar) => void;
-    onThemeEdit?: (t: Theme) => void;
-    onSubthemeEdit?: (s: Subtheme) => void;
-  };
 };
 
-export default function PrimaryFrameworkCards({
-  defaultOpen = false,
-  pillars,
-  themes,
-  subthemes,
-  actions,
-}: Props) {
-  const [openMap, setOpenMap] = React.useState<Record<string, boolean>>({});
+type Props = {
+  data: Data;
+  /** Open all accordions by default (useful during authoring) */
+  defaultOpen?: boolean;
+};
 
-  // Open all by default only once on mount (if requested)
-  React.useEffect(() => {
-    if (!defaultOpen) return;
-    const next: Record<string, boolean> = {};
-    for (const p of pillars) next[`pillar:${p.id}`] = true;
-    for (const t of themes) next[`theme:${t.id}`] = true;
-    setOpenMap(next);
-  }, [defaultOpen, pillars, themes]);
+/** Small disclosure caret that stays 16px and does not affect row height */
+function Caret({
+  open,
+  onToggle,
+  'aria-label': ariaLabel,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  'aria-label'?: string;
+}) {
+  const Icon = open ? ChevronDown : ChevronRight;
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      onClick={onToggle}
+      className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-100 focus-visible:outline-none"
+    >
+      <Icon className="h-4 w-4 text-gray-600" strokeWidth={2} />
+    </button>
+  );
+}
 
-  const toggle = (key: string) =>
-    setOpenMap((m) => ({ ...m, [key]: !m[key] }));
-
-  const themeByPillar = React.useMemo(() => {
-    const map: Record<string, Theme[]> = {};
-    for (const t of themes) {
-      const k = String(t.pillar_id ?? "");
-      (map[k] ||= []).push(t);
-    }
-    for (const k in map) map[k].sort((a, b) => a.sort_order - b.sort_order);
-    return map;
-  }, [themes]);
-
-  const subthemesByTheme = React.useMemo(() => {
-    const map: Record<string, Subtheme[]> = {};
-    for (const s of subthemes) {
-      const k = String(s.theme_id ?? "");
-      (map[k] ||= []).push(s);
-    }
-    for (const k in map) map[k].sort((a, b) => a.sort_order - b.sort_order);
-    return map;
-  }, [subthemes]);
+/** Row layout: caret | tag | code | [name + description stacked] | actions */
+function Row({
+  level,
+  open,
+  onToggle,
+  tagColor,
+  tagText,
+  code,
+  name,
+  description,
+  rightActions,
+  indentPx = 0,
+}: {
+  level: 'pillar' | 'theme' | 'subtheme';
+  open?: boolean;
+  onToggle?: () => void;
+  tagColor: 'blue' | 'green' | 'red';
+  tagText: string;
+  code?: string | null;
+  name: string;
+  description?: string | null;
+  rightActions?: React.ReactNode;
+  indentPx?: number;
+}) {
+  const showCaret = typeof open === 'boolean' && typeof onToggle === 'function';
 
   return (
-    <Card className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-      {/* Header row */}
-      <div className="grid grid-cols-[1fr,120px,120px] items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
-        <div>Name & Description</div>
-        <div className="text-right">Sort</div>
+    <div
+      className="grid grid-cols-[auto_auto_auto_1fr_auto] items-start gap-2 border-b border-gray-100 py-2"
+      style={{ paddingLeft: indentPx }}
+    >
+      {/* caret */}
+      <div className="pt-1">
+        {showCaret ? (
+          <Caret open={!!open} onToggle={onToggle!} aria-label={`Toggle ${level}`} />
+        ) : (
+          <div className="h-6 w-6" />
+        )}
+      </div>
+
+      {/* tag (color-coded) */}
+      <div className="pt-1">
+        <Tag color={tagColor}>{tagText}</Tag>
+      </div>
+
+      {/* code (small, gray, right of tag) */}
+      <div className="pt-1">
+        {code ? <span className="text-xs text-gray-500">{code}</span> : <span className="text-xs text-transparent">—</span>}
+      </div>
+
+      {/* name + description (aligned left together) */}
+      <div className="min-w-0">
+        <div className="flex items-baseline gap-2">
+          <div className="truncate font-medium text-gray-900">{name}</div>
+          {description ? (
+            <Tooltip content={description}>
+              <Info className="h-4 w-4 shrink-0 text-gray-400" />
+            </Tooltip>
+          ) : null}
+        </div>
+        {description ? (
+          <div className="mt-1 line-clamp-2 text-sm leading-snug text-gray-600">{description}</div>
+        ) : null}
+      </div>
+
+      {/* actions on the far right */}
+      <div className="flex items-center justify-end gap-1">
+        {rightActions}
+      </div>
+    </div>
+  );
+}
+
+export default function PrimaryFrameworkCards({ data, defaultOpen = true }: Props) {
+  const [openPillars, setOpenPillars] = React.useState<Record<string, boolean>>({});
+  const [openThemes, setOpenThemes] = React.useState<Record<string, boolean>>({});
+
+  React.useEffect(() => {
+    if (!defaultOpen) return;
+    const p: Record<string, boolean> = {};
+    const t: Record<string, boolean> = {};
+    for (const pillar of data.pillars) p[pillar.id] = true;
+    for (const theme of data.themes) t[theme.id] = true;
+    setOpenPillars(p);
+    setOpenThemes(t);
+  }, [data.pillars, data.themes, defaultOpen]);
+
+  const themesByPillar = React.useMemo(() => {
+    const map = new Map<string, Theme[]>();
+    for (const theme of data.themes) {
+      const key = theme.pillar_id ?? '';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(theme);
+    }
+    // maintain incoming order
+    return map;
+  }, [data.themes]);
+
+  const subthemesByTheme = React.useMemo(() => {
+    const map = new Map<string, Subtheme[]>();
+    for (const s of data.subthemes) {
+      const key = s.theme_id ?? '';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(s);
+    }
+    return map;
+  }, [data.subthemes]);
+
+  const togglePillar = (id: string) => setOpenPillars((s) => ({ ...s, [id]: !s[id] }));
+  const toggleTheme = (id: string) => setOpenThemes((s) => ({ ...s, [id]: !s[id] }));
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      {/* Header row labels */}
+      <div className="grid grid-cols-[auto_auto_auto_1fr_auto] items-center gap-2 border-b border-gray-200 bg-gray-50/70 px-2 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="h-4 w-6" />
+        <div>Type</div>
+        <div>Code</div>
+        <div>Name & description</div>
         <div className="text-right">Actions</div>
       </div>
 
-      {/* Body */}
-      <div className="divide-y">
-        {pillars
-          .slice()
-          .sort((a, b) => a.sort_order - b.sort_order)
-          .map((pillar) => {
-            const pKey = `pillar:${pillar.id}`;
-            const pOpen = !!openMap[pKey];
-            const pillarThemes = themeByPillar[String(pillar.id)] ?? [];
+      {/* Pillars */}
+      <div>
+        {data.pillars.map((pillar) => {
+          const pOpen = !!openPillars[pillar.id];
+          const themes = themesByPillar.get(pillar.id) ?? [];
 
-            return (
-              <React.Fragment key={pillar.id}>
-                <Row
-                  level="pillar"
-                  open={pOpen}
-                  onToggle={() => toggle(pKey)}
-                  tag={<Tag.Pillar>Pillar</Tag.Pillar>}
-                  code={pillar.code}
-                  name={pillar.name}
-                  description={pillar.description ?? ""}
-                  sortOrder={pillar.sort_order}
-                  actions={
-                    <RowActions
-                      onEdit={
-                        actions?.onPillarEdit
-                          ? () => actions.onPillarEdit!(pillar)
-                          : undefined
-                      }
-                    />
-                  }
-                />
+          return (
+            <div key={pillar.id}>
+              <Row
+                level="pillar"
+                open={true /* pillar rows always show carets */}
+                onToggle={() => togglePillar(pillar.id)}
+                tagColor="blue"
+                tagText="Pillar"
+                code={pillar.code}
+                name={pillar.name}
+                description={pillar.description ?? ''}
+                rightActions={
+                  <>
+                    <Tooltip content="Edit pillar">
+                      <ActionIcon ariaLabel="Edit pillar">
+                        <Pencil className="h-4 w-4" />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip content="Add theme">
+                      <ActionIcon ariaLabel="Add theme">
+                        <Plus className="h-4 w-4" />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip content="Delete pillar">
+                      <ActionIcon ariaLabel="Delete pillar">
+                        <Trash2 className="h-4 w-4" />
+                      </ActionIcon>
+                    </Tooltip>
+                  </>
+                }
+              />
 
-                {pOpen &&
-                  pillarThemes.map((theme) => {
-                    const tKey = `theme:${theme.id}`;
-                    const tOpen = !!openMap[tKey];
-                    const themeSubs = subthemesByTheme[String(theme.id)] ?? [];
+              {/* Themes under pillar */}
+              {pOpen &&
+                themes.map((theme) => {
+                  const tOpen = !!openThemes[theme.id];
+                  const subs = subthemesByTheme.get(theme.id) ?? [];
 
-                    return (
+                  return (
+                    <div key={theme.id}>
                       <Row
-                        key={theme.id}
                         level="theme"
-                        open={tOpen}
-                        onToggle={() => toggle(tKey)}
-                        tag={<Tag.Theme>Theme</Tag.Theme>}
+                        open={true}
+                        onToggle={() => toggleTheme(theme.id)}
+                        tagColor="green"
+                        tagText="Theme"
                         code={theme.code}
                         name={theme.name}
-                        description={theme.description ?? ""}
-                        sortOrder={theme.sort_order}
-                        actions={
-                          <RowActions
-                            onEdit={
-                              actions?.onThemeEdit
-                                ? () => actions.onThemeEdit!(theme)
-                                : undefined
-                            }
-                          />
-                        }
-                        childrenContent={
-                          tOpen &&
-                          themeSubs.map((st) => (
-                            <Row
-                              key={st.id}
-                              level="subtheme"
-                              open={false}
-                              // subthemes don’t expand (no caret)
-                              onToggle={undefined}
-                              tag={<Tag.Subtheme>Subtheme</Tag.Subtheme>}
-                              code={st.code}
-                              name={st.name}
-                              description={st.description ?? ""}
-                              sortOrder={st.sort_order}
-                              actions={
-                                <RowActions
-                                  onEdit={
-                                    actions?.onSubthemeEdit
-                                      ? () => actions.onSubthemeEdit!(st)
-                                      : undefined
-                                  }
-                                />
-                              }
-                            />
-                          ))
+                        description={theme.description ?? ''}
+                        indentPx={24 /* indent child level slightly */}
+                        rightActions={
+                          <>
+                            <Tooltip content="Edit theme">
+                              <ActionIcon ariaLabel="Edit theme">
+                                <Pencil className="h-4 w-4" />
+                              </ActionIcon>
+                            </Tooltip>
+                            <Tooltip content="Add subtheme">
+                              <ActionIcon ariaLabel="Add subtheme">
+                                <Plus className="h-4 w-4" />
+                              </ActionIcon>
+                            </Tooltip>
+                            <Tooltip content="Delete theme">
+                              <ActionIcon ariaLabel="Delete theme">
+                                <Trash2 className="h-4 w-4" />
+                              </ActionIcon>
+                            </Tooltip>
+                          </>
                         }
                       />
-                    );
-                  })}
-              </React.Fragment>
-            );
-          })}
-      </div>
-    </Card>
-  );
-}
 
-/** A single “row” that can represent pillar/theme/subtheme.
- * Layout:
- *  - 1st column is a 2-col grid: [caret+tag+code]   [name + description (aligned under name)]
- *  - 2nd column = sort (right-aligned)
- *  - 3rd column = actions (right-aligned)
- */
-function Row(props: {
-  level: "pillar" | "theme" | "subtheme";
-  open: boolean;
-  onToggle?: () => void; // undefined => render w/o caret (subtheme)
-  tag: React.ReactNode;
-  code: string;
-  name: string;
-  description: string;
-  sortOrder: number;
-  actions?: React.ReactNode;
-  childrenContent?: React.ReactNode;
-}) {
-  const { level, open, onToggle, tag, code, name, description, sortOrder, actions, childrenContent } =
-    props;
-
-  const caret = onToggle ? (
-    <button
-      onClick={onToggle}
-      className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-gray-100"
-      aria-label={open ? "Collapse" : "Expand"}
-    >
-      {open ? (
-        <ChevronDown className="h-4 w-4 text-gray-600" />
-      ) : (
-        <ChevronRight className="h-4 w-4 text-gray-600" />
-      )}
-    </button>
-  ) : (
-    // reserve the same width so text lines up even without caret
-    <span className="inline-flex h-5 w-5" aria-hidden />
-  );
-
-  return (
-    <>
-      <div className="grid grid-cols-[1fr,120px,120px] items-start gap-2 px-4 py-3">
-        {/* First column: two sub-columns so the description can align with the name, not under the tag */}
-        <div className="grid grid-cols-[auto,1fr] items-start gap-3">
-          {/* left mini column: caret + tag + code (small, gray) */}
-          <div className="flex items-center gap-2">
-            {caret}
-            <div className="flex items-center gap-2">
-              {tag}
-              <span className="text-xs text-gray-500">{code}</span>
+                      {/* Subthemes under theme */}
+                      {tOpen &&
+                        subs.map((sub) => (
+                          <Row
+                            key={sub.id}
+                            level="subtheme"
+                            tagColor="red"
+                            tagText="Subtheme"
+                            code={sub.code}
+                            name={sub.name}
+                            description={sub.description ?? ''}
+                            indentPx={48}
+                            rightActions={
+                              <>
+                                <Tooltip content="Edit subtheme">
+                                  <ActionIcon ariaLabel="Edit subtheme">
+                                    <Pencil className="h-4 w-4" />
+                                  </ActionIcon>
+                                </Tooltip>
+                                <Tooltip content="Delete subtheme">
+                                  <ActionIcon ariaLabel="Delete subtheme">
+                                    <Trash2 className="h-4 w-4" />
+                                  </ActionIcon>
+                                </Tooltip>
+                              </>
+                            }
+                          />
+                        ))}
+                    </div>
+                  );
+                })}
             </div>
-          </div>
-
-          {/* right mini column: name + description (description is aligned with the left of name) */}
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <div className="truncate font-medium text-gray-900">{name}</div>
-              <Tooltip content="Info about this item">
-                <ActionIcon ariaLabel="Info">
-                  <Info className="h-4 w-4" />
-                </ActionIcon>
-              </Tooltip>
-            </div>
-            {description ? (
-              <div className="mt-0.5 text-sm text-gray-600">{description}</div>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Sort (right aligned) */}
-        <div className="pt-0.5 text-right tabular-nums text-gray-700">{sortOrder}</div>
-
-        {/* Actions (right aligned) */}
-        <div className="flex items-center justify-end gap-2">{actions}</div>
+          );
+        })}
       </div>
-
-      {/* Children */}
-      {open && childrenContent}
-    </>
-  );
-}
-
-function RowActions({ onEdit }: { onEdit?: () => void }) {
-  return (
-    <div className="flex items-center justify-end gap-1">
-      {onEdit ? (
-        <Tooltip content="Edit">
-          <ActionIcon ariaLabel="Edit" onClick={onEdit} />
-        </Tooltip>
-      ) : null}
     </div>
   );
 }
