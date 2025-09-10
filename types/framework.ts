@@ -1,34 +1,25 @@
-// types/framework.ts
 export type Pillar = {
-  id: string;                // uuid, required
+  id: string;
   code: string;
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
+  description: string;
+  sort_order: number;
 };
 
 export type Theme = {
-  id: string;                // uuid, required
+  id: string;
+  pillar_id: string;
   code: string;
-  pillar_id?: string | null; // uuid fk (new schema), optional for now
-  pillar_code?: string | null;
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
+  description: string;
+  sort_order: number;
 };
 
 export type Subtheme = {
-  id: string;                // uuid, required
+  id: string;
+  theme_id: string;
   code: string;
-  theme_id?: string | null;  // uuid fk (new schema), optional for now
-  theme_code?: string | null;
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
-};
-
-export type FrameworkList = {
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
+  description: string;
+  sort_order: number;
 };
