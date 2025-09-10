@@ -1,26 +1,46 @@
 // lib/supabase.ts
-import { createServerClient } from '@supabase/ssr';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+"use server";
 
-export async function createClientOnServer(): Promise<SupabaseClient> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { cookies } from "next/headers";
+import {
+  createBrowserClient,
+  createServerClient,
+  type CookieOptions,
+} from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-  // Next 15: cookies() can be async — await it once, reuse the store.
-  const cookieStore = await cookies();
+// If you have a generated Database type, you can:
+// import type { Database } from "@/types/database";
+// and then change SupabaseClient to SupabaseClient<Database> below.
+// For now we keep it generic to avoid build-time type friction.
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+/** Client for browser components/hooks */
+export function createClient(): SupabaseClient {
+  // `createBrowserClient` infers types; returning as plain SupabaseClient
+  // avoids the “GenericSchema vs 'public'” constraint error on Vercel.
+  return createBrowserClient(supabaseUrl, supabaseAnonKey) as unknown as SupabaseClient;
+}
+
+/** Client for server routes, server components, and server actions */
+export function createClientOnServer(): SupabaseClient {
+  const jar = cookies(); // sync in Next 15
+
+  // Note: on the server, `cookies().set/remove` are available in server actions
+  // and Route Handlers; they type-check here and are no-ops where not allowed.
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
-        return cookieStore.get(name)?.value;
+        return jar.get(name)?.value;
       },
-      set(name: string, value: string, options: Parameters<typeof cookieStore.set>[2]) {
-        cookieStore.set(name, value, options);
+      set(name: string, value: string, options: CookieOptions) {
+        jar.set(name, value, options);
       },
-      remove(name: string, options: Parameters<typeof cookieStore.set>[2]) {
-        cookieStore.set(name, '', { ...options, maxAge: 0 });
+      remove(name: string, options: CookieOptions) {
+        jar.set(name, "", { ...options, maxAge: 0 });
       },
     },
-  });
+  }) as unknown as SupabaseClient;
 }
