@@ -1,43 +1,45 @@
 // lib/supabase-server.ts
-"use server";
-
 import { cookies } from "next/headers";
-import {
-  createServerClient,
-  type CookieOptions, // <- comes from @supabase/ssr, not next/headers
-} from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Server-side Supabase client for Route Handlers, Server Components, and Server Actions.
- * No async/await needed here; cookies() is sync in Next 15.
+ * NOTE: Do NOT add `"use server"` here. This is a plain helper, not an action.
  */
 export function createServerSupabase(): SupabaseClient {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  const jar = cookies(); // synchronous cookie jar
+  const jar = cookies(); // synchronous in Next 15
 
-  // Note: some environments restrict set/remove; we wrap in try/catch to be safe.
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  // Some runtimes only allow set/remove in server actions/route handlers.
+  // We wrap in try/catch so it’s safe everywhere.
+  const client = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
         return jar.get(name)?.value;
       },
-      set(name: string, value: string, options: CookieOptions) {
+      set(name: string, value: string, options?: unknown) {
         try {
-          jar.set(name, value, options as any);
+          // @ts-expect-error - Next's cookies() types vary by version; this is safe at runtime.
+          jar.set(name, value, options);
         } catch {
           /* no-op outside actions/route handlers */
         }
       },
-      remove(name: string, options: CookieOptions) {
+      remove(name: string, options?: unknown) {
         try {
+          // emulate remove via set with maxAge=0
+          // @ts-expect-error - type leniency for cross-version compatibility
           jar.set(name, "", { ...(options as any), maxAge: 0 });
         } catch {
           /* no-op outside actions/route handlers */
         }
       },
     },
-  }) as unknown as SupabaseClient;
+  });
+
+  // Cast to the stable SupabaseClient from @supabase/supabase-js
+  return client as unknown as SupabaseClient;
 }
