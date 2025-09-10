@@ -1,6 +1,6 @@
 // app/admin/framework/primary/editor/page.tsx
 import Link from "next/link";
-import AppHeader from "@/components/AppHeader";
+import { PageHeader } from "@/lib/ui";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { fetchFrameworkList } from "@/lib/framework";
 import { Download, Upload } from "lucide-react";
@@ -39,13 +39,20 @@ export default async function Page() {
 
   return (
     <>
-      <AppHeader
-        title="Primary Framework Editor"
-        breadcrumbs={[
-          { href: "/admin", label: "Dashboard" },
-          { label: "Primary Framework Editor" },
-        ]}
-      />
+      <PageHeader
+  title="Primary Framework Editor"
+  breadcrumb={
+    <div className="flex items-center gap-2 text-sm">
+      <Link href="/dashboard" className="text-blue-600 hover:underline">
+        Dashboard
+      </Link>
+      <span className="text-gray-400">/</span>
+      <span className="text-gray-700">Framework</span>
+      <span className="text-gray-400">/</span>
+      <span className="text-gray-900 font-medium">Primary</span>
+    </div>
+  }
+/>
 
       <main className="mx-auto max-w-6xl px-4 pb-12 pt-6">
         {/* Top actions row: CSV Import/Export placeholders */}
