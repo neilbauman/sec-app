@@ -1,69 +1,68 @@
-import Link from 'next/link'
-import PrimaryFrameworkCards from '@/components/PrimaryFrameworkCards'
-import { fetchFrameworkList } from '@/lib/framework'
-import type { Pillar, Theme, Subtheme } from '@/types/framework'
+// app/admin/framework/primary/editor/page.tsx
+import Link from "next/link";
+import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+import { fetchFrameworkList } from "@/lib/framework";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
-// import server actions (do NOT export them from this file)
-import {
-  actionUpdateName,
-  actionUpdateDescription,
-  actionReorder,
-  actionImportCsv,
-  actionExportCsv,
-} from './actions'
+export const dynamic = "force-dynamic";
 
-export const dynamic = 'force-dynamic'
+/**
+ * Server actions MUST return void | Promise<void>.
+ * These are placeholders (no-ops) for now.
+ */
+async function actionImportCsv(_formData: FormData): Promise<void> {
+  "use server";
+  // TODO: implement CSV import later
+}
+
+async function actionExportCsv(_formData: FormData): Promise<void> {
+  "use server";
+  // TODO: implement CSV export later
+}
 
 export default async function Page() {
-  const data = await fetchFrameworkList()
+  const data = await fetchFrameworkList();
 
-  const pillars = (data?.pillars ?? []) as Pillar[]
-  const themes = (data?.themes ?? []) as Theme[]
-  const subthemes = (data?.subthemes ?? []) as Subtheme[]
+  const pillars = (data?.pillars ?? []) as Pillar[];
+  const themes = (data?.themes ?? []) as Theme[];
+  const subthemes = (data?.subthemes ?? []) as Subtheme[];
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <Link
-            href="/dashboard"
-            className="mb-2 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
-          >
-            ← Back to Dashboard
-          </Link>
-          <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
-          <p className="text-sm text-slate-600">
-            Manage pillars, themes, and subthemes. (CSV buttons are placeholders.)
-          </p>
-        </div>
+      <Link
+        href="/dashboard"
+        className="mb-4 inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+      >
+        ← Back to Dashboard
+      </Link>
+
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
 
         {/* CSV placeholders (not wired yet) */}
         <div className="flex items-center gap-2">
+          {/* Import CSV (no-op) */}
           <form action={actionImportCsv}>
             <input
+              id="csvFile"
               type="file"
               name="csv"
               accept=".csv"
               className="hidden"
-              id="pf-import-csv"
-              // NOTE: still placeholder; no client JS needed yet
             />
-            <button
-              type="submit"
-              disabled
-              title="Coming soon"
-              className="rounded-md border px-3 py-1.5 text-sm text-slate-600 opacity-60"
+            <label
+              htmlFor="csvFile"
+              className="cursor-pointer rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50"
             >
               Import CSV
-            </button>
+            </label>
           </form>
 
+          {/* Export CSV (no-op) */}
           <form action={actionExportCsv}>
             <button
               type="submit"
-              disabled
-              title="Coming soon"
-              className="rounded-md border px-3 py-1.5 text-sm text-slate-600 opacity-60"
+              className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50"
             >
               Export CSV
             </button>
@@ -71,18 +70,12 @@ export default async function Page() {
         </div>
       </div>
 
-      <div className="mt-6">
-        <PrimaryFrameworkCards
-          defaultOpen={false}
-          pillars={pillars}
-          themes={themes}
-          subthemes={subthemes}
-          // pass server actions down; page itself exports nothing else
-          onUpdateName={actionUpdateName}
-          onUpdateDescription={actionUpdateDescription}
-          onReorder={actionReorder}
-        />
-      </div>
+      <PrimaryFrameworkCards
+        defaultOpen={false}
+        pillars={pillars}
+        themes={themes}
+        subthemes={subthemes}
+      />
     </main>
-  )
+  );
 }
