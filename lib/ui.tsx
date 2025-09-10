@@ -1,120 +1,131 @@
 // lib/ui.tsx
-"use client";
-
-import * as React from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils"; // if you don't have a cn util, replace cn(...) with template strings
+import { Upload, Download } from "lucide-react";
+import * as React from "react";
 
-/** Global app header used across pages */
-export function AppHeader({
-  breadcrumb,
+type BreadcrumbNode =
+  | { label: string; href?: string }
+  | React.ReactNode;
+
+export function PageHeader({
   title,
+  breadcrumb,
   actions,
 }: {
-  breadcrumb?: Array<{ href?: string; label: string }>;
   title: string;
+  breadcrumb?: BreadcrumbNode[] | React.ReactNode;
   actions?: React.ReactNode;
 }) {
   return (
     <header className="sticky top-0 z-10 mb-4 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50">
       <div className="mx-auto max-w-6xl px-4 py-4">
+        {/* Global app title */}
         <div className="mb-1 text-xs font-semibold tracking-wide text-gray-500">
           Shelter and Settlements Vulnerability Index
         </div>
 
-        {/* Breadcrumb */}
-        {breadcrumb && breadcrumb.length > 0 && (
-          <nav className="mb-2 flex items-center gap-1 text-sm text-gray-500">
-            {breadcrumb.map((b, i) => (
-              <span key={`${b.label}-${i}`} className="flex items-center gap-1">
-                {b.href ? (
-                  <Link className="hover:text-gray-700" href={b.href}>
-                    {b.label}
-                  </Link>
-                ) : (
-                  <span className="text-gray-700">{b.label}</span>
-                )}
-                {i < breadcrumb.length - 1 && (
-                  <ChevronRight className="h-4 w-4 opacity-70" />
-                )}
-              </span>
-            ))}
-          </nav>
-        )}
+        {/* Row: breadcrumb + actions */}
+        <div className="flex items-center justify-between">
+          <div>
+            {/* Breadcrumb */}
+            {Array.isArray(breadcrumb) ? (
+              <nav aria-label="Breadcrumb" className="mb-1 text-sm text-gray-500">
+                <ol className="flex flex-wrap items-center gap-1">
+                  {breadcrumb.map((node, idx) => {
+                    if (React.isValidElement(node)) return <li key={idx}>{node}</li>;
+                    const n = node as Exclude<BreadcrumbNode, React.ReactNode>;
+                    const isLast = idx === breadcrumb.length - 1;
+                    return (
+                      <li key={idx} className="flex items-center gap-1">
+                        {n.href && !isLast ? (
+                          <Link href={n.href} className="hover:text-gray-700 underline underline-offset-2">
+                            {n.label}
+                          </Link>
+                        ) : (
+                          <span className="text-gray-700">{n.label}</span>
+                        )}
+                        {!isLast && <span className="text-gray-400">/</span>}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </nav>
+            ) : (
+              breadcrumb
+            )}
 
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
-          {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+            {/* Page title */}
+            <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+          </div>
+
+          {/* Actions area (e.g., CSV Import/Export) */}
+          <div className="flex items-center gap-2">
+            {actions}
+          </div>
         </div>
       </div>
     </header>
   );
 }
 
-/** Page container for consistent max width & padding */
-export function PageContainer({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto max-w-6xl px-4 pb-10">{children}</div>;
-}
-
-/** Color-coded hierarchy tag */
+/** Small colored tag used for Pillar/Theme/Subtheme badges */
 export function HierTag({
-  level, // "pillar" | "theme" | "subtheme"
-  className,
+  level,
+  className = "",
 }: {
   level: "pillar" | "theme" | "subtheme";
   className?: string;
 }) {
-  const palette =
+  const styles =
     level === "pillar"
       ? "bg-blue-50 text-blue-700 ring-blue-200"
       : level === "theme"
       ? "bg-green-50 text-green-700 ring-green-200"
       : "bg-red-50 text-red-700 ring-red-200";
 
-  const label =
-    level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
+  const label = level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
 
   return (
     <span
-      className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset",
-        palette,
-        className
-      )}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${styles} ${className}`}
     >
       {label}
     </span>
   );
 }
 
-/** Icon button with tooltip (Lucide icon passed as child) */
-export function IconButton({
-  label,
-  onClick,
-  children,
-  className,
+/** Reusable CSV buttons (placeholders) */
+export function CsvActions({
+  onImport,
+  onExport,
   disabled,
 }: {
-  label: string;
-  onClick?: () => void;
-  children: React.ReactNode;
-  className?: string;
+  onImport?: () => void;
+  onExport?: () => void;
   disabled?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50",
-        className
-      )}
-    >
-      {children}
-    </button>
+    <>
+      <button
+        type="button"
+        title="Import CSV"
+        onClick={onImport}
+        disabled={disabled}
+        className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+      >
+        <Upload size={16} />
+        Import CSV
+      </button>
+      <button
+        type="button"
+        title="Export CSV"
+        onClick={onExport}
+        disabled={disabled}
+        className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+      >
+        <Download size={16} />
+        Export CSV
+      </button>
+    </>
   );
 }
