@@ -1,35 +1,21 @@
 // lib/supabase.ts
-"use server";
-
-import { cookies } from "next/headers";
-import {
-  createBrowserClient,
-  createServerClient,
-  type CookieOptions,
-} from "@supabase/ssr";
+import { createBrowserClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-// If you have a generated Database type, you can:
-// import type { Database } from "@/types/database";
-// and then change SupabaseClient to SupabaseClient<Database> below.
-// For now we keep it generic to avoid build-time type friction.
+import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-/** Client for browser components/hooks */
-export function createClient(): SupabaseClient {
-  // `createBrowserClient` infers types; returning as plain SupabaseClient
-  // avoids the “GenericSchema vs 'public'” constraint error on Vercel.
+/** Use inside Client Components/hooks */
+export function getBrowserSupabase(): SupabaseClient {
   return createBrowserClient(supabaseUrl, supabaseAnonKey) as unknown as SupabaseClient;
 }
 
-/** Client for server routes, server components, and server actions */
-export function createClientOnServer(): SupabaseClient {
-  const jar = cookies(); // sync in Next 15
-
-  // Note: on the server, `cookies().set/remove` are available in server actions
-  // and Route Handlers; they type-check here and are no-ops where not allowed.
+/** Use inside Server Components, Route Handlers, and Server Actions */
+export function getServerSupabase(): SupabaseClient {
+  // In Next 15, cookies() is sync and safe here.
+  const jar = cookies();
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
