@@ -1,37 +1,36 @@
 // lib/supabase.ts
+// Server-side Supabase client factory for Next.js App Router
 import { cookies } from "next/headers";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
-// Optional: you can keep this import for editor help, but we won’t over-annotate generics.
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
 
-export function createClient(): SupabaseClient {
-  const cookieStore = cookies();
-
+/**
+ * Create a Supabase client bound to Next.js server cookies.
+ * Avoid explicit return typing to prevent generic-mismatch TS errors on Vercel.
+ */
+export function createClientOnServer() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  // Let the helper infer schema types; avoid hard-coding "public" generics
-  const client = createServerClient(supabaseUrl, supabaseAnonKey, {
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
-        return cookieStore.get(name)?.value;
+        return cookies().get(name)?.value;
       },
-      // In some Next runtimes cookies() is read-only; swallow set/remove if not allowed
-      set(name: string, value: string, options: CookieOptions) {
-        try {
-          // @ts-ignore: Next 15 types can mark this as readonly outside actions/handlers
-          cookieStore.set({ name, value, ...options });
-        } catch {}
+      set(name: string, value: string, options: Parameters<typeof cookies.set>[2]) {
+        cookies().set(name, value, options);
       },
-      remove(name: string, options: CookieOptions) {
-        try {
-          // @ts-ignore
-          cookieStore.set({ name, value: "", ...options });
-        } catch {}
+      remove(name: string, options: Parameters<typeof cookies.set>[2]) {
+        // Next's cookies API has no .delete; emulate via set + maxAge=0
+        cookies().set(name, "", { ...options, maxAge: 0 });
       },
     },
   });
-
-  // Cast to generic SupabaseClient to keep call sites happy without schema literals
-  return client as unknown as SupabaseClient;
 }
+
+/**
+ * Back-compat alias: some files previously imported { createClient } from "@/lib/supabase".
+ * Keeping this alias prevents import errors without hunting every caller.
+ */
+export const createClient = createClientOnServer;
+
+export default createClientOnServer;
