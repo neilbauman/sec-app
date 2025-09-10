@@ -1,18 +1,29 @@
 // components/PrimaryFrameworkCards.tsx
 "use client";
 
-import React from "react";
+import * as React from "react";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
-import { Caret, Card, Tag, Tooltip, ActionIcon } from "@/lib/ui";
 import { Info } from "lucide-react";
-import clsx from "clsx";
+import {
+  Card,
+  Tooltip,
+  ActionIcon,
+  CaretButton,
+  TagPillar,
+  TagTheme,
+  TagSubtheme,
+} from "@/lib/ui";
 
 type Props = {
   defaultOpen?: boolean;
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
-  actions?: React.ReactNode; // keeps the right-side actions cell aligned
+  actions?: {
+    onEditPillar?: (p: Pillar) => void;
+    onEditTheme?: (t: Theme) => void;
+    onEditSubtheme?: (s: Subtheme) => void;
+  };
 };
 
 export default function PrimaryFrameworkCards({
@@ -22,99 +33,168 @@ export default function PrimaryFrameworkCards({
   subthemes,
   actions,
 }: Props) {
-  // open-state per pillar/theme
-  const [openPillar, setOpenPillar] = React.useState<Record<string, boolean>>(
-    () =>
-      Object.fromEntries(pillars.map((p) => [p.id, defaultOpen]))
-  );
-  const [openTheme, setOpenTheme] = React.useState<Record<string, boolean>>({});
+  // Expansion state
+  const [open, setOpen] = React.useState<Record<string, boolean>>(() => {
+    const o: Record<string, boolean> = {};
+    for (const p of pillars) o[`p:${p.id}`] = defaultOpen;
+    for (const t of themes) o[`t:${t.id}`] = false;
+    return o;
+  });
 
-  const togglePillar = (id: string) =>
-    setOpenPillar((s) => ({ ...s, [id]: !s[id] }));
-  const toggleTheme = (id: string) =>
-    setOpenTheme((s) => ({ ...s, [id]: !s[id] }));
+  const toggle = (key: string) => setOpen((s) => ({ ...s, [key]: !s[key] }));
 
-  // indexing helpers
   const themesByPillar = React.useMemo(() => {
-    const map: Record<string, Theme[]> = {};
+    const map = new Map<string, Theme[]>();
     for (const t of themes) {
-      const pid = t.pillar_id ?? "";
-      (map[pid] ||= []).push(t);
+      if (!t.pillar_id) continue;
+      const arr = map.get(t.pillar_id) ?? [];
+      arr.push(t);
+      map.set(t.pillar_id, arr);
     }
-    for (const k of Object.keys(map)) map[k].sort((a, b) => a.sort_order - b.sort_order);
     return map;
   }, [themes]);
 
   const subthemesByTheme = React.useMemo(() => {
-    const map: Record<string, Subtheme[]> = {};
+    const map = new Map<string, Subtheme[]>();
     for (const s of subthemes) {
-      const tid = s.theme_id ?? "";
-      (map[tid] ||= []).push(s);
+      if (!s.theme_id) continue;
+      const arr = map.get(s.theme_id) ?? [];
+      arr.push(s);
+      map.set(s.theme_id, arr);
     }
-    for (const k of Object.keys(map)) map[k].sort((a, b) => a.sort_order - b.sort_order);
     return map;
   }, [subthemes]);
 
   return (
-    <Card>
-      {/* header row */}
-      <div className="grid grid-cols-[24px_minmax(0,1fr)_140px_80px_120px] items-center gap-2 border-b px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-        <span />{/* caret */}
-        <span>Hierarchy</span>
-        <span className="text-right">Code</span>
-        <span className="text-right">Sort</span>
-        <span className="text-right">Actions</span>
-      </div>
-
-      {/* body */}
+    <Card className="mx-auto max-w-6xl">
       <div className="divide-y">
-        {pillars.sort((a, b) => a.sort_order - b.sort_order).map((pillar) => {
-          const pOpen = !!openPillar[pillar.id];
-          const pThemes = themesByPillar[pillar.id] ?? [];
+        {/* Header row */}
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 px-4 py-3 text-xs font-semibold text-gray-500">
+          <div className="w-5" />
+          <div className="flex items-center gap-2">
+            <span>Hierarchy</span>
+          </div>
+          <div className="text-right">Sort</div>
+          <div className="text-right pr-1">Actions</div>
+        </div>
+
+        {/* Pillars */}
+        {pillars.map((pillar) => {
+          const pKey = `p:${pillar.id}`;
+          const pOpen = !!open[pKey];
+          const pThemes = (themesByPillar.get(pillar.id) ?? []).sort(
+            (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+          );
 
           return (
-            <div key={pillar.id} className="px-2 py-1">
+            <div key={pillar.id} className="px-4 py-2">
               {/* Pillar row */}
-              <Row
-                caret={<Caret open={pOpen} onToggle={() => togglePillar(pillar.id)} />}
-                tag={<Tag color="blue">Pillar</Tag>}
-                name={pillar.name}
-                description={pillar.description ?? ""}
-                code={pillar.code}
-                sort={pillar.sort_order}
-                actions={actions}
-              />
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-start gap-3">
+                {/* caret */}
+                <div className="pt-1">
+                  <CaretButton open={pOpen} onToggle={() => toggle(pKey)} />
+                </div>
 
-              {/* Themes under pillar */}
+                {/* name area with tag + code + name + description aligned */}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <TagPillar>Pillar</TagPillar>
+                    <span className="text-xs text-gray-500">{pillar.code}</span>
+                    <span className="font-medium text-gray-900">{pillar.name}</span>
+                    <Tooltip content="Pillar description">
+                      <Info className="h-4 w-4 text-gray-400" />
+                    </Tooltip>
+                  </div>
+                  {pillar.description ? (
+                    <div className="ml-[calc(0.5rem+0.5rem+2ch)] text-sm text-gray-600">
+                      {/* left indent ≈ aligns with start of name (tag + code width) */}
+                      {pillar.description}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* sort */}
+                <div className="text-right text-sm text-gray-600">{pillar.sort_order}</div>
+
+                {/* actions pinned right */}
+                <div className="flex justify-end">
+                  <ActionIcon aria-label="Edit pillar" onClick={() => actions?.onEditPillar?.(pillar)}>
+                    ✎
+                  </ActionIcon>
+                </div>
+              </div>
+
+              {/* Themes */}
               {pOpen &&
                 pThemes.map((theme) => {
-                  const tOpen = !!openTheme[theme.id];
-                  const tSubs = subthemesByTheme[theme.id] ?? [];
+                  const tKey = `t:${theme.id}`;
+                  const tOpen = !!open[tKey];
+                  const tSubs = (subthemesByTheme.get(theme.id) ?? []).sort(
+                    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+                  );
+
                   return (
-                    <div key={theme.id}>
-                      <Row
-                        indent={1}
-                        caret={<Caret open={tOpen} onToggle={() => toggleTheme(theme.id)} />}
-                        tag={<Tag color="green">Theme</Tag>}
-                        name={theme.name}
-                        description={theme.description ?? ""}
-                        code={theme.code}
-                        sort={theme.sort_order}
-                        actions={actions}
-                      />
+                    <div key={theme.id} className="mt-2 pl-6">
+                      {/* Theme row */}
+                      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-start gap-3">
+                        <div className="pt-1">
+                          <CaretButton open={tOpen} onToggle={() => toggle(tKey)} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <TagTheme>Theme</TagTheme>
+                            <span className="text-xs text-gray-500">{theme.code}</span>
+                            <span className="font-medium text-gray-900">{theme.name}</span>
+                            <Tooltip content="Theme description">
+                              <Info className="h-4 w-4 text-gray-400" />
+                            </Tooltip>
+                          </div>
+                          {theme.description ? (
+                            <div className="ml-[calc(0.5rem+0.5rem+2ch)] text-sm text-gray-600">
+                              {theme.description}
+                            </div>
+                          ) : null}
+                        </div>
+                        <div className="text-right text-sm text-gray-600">{theme.sort_order}</div>
+                        <div className="flex justify-end">
+                          <ActionIcon aria-label="Edit theme" onClick={() => actions?.onEditTheme?.(theme)}>
+                            ✎
+                          </ActionIcon>
+                        </div>
+                      </div>
+
+                      {/* Subthemes */}
                       {tOpen &&
                         tSubs.map((sub) => (
-                          <Row
-                            key={sub.id}
-                            indent={2}
-                            caret={<span className="inline-block h-6 w-6" />} // keeps alignment; subthemes don’t expand
-                            tag={<Tag color="red">Subtheme</Tag>}
-                            name={sub.name}
-                            description={sub.description ?? ""}
-                            code={sub.code}
-                            sort={sub.sort_order}
-                            actions={actions}
-                          />
+                          <div key={sub.id} className="mt-2 pl-6">
+                            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-start gap-3">
+                              <div className="pt-1">
+                                {/* leaf rows still show a small spacer to align with caret column */}
+                                <span className="inline-block h-5 w-5" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <TagSubtheme>Subtheme</TagSubtheme>
+                                  <span className="text-xs text-gray-500">{sub.code}</span>
+                                  <span className="font-medium text-gray-900">{sub.name}</span>
+                                  <Tooltip content="Subtheme description">
+                                    <Info className="h-4 w-4 text-gray-400" />
+                                  </Tooltip>
+                                </div>
+                                {sub.description ? (
+                                  <div className="ml-[calc(0.5rem+0.5rem+2ch)] text-sm text-gray-600">
+                                    {sub.description}
+                                  </div>
+                                ) : null}
+                              </div>
+                              <div className="text-right text-sm text-gray-600">{sub.sort_order}</div>
+                              <div className="flex justify-end">
+                                <ActionIcon aria-label="Edit subtheme" onClick={() => actions?.onEditSubtheme?.(sub)}>
+                                  ✎
+                                </ActionIcon>
+                              </div>
+                            </div>
+                          </div>
                         ))}
                     </div>
                   );
@@ -124,64 +204,5 @@ export default function PrimaryFrameworkCards({
         })}
       </div>
     </Card>
-  );
-}
-
-/** One visual row (+ its description line) in the table */
-function Row({
-  indent = 0,
-  caret,
-  tag,
-  name,
-  code,
-  sort,
-  description,
-  actions,
-}: {
-  indent?: 0 | 1 | 2;
-  caret: React.ReactNode;
-  tag: React.ReactNode;
-  name: string;
-  code: string | null | undefined;
-  sort: number;
-  description?: string;
-  actions?: React.ReactNode;
-}) {
-  const pad = indent === 0 ? "" : indent === 1 ? "pl-6" : "pl-12";
-
-  return (
-    <div className={clsx("grid grid-cols-[24px_minmax(0,1fr)_140px_80px_120px] gap-2 px-2 py-2")}>
-      {/* caret */}
-      <div className="flex items-start justify-center pt-0.5">{caret}</div>
-
-      {/* hierarchy cell: tag + name (same row), then description starts under the name edge */}
-      <div className={clsx("min-w-0", pad)}>
-        <div className="flex items-center gap-2">
-          {tag}
-          <div className="truncate font-medium text-gray-900">{name}</div>
-          <Tooltip content="Metadata code (not editable here)">
-            <Info className="h-3.5 w-3.5 text-gray-400" />
-          </Tooltip>
-        </div>
-        {description ? (
-          <div className="mt-1 text-sm text-gray-600">
-            {description}
-          </div>
-        ) : null}
-      </div>
-
-      {/* code column (small gray, right aligned) */}
-      <div className="flex items-center justify-end">
-        <span className="text-[11px] text-gray-500">{code}</span>
-      </div>
-
-      {/* sort column */}
-      <div className="flex items-center justify-end">
-        <span className="text-sm tabular-nums text-gray-700">{sort}</span>
-      </div>
-
-      {/* actions column (right aligned) */}
-      <div className="flex items-center justify-end">{actions}</div>
-    </div>
   );
 }
