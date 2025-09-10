@@ -1,6 +1,6 @@
 // app/dashboard/page.tsx
 import Link from "next/link";
-import { PageHeader } from "@/lib/ui";
+import { AppHeader, PageContainer } from "@/lib/ui";
 import { Upload, Download } from "lucide-react";
 
 export default function DashboardPage() {
