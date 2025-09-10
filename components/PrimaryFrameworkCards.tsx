@@ -1,357 +1,312 @@
 // components/PrimaryFrameworkCards.tsx
-"use client";
-
 import React from "react";
-import { ChevronRight, Download, Upload, Pencil, Trash2 } from "lucide-react";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
-// Small color-coded tag for hierarchy labels
-function Tag({
-  kind,
-  children,
-}: {
-  kind: "pillar" | "theme" | "subtheme";
-  children: React.ReactNode;
-}) {
-  const cls =
-    kind === "pillar"
-      ? "bg-blue-100 text-blue-700 ring-1 ring-blue-200"
-      : kind === "theme"
-      ? "bg-green-100 text-green-700 ring-1 ring-green-200"
-      : "bg-red-100 text-red-700 ring-1 ring-red-200";
+// If you already have HierarchyTag in lib/ui, we'll use it; otherwise fallback.
+let ExternalHierarchyTag: React.FC<{ level: "pillar" | "theme" | "subtheme" }> | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  ExternalHierarchyTag = require("@/lib/ui").HierarchyTag;
+} catch { /* optional dependency */ }
+
+type PillarLike = {
+  id?: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  sort_order: number;
+};
+
+type ThemeLike = {
+  id?: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  sort_order: number;
+  pillar_id?: string | null;
+  pillar_code?: string | null;
+};
+
+type SubthemeLike = {
+  id?: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  sort_order: number;
+  theme_id?: string | null;
+  theme_code?: string | null;
+};
+
+export type PrimaryFrameworkCardsProps = {
+  defaultOpen?: boolean;
+  pillars: PillarLike[];
+  themes: ThemeLike[];
+  subthemes: SubthemeLike[];
+  // Optional action handlers (all are placeholders—wire up later)
+  actions?: {
+    addTheme?(pillar: PillarLike): void;
+    editPillar?(pillar: PillarLike): void;
+    deletePillar?(pillar: PillarLike): void;
+
+    addSubtheme?(theme: ThemeLike): void;
+    editTheme?(theme: ThemeLike): void;
+    deleteTheme?(theme: ThemeLike): void;
+
+    editSubtheme?(subtheme: SubthemeLike): void;
+    deleteSubtheme?(subtheme: SubthemeLike): void;
+  };
+};
+
+const FallbackHierarchyTag: React.FC<{ level: "pillar" | "theme" | "subtheme" }> = ({ level }) => {
+  const map = {
+    pillar: "bg-blue-100 text-blue-700 ring-blue-200",
+    theme: "bg-green-100 text-green-700 ring-green-200",
+    subtheme: "bg-red-100 text-red-700 ring-red-200",
+  } as const;
+
+  const label = level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
+  const cls = map[level];
+
   return (
-    <span
-      className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold ${cls}`}
-    >
-      {children}
+    <span className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium ring-1 ${cls}`}>
+      {label}
     </span>
+  );
+};
+
+const HierarchyTag: React.FC<{ level: "pillar" | "theme" | "subtheme" }> =
+  ExternalHierarchyTag ?? FallbackHierarchyTag;
+
+// Reusable row shell (3 fixed columns: Name/Description | Sort | Actions)
+function RowShell({
+  children,
+  sort,
+  actions,
+}: {
+  children: React.ReactNode;
+  sort: number | string;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="grid grid-cols-[1fr,80px,120px] items-start gap-2 px-4 py-3">
+      <div className="min-w-0">{children}</div>
+      <div className="self-center text-sm tabular-nums text-gray-500">{sort}</div>
+      <div className="flex items-center justify-end gap-2">{actions}</div>
+    </div>
   );
 }
 
-type Props = {
-  defaultOpen?: boolean;
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
-  // Optional action handlers (still placeholders — safe no-ops if omitted)
-  actions?: {
-    onEditPillar?: (p: Pillar) => void;
-    onDeletePillar?: (p: Pillar) => void;
-    onEditTheme?: (t: Theme) => void;
-    onDeleteTheme?: (t: Theme) => void;
-    onEditSubtheme?: (s: Subtheme) => void;
-    onDeleteSubtheme?: (s: Subtheme) => void;
-  };
-};
+// Inline set of icon buttons (right-aligned in the row)
+function ActionIcon({
+  title,
+  onClick,
+  children,
+}: {
+  title: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white hover:bg-gray-50 active:bg-gray-100"
+    >
+      {children}
+    </button>
+  );
+}
+
+// A compact inline left block: Tag + small gray code, next to a name+description stack
+function NameBlock({
+  level,
+  code,
+  name,
+  description,
+}: {
+  level: "pillar" | "theme" | "subtheme";
+  code: string;
+  name: string;
+  description?: string | null;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      {/* Left inline chunk: Tag + Code */}
+      <div className="mt-0.5 flex shrink-0 items-center gap-2">
+        <HierarchyTag level={level} />
+        <span className="text-[11px] leading-none text-gray-500">{code}</span>
+      </div>
+      {/* Right stack: Name (bold), Description under the name (aligned with the name, not the tag) */}
+      <div className="min-w-0">
+        <div className="truncate font-medium text-gray-900">{name}</div>
+        {description ? (
+          <div className="mt-1 text-sm leading-relaxed text-gray-600">{description}</div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export default function PrimaryFrameworkCards({
   defaultOpen = false,
   pillars,
   themes,
   subthemes,
-  actions = {},
-}: Props) {
-  // Track expanded pillar/theme rows with Sets — preserves the “small caret” visual
-  const [openPillars, setOpenPillars] = React.useState<Set<string>>(
-    () => new Set(defaultOpen ? pillars.map((p) => p.id) : [])
-  );
-  const [openThemes, setOpenThemes] = React.useState<Set<string>>(
-    () => new Set()
-  );
-
-  const togglePillar = (id: string) =>
-    setOpenPillars((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-
-  const toggleTheme = (id: string) =>
-    setOpenThemes((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-
-  const byPillar: Record<string, Theme[]> = React.useMemo(() => {
-    const m: Record<string, Theme[]> = {};
+  actions,
+}: PrimaryFrameworkCardsProps) {
+  // Group helpers
+  const themesByPillar = React.useMemo(() => {
+    const map = new Map<string, ThemeLike[]>();
     for (const t of themes) {
-      if (!t.pillar_id) continue;
-      (m[t.pillar_id] ??= []).push(t);
+      const key = (t.pillar_id ?? "") || (t.pillar_code ?? "");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
     }
-    // keep incoming order; if you want strict sort use sort_order
-    Object.values(m).forEach((arr) =>
-      arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-    );
-    return m;
+    // stable sort by sort_order
+    for (const [, arr] of map) arr.sort((a, b) => a.sort_order - b.sort_order);
+    return map;
   }, [themes]);
 
-  const byTheme: Record<string, Subtheme[]> = React.useMemo(() => {
-    const m: Record<string, Subtheme[]> = {};
+  const subsByTheme = React.useMemo(() => {
+    const map = new Map<string, SubthemeLike[]>();
     for (const s of subthemes) {
-      if (!s.theme_id) continue;
-      (m[s.theme_id] ??= []).push(s);
+      const key = (s.theme_id ?? "") || (s.theme_code ?? "");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(s);
     }
-    Object.values(m).forEach((arr) =>
-      arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-    );
-    return m;
+    for (const [, arr] of map) arr.sort((a, b) => a.sort_order - b.sort_order);
+    return map;
   }, [subthemes]);
 
   return (
-    <section className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-white">
-      {/* Top utility bar with CSV placeholders */}
-      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
-        <div className="text-sm font-medium text-gray-700">Primary Framework</div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            title="Import CSV (placeholder)"
-            aria-label="Import CSV"
-            onClick={() => alert("CSV Import placeholder")}
-          >
-            <Upload size={16} />
-            Import CSV
-          </button>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            title="Export CSV (placeholder)"
-            aria-label="Export CSV"
-            onClick={() => alert("CSV Export placeholder")}
-          >
-            <Download size={16} />
-            Export CSV
-          </button>
-        </div>
-      </div>
-
-      {/* Header row */}
-      <div className="grid grid-cols-[1fr,110px,110px] items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-2.5 text-xs font-semibold text-gray-600">
-        <div>Name & description</div>
-        <div className="text-center">Code</div>
+    <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      {/* Header row (static) */}
+      <div className="grid grid-cols-[1fr,80px,120px] items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-600">
+        <div>Name & Description</div>
         <div className="text-center">Sort</div>
+        <div className="text-right">Actions</div>
       </div>
 
       {/* Pillars */}
-      <ul className="divide-y divide-gray-200">
+      <div>
         {pillars
-          ?.slice()
-          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .slice()
+          .sort((a, b) => a.sort_order - b.sort_order)
           .map((p) => {
-            const expanded = openPillars.has(p.id);
-            const childThemes = byPillar[p.id] ?? [];
+            const pillarKey = p.id ?? p.code;
+            const pillarThemes =
+              themesByPillar.get(pillarKey) ??
+              themesByPillar.get(p.code) ??
+              [];
+
             return (
-              <li key={p.id}>
-                {/* Pillar row */}
-                <div className="grid grid-cols-[1fr,110px,110px] items-start gap-2 px-4 py-3">
-                  <div>
-                    <div className="flex items-start gap-2">
-                      <button
-                        type="button"
-                        aria-label={expanded ? "Collapse pillar" : "Expand pillar"}
-                        className="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded hover:bg-gray-100"
-                        onClick={() => togglePillar(p.id)}
-                        title={expanded ? "Collapse" : "Expand"}
-                      >
-                        <ChevronRight
-                          size={16} // keep caret size SMALL (as requested)
-                          className={`transition-transform ${
-                            expanded ? "rotate-90 text-gray-700" : "text-gray-500"
-                          }`}
-                        />
-                      </button>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Tag kind="pillar">Pillar</Tag>
-                          <span className="truncate text-sm font-semibold text-gray-900">
-                            {p.name}
-                          </span>
-                        </div>
-                        {/* Description aligned directly under name */}
-                        {p.description ? (
-                          <p className="mt-0.5 line-clamp-2 text-sm text-gray-600">
-                            {p.description}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      {/* Quick actions (icons + native tooltips) */}
-                      <div className="ml-2 flex flex-none items-center gap-1.5">
-                        <button
-                          type="button"
-                          className="rounded p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                          title="Edit pillar"
-                          aria-label="Edit pillar"
-                          onClick={() => actions.onEditPillar?.(p)}
-                        >
+              <details key={pillarKey} className="group border-b border-gray-100" {...(defaultOpen ? { open: true } : {})}>
+                <summary className="list-none cursor-pointer select-none">
+                  <RowShell
+                    sort={p.sort_order}
+                    actions={
+                      <>
+                        <ActionIcon title="Add theme" onClick={() => actions?.addTheme?.(p)}>
+                          <Plus size={16} />
+                        </ActionIcon>
+                        <ActionIcon title="Edit pillar" onClick={() => actions?.editPillar?.(p)}>
                           <Pencil size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded p-1 text-red-600 hover:bg-red-50"
-                          title="Delete pillar"
-                          aria-label="Delete pillar"
-                          onClick={() => actions.onDeletePillar?.(p)}
-                        >
+                        </ActionIcon>
+                        <ActionIcon title="Delete pillar" onClick={() => actions?.deletePillar?.(p)}>
                           <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                        </ActionIcon>
+                      </>
+                    }
+                  >
+                    <NameBlock
+                      level="pillar"
+                      code={p.code}
+                      name={p.name}
+                      description={p.description ?? ""}
+                    />
+                  </RowShell>
+                </summary>
 
-                  {/* Code */}
-                  <div className="self-center text-center text-sm text-gray-700">
-                    {p.code}
-                  </div>
+                {/* Themes under the pillar */}
+                {pillarThemes.length > 0 && (
+                  <div className="bg-white">
+                    {pillarThemes.map((t) => {
+                      const themeKey = t.id ?? t.code;
+                      const childSubs =
+                        subsByTheme.get(themeKey) ??
+                        subsByTheme.get(t.code) ??
+                        [];
 
-                  {/* Sort */}
-                  <div className="self-center text-center text-sm text-gray-700">
-                    {p.sort_order ?? ""}
-                  </div>
-                </div>
-
-                {/* Themes under pillar */}
-                {expanded && childThemes.length > 0 && (
-                  <div className="bg-gray-50/40">
-                    <ul className="divide-y divide-gray-200">
-                      {childThemes.map((t) => {
-                        const tOpen = openThemes.has(t.id);
-                        const childSubs = byTheme[t.id] ?? [];
-                        return (
-                          <li key={t.id} className="pl-8">
-                            {/* Theme row */}
-                            <div className="grid grid-cols-[1fr,110px,110px] items-start gap-2 px-4 py-2.5">
-                              <div className="flex items-start gap-2">
-                                <button
-                                  type="button"
-                                  aria-label={tOpen ? "Collapse theme" : "Expand theme"}
-                                  className="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded hover:bg-gray-100"
-                                  onClick={() => toggleTheme(t.id)}
-                                  title={tOpen ? "Collapse" : "Expand"}
-                                >
-                                  <ChevronRight
-                                    size={16}
-                                    className={`transition-transform ${
-                                      tOpen
-                                        ? "rotate-90 text-gray-700"
-                                        : "text-gray-500"
-                                    }`}
-                                  />
-                                </button>
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <Tag kind="theme">Theme</Tag>
-                                    <span className="truncate text-sm font-medium text-gray-900">
-                                      {t.name}
-                                    </span>
-                                  </div>
-                                  {t.description ? (
-                                    <p className="mt-0.5 line-clamp-2 text-sm text-gray-600">
-                                      {t.description}
-                                    </p>
-                                  ) : null}
-                                </div>
-
-                                <div className="ml-2 flex flex-none items-center gap-1.5">
-                                  <button
-                                    type="button"
-                                    className="rounded p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                                    title="Edit theme"
-                                    aria-label="Edit theme"
-                                    onClick={() => actions.onEditTheme?.(t)}
-                                  >
+                      return (
+                        <details key={themeKey} className="group border-t border-gray-100 bg-white pl-6">
+                          <summary className="list-none cursor-pointer select-none">
+                            <RowShell
+                              sort={t.sort_order}
+                              actions={
+                                <>
+                                  <ActionIcon title="Add subtheme" onClick={() => actions?.addSubtheme?.(t)}>
+                                    <Plus size={16} />
+                                  </ActionIcon>
+                                  <ActionIcon title="Edit theme" onClick={() => actions?.editTheme?.(t)}>
                                     <Pencil size={16} />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="rounded p-1 text-red-600 hover:bg-red-50"
-                                    title="Delete theme"
-                                    aria-label="Delete theme"
-                                    onClick={() => actions.onDeleteTheme?.(t)}
-                                  >
+                                  </ActionIcon>
+                                  <ActionIcon title="Delete theme" onClick={() => actions?.deleteTheme?.(t)}>
                                     <Trash2 size={16} />
-                                  </button>
-                                </div>
-                              </div>
+                                  </ActionIcon>
+                                </>
+                              }
+                            >
+                              <NameBlock
+                                level="theme"
+                                code={t.code}
+                                name={t.name}
+                                description={t.description ?? ""}
+                              />
+                            </RowShell>
+                          </summary>
 
-                              <div className="self-center text-center text-sm text-gray-700">
-                                {t.code}
-                              </div>
-                              <div className="self-center text-center text-sm text-gray-700">
-                                {t.sort_order ?? ""}
-                              </div>
-                            </div>
-
-                            {/* Subthemes under theme */}
-                            {tOpen && childSubs.length > 0 && (
-                              <ul className="divide-y divide-gray-200 bg-white">
-                                {childSubs.map((s) => (
-                                  <li key={s.id} className="pl-16">
-                                    <div className="grid grid-cols-[1fr,110px,110px] items-start gap-2 px-4 py-2.5">
-                                      <div className="flex items-start gap-2">
-                                        {/* spacer to align with carets above */}
-                                        <div className="h-5 w-5 flex-none" />
-                                        <div className="min-w-0 flex-1">
-                                          <div className="flex items-center gap-2">
-                                            <Tag kind="subtheme">Subtheme</Tag>
-                                            <span className="truncate text-sm text-gray-900">
-                                              {s.name}
-                                            </span>
-                                          </div>
-                                          {s.description ? (
-                                            <p className="mt-0.5 line-clamp-2 text-sm text-gray-600">
-                                              {s.description}
-                                            </p>
-                                          ) : null}
-                                        </div>
-
-                                        <div className="ml-2 flex flex-none items-center gap-1.5">
-                                          <button
-                                            type="button"
-                                            className="rounded p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                                            title="Edit subtheme"
-                                            aria-label="Edit subtheme"
-                                            onClick={() => actions.onEditSubtheme?.(s)}
-                                          >
+                          {/* Subthemes */}
+                          {childSubs.length > 0 && (
+                            <div className="bg-white pl-6">
+                              {childSubs.map((s) => {
+                                const subKey = s.id ?? s.code;
+                                return (
+                                  <div key={subKey} className="border-t border-gray-100">
+                                    <RowShell
+                                      sort={s.sort_order}
+                                      actions={
+                                        <>
+                                          <ActionIcon title="Edit subtheme" onClick={() => actions?.editSubtheme?.(s)}>
                                             <Pencil size={16} />
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="rounded p-1 text-red-600 hover:bg-red-50"
-                                            title="Delete subtheme"
-                                            aria-label="Delete subtheme"
-                                            onClick={() => actions.onDeleteSubtheme?.(s)}
-                                          >
+                                          </ActionIcon>
+                                          <ActionIcon title="Delete subtheme" onClick={() => actions?.deleteSubtheme?.(s)}>
                                             <Trash2 size={16} />
-                                          </button>
-                                        </div>
-                                      </div>
-
-                                      <div className="self-center text-center text-sm text-gray-700">
-                                        {s.code}
-                                      </div>
-                                      <div className="self-center text-center text-sm text-gray-700">
-                                        {s.sort_order ?? ""}
-                                      </div>
-                                    </div>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
+                                          </ActionIcon>
+                                        </>
+                                      }
+                                    >
+                                      <NameBlock
+                                        level="subtheme"
+                                        code={s.code}
+                                        name={s.name}
+                                        description={s.description ?? ""}
+                                      />
+                                    </RowShell>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </details>
+                      );
+                    })}
                   </div>
                 )}
-              </li>
+              </details>
             );
           })}
-      </ul>
+      </div>
     </section>
   );
 }
