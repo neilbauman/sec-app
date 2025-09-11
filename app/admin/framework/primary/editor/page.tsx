@@ -24,7 +24,7 @@ export default async function Page() {
     }
   );
 
-  // ✅ Step 2: Fetch pillars + themes explicitly via FK
+  // ✅ Explicitly use fk_themes_pillar relationship
   const { data: pillars, error } = await supabase
     .from("pillars")
     .select(`
@@ -43,7 +43,7 @@ export default async function Page() {
     `)
     .order("sort_order", { ascending: true });
 
-  console.log("Fetched pillars with themes:", JSON.stringify(pillars, null, 2));
+  console.log("Fetched pillars + themes:", JSON.stringify(pillars, null, 2));
   if (error) {
     console.error("Supabase error fetching pillars/themes:", error.message);
   }
@@ -62,9 +62,7 @@ export default async function Page() {
       <div>
         <PrimaryFrameworkCards
           defaultOpen={false}
-          pillars={
-            (pillars ?? []) as (Pillar & { themes?: Theme[] })[]
-          }
+          pillars={(pillars ?? []) as (Pillar & { themes?: Theme[] })[]}
           actions={<></>}
         />
       </div>
