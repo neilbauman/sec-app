@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "test": "jest --watchAll",
     "build": "next build --no-lint --debug",
     "start": "next start",
     "lint": "next lint",
