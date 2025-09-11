@@ -7,7 +7,7 @@ import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies(); // no await here
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,53 +54,66 @@ async function getData() {
 }
 
 export default async function Page() {
-  const { pillars, error } = await getData();
+  try {
+    const { pillars, error } = await getData();
 
-  return (
-    <main className="min-h-dvh bg-gray-50">
-      <PageHeader
-        title="Primary Framework Editor"
-        breadcrumbItems={[
-          { label: "Home", href: "/" },
-          { label: "Admin", href: "/admin" },
-          { label: "Framework", href: "/admin/framework" },
-          { label: "Primary Editor" },
-        ]}
-        actions={<CsvActions />}
-      />
+    return (
+      <main className="min-h-dvh bg-gray-50">
+        <PageHeader
+          title="Primary Framework Editor"
+          breadcrumbItems={[
+            { label: "Home", href: "/" },
+            { label: "Admin", href: "/admin" },
+            { label: "Framework", href: "/admin/framework" },
+            { label: "Primary Editor" },
+          ]}
+          actions={<CsvActions />}
+        />
 
-      <div className="p-4 space-y-4">
-        {/* Debug panel */}
-        <div className="rounded-md border bg-white p-3">
-          <h2 className="text-sm font-medium mb-2">Debug Data</h2>
-          {error ? (
-            <p className="text-sm text-red-600">Supabase error: {error}</p>
+        <div className="p-4 space-y-4">
+          {/* Debug panel */}
+          <div className="rounded-md border bg-white p-3">
+            <h2 className="text-sm font-medium mb-2">Debug Data</h2>
+            {error ? (
+              <p className="text-sm text-red-600">Supabase error: {error}</p>
+            ) : (
+              <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+                {JSON.stringify(pillars, null, 2)}
+              </pre>
+            )}
+          </div>
+
+          {pillars.length > 0 ? (
+            <PrimaryFrameworkCards
+              pillars={pillars}
+              defaultOpen={false}
+              actions={(item, level) => (
+                <div className="flex items-center gap-2 text-gray-500 text-xs">
+                  <span>Edit {level}</span>
+                  <span>|</span>
+                  <span>Delete</span>
+                </div>
+              )}
+            />
           ) : (
-            <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
-              {JSON.stringify(pillars, null, 2)}
-            </pre>
+            <div className="rounded-md border bg-white p-3 text-sm text-gray-500">
+              No pillars returned from Supabase.
+            </div>
           )}
         </div>
-
-        {pillars.length > 0 ? (
-          <PrimaryFrameworkCards
-            pillars={pillars}
-            defaultOpen={false}
-            actions={(item, level) => (
-              <div className="flex items-center gap-2 text-gray-500 text-xs">
-                {/* Example placeholder actions per row */}
-                <span>Edit {level}</span>
-                <span>|</span>
-                <span>Delete</span>
-              </div>
-            )}
-          />
-        ) : (
-          <div className="rounded-md border bg-white p-3 text-sm text-gray-500">
-            No pillars returned from Supabase.
-          </div>
-        )}
-      </div>
-    </main>
-  );
+      </main>
+    );
+  } catch (err: any) {
+    console.error("Render crash:", err);
+    return (
+      <main className="min-h-dvh bg-gray-50 p-4">
+        <h1 className="text-lg font-semibold text-red-600">
+          Failed to render PrimaryFramework Editor
+        </h1>
+        <pre className="text-xs bg-gray-100 p-2 mt-2 rounded">
+          {err.message || "Unknown render error"}
+        </pre>
+      </main>
+    );
+  }
 }
