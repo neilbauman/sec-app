@@ -1,14 +1,14 @@
-// app/admin/framework/primary/editor/page.tsx
+// /app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import {
-  PageHeader,
-  Breadcrumb,
-  CsvActions,
-} from "@/lib/ui";
+import { PageHeader, Breadcrumb, CsvActions } from "@/lib/ui";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
+
+type NestedPillar = Pillar & {
+  themes?: (Theme & { subthemes?: Subtheme[] })[];
+};
 
 export default async function PrimaryFrameworkEditorPage() {
   const cookieStore = cookies();
@@ -71,12 +71,7 @@ export default async function PrimaryFrameworkEditorPage() {
       />
 
       <div className="mx-auto max-w-6xl px-4 py-6">
-        <PrimaryFrameworkCards
-          defaultOpen={false}
-          pillars={(pillars ?? []) as (Pillar & {
-            themes: (Theme & { subthemes: Subtheme[] })[];
-          })[]}
-        />
+        <PrimaryFrameworkCards defaultOpen={false} pillars={(pillars ?? []) as NestedPillar[]} />
       </div>
     </main>
   );
