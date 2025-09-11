@@ -1,3 +1,4 @@
+// app/admin/framework/primary/editor/page.tsx
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
@@ -10,6 +11,7 @@ async function getData(): Promise<{
   error?: string;
 }> {
   try {
+    // ✅ cookies() is synchronous
     const cookieStore = cookies();
 
     const supabase = createServerClient(
@@ -41,7 +43,7 @@ async function getData(): Promise<{
       return { pillars: [], error: error.message };
     }
 
-    // Ensure subthemes is always an array (not null/undefined)
+    // ✅ Normalize missing subthemes into arrays
     const normalized = (data ?? []).map((pillar: any) => ({
       ...pillar,
       themes: (pillar.themes ?? []).map((theme: any) => ({
