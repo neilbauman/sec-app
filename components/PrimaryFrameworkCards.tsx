@@ -1,136 +1,104 @@
-// /components/PrimaryFrameworkCards.tsx
-"use client";
-
-import { useState } from "react";
-import { ChevronDown, ChevronRight, Trash2, Pencil, Plus } from "lucide-react";
+// /app/admin/framework/primary/editor/page.tsx
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { PageHeader, Breadcrumb, CsvActions } from "@/lib/ui";
+import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
-import { Tag, ActionIcon } from "@/lib/ui";
 
-interface Props {
-  pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
-  defaultOpen?: boolean;
-  actions?: (item: Pillar | Theme | Subtheme, level: "pillar" | "theme" | "subtheme") => React.ReactNode;
-}
+async function getData() {
+  const cookieStore = await cookies();
 
-export function PrimaryFrameworkCards({ pillars, defaultOpen = false, actions }: Props) {
-  return (
-    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-      <table className="min-w-full border-collapse text-sm">
-        <thead className="bg-gray-50 text-left text-xs font-semibold text-gray-600">
-          <tr>
-            <th className="px-4 py-2 w-1/6">Type / Code</th>
-            <th className="px-4 py-2 w-3/6">Name / Description</th>
-            <th className="px-4 py-2 w-1/6">Sort Order</th>
-            <th className="px-4 py-2 w-1/6">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {pillars.map((pillar) => (
-            <FrameworkRow
-              key={pillar.id}
-              item={pillar}
-              level="pillar"
-              depth={0}
-              defaultOpen={defaultOpen}
-              actions={actions}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set() {
+          // no-op for server component
+        },
+        remove() {
+          // no-op for server component
+        },
+      },
+    }
   );
+
+  const { data: pillars, error } = await supabase
+    .from("pillars")
+    .select(`
+      id, name, code, description, sort_order,
+      themes:themes_pillar_id_fkey (
+        id, name, code, description, sort_order,
+        subthemes:fk_subthemes_theme (
+          id, name, code, description, sort_order
+        )
+      )
+    `)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.error("Supabase error:", error.message);
+    return { pillars: [], error: error.message };
+  }
+
+  return {
+    pillars: (pillars ?? []) as (Pillar & {
+      themes: (Theme & { subthemes: Subtheme[] })[];
+    })[],
+    error: null,
+  };
 }
 
-function FrameworkRow({
-  item,
-  level,
-  depth,
-  defaultOpen = false,
-  actions,
-}: {
-  item: Pillar | Theme | Subtheme & { themes?: Theme[]; subthemes?: Subtheme[] };
-  level: "pillar" | "theme" | "subtheme";
-  depth: number;
-  defaultOpen?: boolean;
-  actions?: (item: Pillar | Theme | Subtheme, level: "pillar" | "theme" | "subtheme") => React.ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  const children =
-    level === "pillar"
-      ? (item as Pillar).themes
-      : level === "theme"
-      ? (item as Theme).subthemes
-      : undefined;
-
-  const color = level === "pillar" ? "blue" : level === "theme" ? "green" : "red";
-  const label = level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
-
-  // Increase indent for clarity
-  const indent = depth * 24;
+export default async function PrimaryEditorPage() {
+  const { pillars, error } = await getData();
 
   return (
-    <>
-      <tr className="align-top">
-        {/* Type / Code */}
-        <td className="px-4 py-2 whitespace-nowrap">
-          <div className="flex items-center gap-2" style={{ paddingLeft: `${indent}px` }}>
-            {children && (
-              <button
-                onClick={() => setOpen(!open)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </button>
+    <main className="min-h-dvh bg-gray-50">
+      <PageHeader
+        title="Primary Framework Editor"
+        breadcrumbItems={[
+          { label: "Home", href: "/" },
+          { label: "Admin", href: "/admin" },
+          { label: "Framework", href: "/admin/framework" },
+          { label: "Primary Editor" },
+        ]}
+        actions={<CsvActions disableImport disableExport />}
+      />
+
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        {/* Debug Panel */}
+        <div className="mb-6 rounded-lg border bg-white p-4 shadow-sm">
+          <h2 className="mb-2 font-semibold">Debug Data</h2>
+          {error ? (
+            <p className="text-sm text-red-600">Supabase error: {error}</p>
+          ) : (
+            <pre className="overflow-x-auto rounded bg-gray-50 p-2 text-xs text-gray-600">
+              {JSON.stringify(pillars, null, 2)}
+            </pre>
+          )}
+        </div>
+
+        {pillars.length > 0 ? (
+          <PrimaryFrameworkCards
+            pillars={pillars}
+            defaultOpen={false}
+            actions={(item, level) => (
+              <div className="text-xs text-gray-400">
+                {level === "pillar" && "Pillar-specific actions"}
+                {level === "theme" && "Theme-specific actions"}
+                {level === "subtheme" && "Subtheme-specific actions"}
+              </div>
             )}
-            <div className="flex items-center gap-2">
-              <Tag color={color}>{label}</Tag>
-              <span className="text-xs text-gray-500">{item.code}</span>
-            </div>
-          </div>
-        </td>
-
-        {/* Name / Description */}
-        <td className="px-4 py-2">
-          <div className="flex flex-col" style={{ paddingLeft: `${indent}px` }}>
-            <span className="font-medium text-gray-900">{item.name}</span>
-            {item.description && (
-              <span className="text-xs text-gray-500">{item.description}</span>
-            )}
-          </div>
-        </td>
-
-        {/* Sort Order */}
-        <td className="px-4 py-2 text-gray-500">{item.sort_order}</td>
-
-        {/* Actions */}
-        <td className="px-4 py-2">
-          <div className="flex items-center gap-2">
-            <ActionIcon title="Edit" disabled>
-              <Pencil className="h-4 w-4" />
-            </ActionIcon>
-            <ActionIcon title="Delete" disabled>
-              <Trash2 className="h-4 w-4" />
-            </ActionIcon>
-            <ActionIcon title="Add child" disabled>
-              <Plus className="h-4 w-4" />
-            </ActionIcon>
-            {actions?.(item, level)}
-          </div>
-        </td>
-      </tr>
-
-      {/* Children */}
-      {open &&
-        children?.map((child) => (
-          <FrameworkRow
-            key={child.id}
-            item={child}
-            level={level === "pillar" ? "theme" : "subtheme"}
-            depth={depth + 1}
-            actions={actions}
           />
-        ))}
-    </>
+        ) : (
+          <div className="rounded-lg border bg-white p-4 text-gray-500 shadow-sm">
+            No pillars returned from Supabase.
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
