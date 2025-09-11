@@ -25,7 +25,7 @@ export default function PrimaryFrameworkCards({
 
   return (
     <div className="space-y-6">
-      {/* Controls row */}
+      {/* Controls */}
       <div className="flex items-center justify-between border-b pb-3">
         <h2 className="text-xl font-semibold">Framework Hierarchy</h2>
         <div className="flex items-center gap-2">
@@ -40,7 +40,7 @@ export default function PrimaryFrameworkCards({
         </div>
       </div>
 
-      {/* Table-like hierarchy */}
+      {/* Hierarchy */}
       <div className="space-y-4">
         {pillars?.map((pillar) => (
           <div
@@ -49,25 +49,31 @@ export default function PrimaryFrameworkCards({
           >
             {/* Pillar Row */}
             <div
-              className="grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-3 hover:bg-gray-50"
+              className="grid cursor-pointer grid-cols-[1fr_120px_120px] items-center gap-4 px-4 py-3 hover:bg-gray-50"
               onClick={() => toggle(`pillar-${pillar.id}`)}
             >
-              <div className="flex items-center gap-2">
+              {/* Name/Description */}
+              <div className="flex items-center gap-3">
                 {open[`pillar-${pillar.id}`] ? (
                   <ChevronDown size={18} />
                 ) : (
                   <ChevronRight size={18} />
                 )}
                 <span className="rounded bg-blue-100 px-2 py-0.5 text-sm font-semibold text-blue-800">
-                  P{pillar.sort_order}
+                  Pillar
                 </span>
+                <div>
+                  <p className="font-medium text-gray-900">{pillar.name}</p>
+                  {pillar.description && (
+                    <p className="text-sm text-gray-500">{pillar.description}</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-gray-900">{pillar.name}</p>
-                {pillar.description && (
-                  <p className="text-sm text-gray-500">{pillar.description}</p>
-                )}
-              </div>
+
+              {/* Sort Order */}
+              <div className="text-sm text-gray-500">P{pillar.sort_order}</div>
+
+              {/* Actions */}
               <div className="text-right">{actions}</div>
             </div>
 
@@ -89,28 +95,31 @@ export default function PrimaryFrameworkCards({
                       >
                         {/* Theme Row */}
                         <div
-                          className="grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-3 px-3 py-2 hover:bg-gray-100"
+                          className="grid cursor-pointer grid-cols-[1fr_120px_120px] items-center gap-3 px-3 py-2 hover:bg-gray-100"
                           onClick={() => toggle(`theme-${theme.id}`)}
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             {open[`theme-${theme.id}`] ? (
                               <ChevronDown size={16} />
                             ) : (
                               <ChevronRight size={16} />
                             )}
                             <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                              T{theme.sort_order}
+                              Theme
                             </span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {theme.name}
-                            </p>
-                            {theme.description && (
-                              <p className="text-xs text-gray-500">
-                                {theme.description}
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {theme.name}
                               </p>
-                            )}
+                              {theme.description && (
+                                <p className="text-xs text-gray-500">
+                                  {theme.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            T{theme.sort_order}
                           </div>
                           <div className="text-right">{actions}</div>
                         </div>
@@ -130,20 +139,25 @@ export default function PrimaryFrameworkCards({
                                 theme.subthemes.map((subtheme) => (
                                   <div
                                     key={subtheme.id}
-                                    className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded px-2 py-1 text-sm hover:bg-gray-100"
+                                    className="grid grid-cols-[1fr_120px_120px] items-center gap-2 rounded px-2 py-1 text-sm hover:bg-gray-100"
                                   >
-                                    <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
-                                      ST{subtheme.sort_order}
-                                    </span>
-                                    <div>
-                                      <p className="text-sm text-gray-800">
-                                        {subtheme.name}
-                                      </p>
-                                      {subtheme.description && (
-                                        <p className="text-xs text-gray-500">
-                                          {subtheme.description}
+                                    <div className="flex items-center gap-3">
+                                      <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                                        Subtheme
+                                      </span>
+                                      <div>
+                                        <p className="text-sm text-gray-800">
+                                          {subtheme.name}
                                         </p>
-                                      )}
+                                        {subtheme.description && (
+                                          <p className="text-xs text-gray-500">
+                                            {subtheme.description}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      ST{subtheme.sort_order}
                                     </div>
                                     <div className="text-right">{actions}</div>
                                   </div>
