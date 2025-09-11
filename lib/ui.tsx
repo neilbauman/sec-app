@@ -2,7 +2,6 @@
 "use client";
 
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import { Download, Upload } from "lucide-react";
 import React from "react";
 
@@ -72,7 +71,8 @@ export function Tag({
   color?: "blue" | "green" | "red" | "gray";
   children: React.ReactNode;
 }) {
-  const base = "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
+  const base =
+    "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
   const colors: Record<string, string> = {
     blue: "bg-blue-100 text-blue-800",
     green: "bg-green-100 text-green-800",
