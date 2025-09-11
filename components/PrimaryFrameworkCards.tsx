@@ -1,159 +1,96 @@
 // components/PrimaryFrameworkCards.tsx
+
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
-import { ChevronRight, ChevronDown, Pencil, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Props = {
   pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
   defaultOpen?: boolean;
-  actions?: (
-    item: Pillar | Theme | Subtheme,
-    level: "pillar" | "theme" | "subtheme"
-  ) => React.ReactNode;
+  actions?: (item: Pillar | Theme | Subtheme, level: "pillar" | "theme" | "subtheme") => React.ReactNode;
 };
 
-function PrimaryFrameworkCards({
-  pillars,
-  defaultOpen = false,
-  actions,
-}: Props) {
-  const [open, setOpen] = useState<Record<string, boolean>>({});
+function getIndent(level: "pillar" | "theme" | "subtheme") {
+  switch (level) {
+    case "pillar":
+      return "pl-0";
+    case "theme":
+      return "pl-6";
+    case "subtheme":
+      return "pl-12";
+  }
+}
 
-  const toggle = (id: string) => {
-    setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const renderRow = (
-    item: Pillar | Theme | Subtheme,
-    level: "pillar" | "theme" | "subtheme",
-    children?: React.ReactNode
-  ) => {
-    const id = item.id;
-    const isOpen = open[id] ?? defaultOpen;
-
-    const indentMap = {
-      pillar: "pl-2",
-      theme: "pl-8",
-      subtheme: "pl-14",
-    };
-
-    const tagColors = {
-      pillar: "bg-blue-100 text-blue-800",
-      theme: "bg-green-100 text-green-800",
-      subtheme: "bg-red-100 text-red-800",
-    };
-
-    return (
-      <React.Fragment key={id}>
-        <tr>
-          {/* Type / Code */}
-          <td className={cn("whitespace-nowrap align-top", indentMap[level])}>
-            <div className="flex items-center gap-2">
-              {children ? (
-                <button
-                  onClick={() => toggle(id)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </button>
-              ) : (
-                <span className="w-4 inline-block" />
-              )}
-              <span
-                className={cn(
-                  "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                  tagColors[level]
-                )}
-              >
-                {level.charAt(0).toUpperCase() + level.slice(1)}
-              </span>
-              <span className="text-sm font-mono">{item.code}</span>
-            </div>
-          </td>
-
-          {/* Name / Description */}
-          <td className="align-top">
-            <div className="font-medium text-gray-900">{item.name}</div>
-            {item.description && (
-              <div className="text-sm text-gray-500">{item.description}</div>
-            )}
-          </td>
-
-          {/* Sort Order */}
-          <td className="align-top text-sm text-gray-600">{item.sort_order}</td>
-
-          {/* Actions */}
-          <td className="align-top text-right">
-            {actions ? (
-              actions(item, level)
-            ) : (
-              <div className="flex gap-2 justify-end">
-                <button className="text-gray-500 hover:text-gray-700">
-                  <Pencil size={16} />
-                </button>
-                <button className="text-gray-500 hover:text-gray-700">
-                  <Trash2 size={16} />
-                </button>
-                <button className="text-gray-500 hover:text-gray-700">
-                  <Plus size={16} />
-                </button>
-              </div>
-            )}
-          </td>
-        </tr>
-
-        {/* Children rows */}
-        {isOpen && children}
-      </React.Fragment>
-    );
-  };
-
+const PrimaryFrameworkCards: React.FC<Props> = ({ pillars, defaultOpen = false, actions }) => {
   return (
-    <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-      <table className="min-w-full border-collapse divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-3 py-2 text-left text-sm font-semibold text-gray-900">
-              Type / Code
-            </th>
-            <th className="px-3 py-2 text-left text-sm font-semibold text-gray-900">
-              Name / Description
-            </th>
-            <th className="px-3 py-2 text-left text-sm font-semibold text-gray-900">
-              Sort Order
-            </th>
-            <th className="px-3 py-2 text-right text-sm font-semibold text-gray-900">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {pillars.map((pillar) =>
-            renderRow(
-              pillar,
-              "pillar",
-              <>
-                {pillar.themes.map((theme) =>
-                  renderRow(
-                    theme,
-                    "theme",
-                    <>
-                      {theme.subthemes.map((subtheme) =>
-                        renderRow(subtheme, "subtheme")
-                      )}
-                    </>
-                  )
-                )}
-              </>
-            )
-          )}
-        </tbody>
-      </table>
+    <div className="card divide-y">
+      <div className="grid grid-cols-12 gap-4 px-4 py-2 font-medium text-gray-700 text-sm">
+        <div className="col-span-3">Type / Code</div>
+        <div className="col-span-6">Name / Description</div>
+        <div className="col-span-2">Sort Order</div>
+        <div className="col-span-1">Actions</div>
+      </div>
+
+      {pillars.map((pillar) => (
+        <React.Fragment key={pillar.id}>
+          {/* Pillar */}
+          <div className="grid grid-cols-12 gap-4 px-4 py-2 items-center">
+            <div className={cn("col-span-3", getIndent("pillar"))}>
+              <span className="inline-flex items-center rounded-md bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                Pillar
+              </span>
+              <span className="ml-2">{pillar.code}</span>
+            </div>
+            <div className={cn("col-span-6", getIndent("pillar"))}>
+              <div className="font-semibold">{pillar.name}</div>
+              <div className="text-sm text-gray-600">{pillar.description}</div>
+            </div>
+            <div className="col-span-2">{pillar.sort_order}</div>
+            <div className="col-span-1">{actions?.(pillar, "pillar")}</div>
+          </div>
+
+          {pillar.themes.map((theme) => (
+            <React.Fragment key={theme.id}>
+              {/* Theme */}
+              <div className="grid grid-cols-12 gap-4 px-4 py-2 items-center">
+                <div className={cn("col-span-3", getIndent("theme"))}>
+                  <span className="inline-flex items-center rounded-md bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                    Theme
+                  </span>
+                  <span className="ml-2">{theme.code}</span>
+                </div>
+                <div className={cn("col-span-6", getIndent("theme"))}>
+                  <div className="font-semibold">{theme.name}</div>
+                  <div className="text-sm text-gray-600">{theme.description}</div>
+                </div>
+                <div className="col-span-2">{theme.sort_order}</div>
+                <div className="col-span-1">{actions?.(theme, "theme")}</div>
+              </div>
+
+              {theme.subthemes.map((subtheme) => (
+                <div key={subtheme.id} className="grid grid-cols-12 gap-4 px-4 py-2 items-center">
+                  <div className={cn("col-span-3", getIndent("subtheme"))}>
+                    <span className="inline-flex items-center rounded-md bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+                      Subtheme
+                    </span>
+                    <span className="ml-2">{subtheme.code}</span>
+                  </div>
+                  <div className={cn("col-span-6", getIndent("subtheme"))}>
+                    <div className="font-semibold">{subtheme.name}</div>
+                    <div className="text-sm text-gray-600">{subtheme.description}</div>
+                  </div>
+                  <div className="col-span-2">{subtheme.sort_order}</div>
+                  <div className="col-span-1">{actions?.(subtheme, "subtheme")}</div>
+                </div>
+              ))}
+            </React.Fragment>
+          ))}
+        </React.Fragment>
+      ))}
     </div>
   );
-}
+};
 
 export default PrimaryFrameworkCards;
