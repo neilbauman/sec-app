@@ -4,7 +4,7 @@ import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function Page() {
-  // await cookies() because it's async in Next.js 15
+  // Next.js 15 requires awaiting cookies()
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -25,19 +25,30 @@ export default async function Page() {
     }
   );
 
+  // Fetch nested data in one call
   const { data: pillars } = await supabase
     .from("pillars")
-    .select("*")
-    .order("sort_order", { ascending: true });
-
-  const { data: themes } = await supabase
-    .from("themes")
-    .select("*")
-    .order("sort_order", { ascending: true });
-
-  const { data: subthemes } = await supabase
-    .from("subthemes")
-    .select("*")
+    .select(`
+      id,
+      code,
+      name,
+      description,
+      sort_order,
+      themes (
+        id,
+        code,
+        name,
+        description,
+        sort_order,
+        subthemes (
+          id,
+          code,
+          name,
+          description,
+          sort_order
+        )
+      )
+    `)
     .order("sort_order", { ascending: true });
 
   return (
@@ -46,8 +57,8 @@ export default async function Page() {
         <PrimaryFrameworkCards
           defaultOpen={false}
           pillars={(pillars ?? []) as Pillar[]}
-          themes={(themes ?? []) as Theme[]}
-          subthemes={(subthemes ?? []) as Subtheme[]}
+          themes={[] as Theme[]}      // not needed separately, they’re nested under pillars
+          subthemes={[] as Subtheme[]} // not needed separately, they’re nested under themes
           actions={<></>}
         />
       </div>
