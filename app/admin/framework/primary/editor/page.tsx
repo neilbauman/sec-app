@@ -1,20 +1,18 @@
 // /app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { PageHeader, CsvActions } from "@/lib/ui";
+import { PageHeader, Breadcrumb, CsvActions } from "@/lib/ui";
 import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
-  const cookieStore = await cookies(); // ✅ FIX: Await cookies()
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          return cookies().get(name)?.value;
         },
         set() {
           // no-op on server
@@ -26,40 +24,25 @@ async function getData() {
     }
   );
 
-  // Fetch pillars, themes, and subthemes with description + sort_order
   const { data: pillars, error } = await supabase
     .from("pillars")
     .select(`
-      id,
-      name,
-      code,
-      description,
-      sort_order,
+      id, name, code, description, sort_order,
       themes (
-        id,
-        name,
-        code,
-        description,
-        sort_order,
+        id, name, code, description, sort_order,
         subthemes (
-          id,
-          name,
-          code,
-          description,
-          sort_order
+          id, name, code, description, sort_order
         )
       )
     `)
     .order("sort_order", { ascending: true });
 
-  if (error) {
-    console.error("Error fetching pillars:", error);
-    return [];
-  }
+  // Debug logging
+  console.log(">>> Supabase error:", error);
+  console.log(">>> Supabase pillars result:", JSON.stringify(pillars, null, 2));
 
   return (pillars ?? []) as (Pillar & {
-    description?: string;
-    themes: (Theme & { description?: string; subthemes: Subtheme[] })[];
+    themes: (Theme & { subthemes: Subtheme[] })[];
   })[];
 }
 
@@ -68,7 +51,7 @@ export default async function PrimaryEditorPage() {
 
   return (
     <main className="min-h-dvh bg-gray-50">
-      {/* Header */}
+      {/* Header with breadcrumb + CSV actions */}
       <PageHeader
         title="Primary Framework Editor"
         breadcrumbItems={[
@@ -80,7 +63,16 @@ export default async function PrimaryEditorPage() {
         actions={<CsvActions disableImport disableExport />}
       />
 
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mx-auto max-w-6xl px-4 py-6 space-y-6">
+        {/* Debug output to confirm data */}
+        <section className="rounded-md border bg-white p-4">
+          <h2 className="text-sm font-semibold text-gray-700">Debug Data</h2>
+          <pre className="mt-2 max-h-64 overflow-x-auto overflow-y-auto rounded bg-gray-100 p-2 text-xs text-gray-600">
+            {JSON.stringify(pillars, null, 2)}
+          </pre>
+        </section>
+
+        {/* The actual cards */}
         <PrimaryFrameworkCards
           pillars={pillars}
           defaultOpen={false}
