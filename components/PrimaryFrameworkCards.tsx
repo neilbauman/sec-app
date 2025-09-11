@@ -39,7 +39,7 @@ export default function PrimaryFrameworkCards({
         </div>
       </div>
 
-      {/* Hierarchy */}
+      {/* Pillars */}
       <div className="space-y-4">
         {pillars?.map((pillar) => (
           <div
@@ -65,13 +65,46 @@ export default function PrimaryFrameworkCards({
               <div>{actions}</div>
             </div>
 
-            {/* Themes (optional for now) */}
+            {/* Themes */}
             {open[`pillar-${pillar.id}`] && (
-              <div className="ml-8 text-gray-500 italic">
+              <div className="ml-8 space-y-2 border-l pl-4">
                 {pillar.themes && pillar.themes.length > 0 ? (
-                  "Themes will render here once nested query works."
+                  pillar.themes.map((theme) => (
+                    <div
+                      key={theme.id}
+                      className="rounded-md border bg-gray-50"
+                    >
+                      {/* Theme Row */}
+                      <div
+                        className="flex cursor-pointer items-center justify-between px-3 py-2 hover:bg-gray-100"
+                        onClick={() => toggle(`theme-${theme.id}`)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {open[`theme-${theme.id}`] ? (
+                            <ChevronDown size={14} />
+                          ) : (
+                            <ChevronRight size={14} />
+                          )}
+                          <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                            Theme {theme.sort_order}
+                          </span>
+                          <span>{theme.name}</span>
+                        </div>
+                        <div>{actions}</div>
+                      </div>
+
+                      {/* Subthemes (placeholder for now) */}
+                      {open[`theme-${theme.id}`] && (
+                        <div className="ml-6 text-gray-500 italic">
+                          ⚠ Subthemes not yet loaded
+                        </div>
+                      )}
+                    </div>
+                  ))
                 ) : (
-                  "⚠ No themes found (debugging flat query step)."
+                  <div className="text-gray-500 italic">
+                    ⚠ No themes linked to this pillar
+                  </div>
                 )}
               </div>
             )}
