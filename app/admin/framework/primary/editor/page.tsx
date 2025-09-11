@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import { PageHeader } from "@/components/ui"; // 👈 use shared header
+import { PageHeader, CsvActions } from "@/lib/ui";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function Page() {
@@ -53,20 +53,23 @@ export default async function Page() {
 
   return (
     <main className="p-6">
-      {/* Shared header (breadcrumb + title) */}
       <PageHeader
         title="Primary Framework Editor"
-        breadcrumb={[{ label: "Admin", href: "/admin" }, { label: "Framework", href: "/admin/framework" }, { label: "Primary Editor" }]}
+        breadcrumbItems={[
+          { label: "Admin", href: "/admin" },
+          { label: "Framework", href: "/admin/framework" },
+          { label: "Primary Editor" },
+        ]}
+        actions={<CsvActions />}
       />
 
-      {/* Table column headers */}
+      {/* Column headers */}
       <div className="grid grid-cols-[1fr_120px_120px] border-b pb-2 mb-4 text-sm font-semibold text-gray-600">
         <div>Name / Description</div>
         <div>Sort Order</div>
         <div className="text-right">Actions</div>
       </div>
 
-      {/* Cards */}
       <PrimaryFrameworkCards
         defaultOpen={false}
         pillars={
@@ -74,7 +77,6 @@ export default async function Page() {
             themes?: (Theme & { subthemes?: Subtheme[] })[];
           })[]
         }
-        actions={<></>}
       />
     </main>
   );
