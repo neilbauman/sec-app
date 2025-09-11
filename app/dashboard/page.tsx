@@ -1,15 +1,16 @@
 // app/dashboard/page.tsx
 import Link from "next/link";
-import { PageHeader, Breadcrumb, CsvActions } from "@/lib/ui";
+import { PageHeader, CsvActions } from "@/lib/ui";
 
 export default function DashboardPage() {
   return (
     <main className="min-h-dvh bg-gray-50">
       <PageHeader
         title="Dashboard"
-        breadcrumb={
-          <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Dashboard" }]} />
-        }
+        breadcrumbItems={[
+          { label: "Home", href: "/" },
+          { label: "Dashboard" },
+        ]}
         actions={<CsvActions disableImport disableExport />}
       />
 
