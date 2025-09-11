@@ -25,11 +25,9 @@ export default function PrimaryFrameworkCards({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Controls row */}
       <div className="flex items-center justify-between border-b pb-3">
-        <h2 className="text-2xl font-bold tracking-tight">
-          Primary Framework
-        </h2>
+        <h2 className="text-xl font-semibold">Framework Hierarchy</h2>
         <div className="flex items-center gap-2">
           <button className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm shadow-sm hover:bg-gray-100">
             <Upload size={16} />
@@ -42,7 +40,7 @@ export default function PrimaryFrameworkCards({
         </div>
       </div>
 
-      {/* Pillars */}
+      {/* Table-like hierarchy */}
       <div className="space-y-4">
         {pillars?.map((pillar) => (
           <div
@@ -51,10 +49,10 @@ export default function PrimaryFrameworkCards({
           >
             {/* Pillar Row */}
             <div
-              className="flex cursor-pointer items-center justify-between px-4 py-3 hover:bg-gray-50"
+              className="grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-3 hover:bg-gray-50"
               onClick={() => toggle(`pillar-${pillar.id}`)}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {open[`pillar-${pillar.id}`] ? (
                   <ChevronDown size={18} />
                 ) : (
@@ -63,16 +61,14 @@ export default function PrimaryFrameworkCards({
                 <span className="rounded bg-blue-100 px-2 py-0.5 text-sm font-semibold text-blue-800">
                   P{pillar.sort_order}
                 </span>
-                <div>
-                  <p className="font-medium text-gray-900">{pillar.name}</p>
-                  {pillar.description && (
-                    <p className="text-sm text-gray-500">
-                      {pillar.description}
-                    </p>
-                  )}
-                </div>
               </div>
-              <div>{actions}</div>
+              <div>
+                <p className="font-medium text-gray-900">{pillar.name}</p>
+                {pillar.description && (
+                  <p className="text-sm text-gray-500">{pillar.description}</p>
+                )}
+              </div>
+              <div className="text-right">{actions}</div>
             </div>
 
             {/* Themes */}
@@ -93,10 +89,10 @@ export default function PrimaryFrameworkCards({
                       >
                         {/* Theme Row */}
                         <div
-                          className="flex cursor-pointer items-center justify-between px-3 py-2 hover:bg-gray-100"
+                          className="grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-3 px-3 py-2 hover:bg-gray-100"
                           onClick={() => toggle(`theme-${theme.id}`)}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             {open[`theme-${theme.id}`] ? (
                               <ChevronDown size={16} />
                             ) : (
@@ -105,18 +101,18 @@ export default function PrimaryFrameworkCards({
                             <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
                               T{theme.sort_order}
                             </span>
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">
-                                {theme.name}
-                              </p>
-                              {theme.description && (
-                                <p className="text-xs text-gray-500">
-                                  {theme.description}
-                                </p>
-                              )}
-                            </div>
                           </div>
-                          <div>{actions}</div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {theme.name}
+                            </p>
+                            {theme.description && (
+                              <p className="text-xs text-gray-500">
+                                {theme.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">{actions}</div>
                         </div>
 
                         {/* Subthemes */}
@@ -134,9 +130,9 @@ export default function PrimaryFrameworkCards({
                                 theme.subthemes.map((subtheme) => (
                                   <div
                                     key={subtheme.id}
-                                    className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-gray-100"
+                                    className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded px-2 py-1 text-sm hover:bg-gray-100"
                                   >
-                                    <span className="rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+                                    <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
                                       ST{subtheme.sort_order}
                                     </span>
                                     <div>
@@ -149,6 +145,7 @@ export default function PrimaryFrameworkCards({
                                         </p>
                                       )}
                                     </div>
+                                    <div className="text-right">{actions}</div>
                                   </div>
                                 ))
                               ) : (
