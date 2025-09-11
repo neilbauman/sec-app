@@ -1,8 +1,8 @@
 // app/framework/api/list/route.ts
 import { NextResponse } from "next/server";
-import { fetchFrameworkList } from "@/lib/framework";
+import { fetchFramework } from "@/lib/framework";
 
 export async function GET() {
-  const data = await fetchFrameworkList();
+  const data = await fetchFramework();
   return NextResponse.json(data);
 }
