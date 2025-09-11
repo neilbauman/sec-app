@@ -1,9 +1,9 @@
-// app/admin/framework/primary/editor/page.tsx
-import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { PageHeader, CsvActions } from "@/lib/ui";
+import { createServerClient } from "@supabase/ssr";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
+
+export const dynamic = "force-dynamic";
 
 async function getData(): Promise<{
   pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
@@ -16,54 +16,54 @@ async function getData(): Promise<{
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-        cookies: () => ({
-          get(name: string) {
-            return cookieStore.get(name)?.value;
+        cookies: {
+          get: (name: string) => cookieStore.get(name)?.value,
+          set() {
+            // no-op on server
           },
-          set() {},
-          remove() {},
-        }),
+          remove() {
+            // no-op on server
+          },
+        },
       }
     );
 
-    const { data, error } = await supabase
-      .from("pillars")
-      .select(
-        `id, name, code, description, sort_order,
-         themes(id, name, code, description, sort_order,
-           subthemes(id, name, code, description, sort_order)
-         )`
+    const { data, error } = await supabase.from("pillars").select(`
+      id, name, description,
+      themes (
+        id, name, description,
+        subthemes (id, name, description)
       )
-      .order("sort_order");
+    `);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase query error:", error.message);
+      return { pillars: [], error: error.message };
+    }
 
-    return { pillars: (data as any) || [] };
+    // Ensure subthemes is always an array (not null/undefined)
+    const normalized = (data ?? []).map((pillar: any) => ({
+      ...pillar,
+      themes: (pillar.themes ?? []).map((theme: any) => ({
+        ...theme,
+        subthemes: theme.subthemes ?? [],
+      })),
+    }));
+
+    return { pillars: normalized };
   } catch (err: any) {
-    console.error("getData error:", err);
+    console.error("Unexpected error in getData:", err);
     return { pillars: [], error: err.message };
   }
 }
 
-export default async function PrimaryFrameworkEditorPage() {
+export default async function Page() {
   const { pillars, error } = await getData();
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Primary Framework Editor"
-        breadcrumbs={[
-          { label: "Home", href: "/" },
-          { label: "Admin", href: "/admin" },
-          { label: "Framework", href: "/admin/framework" },
-          { label: "Primary Editor" },
-        ]}
-        actions={<CsvActions />}
-      />
-
-      <div className="p-6 space-y-6">
-        <PrimaryFrameworkEditorClient pillars={pillars} error={error} />
-      </div>
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
+      <PrimaryFrameworkEditorClient pillars={pillars} error={error} />
     </div>
   );
 }
