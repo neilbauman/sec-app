@@ -5,7 +5,7 @@ import { Pillar, Theme, Subtheme } from "@/types/framework";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
+  pillars: Pillar[]; // ✅ already includes themes + subthemes
   defaultOpen?: boolean;
   actions?: (
     item: Pillar | Theme | Subtheme,
@@ -44,7 +44,7 @@ export default function PrimaryFrameworkCards({
     </div>
   );
 
-  const renderTheme = (theme: Theme & { subthemes: Subtheme[] }) => (
+  const renderTheme = (theme: Theme) => (
     <div key={theme.id} className="border-b">
       <div className="grid grid-cols-[200px_1fr_auto] items-center pl-6 pr-2 py-2">
         <div className="text-sm font-medium flex items-center space-x-2">
@@ -70,9 +70,7 @@ export default function PrimaryFrameworkCards({
     </div>
   );
 
-  const renderPillar = (
-    pillar: Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] }
-  ) => (
+  const renderPillar = (pillar: Pillar) => (
     <div key={pillar.id} className="border rounded-md mb-4">
       <div className="grid grid-cols-[200px_1fr_auto] items-center p-2 bg-gray-50">
         <div className="text-sm font-medium flex items-center space-x-2">
