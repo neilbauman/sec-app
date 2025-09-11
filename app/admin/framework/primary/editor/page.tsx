@@ -1,20 +1,18 @@
 // /app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { PageHeader, Breadcrumb, CsvActions } from "@/lib/ui";
+import { PageHeader, CsvActions } from "@/lib/ui";
 import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
-  const cookieStore = cookies();
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          return cookies().get(name)?.value; // FIXED: call cookies() directly
         },
         set() {
           // no-op for server component
@@ -29,7 +27,17 @@ async function getData() {
   // Fetch full hierarchy
   const { data: pillars } = await supabase
     .from("pillars")
-    .select("id, name, code, sort_order, themes(id, name, code, sort_order, subthemes(id, name, code, sort_order))")
+    .select(
+      `
+      id, name, code, sort_order,
+      themes (
+        id, name, code, sort_order,
+        subthemes (
+          id, name, code, sort_order
+        )
+      )
+    `
+    )
     .order("sort_order", { ascending: true });
 
   return (pillars ?? []) as (Pillar & {
@@ -58,7 +66,11 @@ export default async function PrimaryEditorPage() {
         <PrimaryFrameworkCards
           pillars={pillars}
           defaultOpen={false}
-          actions={<div className="text-sm text-gray-400">Right-side actions placeholder</div>}
+          actions={
+            <div className="text-sm text-gray-400">
+              Right-side actions placeholder
+            </div>
+          }
         />
       </div>
     </main>
