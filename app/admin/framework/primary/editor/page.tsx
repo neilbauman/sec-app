@@ -1,3 +1,4 @@
+// app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
@@ -26,7 +27,9 @@ async function getData(): Promise<{
 
   const { data, error } = await supabase
     .from("pillars")
-    .select("*, themes!themes_pillar_id_fkey(*, subthemes(*))");
+    // ✅ Explicitly specify correct FK relationship
+    .select("*, themes!themes_pillar_id_fkey(*, subthemes(*))")
+    .order("sort_order", { ascending: true });
 
   return {
     pillars: (data as any) || [],
@@ -39,13 +42,18 @@ export default async function Page() {
 
   return (
     <div className="p-6 space-y-4">
-      {/* Page Header with CSV placeholders */}
+      {/* Page Header with breadcrumb + CSV actions */}
       <PageHeader
         title="Primary Framework Editor"
-        breadcrumb={[{ name: "Admin", href: "/admin" }, { name: "Framework", href: "/admin/framework" }, { name: "Primary Editor" }]}
+        breadcrumbItems={[
+          { label: "Admin", href: "/admin" },
+          { label: "Framework", href: "/admin/framework" },
+          { label: "Primary Editor" },
+        ]}
         actions={<CsvActions />}
       />
 
+      {/* Framework Editor */}
       <PrimaryFrameworkEditorClient pillars={pillars} error={error} />
     </div>
   );
