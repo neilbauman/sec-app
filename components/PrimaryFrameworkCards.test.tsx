@@ -1,9 +1,9 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+import PrimaryFrameworkEditorClient from "@/app/admin/framework/primary/editor/PrimaryFrameworkEditorClient";
 import { Pillar } from "@/types/framework";
 
-// Mock data for test
+// Mock a pillar with nested data
 const mockPillars: Pillar[] = [
   {
     id: "pillar-1",
@@ -34,21 +34,28 @@ const mockPillars: Pillar[] = [
   },
 ];
 
-describe("PrimaryFrameworkCards", () => {
-  it("renders pillars, themes, and subthemes correctly", () => {
-    render(<PrimaryFrameworkCards pillars={mockPillars} />);
+describe("PrimaryFrameworkEditorClient", () => {
+  it("renders error state", () => {
+    render(<PrimaryFrameworkEditorClient pillars={[]} error="DB connection failed" />);
+    expect(screen.getByText("Error loading framework data")).toBeInTheDocument();
+    expect(screen.getByText("DB connection failed")).toBeInTheDocument();
+  });
 
-    // Check pillar
+  it("renders empty state", () => {
+    render(<PrimaryFrameworkEditorClient pillars={[]} />);
+    expect(screen.getByText("No framework data found.")).toBeInTheDocument();
+  });
+
+  it("renders framework data with nested cards", () => {
+    render(<PrimaryFrameworkEditorClient pillars={mockPillars} />);
     expect(screen.getByText("Pillar")).toBeInTheDocument();
     expect(screen.getByText("P1")).toBeInTheDocument();
     expect(screen.getByText("Housing")).toBeInTheDocument();
 
-    // Check theme
     expect(screen.getByText("Theme")).toBeInTheDocument();
     expect(screen.getByText("T1.1")).toBeInTheDocument();
     expect(screen.getByText("Physical safety")).toBeInTheDocument();
 
-    // Check subtheme
     expect(screen.getByText("Subtheme")).toBeInTheDocument();
     expect(screen.getByText("ST1.1")).toBeInTheDocument();
     expect(screen.getByText("Fire safety")).toBeInTheDocument();
