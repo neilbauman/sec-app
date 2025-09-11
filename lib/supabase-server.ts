@@ -5,8 +5,9 @@ import { cookies } from "next/headers";
 import {
   createServerClient,
   type CookieOptions,
-  type SupabaseClient,
 } from "@supabase/ssr";
+
+import { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Server-side Supabase client for Route Handlers, Server Components, and Server Actions.
