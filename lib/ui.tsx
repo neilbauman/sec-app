@@ -5,7 +5,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Info, Download, Upload } from "lucide-react";
 
-/** Tailwind class combiner: accepts strings and {class: boolean} objects */
+/** Tailwind class combiner */
 export function cn(
   ...inputs: Array<
     string | number | false | null | undefined | Record<string, boolean>
@@ -25,7 +25,7 @@ export function cn(
   return out.join(" ");
 }
 
-/** Color-coded label used across hierarchy */
+/** Color-coded label (Pillar, Theme, Subtheme) */
 export function Tag({
   children,
   color = "gray",
@@ -57,7 +57,7 @@ export function Tag({
   );
 }
 
-/** Tiny icon button used for tertiary actions (info, etc.) */
+/** Small icon button */
 export function ActionIcon({
   onClick,
   className,
@@ -87,15 +87,13 @@ export function ActionIcon({
   );
 }
 
-/** Simple tooltip wrapper */
+/** Tooltip */
 export function Tooltip({
   content,
   children,
-  sideClassName,
 }: {
   content: React.ReactNode;
   children: React.ReactNode;
-  sideClassName?: string;
 }) {
   return (
     <span className="relative inline-block">
@@ -103,8 +101,7 @@ export function Tooltip({
       <span
         className={cn(
           "pointer-events-none absolute left-1/2 top-full z-20 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border bg-white px-2 py-1 text-xs text-gray-700 shadow",
-          "opacity-0 transition-opacity duration-150 peer-hover:opacity-100",
-          sideClassName
+          "opacity-0 transition-opacity duration-150 peer-hover:opacity-100"
         )}
       >
         {content}
@@ -113,7 +110,7 @@ export function Tooltip({
   );
 }
 
-/** Breadcrumb renderer for small arrays of {label, href?} */
+/** Breadcrumb */
 export function Breadcrumb({
   items,
 }: {
@@ -139,7 +136,7 @@ export function Breadcrumb({
   );
 }
 
-/** Page title bar w/ breadcrumb and right-aligned actions */
+/** Page header */
 export function PageHeader({
   title,
   breadcrumbItems,
@@ -152,11 +149,9 @@ export function PageHeader({
   return (
     <header className="sticky top-0 z-10 mb-6 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50">
       <div className="mx-auto max-w-6xl px-4 py-4">
-        {/* App title (always visible, like Dashboard) */}
         <div className="mb-1 text-xs font-semibold tracking-wide text-gray-500">
           Shelter and Settlements Vulnerability Index
         </div>
-
         <div className="flex items-end justify-between gap-3">
           <div className="flex flex-col">
             {breadcrumbItems && breadcrumbItems.length > 0 && (
@@ -173,7 +168,7 @@ export function PageHeader({
   );
 }
 
-/** CSV import/export placeholder */
+/** CSV Import/Export placeholder */
 export function CsvActions({
   onImport,
   onExport,
@@ -207,7 +202,7 @@ export function CsvActions({
   );
 }
 
-/** Small inline “i” tooltip icon */
+/** Info tooltip icon */
 export function InfoIcon({ tip }: { tip: string }) {
   return (
     <Tooltip content={tip}>
