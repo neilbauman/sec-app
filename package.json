@@ -7,6 +7,7 @@
     "build": "next build --no-lint --debug",
     "start": "next start",
     "lint": "next lint"
+    "postinstall": "tailwindcss build -o ./app/tailwind-output.css || true"
   },
   "dependencies": {
     "@supabase/ssr": "^0.4.0",
