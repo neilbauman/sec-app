@@ -12,8 +12,7 @@ body {
 }
 
 body {
-  @apply bg-gray-50 text-gray-900 antialiased;
-  font-family: theme("fontFamily.sans");
+  @apply bg-gray-50 text-gray-900 antialiased font-sans;
 }
 
 /* Typography helpers */
