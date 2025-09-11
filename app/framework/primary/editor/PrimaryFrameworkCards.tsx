@@ -3,22 +3,21 @@
 import React, { useState } from "react";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 import { cn } from "@/lib/utils";
-import { ChevronRight, ChevronDown, Edit, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronDown,
+  Edit,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 
 type Props = {
   pillars: Pillar[];
   defaultOpen?: boolean;
-  actions?: (
-    item: Pillar | Theme | Subtheme,
-    level: "pillar" | "theme" | "subtheme"
-  ) => React.ReactNode;
 };
 
-export default function PrimaryFrameworkCards({
-  pillars,
-  defaultOpen = false,
-  actions,
-}: Props) {
+export default function PrimaryFrameworkCards({ pillars, defaultOpen = false }: Props) {
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
 
@@ -32,21 +31,17 @@ export default function PrimaryFrameworkCards({
       key={subtheme.id}
       className="grid grid-cols-[200px_1fr_80px_auto] items-center border-b pl-12 pr-2 py-2"
     >
-      {/* Type + Code */}
       <div className="flex items-center space-x-2 text-sm font-medium">
         <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
           Subtheme
         </span>
         <span className="text-xs text-gray-500">{subtheme.code}</span>
       </div>
-      {/* Name + Description */}
       <div>
         <div className="font-medium">{subtheme.name}</div>
         <div className="text-xs text-gray-500">{subtheme.description}</div>
       </div>
-      {/* Sort Order */}
       <div className="text-sm text-gray-500">{subtheme.sort_order}</div>
-      {/* Actions */}
       <div className="flex justify-end space-x-2 text-gray-400">
         <Edit size={16} />
         <Trash2 size={16} />
@@ -83,7 +78,10 @@ export default function PrimaryFrameworkCards({
             <ArrowDown size={16} />
           </div>
         </div>
-        {isOpen && <div>{theme.subthemes.sort((a, b) => a.sort_order - b.sort_order).map(renderSubtheme)}</div>}
+        {isOpen &&
+          theme.subthemes
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map(renderSubtheme)}
       </div>
     );
   };
@@ -115,14 +113,16 @@ export default function PrimaryFrameworkCards({
             <ArrowDown size={16} />
           </div>
         </div>
-        {isOpen && <div>{pillar.themes.sort((a, b) => a.sort_order - b.sort_order).map(renderTheme)}</div>}
+        {isOpen &&
+          pillar.themes
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map(renderTheme)}
       </div>
     );
   };
 
   return (
     <div className="border rounded-md divide-y">
-      {/* Table Header */}
       <div className="grid grid-cols-[200px_1fr_80px_auto] bg-gray-100 text-sm font-medium p-2">
         <div>Type / Code</div>
         <div>Name / Description</div>
