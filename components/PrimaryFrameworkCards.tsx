@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, SquarePen, Trash2, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, PenSquare, Trash2, Plus } from "lucide-react";
 import { Tag, ActionIcon } from "@/lib/ui";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
@@ -19,141 +19,103 @@ export function PrimaryFrameworkCards({
   defaultOpen?: boolean;
   actions?: React.ReactNode;
 }) {
-  const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
-
-  const toggle = (id: string) => {
-    setOpenPillars((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
   return (
-    <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-      <table className="w-full border-collapse">
-        <thead className="bg-gray-50 text-left text-sm font-medium text-gray-600">
-          <tr>
-            <th className="px-4 py-3">Name / Description</th>
-            <th className="px-4 py-3 w-28">Sort Order</th>
-            <th className="px-4 py-3 w-28">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y text-sm text-gray-800">
-          {pillars.map((pillar) => (
-            <>
-              {/* Pillar row */}
-              <tr key={pillar.id} className="align-top">
-                <td className="px-4 py-3">
-                  <div className="flex items-start gap-2">
-                    <button
-                      type="button"
-                      onClick={() => toggle(pillar.id)}
-                      className="mt-0.5"
-                    >
-                      {openPillars[pillar.id] ? (
-                        <ChevronDown className="h-4 w-4 text-gray-500" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-gray-500" />
-                      )}
-                    </button>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Tag color="blue">Pillar</Tag>
-                        <span className="text-xs text-gray-500">{pillar.code}</span>
-                        <span className="font-medium">{pillar.name}</span>
-                      </div>
-                      {pillar.description && (
-                        <p className="text-xs text-gray-500">{pillar.description}</p>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">{pillar.sort_order}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <ActionIcon disabled>
-                      <SquarePen className="h-4 w-4" />
-                    </ActionIcon>
-                    <ActionIcon disabled>
-                      <Trash2 className="h-4 w-4" />
-                    </ActionIcon>
-                    <ActionIcon disabled>
-                      <Plus className="h-4 w-4" />
-                    </ActionIcon>
-                  </div>
-                </td>
-              </tr>
+    <div className="rounded-2xl border bg-white shadow-sm">
+      {/* Table header */}
+      <div className="grid grid-cols-[2fr_100px_120px] items-center border-b bg-gray-50 px-4 py-2 text-sm font-medium text-gray-600">
+        <div>Name / Description</div>
+        <div className="text-center">Sort Order</div>
+        <div className="text-center">Actions</div>
+      </div>
 
-              {/* Themes under this pillar */}
-              {openPillars[pillar.id] &&
-                pillar.themes?.map((theme) => (
-                  <tr key={theme.id} className="align-top bg-gray-50">
-                    <td className="px-10 py-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <Tag color="green">Theme</Tag>
-                          <span className="text-xs text-gray-500">{theme.code}</span>
-                          <span className="font-medium">{theme.name}</span>
-                        </div>
-                        {theme.description && (
-                          <p className="text-xs text-gray-500">{theme.description}</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2">{theme.sort_order}</td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <ActionIcon disabled>
-                          <SquarePen className="h-4 w-4" />
-                        </ActionIcon>
-                        <ActionIcon disabled>
-                          <Trash2 className="h-4 w-4" />
-                        </ActionIcon>
-                        <ActionIcon disabled>
-                          <Plus className="h-4 w-4" />
-                        </ActionIcon>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+      {/* Rows */}
+      <div>
+        {pillars.map((pillar) => (
+          <PillarRow key={pillar.id} pillar={pillar} defaultOpen={defaultOpen} />
+        ))}
+      </div>
 
-              {/* Subthemes under each theme */}
-              {openPillars[pillar.id] &&
-                pillar.themes?.flatMap((theme) =>
-                  theme.subthemes?.map((subtheme) => (
-                    <tr key={subtheme.id} className="align-top">
-                      <td className="px-16 py-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <Tag color="red">Subtheme</Tag>
-                            <span className="text-xs text-gray-500">{subtheme.code}</span>
-                            <span className="font-medium">{subtheme.name}</span>
-                          </div>
-                          {subtheme.description && (
-                            <p className="text-xs text-gray-500">{subtheme.description}</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2">{subtheme.sort_order}</td>
-                      <td className="px-4 py-2">
-                        <div className="flex gap-2">
-                          <ActionIcon disabled>
-                            <SquarePen className="h-4 w-4" />
-                          </ActionIcon>
-                          <ActionIcon disabled>
-                            <Trash2 className="h-4 w-4" />
-                          </ActionIcon>
-                          <ActionIcon disabled>
-                            <Plus className="h-4 w-4" />
-                          </ActionIcon>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-            </>
-          ))}
-        </tbody>
-      </table>
+      {/* Right-side global actions (CSV, etc.) */}
+      {actions && (
+        <div className="border-t px-4 py-2 text-right">{actions}</div>
+      )}
     </div>
   );
 }
 
-export default PrimaryFrameworkCards;
+function PillarRow({ pillar, defaultOpen }: { pillar: NestedPillar; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
+
+  return (
+    <div className="border-b last:border-0">
+      {/* Pillar row */}
+      <div className="grid grid-cols-[2fr_100px_120px] items-center px-4 py-2 hover:bg-gray-50">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setOpen(!open)} className="text-gray-500 hover:text-gray-700">
+            {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
+          <Tag color="blue">Pillar</Tag>
+          <span className="text-xs text-gray-400">{pillar.code}</span>
+          <span className="font-medium">{pillar.name}</span>
+        </div>
+        <div className="text-center text-sm text-gray-600">{pillar.sort_order ?? "-"}</div>
+        <div className="flex items-center justify-center gap-2">
+          <ActionIcon disabled title="Edit Pillar"><PenSquare className="h-4 w-4" /></ActionIcon>
+          <ActionIcon disabled title="Delete Pillar"><Trash2 className="h-4 w-4" /></ActionIcon>
+          <ActionIcon disabled title="Add Theme"><Plus className="h-4 w-4" /></ActionIcon>
+        </div>
+      </div>
+
+      {/* Themes */}
+      {open && pillar.themes?.map((theme) => (
+        <ThemeRow key={theme.id} theme={theme} />
+      ))}
+    </div>
+  );
+}
+
+function ThemeRow({ theme }: { theme: Theme & { subthemes?: Subtheme[] } }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="border-t">
+      <div className="grid grid-cols-[2fr_100px_120px] items-center px-8 py-2 hover:bg-gray-50">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setOpen(!open)} className="text-gray-500 hover:text-gray-700">
+            {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
+          <Tag color="green">Theme</Tag>
+          <span className="text-xs text-gray-400">{theme.code}</span>
+          <span>{theme.name}</span>
+        </div>
+        <div className="text-center text-sm text-gray-600">{theme.sort_order ?? "-"}</div>
+        <div className="flex items-center justify-center gap-2">
+          <ActionIcon disabled title="Edit Theme"><PenSquare className="h-4 w-4" /></ActionIcon>
+          <ActionIcon disabled title="Delete Theme"><Trash2 className="h-4 w-4" /></ActionIcon>
+          <ActionIcon disabled title="Add Subtheme"><Plus className="h-4 w-4" /></ActionIcon>
+        </div>
+      </div>
+
+      {open && theme.subthemes?.map((subtheme) => (
+        <SubthemeRow key={subtheme.id} subtheme={subtheme} />
+      ))}
+    </div>
+  );
+}
+
+function SubthemeRow({ subtheme }: { subtheme: Subtheme }) {
+  return (
+    <div className="grid grid-cols-[2fr_100px_120px] items-center px-12 py-2 hover:bg-gray-50">
+      <div className="flex items-center gap-2">
+        <Tag color="red">Subtheme</Tag>
+        <span className="text-xs text-gray-400">{subtheme.code}</span>
+        <span>{subtheme.name}</span>
+      </div>
+      <div className="text-center text-sm text-gray-600">{subtheme.sort_order ?? "-"}</div>
+      <div className="flex items-center justify-center gap-2">
+        <ActionIcon disabled title="Edit Subtheme"><PenSquare className="h-4 w-4" /></ActionIcon>
+        <ActionIcon disabled title="Delete Subtheme"><Trash2 className="h-4 w-4" /></ActionIcon>
+      </div>
+    </div>
+  );
+}
