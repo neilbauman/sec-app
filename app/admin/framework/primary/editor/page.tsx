@@ -6,19 +6,22 @@ import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData(): Promise<{ pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[]; error?: string }> {
-  const cookieStore = cookies(); // ✅ FIXED: no await
+  // ✅ Correct usage: no await
+  const cookieStore = cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name: string) => cookieStore.get(name)?.value,
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
         set() {
-          // no-op on server
+          // no-op server
         },
         remove() {
-          // no-op on server
+          // no-op server
         },
       },
     }
@@ -47,7 +50,7 @@ async function getData(): Promise<{ pillars: (Pillar & { themes: (Theme & { subt
     return { pillars: [], error: error.message };
   }
 
-  // Ensure subthemes is always an array
+  // Normalize subthemes
   const pillars = (data as Pillar[]).map((pillar) => ({
     ...pillar,
     themes: pillar.themes.map((theme: Theme) => ({
