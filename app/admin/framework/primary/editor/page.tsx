@@ -1,35 +1,24 @@
-// app/admin/framework/primary/editor/page.tsx
-import { PageHeader, Breadcrumb, CsvActions } from "@/lib/ui";
+"use client";
+
+import React from "react";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import { fetchFrameworkList } from "@/lib/framework";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
-export default async function Page() {
-  const { pillars, themes, subthemes } = await fetchFrameworkList();
+export default function Page() {
+  // Assuming you fetch or define these somewhere above
+  const pillars: Pillar[] = [];
+  const themes: Theme[] = [];
+  const subthemes: Subtheme[] = [];
 
   return (
-    <main className="min-h-dvh bg-gray-50">
-      <PageHeader
-        title="Primary Framework Editor"
-        breadcrumb={
-          <Breadcrumb
-            items={[
-              { label: "Dashboard", href: "/dashboard" },
-              { label: "Admin", href: "/admin" },
-              { label: "Primary Framework" },
-            ]}
-          />
-        }
-        actions={<CsvActions disableImport disableExport />}
-      />
-
-      <div className="mx-auto max-w-6xl px-4 py-6">
+    <main className="p-4">
+      <div>
         <PrimaryFrameworkCards
           defaultOpen={false}
           pillars={pillars as Pillar[]}
           themes={themes as Theme[]}
           subthemes={subthemes as Subtheme[]}
-          actions={{}} // keep the right-side actions column aligned; no-op for now
+          actions={<></>} // keep the right-side actions column aligned; no-op for now
         />
       </div>
     </main>
