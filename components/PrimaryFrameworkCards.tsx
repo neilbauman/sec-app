@@ -1,4 +1,3 @@
-// /components/PrimaryFrameworkCards.tsx
 "use client";
 
 import { useState } from "react";
@@ -23,8 +22,7 @@ export function PrimaryFrameworkCards({ pillars, defaultOpen = false, actions }:
 
   const renderRow = (
     level: "pillar" | "theme" | "subtheme",
-    item: Pillar | Theme | Subtheme,
-    parentId?: string
+    item: Pillar | Theme | Subtheme
   ) => {
     const id = (item as any).id;
     const isOpen = openIds.has(id);
@@ -54,13 +52,8 @@ export function PrimaryFrameworkCards({ pillars, defaultOpen = false, actions }:
           <span className="text-xs text-gray-500">{(item as any).code}</span>
         </div>
 
-        {/* Name & description */}
-        <div className="flex-1">
-          <div className="font-medium text-gray-900">{(item as any).name}</div>
-          {(item as any).description && (
-            <div className="text-xs text-gray-500">{(item as any).description}</div>
-          )}
-        </div>
+        {/* Name */}
+        <div className="flex-1 font-medium text-gray-900">{(item as any).name}</div>
 
         {/* Sort order */}
         <div className="w-24 text-center text-gray-500">{(item as any).sort_order}</div>
@@ -83,13 +76,16 @@ export function PrimaryFrameworkCards({ pillars, defaultOpen = false, actions }:
 
   return (
     <div className="rounded-lg border bg-white shadow-sm">
+      {/* Header row */}
       <div className="grid grid-cols-[20px_160px_1fr_96px_112px] gap-3 border-b bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600">
         <div />
         <div>Type / Code</div>
-        <div>Name / Description</div>
+        <div>Name</div>
         <div className="text-center">Sort Order</div>
         <div className="text-center">Actions</div>
       </div>
+
+      {/* Data rows */}
       <div className="divide-y">
         {pillars.map((pillar) => (
           <div key={pillar.id}>
@@ -97,11 +93,11 @@ export function PrimaryFrameworkCards({ pillars, defaultOpen = false, actions }:
             {openIds.has(pillar.id) &&
               pillar.themes?.map((theme) => (
                 <div key={theme.id} className="ml-6">
-                  {renderRow("theme", theme, pillar.id)}
+                  {renderRow("theme", theme)}
                   {openIds.has(theme.id) &&
                     theme.subthemes?.map((sub) => (
                       <div key={sub.id} className="ml-6">
-                        {renderRow("subtheme", sub, theme.id)}
+                        {renderRow("subtheme", sub)}
                       </div>
                     ))}
                 </div>
@@ -109,6 +105,8 @@ export function PrimaryFrameworkCards({ pillars, defaultOpen = false, actions }:
           </div>
         ))}
       </div>
+
+      {/* Bottom actions bar */}
       {actions && <div className="p-3 border-t">{actions}</div>}
     </div>
   );
