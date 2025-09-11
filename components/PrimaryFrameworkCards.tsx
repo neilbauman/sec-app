@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Trash2, Pencil, Plus } from "lucide-react";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
-import { Tag, ActionIcon, cn } from "@/lib/ui";
+import { Tag, ActionIcon } from "@/lib/ui";
 
 interface Props {
   pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
@@ -45,10 +45,7 @@ function FrameworkRow({
   defaultOpen = false,
   actions,
 }: {
-  item: Pillar | Theme | Subtheme & {
-    themes?: Theme[];
-    subthemes?: Subtheme[];
-  };
+  item: Pillar | Theme | Subtheme & { themes?: Theme[]; subthemes?: Subtheme[] };
   level: "pillar" | "theme" | "subtheme";
   defaultOpen?: boolean;
   actions?: (item: Pillar | Theme | Subtheme, level: "pillar" | "theme" | "subtheme") => React.ReactNode;
@@ -63,16 +60,14 @@ function FrameworkRow({
       : undefined;
 
   const color = level === "pillar" ? "blue" : level === "theme" ? "green" : "red";
-  const label =
-    level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
-
-  const indent = level === "pillar" ? "pl-2" : level === "theme" ? "pl-6" : "pl-12";
+  const label = level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
+  const indent = level === "pillar" ? "pl-0" : level === "theme" ? "pl-6" : "pl-12";
 
   return (
     <>
       <tr className="align-top">
         {/* Type / Code */}
-        <td className={cn("px-4 py-2 whitespace-nowrap", indent)}>
+        <td className={`px-4 py-2 whitespace-nowrap ${indent}`}>
           <div className="flex items-center gap-2">
             {children && (
               <button
@@ -92,7 +87,7 @@ function FrameworkRow({
         </td>
 
         {/* Name / Description */}
-        <td className={cn("px-4 py-2", indent)}>
+        <td className={`px-4 py-2 ${indent}`}>
           <div className="flex flex-col">
             <span className="font-medium text-gray-900">{item.name}</span>
             {item.description && (
@@ -109,7 +104,8 @@ function FrameworkRow({
           <div className="flex items-center gap-2">
             {actions
               ? actions(item, level)
-              : <>
+              : (
+                <>
                   <ActionIcon title="Edit" disabled>
                     <Pencil className="h-4 w-4" />
                   </ActionIcon>
@@ -120,7 +116,7 @@ function FrameworkRow({
                     <Plus className="h-4 w-4" />
                   </ActionIcon>
                 </>
-            }
+              )}
           </div>
         </td>
       </tr>
