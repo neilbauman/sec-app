@@ -1,57 +1,66 @@
 // app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies as nextCookies } from "next/headers";
 import { PageHeader, CsvActions } from "@/lib/ui";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
-  const cookieStore = await cookies(); // ✅ properly awaited
+  try {
+    // ✅ Always await cookies() — returns a *synchronous* object but wrapped in a promise
+    const cookieStore = await nextCookies();
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            try {
+              return cookieStore.get(name)?.value;
+            } catch {
+              return undefined;
+            }
+          },
+          set() {
+            /* no-op on server */
+          },
+          remove() {
+            /* no-op on server */
+          },
         },
-        set() {
-          // no-op server side
-        },
-        remove() {
-          // no-op server side
-        },
-      },
-    }
-  );
+      }
+    );
 
-  const { data, error } = await supabase
-    .from("pillars")
-    .select(
-      `
-      id, name, code, description, sort_order,
-      themes:themes_pillar_id_fkey (
+    const { data, error } = await supabase
+      .from("pillars")
+      .select(
+        `
         id, name, code, description, sort_order,
-        subthemes:fk_subthemes_theme (
-          id, name, code, description, sort_order
+        themes:themes_pillar_id_fkey (
+          id, name, code, description, sort_order,
+          subthemes:fk_subthemes_theme (
+            id, name, code, description, sort_order
+          )
         )
+      `
       )
-    `
-    )
-    .order("sort_order");
+      .order("sort_order");
 
-  if (error) {
-    console.error("Supabase error:", error.message);
-    return { pillars: [], error: error.message };
+    if (error) {
+      return { pillars: [], error: error.message };
+    }
+
+    return {
+      pillars: data as (Pillar & {
+        themes: (Theme & { subthemes: Subtheme[] })[];
+      })[],
+      error: null,
+    };
+  } catch (err: any) {
+    console.error("getData fatal error:", err);
+    return { pillars: [], error: err?.message ?? "Unknown error" };
   }
-
-  return {
-    pillars: data as (Pillar & {
-      themes: (Theme & { subthemes: Subtheme[] })[];
-    })[],
-    error: null,
-  };
 }
 
 export default async function PrimaryFrameworkEditorPage() {
@@ -71,7 +80,7 @@ export default async function PrimaryFrameworkEditorPage() {
       />
 
       <div className="p-6 space-y-6">
-        {/* Debug Data */}
+        {/* Debugging Panel */}
         <div className="rounded-md border bg-white shadow-sm p-4">
           <h2 className="text-sm font-semibold mb-2">Debug Data</h2>
           {error ? (
@@ -83,7 +92,7 @@ export default async function PrimaryFrameworkEditorPage() {
           )}
         </div>
 
-        {/* Render Cards */}
+        {/* Render Pillar Cards */}
         {pillars.length > 0 ? (
           <PrimaryFrameworkCards
             pillars={pillars}
@@ -113,7 +122,9 @@ export default async function PrimaryFrameworkEditorPage() {
           />
         ) : (
           <div className="rounded-md border bg-white shadow-sm p-4 text-gray-500">
-            No pillars returned from Supabase.
+            {error
+              ? "Error fetching data. Check debug panel above."
+              : "No pillars returned from Supabase."}
           </div>
         )}
       </div>
