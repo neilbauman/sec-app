@@ -1,13 +1,14 @@
 // app/admin/framework/primary/editor/page.tsx
+
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { PageHeader, CsvActions } from "@/lib/ui";
-import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
-async function getData() {
+async function getData(): Promise<{ pillars: Pillar[]; error?: string }> {
   try {
-    // ✅ cookies() is synchronous
+    // ✅ Correct: cookies() is synchronous in Next.js 13–15
     const cookieStore = cookies();
 
     const supabase = createServerClient(
@@ -16,27 +17,28 @@ async function getData() {
       {
         cookies: {
           get(name: string) {
-            return cookieStore.get(name)?.value; // ✅ works, not a Promise
+            return cookieStore.get(name)?.value;
           },
           set() {
-            // server no-op
+            // no-op on server
           },
           remove() {
-            // server no-op
+            // no-op on server
           },
         },
       }
     );
 
+    // ✅ Pull pillars with nested themes + subthemes
     const { data, error } = await supabase
       .from("pillars")
       .select(
         `
-        id, name, code, description, sort_order,
+        id, code, name, description, sort_order,
         themes:themes_pillar_id_fkey (
-          id, name, code, description, sort_order,
+          id, code, name, description, sort_order,
           subthemes:fk_subthemes_theme (
-            id, name, code, description, sort_order
+            id, code, name, description, sort_order
           )
         )
       `
@@ -44,18 +46,14 @@ async function getData() {
       .order("sort_order");
 
     if (error) {
+      console.error("Supabase fetch error:", error);
       return { pillars: [], error: error.message };
     }
 
-    return {
-      pillars: data as (Pillar & {
-        themes: (Theme & { subthemes: Subtheme[] })[];
-      })[],
-      error: null,
-    };
-  } catch (err: any) {
-    console.error("getData fatal error:", err);
-    return { pillars: [], error: err?.message ?? "Unknown error" };
+    return { pillars: (data as Pillar[]) ?? [] };
+  } catch (err) {
+    console.error("Unexpected error in getData:", err);
+    return { pillars: [], error: "Unexpected error" };
   }
 }
 
@@ -72,55 +70,37 @@ export default async function PrimaryFrameworkEditorPage() {
           { label: "Framework", href: "/admin/framework" },
           { label: "Primary Editor", href: "/admin/framework/primary/editor" },
         ]}
-        actions={<CsvActions />}
       />
 
       <div className="p-6 space-y-6">
-        {/* Debugging Panel */}
-        <div className="rounded-md border bg-white shadow-sm p-4">
-          <h2 className="text-sm font-semibold mb-2">Debug Data</h2>
+        {/* Debug Data */}
+        <div className="card p-4">
+          <h2 className="font-medium mb-2">Debug Data</h2>
           {error ? (
-            <pre className="text-red-600">{error}</pre>
+            <pre className="text-red-600 text-sm">{error}</pre>
           ) : (
-            <pre className="text-xs text-gray-600 overflow-x-auto">
+            <pre className="text-xs whitespace-pre-wrap">
               {JSON.stringify(pillars, null, 2)}
             </pre>
           )}
         </div>
 
-        {/* Render Pillar Cards */}
+        {/* Render cards */}
         {pillars.length > 0 ? (
           <PrimaryFrameworkCards
             pillars={pillars}
             defaultOpen={false}
             actions={(item, level) => (
-              <div className="flex gap-2">
-                <button
-                  className="text-blue-600 hover:text-blue-800 text-sm"
-                  onClick={() => console.log("Edit", level, item.id)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="text-red-600 hover:text-red-800 text-sm"
-                  onClick={() => console.log("Delete", level, item.id)}
-                >
-                  Delete
-                </button>
-                <button
-                  className="text-gray-600 hover:text-gray-800 text-sm"
-                  onClick={() => console.log("Add Child", level, item.id)}
-                >
-                  +
-                </button>
+              <div className="flex space-x-2 text-sm text-gray-500">
+                <button className="hover:text-gray-700">✏️ Edit</button>
+                <button className="hover:text-gray-700">🗑️ Delete</button>
+                <button className="hover:text-gray-700">➕ Add</button>
               </div>
             )}
           />
         ) : (
-          <div className="rounded-md border bg-white shadow-sm p-4 text-gray-500">
-            {error
-              ? "Error fetching data. Check debug panel above."
-              : "No pillars returned from Supabase."}
+          <div className="text-sm text-gray-500">
+            No pillars returned from Supabase.
           </div>
         )}
       </div>
