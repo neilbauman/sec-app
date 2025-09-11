@@ -1,61 +1,52 @@
 // app/admin/framework/primary/editor/page.tsx
-import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { PageHeader, CsvActions } from "@/lib/ui";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
-  try {
-    // ✅ Next.js 15: cookies() is async
-    const cookieStore = await cookies();
+  const cookieStore = cookies();
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set() {
-            /* no-op for server */
-          },
-          remove() {
-            /* no-op for server */
-          },
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
         },
-      }
-    );
-
-    const { data, error } = await supabase
-      .from("pillars")
-      .select(`
-        id, name, code, description, sort_order,
-        themes:themes_pillar_id_fkey (
-          id, name, code, description, sort_order,
-          subthemes:fk_subthemes_theme (
-            id, name, code, description, sort_order
-          )
-        )
-      `)
-      .order("sort_order");
-
-    if (error) {
-      console.error("Supabase error:", error.message);
-      return { pillars: [], error: error.message };
+        set() {
+          // server no-op
+        },
+        remove() {
+          // server no-op
+        },
+      },
     }
+  );
 
-    return {
-      pillars: data as (Pillar & {
-        themes: (Theme & { subthemes: Subtheme[] })[];
-      })[],
-      error: null,
-    };
-  } catch (err: any) {
-    console.error("Unexpected error in getData:", err);
-    return { pillars: [], error: err.message || "Unknown error" };
+  const { data, error } = await supabase
+    .from("pillars")
+    .select(
+      `
+      id, name, code, description, sort_order,
+      themes:themes_pillar_id_fkey (
+        id, name, code, description, sort_order,
+        subthemes:fk_subthemes_theme (
+          id, name, code, description, sort_order
+        )
+      )
+    `
+    )
+    .order("sort_order");
+
+  if (error) {
+    console.error("Supabase error:", error.message);
+    return { pillars: [], error: error.message };
   }
+
+  return { pillars: data as (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[], error: null };
 }
 
 export default async function PrimaryFrameworkEditorPage() {
@@ -66,47 +57,49 @@ export default async function PrimaryFrameworkEditorPage() {
       <PageHeader
         title="Primary Framework Editor"
         breadcrumbItems={[
-          { label: "Home", href: "/" },
-          { label: "Admin", href: "/admin" },
-          { label: "Framework", href: "/admin/framework" },
-          { label: "Primary Editor" },
+          { title: "Home", href: "/" },
+          { title: "Admin", href: "/admin" },
+          { title: "Framework", href: "/admin/framework" },
+          { title: "Primary Editor", href: "/admin/framework/primary/editor" },
         ]}
         actions={<CsvActions />}
       />
 
-      {/* Debug section */}
-      <div className="mx-auto max-w-7xl space-y-4 p-6">
-        <div className="rounded-lg border bg-white p-4 shadow-sm">
-          <h2 className="mb-2 font-semibold text-gray-900">Debug Data</h2>
+      {/* Debug Data */}
+      <section className="p-4">
+        <div className="mb-4 rounded border bg-white p-4">
+          <h2 className="mb-2 text-sm font-semibold text-gray-700">Debug Data</h2>
           {error ? (
-            <p className="text-sm text-red-600">Supabase error: {error}</p>
+            <div className="text-sm text-red-600">Supabase error: {error}</div>
           ) : (
-            <pre className="overflow-x-auto rounded bg-gray-100 p-2 text-xs text-gray-700">
+            <pre className="overflow-x-auto rounded bg-gray-50 p-2 text-xs text-gray-700">
               {JSON.stringify(pillars, null, 2)}
             </pre>
           )}
         </div>
 
-        {/* Cards */}
+        {/* Main Data */}
         {pillars.length > 0 ? (
           <PrimaryFrameworkCards
             pillars={pillars}
             defaultOpen={false}
             actions={(item, level) => (
-              <div className="flex gap-2 text-sm text-gray-400">
-                {/* ✅ fully customizable per row */}
-                <button className="hover:text-blue-600">✏️ Edit</button>
-                <button className="hover:text-red-600">🗑 Delete</button>
+              <div className="flex gap-2 justify-end text-sm text-gray-500">
+                {/* Replace these placeholders with real handlers */}
+                <button className="hover:text-blue-600">Edit</button>
+                <button className="hover:text-red-600">Delete</button>
                 {level !== "subtheme" && (
-                  <button className="hover:text-green-600">➕ Add</button>
+                  <button className="hover:text-green-600">Add</button>
                 )}
               </div>
             )}
           />
         ) : (
-          <p className="text-gray-500">No pillars returned from Supabase.</p>
+          <div className="rounded border bg-white p-4 text-gray-500">
+            No pillars returned from Supabase.
+          </div>
         )}
-      </div>
+      </section>
     </main>
   );
 }
