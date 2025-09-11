@@ -33,24 +33,27 @@ export function Tag({
   title,
 }: {
   children: React.ReactNode;
-  color?: "blue" | "green" | "red" | "gray";
+  color?: "blue" | "gray" | "green" | "red";
   className?: string;
   title?: string;
 }) {
-  const palettes: Record<string, string> = {
+  const palette = {
+    gray: "bg-gray-100 text-gray-700 ring-gray-200",
     blue: "bg-blue-50 text-blue-700 ring-blue-200",
     green: "bg-green-50 text-green-700 ring-green-200",
     red: "bg-red-50 text-red-700 ring-red-200",
-    gray: "bg-gray-100 text-gray-700 ring-gray-300",
-  };
+  }[color];
+
   return (
     <span
       title={title}
-      className={cn(
-        "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1",
-        palettes[color],
-        className
-      )}
+      className={[
+        "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset",
+        palette,
+        className ?? "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       {children}
     </span>
