@@ -1,80 +1,101 @@
 // app/admin/framework/primary/editor/page.tsx
 
+"use client";
+
+import React, { useState } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { PageHeader } from "@/lib/ui";
+import { PageHeader, CsvActions } from "@/lib/ui";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
-async function getData(): Promise<{ pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[]; error?: string }> {
+// ---------- Error Boundary ----------
+function ErrorBoundary({ children }: { children: React.ReactNode }) {
+  const [error, setError] = useState<Error | null>(null);
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+        <p className="font-medium">Render Error</p>
+        <pre className="text-xs mt-2 whitespace-pre-wrap">
+          {error.message}
+        </pre>
+      </div>
+    );
+  }
+
+  return (
+    <React.ErrorBoundary
+      fallbackRender={({ error }) => {
+        setError(error);
+        return null;
+      }}
+    >
+      {children}
+    </React.ErrorBoundary>
+  );
+}
+
+// ---------- Fetch Data ----------
+async function getData(): Promise<{
+  pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
+  error?: string;
+}> {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
-        cookies: {
+        cookies: () => ({
           get(name: string) {
             return cookieStore.get(name)?.value;
           },
-          set() {},
-          remove() {},
-        },
+          set() {
+            /* server no-op */
+          },
+          remove() {
+            /* server no-op */
+          },
+        }),
       }
     );
 
+    // ✅ Fetch pillars, themes, and subthemes
     const { data, error } = await supabase
       .from("pillars")
-      .select(
-        `
-        id, code, name, description, sort_order,
-        themes:themes_pillar_id_fkey (
-          id, code, name, description, sort_order,
-          subthemes:fk_subthemes_theme (
-            id, code, name, description, sort_order
-          )
-        )
-      `
-      )
+      .select("id, name, code, description, sort_order, themes(id, name, code, description, sort_order, subthemes(id, name, code, description, sort_order)))")
       .order("sort_order");
 
-    if (error) {
-      return { pillars: [], error: error.message };
-    }
+    if (error) throw error;
 
-    // ✅ Ensure consistent shape
-    return {
-      pillars: (data as any[]).map((pillar) => ({
-        ...pillar,
-        themes: (pillar.themes || []).map((theme: any) => ({
-          ...theme,
-          subthemes: theme.subthemes || [],
-        })),
-      })),
-    };
-  } catch (err) {
-    console.error(err);
-    return { pillars: [], error: "Unexpected error" };
+    return { pillars: (data as any) || [] };
+  } catch (err: any) {
+    console.error("getData error:", err);
+    return { pillars: [], error: err.message };
   }
 }
 
+// ---------- Page ----------
 export default async function PrimaryFrameworkEditorPage() {
   const { pillars, error } = await getData();
 
   return (
-    <main className="min-h-dvh bg-gray-50">
+    <div className="space-y-6">
       <PageHeader
         title="Primary Framework Editor"
-        breadcrumbItems={[
+        breadcrumbs={[
           { label: "Home", href: "/" },
           { label: "Admin", href: "/admin" },
           { label: "Framework", href: "/admin/framework" },
-          { label: "Primary Editor", href: "/admin/framework/primary/editor" },
+          { label: "Primary Editor" },
         ]}
+        actions={<CsvActions />}
       />
 
       <div className="p-6 space-y-6">
+        {/* Debug JSON */}
         <div className="card p-4">
           <h2 className="font-medium mb-2">Debug Data</h2>
           {error ? (
@@ -86,7 +107,8 @@ export default async function PrimaryFrameworkEditorPage() {
           )}
         </div>
 
-        {pillars.length > 0 ? (
+        {/* Cards with Error Boundary */}
+        <ErrorBoundary>
           <PrimaryFrameworkCards
             pillars={pillars}
             defaultOpen={false}
@@ -98,12 +120,8 @@ export default async function PrimaryFrameworkEditorPage() {
               </div>
             )}
           />
-        ) : (
-          <div className="text-sm text-gray-500">
-            No pillars returned from Supabase.
-          </div>
-        )}
+        </ErrorBoundary>
       </div>
-    </main>
+    </div>
   );
 }
