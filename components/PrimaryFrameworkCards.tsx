@@ -13,14 +13,6 @@ interface Props {
 }
 
 export function PrimaryFrameworkCards({ pillars, defaultOpen = false }: Props) {
-  if (!pillars || pillars.length === 0) {
-    return (
-      <div className="rounded-md border bg-white p-4 text-sm text-gray-500">
-        No framework data available.
-      </div>
-    );
-  }
-
   return (
     <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
       <table className="min-w-full border-collapse text-sm">
@@ -39,6 +31,7 @@ export function PrimaryFrameworkCards({ pillars, defaultOpen = false }: Props) {
               item={pillar}
               level="pillar"
               defaultOpen={defaultOpen}
+              depth={0}
             />
           ))}
         </tbody>
@@ -51,6 +44,7 @@ function FrameworkRow({
   item,
   level,
   defaultOpen = false,
+  depth,
 }: {
   item: Pillar | Theme | Subtheme & {
     themes?: Theme[];
@@ -58,6 +52,7 @@ function FrameworkRow({
   };
   level: "pillar" | "theme" | "subtheme";
   defaultOpen?: boolean;
+  depth: number;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -72,11 +67,14 @@ function FrameworkRow({
   const label =
     level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
 
+  // indentation for hierarchy clarity
+  const indentClass = `pl-${Math.min(depth * 6, 12)}`;
+
   return (
     <>
       <tr className="align-top">
         {/* Type / Code */}
-        <td className="px-4 py-2 whitespace-nowrap">
+        <td className={`px-4 py-2 whitespace-nowrap ${indentClass}`}>
           <div className="flex items-center gap-2">
             {children && (
               <button
@@ -96,7 +94,7 @@ function FrameworkRow({
         </td>
 
         {/* Name / Description */}
-        <td className="px-4 py-2">
+        <td className={`px-4 py-2 ${indentClass}`}>
           <div className="flex flex-col">
             <span className="font-medium text-gray-900">{item.name}</span>
             {item.description && (
@@ -124,13 +122,14 @@ function FrameworkRow({
         </td>
       </tr>
 
-      {/* Children rows */}
+      {/* Render children */}
       {open &&
         children?.map((child) => (
           <FrameworkRow
             key={child.id}
             item={child}
             level={level === "pillar" ? "theme" : "subtheme"}
+            depth={depth + 1}
           />
         ))}
     </>
