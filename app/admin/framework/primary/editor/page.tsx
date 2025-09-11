@@ -2,13 +2,12 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { PageHeader, CsvActions } from "@/lib/ui";
-import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
-import { Pillar, Theme, Subtheme } from "@/types/framework";
+import { PageHeader } from "@/lib/ui";
+import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+import { Pillar } from "@/types/framework";
 
 async function getData(): Promise<{ pillars: Pillar[]; error?: string }> {
   try {
-    // ✅ Correct: cookies() is synchronous in Next.js 13–15
     const cookieStore = cookies();
 
     const supabase = createServerClient(
@@ -19,17 +18,12 @@ async function getData(): Promise<{ pillars: Pillar[]; error?: string }> {
           get(name: string) {
             return cookieStore.get(name)?.value;
           },
-          set() {
-            // no-op on server
-          },
-          remove() {
-            // no-op on server
-          },
+          set() {},
+          remove() {},
         },
       }
     );
 
-    // ✅ Pull pillars with nested themes + subthemes
     const { data, error } = await supabase
       .from("pillars")
       .select(
@@ -46,13 +40,12 @@ async function getData(): Promise<{ pillars: Pillar[]; error?: string }> {
       .order("sort_order");
 
     if (error) {
-      console.error("Supabase fetch error:", error);
       return { pillars: [], error: error.message };
     }
 
     return { pillars: (data as Pillar[]) ?? [] };
   } catch (err) {
-    console.error("Unexpected error in getData:", err);
+    console.error(err);
     return { pillars: [], error: "Unexpected error" };
   }
 }
@@ -73,7 +66,6 @@ export default async function PrimaryFrameworkEditorPage() {
       />
 
       <div className="p-6 space-y-6">
-        {/* Debug Data */}
         <div className="card p-4">
           <h2 className="font-medium mb-2">Debug Data</h2>
           {error ? (
@@ -85,7 +77,6 @@ export default async function PrimaryFrameworkEditorPage() {
           )}
         </div>
 
-        {/* Render cards */}
         {pillars.length > 0 ? (
           <PrimaryFrameworkCards
             pillars={pillars}
