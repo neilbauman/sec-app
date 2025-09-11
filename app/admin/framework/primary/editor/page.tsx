@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+import { PageHeader } from "@/components/ui"; // 👈 use shared header
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function Page() {
@@ -24,25 +25,21 @@ export default async function Page() {
     }
   );
 
-  // Fetch pillars
   const { data: pillars } = await supabase
     .from("pillars")
     .select("id, code, name, description, sort_order")
     .order("sort_order", { ascending: true });
 
-  // Fetch themes
   const { data: themes } = await supabase
     .from("themes")
     .select("id, code, name, description, sort_order, pillar_id")
     .order("sort_order", { ascending: true });
 
-  // Fetch subthemes
   const { data: subthemes } = await supabase
     .from("subthemes")
     .select("id, code, name, description, sort_order, theme_id")
     .order("sort_order", { ascending: true });
 
-  // Merge
   const enrichedPillars =
     pillars?.map((pillar) => ({
       ...pillar,
@@ -56,12 +53,18 @@ export default async function Page() {
 
   return (
     <main className="p-6">
-      {/* Page Header */}
-      <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Primary Framework Editor
-        </h1>
-      </header>
+      {/* Shared header (breadcrumb + title) */}
+      <PageHeader
+        title="Primary Framework Editor"
+        breadcrumb={[{ label: "Admin", href: "/admin" }, { label: "Framework", href: "/admin/framework" }, { label: "Primary Editor" }]}
+      />
+
+      {/* Table column headers */}
+      <div className="grid grid-cols-[1fr_120px_120px] border-b pb-2 mb-4 text-sm font-semibold text-gray-600">
+        <div>Name / Description</div>
+        <div>Sort Order</div>
+        <div className="text-right">Actions</div>
+      </div>
 
       {/* Cards */}
       <PrimaryFrameworkCards
