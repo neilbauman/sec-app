@@ -1,26 +1,27 @@
 // /types/framework.ts
-export type Pillar = {
+
+export type Subtheme = {
   id: string;
   code: string;
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
+  description: string | null;
+  sort_order: number;
 };
 
 export type Theme = {
   id: string;
-  pillar_id: string; // FK to Pillar.id
   code: string;
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
+  description: string | null;
+  sort_order: number;
+  subthemes?: Subtheme[];
 };
 
-export type Subtheme = {
+export type Pillar = {
   id: string;
-  theme_id: string; // FK to Theme.id
   code: string;
   name: string;
-  description?: string | null;
-  sort_order?: number | null;
+  description: string | null;
+  sort_order: number;
+  themes?: Theme[];
 };
