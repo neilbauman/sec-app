@@ -113,34 +113,6 @@ export function Tooltip({
   );
 }
 
-/** Page title bar w/ breadcrumb and right-aligned actions */
-export function PageHeader({
-  title,
-  breadcrumb,
-  actions,
-}: {
-  title: string;
-  breadcrumb?: React.ReactNode;
-  actions?: React.ReactNode;
-}) {
-  return (
-    <header className="sticky top-0 z-10 mb-4 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50">
-      <div className="mx-auto max-w-6xl px-4 py-4">
-        <div className="mb-1 text-xs font-semibold tracking-wide text-gray-500">
-          Shelter and Settlements Vulnerability Index
-        </div>
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex flex-col">
-            {breadcrumb && <div className="mb-1 text-sm text-gray-500">{breadcrumb}</div>}
-            <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
-          </div>
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
-        </div>
-      </div>
-    </header>
-  );
-}
-
 /** Breadcrumb renderer for small arrays of {label, href?} */
 export function Breadcrumb({
   items,
@@ -164,6 +136,40 @@ export function Breadcrumb({
         ))}
       </ol>
     </nav>
+  );
+}
+
+/** Page title bar w/ breadcrumb and right-aligned actions */
+export function PageHeader({
+  title,
+  breadcrumbItems,
+  actions,
+}: {
+  title: string;
+  breadcrumbItems?: Array<{ label: string; href?: string }>;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <header className="sticky top-0 z-10 mb-6 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50">
+      <div className="mx-auto max-w-6xl px-4 py-4">
+        {/* App title (always visible, like Dashboard) */}
+        <div className="mb-1 text-xs font-semibold tracking-wide text-gray-500">
+          Shelter and Settlements Vulnerability Index
+        </div>
+
+        <div className="flex items-end justify-between gap-3">
+          <div className="flex flex-col">
+            {breadcrumbItems && breadcrumbItems.length > 0 && (
+              <div className="mb-1">
+                <Breadcrumb items={breadcrumbItems} />
+              </div>
+            )}
+            <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+          </div>
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
+        </div>
+      </div>
+    </header>
   );
 }
 
