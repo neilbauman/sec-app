@@ -1,31 +1,38 @@
 // /lib/ui.tsx
-"use client";
-
-import React from "react";
 import Link from "next/link";
+import React from "react";
 import { Download, Upload } from "lucide-react";
-import { cn } from "@/lib/utils";
+import clsx from "clsx";
+import { twMerge } from "tailwind-merge";
 
-/* -------------------- Tag -------------------- */
+/**
+ * Utility to merge Tailwind + conditional classes
+ */
+export function cn(...inputs: (string | undefined | null | false)[]) {
+  return twMerge(clsx(inputs));
+}
+
+/**
+ * Simple colored tag
+ */
 export function Tag({
+  color,
   children,
-  color = "gray",
 }: {
+  color: "blue" | "green" | "red";
   children: React.ReactNode;
-  color?: "blue" | "green" | "red" | "gray";
 }) {
-  const colorClasses = {
+  const colorMap = {
     blue: "bg-blue-100 text-blue-800",
     green: "bg-green-100 text-green-800",
     red: "bg-red-100 text-red-800",
-    gray: "bg-gray-100 text-gray-800",
-  };
+  }[color];
 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
-        colorClasses[color]
+        "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium",
+        colorMap
       )}
     >
       {children}
@@ -33,25 +40,27 @@ export function Tag({
   );
 }
 
-/* -------------------- Action Icon -------------------- */
+/**
+ * Reusable action button with icon
+ */
 export function ActionIcon({
-  children,
   title,
   disabled,
   onClick,
+  children,
 }: {
-  children: React.ReactNode;
   title: string;
   disabled?: boolean;
   onClick?: () => void;
+  children: React.ReactNode;
 }) {
   return (
     <button
       title={title}
-      disabled={disabled}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-md border text-gray-500 hover:bg-gray-50",
+        "p-1 rounded hover:bg-gray-100 text-gray-600",
         disabled && "opacity-50 cursor-not-allowed"
       )}
     >
@@ -60,47 +69,49 @@ export function ActionIcon({
   );
 }
 
-/* -------------------- Page Header -------------------- */
+/**
+ * Page header with breadcrumb and optional actions
+ */
 export function PageHeader({
   title,
   breadcrumbItems,
   actions,
 }: {
   title: string;
-  breadcrumbItems?: { label: string; href?: string }[];
+  breadcrumbItems: { label: string; href?: string }[];
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="border-b bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        <div>
-          <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
-          {breadcrumbItems && breadcrumbItems.length > 0 && (
-            <nav className="mt-1 text-sm text-gray-500">
-              {breadcrumbItems.map((item, i) => (
-                <React.Fragment key={i}>
-                  {item.href ? (
-                    <Link href={item.href} className="hover:underline">
-                      {item.label}
-                    </Link>
-                  ) : (
-                    <span>{item.label}</span>
-                  )}
-                  {i < breadcrumbItems.length - 1 && (
-                    <span className="mx-1">/</span>
-                  )}
-                </React.Fragment>
-              ))}
-            </nav>
-          )}
-        </div>
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
+    <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
+      <div>
+        <nav className="text-sm text-gray-500">
+          <ol className="flex space-x-2">
+            {breadcrumbItems.map((item, idx) => (
+              <li key={idx} className="flex items-center">
+                {item.href ? (
+                  <Link href={item.href} className="hover:underline">
+                    {item.label}
+                  </Link>
+                ) : (
+                  <span>{item.label}</span>
+                )}
+                {idx < breadcrumbItems.length - 1 && (
+                  <span className="mx-2">/</span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </nav>
+        <h1 className="mt-1 text-lg font-semibold text-gray-900">{title}</h1>
       </div>
+      {actions && <div className="ml-4 flex-shrink-0">{actions}</div>}
     </div>
   );
 }
 
-/* -------------------- CSV Actions -------------------- */
+/**
+ * CSV import/export action buttons
+ */
 export function CsvActions({
   disableImport,
   disableExport,
@@ -110,18 +121,30 @@ export function CsvActions({
 }) {
   return (
     <div className="flex gap-2">
-      {!disableImport && (
-        <button className="btn btn-secondary flex items-center gap-1">
-          <Upload className="h-4 w-4" />
-          Import CSV
-        </button>
-      )}
-      {!disableExport && (
-        <button className="btn btn-primary flex items-center gap-1">
-          <Download className="h-4 w-4" />
-          Export CSV
-        </button>
-      )}
+      <button
+        disabled={disableImport}
+        className={cn(
+          "flex items-center gap-1 rounded-md border px-2 py-1 text-sm",
+          disableImport
+            ? "cursor-not-allowed bg-gray-100 text-gray-400"
+            : "hover:bg-gray-50"
+        )}
+      >
+        <Upload className="h-4 w-4" />
+        Import CSV
+      </button>
+      <button
+        disabled={disableExport}
+        className={cn(
+          "flex items-center gap-1 rounded-md border px-2 py-1 text-sm",
+          disableExport
+            ? "cursor-not-allowed bg-gray-100 text-gray-400"
+            : "hover:bg-gray-50"
+        )}
+      >
+        <Download className="h-4 w-4" />
+        Export CSV
+      </button>
     </div>
   );
 }
