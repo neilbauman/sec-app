@@ -26,9 +26,9 @@ async function getData() {
     .from("pillars")
     .select(`
       id, name, code, description, sort_order,
-      themes (
+      themes:pillar_id (
         id, name, code, description, sort_order,
-        subthemes (
+        subthemes:theme_id (
           id, name, code, description, sort_order
         )
       )
@@ -55,7 +55,6 @@ export default async function PrimaryEditorPage() {
       />
 
       <div className="mx-auto max-w-6xl px-4 py-6 space-y-6">
-        {/* Debug output */}
         <section className="rounded-md border bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-700">Debug Data</h2>
           {error && (
