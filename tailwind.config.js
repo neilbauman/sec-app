@@ -15,7 +15,9 @@ const config = {
         sans: ["Inter", ...fontFamily.sans],
       },
       colors: {
-        // ✅ Optional: make brand colors easy to use
+        // ✅ Simple alias for primary usage
+        primary: "#dc2626", // red-600
+        // ✅ Brand palette for explicit references
         brand: {
           blue: "#2563eb", // Tailwind blue-600
           green: "#16a34a", // Tailwind green-600
