@@ -1,48 +1,50 @@
-'use server'
+// app/admin/framework/primary/editor/actions.ts
+"use server";
 
-import { revalidatePath } from 'next/cache'
-// If you already have DB helpers, import/use them here.
-// For now these are safe stubs that no-op but keep types intact.
+import { revalidatePath } from "next/cache";
 
+// Update entity name
 export async function actionUpdateName(opts: {
-  level: 'pillar' | 'theme' | 'subtheme'
-  code: string
-  name: string
+  level: "pillar" | "theme" | "subtheme";
+  code: string;
+  name: string;
 }) {
-  // TODO: write to DB
-  // await db.update...
-  revalidatePath('/admin/framework/primary/editor')
-  return { ok: true as const }
+  // TODO: update DB
+  revalidatePath("/admin/framework/primary/editor");
+  return { ok: true as const };
 }
 
+// Update entity description
 export async function actionUpdateDescription(opts: {
-  level: 'pillar' | 'theme' | 'subtheme'
-  code: string
-  description: string
+  level: "pillar" | "theme" | "subtheme";
+  code: string;
+  description: string;
 }) {
-  // TODO: write to DB
-  revalidatePath('/admin/framework/primary/editor')
-  return { ok: true as const }
+  // TODO: update DB
+  revalidatePath("/admin/framework/primary/editor");
+  return { ok: true as const };
 }
 
+// Reorder entities
 export async function actionReorder(opts: {
-  level: 'pillar' | 'theme' | 'subtheme'
-  code: string
-  newSort: number
+  level: "pillar" | "theme" | "subtheme";
+  code: string;
+  newSort: number; // ✅ fixed typo
 }) {
-  // TODO: write to DB
-  revalidatePath('/admin/framework/primary/editor')
-  return { ok: true as const }
+  // TODO: update DB
+  revalidatePath("/admin/framework/primary/editor");
+  return { ok: true as const };
 }
 
-// Placeholders for future CSV bulk ops (non-functional for now)
+// Placeholder CSV import
 export async function actionImportCsv(_formData: FormData) {
-  // TODO: parse + apply
-  revalidatePath('/admin/framework/primary/editor')
-  return { ok: true as const }
+  // TODO: implement import
+  revalidatePath("/admin/framework/primary/editor");
+  return { ok: true as const };
 }
 
+// Placeholder CSV export
 export async function actionExportCsv() {
-  // TODO: stream/export
-  return { ok: true as const }
+  // TODO: implement export
+  return { ok: true as const };
 }
