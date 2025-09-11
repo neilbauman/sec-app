@@ -14,7 +14,6 @@ export default function PageHeader({
 }) {
   return (
     <div className="flex flex-col space-y-2 border-b pb-4 mb-6">
-      {/* Breadcrumb */}
       <nav className="text-sm text-gray-500">
         {breadcrumbItems.map((item, i) => (
           <span key={i}>
@@ -29,8 +28,6 @@ export default function PageHeader({
           </span>
         ))}
       </nav>
-
-      {/* Title row */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">{title}</h1>
         {actions && <div>{actions}</div>}
