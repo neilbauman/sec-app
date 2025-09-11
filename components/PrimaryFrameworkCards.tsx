@@ -9,7 +9,6 @@ import { Tag, ActionIcon } from "@/lib/ui";
 interface Props {
   pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
   defaultOpen?: boolean;
-  actions?: React.ReactNode;
 }
 
 export function PrimaryFrameworkCards({ pillars, defaultOpen = false }: Props) {
@@ -30,8 +29,8 @@ export function PrimaryFrameworkCards({ pillars, defaultOpen = false }: Props) {
               key={pillar.id}
               item={pillar}
               level="pillar"
-              defaultOpen={defaultOpen}
               depth={0}
+              defaultOpen={defaultOpen}
             />
           ))}
         </tbody>
@@ -43,16 +42,16 @@ export function PrimaryFrameworkCards({ pillars, defaultOpen = false }: Props) {
 function FrameworkRow({
   item,
   level,
-  defaultOpen = false,
   depth,
+  defaultOpen = false,
 }: {
   item: Pillar | Theme | Subtheme & {
     themes?: Theme[];
     subthemes?: Subtheme[];
   };
   level: "pillar" | "theme" | "subtheme";
-  defaultOpen?: boolean;
   depth: number;
+  defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -67,14 +66,14 @@ function FrameworkRow({
   const label =
     level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
 
-  // indentation for hierarchy clarity
-  const indentClass = `pl-${Math.min(depth * 6, 12)}`;
+  // 👇 indent multiplier (each level shifts right)
+  const indent = depth * 6; // 6 = 1.5rem
 
   return (
     <>
       <tr className="align-top">
         {/* Type / Code */}
-        <td className={`px-4 py-2 whitespace-nowrap ${indentClass}`}>
+        <td className={`px-4 py-2 whitespace-nowrap`} style={{ paddingLeft: `${indent + 16}px` }}>
           <div className="flex items-center gap-2">
             {children && (
               <button
@@ -94,7 +93,7 @@ function FrameworkRow({
         </td>
 
         {/* Name / Description */}
-        <td className={`px-4 py-2 ${indentClass}`}>
+        <td className="px-4 py-2" style={{ paddingLeft: `${indent + 16}px` }}>
           <div className="flex flex-col">
             <span className="font-medium text-gray-900">{item.name}</span>
             {item.description && (
@@ -122,14 +121,14 @@ function FrameworkRow({
         </td>
       </tr>
 
-      {/* Render children */}
+      {/* Render children recursively */}
       {open &&
         children?.map((child) => (
           <FrameworkRow
             key={child.id}
             item={child}
             level={level === "pillar" ? "theme" : "subtheme"}
-            depth={depth + 1}
+            depth={depth + 1} // 👈 increase indent for children
           />
         ))}
     </>
