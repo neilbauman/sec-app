@@ -27,7 +27,7 @@ export default async function Page() {
         <PrimaryFrameworkCards
           defaultOpen={false}
           data={{ pillars: pillars as Pillar[], themes: themes as Theme[], subthemes: subthemes as Subtheme[] }}
-          actions={{}} // keep the right-side actions column aligned; no-op for now
+          actions={<></>} // keep the right-side actions column aligned; no-op for now
         />
       </div>
     </main>
