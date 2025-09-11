@@ -170,3 +170,5 @@ function FrameworkRow<T extends { id: string; code: string; name: string; descri
     </div>
   );
 }
+
+export default PrimaryFrameworkCards;
