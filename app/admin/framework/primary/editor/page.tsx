@@ -11,7 +11,6 @@ import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function PrimaryFrameworkEditorPage() {
-  // Supabase server client with cookies
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,7 +30,6 @@ export default async function PrimaryFrameworkEditorPage() {
     }
   );
 
-  // Fetch pillars with themes + subthemes
   const { data: pillars } = await supabase
     .from("pillars")
     .select(
