@@ -26,7 +26,9 @@ export default async function Page() {
       <div className="mx-auto max-w-6xl px-4 py-6">
         <PrimaryFrameworkCards
           defaultOpen={false}
-          data={{ pillars: pillars as Pillar[], themes: themes as Theme[], subthemes: subthemes as Subtheme[] }}
+          pillars={pillars as Pillar[]}
+          themes={themes as Theme[]}
+          subthemes={subthemes as Subtheme[]}
           actions={{}} // keep the right-side actions column aligned; no-op for now
         />
       </div>
