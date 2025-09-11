@@ -7,7 +7,7 @@ export async function fetchFrameworkList(): Promise<{
   themes: import("@/types/framework").Theme[];
   subthemes: import("@/types/framework").Subtheme[];
 }> {
-  const supabase = await createServerSupabase();
+  const supabase = createServerSupabase();
 
   const { data: pillars } = await supabase
     .from("pillars")
@@ -16,12 +16,12 @@ export async function fetchFrameworkList(): Promise<{
 
   const { data: themes } = await supabase
     .from("themes")
-    .select("id, code, name, description, pillar_id, sort_order")
+    .select("id, code, name, description, sort_order, pillar_id")
     .order("sort_order", { ascending: true });
 
   const { data: subthemes } = await supabase
     .from("subthemes")
-    .select("id, code, name, description, theme_id, sort_order")
+    .select("id, code, name, description, sort_order, theme_id")
     .order("sort_order", { ascending: true });
 
   return {
