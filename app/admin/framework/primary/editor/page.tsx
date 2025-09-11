@@ -4,11 +4,10 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { PageHeader } from "@/lib/ui";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import { Pillar } from "@/types/framework";
+import { Pillar, Theme, Subtheme } from "@/types/framework";
 
-async function getData(): Promise<{ pillars: Pillar[]; error?: string }> {
+async function getData(): Promise<{ pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[]; error?: string }> {
   try {
-    // ✅ cookies() must be awaited in Next.js 15
     const cookieStore = await cookies();
 
     const supabase = createServerClient(
@@ -44,7 +43,16 @@ async function getData(): Promise<{ pillars: Pillar[]; error?: string }> {
       return { pillars: [], error: error.message };
     }
 
-    return { pillars: (data as Pillar[]) ?? [] };
+    // ✅ Ensure consistent shape
+    return {
+      pillars: (data as any[]).map((pillar) => ({
+        ...pillar,
+        themes: (pillar.themes || []).map((theme: any) => ({
+          ...theme,
+          subthemes: theme.subthemes || [],
+        })),
+      })),
+    };
   } catch (err) {
     console.error(err);
     return { pillars: [], error: "Unexpected error" };
