@@ -4,13 +4,26 @@ import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function Page() {
+  const cookieStore = cookies(); // get the cookie store synchronously
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies }
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: "", ...options });
+        },
+      },
+    }
   );
 
-  // Fetch data with ordering
   const { data: pillars } = await supabase
     .from("pillars")
     .select("*")
@@ -34,7 +47,7 @@ export default async function Page() {
           pillars={(pillars ?? []) as Pillar[]}
           themes={(themes ?? []) as Theme[]}
           subthemes={(subthemes ?? []) as Subtheme[]}
-          actions={<></>} // no-op for now
+          actions={<></>}
         />
       </div>
     </main>
