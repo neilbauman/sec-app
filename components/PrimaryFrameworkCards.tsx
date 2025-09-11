@@ -9,7 +9,7 @@ import { Tag, ActionIcon } from "@/lib/ui";
 interface Props {
   pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
   defaultOpen?: boolean;
-  actions?: React.ReactNode; // ✅ keep actions prop
+  actions?: (item: Pillar | Theme | Subtheme, level: "pillar" | "theme" | "subtheme") => React.ReactNode;
 }
 
 export function PrimaryFrameworkCards({ pillars, defaultOpen = false, actions }: Props) {
@@ -32,7 +32,7 @@ export function PrimaryFrameworkCards({ pillars, defaultOpen = false, actions }:
               level="pillar"
               depth={0}
               defaultOpen={defaultOpen}
-              actions={actions} // ✅ pass down
+              actions={actions}
             />
           ))}
         </tbody>
@@ -48,14 +48,11 @@ function FrameworkRow({
   defaultOpen = false,
   actions,
 }: {
-  item: Pillar | Theme | Subtheme & {
-    themes?: Theme[];
-    subthemes?: Subtheme[];
-  };
+  item: Pillar | Theme | Subtheme & { themes?: Theme[]; subthemes?: Subtheme[] };
   level: "pillar" | "theme" | "subtheme";
   depth: number;
   defaultOpen?: boolean;
-  actions?: React.ReactNode; // ✅ add here too
+  actions?: (item: Pillar | Theme | Subtheme, level: "pillar" | "theme" | "subtheme") => React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -67,37 +64,35 @@ function FrameworkRow({
       : undefined;
 
   const color = level === "pillar" ? "blue" : level === "theme" ? "green" : "red";
-  const label =
-    level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
+  const label = level === "pillar" ? "Pillar" : level === "theme" ? "Theme" : "Subtheme";
 
-  const indent = depth * 6; // 👈 nesting offset
+  // Increase indent for clarity
+  const indent = depth * 24;
 
   return (
     <>
       <tr className="align-top">
         {/* Type / Code */}
-        <td className="px-4 py-2 whitespace-nowrap" style={{ paddingLeft: `${indent + 16}px` }}>
-          <div className="flex items-center gap-2">
+        <td className="px-4 py-2 whitespace-nowrap">
+          <div className="flex items-center gap-2" style={{ paddingLeft: `${indent}px` }}>
             {children && (
               <button
                 onClick={() => setOpen(!open)}
                 className="text-gray-500 hover:text-gray-700"
               >
-                {open ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
+                {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </button>
             )}
-            <Tag color={color}>{label}</Tag>
-            <span className="text-xs text-gray-500">{item.code}</span>
+            <div className="flex items-center gap-2">
+              <Tag color={color}>{label}</Tag>
+              <span className="text-xs text-gray-500">{item.code}</span>
+            </div>
           </div>
         </td>
 
         {/* Name / Description */}
-        <td className="px-4 py-2" style={{ paddingLeft: `${indent + 16}px` }}>
-          <div className="flex flex-col">
+        <td className="px-4 py-2">
+          <div className="flex flex-col" style={{ paddingLeft: `${indent}px` }}>
             <span className="font-medium text-gray-900">{item.name}</span>
             {item.description && (
               <span className="text-xs text-gray-500">{item.description}</span>
@@ -120,7 +115,7 @@ function FrameworkRow({
             <ActionIcon title="Add child" disabled>
               <Plus className="h-4 w-4" />
             </ActionIcon>
-            {actions /* ✅ custom actions if provided */}
+            {actions?.(item, level)}
           </div>
         </td>
       </tr>
