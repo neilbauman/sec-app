@@ -4,7 +4,8 @@ import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function Page() {
-  const cookieStore = cookies(); // get the cookie store synchronously
+  // await cookies() because it's async in Next.js 15
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
