@@ -1,4 +1,4 @@
-// app/dashboard/page.tsx
+// /app/dashboard/page.tsx
 import Link from "next/link";
 import { PageHeader, CsvActions } from "@/lib/ui";
 
