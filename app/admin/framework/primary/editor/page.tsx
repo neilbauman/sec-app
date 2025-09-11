@@ -5,7 +5,9 @@ import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
-  const cookieStore = cookies();
+  // ✅ Await cookies() because in Next 15 it's async
+  const cookieStore = await cookies();
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -37,7 +39,12 @@ async function getData() {
     return { pillars: [], error: error.message };
   }
 
-  return { pillars: data as (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[], error: null };
+  return {
+    pillars: data as (Pillar & {
+      themes: (Theme & { subthemes: Subtheme[] })[];
+    })[],
+    error: null,
+  };
 }
 
 export default async function Page() {
