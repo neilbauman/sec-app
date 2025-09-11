@@ -2,120 +2,114 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, PenSquare, Trash2, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
 import { Tag, ActionIcon } from "@/lib/ui";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
-type NestedPillar = Pillar & {
-  themes?: (Theme & { subthemes?: Subtheme[] })[];
-};
-
-export function PrimaryFrameworkCards({
-  pillars,
-  defaultOpen = false,
-  actions,
-}: {
-  pillars: NestedPillar[];
+interface Props {
+  pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
   defaultOpen?: boolean;
   actions?: React.ReactNode;
-}) {
+}
+
+export function PrimaryFrameworkCards({ pillars, defaultOpen = false, actions }: Props) {
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+
+  const toggle = (id: string) => {
+    const next = new Set(openIds);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setOpenIds(next);
+  };
+
+  const renderRow = (
+    level: "pillar" | "theme" | "subtheme",
+    item: Pillar | Theme | Subtheme,
+    parentId?: string
+  ) => {
+    const id = (item as any).id;
+    const isOpen = openIds.has(id);
+    const hasChildren =
+      level === "pillar"
+        ? (item as Pillar).themes?.length > 0
+        : level === "theme"
+        ? (item as Theme).subthemes?.length > 0
+        : false;
+
+    const color = level === "pillar" ? "blue" : level === "theme" ? "green" : "red";
+
+    return (
+      <div key={id} className="flex items-center gap-3 border-b py-2 text-sm">
+        {/* Expand/collapse caret */}
+        <div className="w-5">
+          {hasChildren && (
+            <button onClick={() => toggle(id)} className="text-gray-500 hover:text-gray-700">
+              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </button>
+          )}
+        </div>
+
+        {/* Tag + code */}
+        <div className="w-40 flex items-center gap-2">
+          <Tag color={color}>{level}</Tag>
+          <span className="text-xs text-gray-500">{(item as any).code}</span>
+        </div>
+
+        {/* Name & description */}
+        <div className="flex-1">
+          <div className="font-medium text-gray-900">{(item as any).name}</div>
+          {(item as any).description && (
+            <div className="text-xs text-gray-500">{(item as any).description}</div>
+          )}
+        </div>
+
+        {/* Sort order */}
+        <div className="w-24 text-center text-gray-500">{(item as any).sort_order}</div>
+
+        {/* Actions */}
+        <div className="w-28 flex items-center gap-2">
+          <ActionIcon title="Add" disabled>
+            <Plus className="h-4 w-4" />
+          </ActionIcon>
+          <ActionIcon title="Edit" disabled>
+            <Pencil className="h-4 w-4" />
+          </ActionIcon>
+          <ActionIcon title="Delete" disabled>
+            <Trash2 className="h-4 w-4" />
+          </ActionIcon>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="rounded-2xl border bg-white shadow-sm">
-      {/* Table header */}
-      <div className="grid grid-cols-[2fr_100px_120px] items-center border-b bg-gray-50 px-4 py-2 text-sm font-medium text-gray-600">
+    <div className="rounded-lg border bg-white shadow-sm">
+      <div className="grid grid-cols-[20px_160px_1fr_96px_112px] gap-3 border-b bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600">
+        <div />
+        <div>Type / Code</div>
         <div>Name / Description</div>
         <div className="text-center">Sort Order</div>
         <div className="text-center">Actions</div>
       </div>
-
-      {/* Rows */}
-      <div>
+      <div className="divide-y">
         {pillars.map((pillar) => (
-          <PillarRow key={pillar.id} pillar={pillar} defaultOpen={defaultOpen} />
+          <div key={pillar.id}>
+            {renderRow("pillar", pillar)}
+            {openIds.has(pillar.id) &&
+              pillar.themes?.map((theme) => (
+                <div key={theme.id} className="ml-6">
+                  {renderRow("theme", theme, pillar.id)}
+                  {openIds.has(theme.id) &&
+                    theme.subthemes?.map((sub) => (
+                      <div key={sub.id} className="ml-6">
+                        {renderRow("subtheme", sub, theme.id)}
+                      </div>
+                    ))}
+                </div>
+              ))}
+          </div>
         ))}
       </div>
-
-      {/* Right-side global actions (CSV, etc.) */}
-      {actions && (
-        <div className="border-t px-4 py-2 text-right">{actions}</div>
-      )}
-    </div>
-  );
-}
-
-function PillarRow({ pillar, defaultOpen }: { pillar: NestedPillar; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen ?? false);
-
-  return (
-    <div className="border-b last:border-0">
-      {/* Pillar row */}
-      <div className="grid grid-cols-[2fr_100px_120px] items-center px-4 py-2 hover:bg-gray-50">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setOpen(!open)} className="text-gray-500 hover:text-gray-700">
-            {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </button>
-          <Tag color="blue">Pillar</Tag>
-          <span className="text-xs text-gray-400">{pillar.code}</span>
-          <span className="font-medium">{pillar.name}</span>
-        </div>
-        <div className="text-center text-sm text-gray-600">{pillar.sort_order ?? "-"}</div>
-        <div className="flex items-center justify-center gap-2">
-          <ActionIcon disabled title="Edit Pillar"><PenSquare className="h-4 w-4" /></ActionIcon>
-          <ActionIcon disabled title="Delete Pillar"><Trash2 className="h-4 w-4" /></ActionIcon>
-          <ActionIcon disabled title="Add Theme"><Plus className="h-4 w-4" /></ActionIcon>
-        </div>
-      </div>
-
-      {/* Themes */}
-      {open && pillar.themes?.map((theme) => (
-        <ThemeRow key={theme.id} theme={theme} />
-      ))}
-    </div>
-  );
-}
-
-function ThemeRow({ theme }: { theme: Theme & { subthemes?: Subtheme[] } }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="border-t">
-      <div className="grid grid-cols-[2fr_100px_120px] items-center px-8 py-2 hover:bg-gray-50">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setOpen(!open)} className="text-gray-500 hover:text-gray-700">
-            {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </button>
-          <Tag color="green">Theme</Tag>
-          <span className="text-xs text-gray-400">{theme.code}</span>
-          <span>{theme.name}</span>
-        </div>
-        <div className="text-center text-sm text-gray-600">{theme.sort_order ?? "-"}</div>
-        <div className="flex items-center justify-center gap-2">
-          <ActionIcon disabled title="Edit Theme"><PenSquare className="h-4 w-4" /></ActionIcon>
-          <ActionIcon disabled title="Delete Theme"><Trash2 className="h-4 w-4" /></ActionIcon>
-          <ActionIcon disabled title="Add Subtheme"><Plus className="h-4 w-4" /></ActionIcon>
-        </div>
-      </div>
-
-      {open && theme.subthemes?.map((subtheme) => (
-        <SubthemeRow key={subtheme.id} subtheme={subtheme} />
-      ))}
-    </div>
-  );
-}
-
-function SubthemeRow({ subtheme }: { subtheme: Subtheme }) {
-  return (
-    <div className="grid grid-cols-[2fr_100px_120px] items-center px-12 py-2 hover:bg-gray-50">
-      <div className="flex items-center gap-2">
-        <Tag color="red">Subtheme</Tag>
-        <span className="text-xs text-gray-400">{subtheme.code}</span>
-        <span>{subtheme.name}</span>
-      </div>
-      <div className="text-center text-sm text-gray-600">{subtheme.sort_order ?? "-"}</div>
-      <div className="flex items-center justify-center gap-2">
-        <ActionIcon disabled title="Edit Subtheme"><PenSquare className="h-4 w-4" /></ActionIcon>
-        <ActionIcon disabled title="Delete Subtheme"><Trash2 className="h-4 w-4" /></ActionIcon>
-      </div>
+      {actions && <div className="p-3 border-t">{actions}</div>}
     </div>
   );
 }
