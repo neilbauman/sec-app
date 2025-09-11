@@ -3,27 +3,30 @@ import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/**
- * Server-side Supabase client for Route Handlers, Server Components, and Server Actions.
- * Note: cookies() can be awaited in some Next versions; we normalize by awaiting here.
- * We provide no-op set/remove to avoid build errors in non-action contexts.
- */
-export async function createServerSupabase(): Promise<SupabaseClient> {
+/** Synchronous in Next 15 – returns a SupabaseClient (NOT a Promise) */
+export function createServerSupabase(): SupabaseClient {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  const jar = await cookies(); // returns ReadonlyRequestCookies in your env
+  const jar = cookies(); // sync cookie jar
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {
         return jar.get(name)?.value;
       },
-      set(_name: string, _value: string, _options: CookieOptions) {
-        // no-op outside actions/route handlers
+      set(name: string, value: string, options: CookieOptions) {
+        try {
+          jar.set(name, value, options as any);
+        } catch {
+          /* no-op outside actions/route handlers */
+        }
       },
-      remove(_name: string, _options: CookieOptions) {
-        // no-op outside actions/route handlers
+      remove(name: string, options: CookieOptions) {
+        try {
+          jar.set(name, "", { ...(options as any), maxAge: 0 });
+        } catch {
+          /* no-op */
+        }
       },
     },
   }) as unknown as SupabaseClient;
