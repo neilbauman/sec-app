@@ -1,22 +1,25 @@
-// /app/layout.tsx
+// app/layout.tsx
 import "./globals.css";
+import { Inter } from "next/font/google";
 import type { Metadata } from "next";
-import { ReactNode } from "react";
+
+// ✅ Load Inter font (latin subset for most cases)
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Shelter and Settlements Vulnerability Index",
-  description: "Admin interface for managing the primary framework hierarchy",
+  title: "SEC App",
+  description: "Security Framework Management App",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" className="h-full bg-gray-50">
-      <body className="min-h-screen font-sans antialiased text-gray-900">
-        {/* App Container */}
-        <div className="flex min-h-screen flex-col">
-          {/* Main Content */}
-          <main className="flex-1">{children}</main>
-        </div>
+    <html lang="en" className={inter.className}>
+      <body className="min-h-dvh bg-gray-50 text-gray-900 antialiased">
+        {children}
       </body>
     </html>
   );
