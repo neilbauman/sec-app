@@ -1,12 +1,12 @@
 // /app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { PageHeader, CsvActions } from "@/lib/ui";
+import { PageHeader, Breadcrumb, CsvActions } from "@/lib/ui";
 import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
-  const cookieStore = await cookies(); // ✅ FIX: Next.js 15 requires await
+  const cookieStore = cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,10 +17,10 @@ async function getData() {
           return cookieStore.get(name)?.value;
         },
         set() {
-          // no-op for server component
+          // no-op
         },
         remove() {
-          // no-op for server component
+          // no-op
         },
       },
     }
@@ -28,17 +28,15 @@ async function getData() {
 
   const { data: pillars } = await supabase
     .from("pillars")
-    .select(
-      `
-      id, name, code, sort_order,
+    .select(`
+      id, name, code, description, sort_order,
       themes (
-        id, name, code, sort_order,
+        id, name, code, description, sort_order,
         subthemes (
-          id, name, code, sort_order
+          id, name, code, description, sort_order
         )
       )
-    `
-    )
+    `)
     .order("sort_order", { ascending: true });
 
   return (pillars ?? []) as (Pillar & {
@@ -61,10 +59,11 @@ export default async function PrimaryEditorPage() {
         ]}
         actions={<CsvActions disableImport disableExport />}
       />
+
       <div className="mx-auto max-w-6xl px-4 py-6">
         <PrimaryFrameworkCards
           pillars={pillars}
-          defaultOpen={false}
+          defaultOpen={true}
           actions={
             <div className="text-sm text-gray-400">
               Right-side actions placeholder
