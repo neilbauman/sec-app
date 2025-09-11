@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+import type { Pillar } from "@/types/framework";
 
 export default async function Page() {
   // Next.js 15 requires awaiting cookies()
@@ -25,33 +25,13 @@ export default async function Page() {
     }
   );
 
-  // Fetch nested data in one query
+  // ✅ Step 1: Flat query (no nesting)
   const { data: pillars, error } = await supabase
     .from("pillars")
-    .select(`
-      id,
-      code,
-      name,
-      description,
-      sort_order,
-      themes (
-        id,
-        code,
-        name,
-        description,
-        sort_order,
-        subthemes (
-          id,
-          code,
-          name,
-          description,
-          sort_order
-        )
-      )
-    `)
+    .select("id, code, name, description, sort_order")
     .order("sort_order", { ascending: true });
 
-  // Debugging: log to server console (check Vercel logs after deploy)
+  // Debug logs
   console.log("Fetched pillars:", JSON.stringify(pillars, null, 2));
   if (error) {
     console.error("Supabase error fetching pillars:", error.message);
@@ -77,11 +57,8 @@ export default async function Page() {
       <div>
         <PrimaryFrameworkCards
           defaultOpen={false}
-          pillars={
-            (pillars ?? []) as (Pillar & {
-              themes: (Theme & { subthemes: Subtheme[] })[];
-            })[]
-          }
+          // For now, pass only pillars (without themes/subthemes)
+          pillars={pillars as Pillar[]}
           actions={<></>}
         />
       </div>
