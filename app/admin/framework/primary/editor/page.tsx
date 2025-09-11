@@ -26,9 +26,9 @@ async function getData() {
     .from("pillars")
     .select(`
       id, name, code, description, sort_order,
-      themes (
+      themes:themes!themes_pillar_id_fkey (
         id, name, code, description, sort_order,
-        subthemes (
+        subthemes:subthemes!fk_subthemes_theme (
           id, name, code, description, sort_order
         )
       )
@@ -81,10 +81,4 @@ export default async function PrimaryEditorPage() {
           />
         ) : (
           <div className="rounded-md border bg-white p-4 text-sm text-gray-500">
-            No pillars returned from Supabase.
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
+            No pillars returned from
