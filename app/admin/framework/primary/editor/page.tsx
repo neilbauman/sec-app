@@ -8,7 +8,7 @@ async function getData(): Promise<{
   pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
   error?: string;
 }> {
-  const cookieStore = await cookies(); // ✅ Next.js 15 needs await
+  const cookieStore = await cookies(); // ✅ Next.js 15 requires await
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,19 +18,21 @@ async function getData(): Promise<{
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set() {},
-        remove() {},
+        set() {}, // server no-op
+        remove() {}, // server no-op
       },
     }
   );
 
   const { data, error } = await supabase
     .from("pillars")
-    // ✅ explicitly tell Supabase which FK to use
-    .select("*, themes!pillar_id(*, subthemes(*))");
+    // ✅ Explicitly disambiguate the relationship
+    .select("*, themes!themes_pillar_id_fkey(*, subthemes(*))");
 
   return {
-    pillars: (data as (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[]) || [],
+    pillars:
+      (data as (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[]) ||
+      [],
     error: error?.message,
   };
 }
