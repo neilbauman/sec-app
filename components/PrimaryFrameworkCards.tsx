@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { ChevronRight, ChevronDown, Upload, Download, Edit, Trash, Plus } from "lucide-react";
+import { ChevronRight, ChevronDown, Edit, Trash, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Tag, ActionIcon } from "@/lib/ui";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 type Props = {
@@ -17,31 +18,18 @@ export default function PrimaryFrameworkCards({
   defaultOpen = false,
 }: Props) {
   const [open, setOpen] = React.useState<Record<string, boolean>>({});
-
   const toggle = (id: string) =>
     setOpen((prev) => ({ ...prev, [id]: !prev[id] }));
-
-  const disabledActions = (
-    <div className="flex justify-end gap-2 text-gray-400">
-      <Edit size={16} />
-      <Trash size={16} />
-      <Plus size={16} />
-    </div>
-  );
 
   return (
     <div className="space-y-4">
       {pillars?.map((pillar) => (
-        <div
-          key={pillar.id}
-          className="rounded-xl border bg-white shadow-sm transition hover:shadow-md"
-        >
-          {/* Pillar Row */}
+        <div key={pillar.id} className="rounded-xl border bg-white shadow-sm">
+          {/* Pillar row */}
           <div
-            className="grid cursor-pointer grid-cols-[1fr_120px_120px] items-center gap-4 px-4 py-3 hover:bg-gray-50"
+            className="grid grid-cols-[1fr_120px_120px] items-center gap-4 px-4 py-3 hover:bg-gray-50 cursor-pointer"
             onClick={() => toggle(`pillar-${pillar.id}`)}
           >
-            {/* Name / Description */}
             <div className="flex items-start gap-3">
               {open[`pillar-${pillar.id}`] ? (
                 <ChevronDown size={18} className="mt-1" />
@@ -50,12 +38,8 @@ export default function PrimaryFrameworkCards({
               )}
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="rounded bg-blue-100 px-2 py-0.5 text-sm font-semibold text-blue-800">
-                    Pillar
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {pillar.code}
-                  </span>
+                  <Tag color="blue">Pillar</Tag>
+                  <span className="text-xs text-gray-500">{pillar.code}</span>
                   <span className="font-medium text-gray-900">
                     {pillar.name}
                   </span>
@@ -65,12 +49,12 @@ export default function PrimaryFrameworkCards({
                 )}
               </div>
             </div>
-
-            {/* Sort Order */}
-            <div className="text-sm text-gray-500">P{pillar.sort_order}</div>
-
-            {/* Actions */}
-            {disabledActions}
+            <div className="text-sm text-gray-500">{pillar.sort_order}</div>
+            <div className="flex justify-end gap-2 text-gray-400">
+              <ActionIcon disabled title="Edit"><Edit size={16} /></ActionIcon>
+              <ActionIcon disabled title="Delete"><Trash size={16} /></ActionIcon>
+              <ActionIcon disabled title="Add"><Plus size={16} /></ActionIcon>
+            </div>
           </div>
 
           {/* Themes */}
@@ -86,11 +70,10 @@ export default function PrimaryFrameworkCards({
                 {pillar.themes?.map((theme) => (
                   <div
                     key={theme.id}
-                    className="rounded-md border bg-gray-50 shadow-sm transition hover:shadow"
+                    className="rounded-md border bg-gray-50 shadow-sm"
                   >
-                    {/* Theme Row */}
                     <div
-                      className="grid cursor-pointer grid-cols-[1fr_120px_120px] items-center gap-3 px-3 py-2 hover:bg-gray-100"
+                      className="grid grid-cols-[1fr_120px_120px] items-center gap-3 px-3 py-2 hover:bg-gray-100 cursor-pointer"
                       onClick={() => toggle(`theme-${theme.id}`)}
                     >
                       <div className="flex items-start gap-2">
@@ -101,9 +84,7 @@ export default function PrimaryFrameworkCards({
                         )}
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                              Theme
-                            </span>
+                            <Tag color="green">Theme</Tag>
                             <span className="text-xs text-gray-500">
                               {theme.code}
                             </span>
@@ -119,9 +100,13 @@ export default function PrimaryFrameworkCards({
                         </div>
                       </div>
                       <div className="text-sm text-gray-500">
-                        T{theme.sort_order}
+                        {theme.sort_order}
                       </div>
-                      {disabledActions}
+                      <div className="flex justify-end gap-2 text-gray-400">
+                        <ActionIcon disabled title="Edit"><Edit size={16} /></ActionIcon>
+                        <ActionIcon disabled title="Delete"><Trash size={16} /></ActionIcon>
+                        <ActionIcon disabled title="Add"><Plus size={16} /></ActionIcon>
+                      </div>
                     </div>
 
                     {/* Subthemes */}
@@ -140,9 +125,7 @@ export default function PrimaryFrameworkCards({
                               className="grid grid-cols-[1fr_120px_120px] items-center gap-2 rounded px-2 py-1 text-sm hover:bg-gray-100"
                             >
                               <div className="flex items-center gap-2">
-                                <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
-                                  Subtheme
-                                </span>
+                                <Tag color="red">Subtheme</Tag>
                                 <span className="text-xs text-gray-500">
                                   {subtheme.code}
                                 </span>
@@ -151,9 +134,13 @@ export default function PrimaryFrameworkCards({
                                 </span>
                               </div>
                               <div className="text-sm text-gray-500">
-                                ST{subtheme.sort_order}
+                                {subtheme.sort_order}
                               </div>
-                              {disabledActions}
+                              <div className="flex justify-end gap-2 text-gray-400">
+                                <ActionIcon disabled title="Edit"><Edit size={16} /></ActionIcon>
+                                <ActionIcon disabled title="Delete"><Trash size={16} /></ActionIcon>
+                                <ActionIcon disabled title="Add"><Plus size={16} /></ActionIcon>
+                              </div>
                             </div>
                           ))}
                         </motion.div>
