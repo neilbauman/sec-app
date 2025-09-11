@@ -1,26 +1,26 @@
-// /types/framework.ts
+// types/framework.ts
 export type Pillar = {
   id: string;
   code: string;
   name: string;
   description?: string | null;
-  sort_order?: number | null;
+  sort_order: number;
 };
 
 export type Theme = {
   id: string;
-  pillar_id: string; // FK to Pillar.id
   code: string;
   name: string;
   description?: string | null;
-  sort_order?: number | null;
+  sort_order: number;
+  pillar_id: string | null;
 };
 
 export type Subtheme = {
   id: string;
-  theme_id: string; // FK to Theme.id
   code: string;
   name: string;
   description?: string | null;
-  sort_order?: number | null;
+  sort_order: number;
+  theme_id: string | null;
 };
