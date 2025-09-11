@@ -1,4 +1,3 @@
-// /components/PrimaryFrameworkCards.tsx
 "use client";
 
 import { useState } from "react";
@@ -13,6 +12,14 @@ interface Props {
 }
 
 export function PrimaryFrameworkCards({ pillars, defaultOpen = false }: Props) {
+  if (!pillars || pillars.length === 0) {
+    return (
+      <div className="rounded-md border bg-white p-4 text-sm text-gray-500">
+        No pillars returned from Supabase.
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
       <table className="min-w-full border-collapse text-sm">
