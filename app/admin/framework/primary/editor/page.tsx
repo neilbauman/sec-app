@@ -1,3 +1,4 @@
+// /app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
