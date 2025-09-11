@@ -2,12 +2,11 @@
 
 import * as React from "react";
 import { ChevronRight, ChevronDown, Upload, Download } from "lucide-react";
-import { cn } from "@/lib/ui";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 type Props = {
   pillars: (Pillar & {
-    themes: (Theme & { subthemes: Subtheme[] })[];
+    themes?: (Theme & { subthemes?: Subtheme[] })[];
   })[];
   defaultOpen?: boolean;
   actions?: React.ReactNode;
@@ -66,54 +65,14 @@ export default function PrimaryFrameworkCards({
               <div>{actions}</div>
             </div>
 
-            {/* Themes */}
+            {/* Themes (optional for now) */}
             {open[`pillar-${pillar.id}`] && (
-              <div className="ml-8 space-y-2 border-l pl-4">
-                {pillar.themes?.map((theme) => (
-                  <div
-                    key={theme.id}
-                    className="rounded-md border bg-gray-50"
-                  >
-                    {/* Theme Row */}
-                    <div
-                      className="flex cursor-pointer items-center justify-between px-3 py-2 hover:bg-gray-100"
-                      onClick={() => toggle(`theme-${theme.id}`)}
-                    >
-                      <div className="flex items-center gap-2">
-                        {open[`theme-${theme.id}`] ? (
-                          <ChevronDown size={14} />
-                        ) : (
-                          <ChevronRight size={14} />
-                        )}
-                        <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                          Theme {theme.sort_order}
-                        </span>
-                        <span>{theme.name}</span>
-                      </div>
-                      <div>{actions}</div>
-                    </div>
-
-                    {/* Subthemes */}
-                    {open[`theme-${theme.id}`] && (
-                      <div className="ml-6 space-y-1 border-l pl-3">
-                        {theme.subthemes?.map((sub) => (
-                          <div
-                            key={sub.id}
-                            className="flex items-center justify-between rounded px-2 py-1 text-sm hover:bg-gray-100"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
-                                Sub {sub.sort_order}
-                              </span>
-                              <span>{sub.name}</span>
-                            </div>
-                            <div>{actions}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="ml-8 text-gray-500 italic">
+                {pillar.themes && pillar.themes.length > 0 ? (
+                  "Themes will render here once nested query works."
+                ) : (
+                  "⚠ No themes found (debugging flat query step)."
+                )}
               </div>
             )}
           </div>
