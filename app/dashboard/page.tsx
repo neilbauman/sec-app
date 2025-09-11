@@ -43,8 +43,7 @@ export default function DashboardPage() {
         <section className="rounded-2xl border bg-white p-6 shadow-sm">
           <h3 className="text-base font-medium">Data import &amp; export</h3>
           <p className="mt-1 text-sm text-gray-600">
-            CSV import/export placeholders are shown below. We’ll wire these up
-            next.
+            CSV import/export placeholders are shown below. We’ll wire these up next.
           </p>
           <div className="mt-3">
             <CsvActions disableImport disableExport />
