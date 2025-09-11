@@ -1,239 +1,240 @@
-// components/PrimaryFrameworkCards.tsx
+// /components/PrimaryFrameworkCards.tsx
 "use client";
+
 import * as React from "react";
-import { ChevronRight, ChevronDown, Info, Download, Upload } from "lucide-react";
+import { ChevronRight, ChevronDown, Info } from "lucide-react";
+import { Tag, Tooltip, ActionIcon, cn } from "@/lib/ui";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
-import {
-  cn,
-  Card,
-  CardHeader,
-  CardBody,
-  Tag,
-  CodeChip,
-  ActionIcon,
-  Tooltip,
-  SortIcon,
-} from "@/lib/ui";
 
 type Props = {
-  defaultOpen?: boolean;
   pillars: Pillar[];
   themes: Theme[];
   subthemes: Subtheme[];
-  // read-only for now; but keep action slots API
-  actions?: {
-    onImportPillarCsv?: () => void;
-    onExportPillarCsv?: () => void;
-  };
+  defaultOpen?: boolean;
+  actions?: React.ReactNode;
 };
 
-export default function PrimaryFrameworkCards({
-  defaultOpen = false,
-  pillars,
-  themes,
-  subthemes,
-}: Props) {
-  /** track expansion by id */
-  const [open, setOpen] = React.useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {};
-    for (const p of pillars) init[`p-${p.id}`] = !!defaultOpen;
-    for (const t of themes) init[`t-${t.id}`] = !!defaultOpen;
-    return init;
-  });
-  const toggle = (key: string) => setOpen((s) => ({ ...s, [key]: !s[key] }));
-
-  /** group themes and subthemes */
-  const themesByPillar = new Map<number, Theme[]>();
-  for (const t of themes) {
-    if (!t.pillar_id) continue;
-    const arr = themesByPillar.get(t.pillar_id) ?? [];
-    arr.push(t);
-    themesByPillar.set(t.pillar_id, arr);
-  }
-  const subthemesByTheme = new Map<number, Subtheme[]>();
-  for (const s of subthemes) {
-    if (!s.theme_id) continue;
-    const arr = subthemesByTheme.get(s.theme_id) ?? [];
-    arr.push(s);
-    subthemesByTheme.set(s.theme_id, arr);
-  }
-
+function Caret({
+  open,
+  onToggle,
+  isLeaf,
+}: {
+  open: boolean;
+  onToggle?: () => void;
+  isLeaf?: boolean;
+}) {
   return (
-    <Card>
-      <CardHeader className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <SortIcon />
-          <span className="text-sm text-gray-600">Sort order</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Tooltip content="Import Pillars (CSV)">
-            <ActionIcon aria-label="Import CSV">
-              <Upload className="h-4 w-4" />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip content="Export Pillars (CSV)">
-            <ActionIcon aria-label="Export CSV">
-              <Download className="h-4 w-4" />
-            </ActionIcon>
-          </Tooltip>
-        </div>
-      </CardHeader>
-
-      <CardBody className="space-y-2">
-        {/* Pillars */}
-        {pillars.map((pillar) => {
-          const pKey = `p-${pillar.id}`;
-          const pOpen = !!open[pKey];
-          const pillarThemes = (themesByPillar.get(pillar.id) ?? []).sort(
-            (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-          );
-
-          return (
-            <div key={pillar.id} className="rounded-lg border">
-              <Row
-                level="pillar"
-                open={pOpen}
-                onToggle={() => toggle(pKey)}
-                tag={<Tag color="blue">Pillar</Tag>}
-                code={pillar.code}
-                name={pillar.name}
-                description={pillar.description ?? ""}
-                actionsSlot={
-                  <Tooltip content="About pillar">
-                    <ActionIcon aria-label="Info">
-                      <Info className="h-4 w-4" />
-                    </ActionIcon>
-                  </Tooltip>
-                }
-              />
-
-              {/* Themes */}
-              {pOpen && pillarThemes.length > 0 && (
-                <div className="space-y-1 pb-1 pl-6 pt-1">
-                  {pillarThemes.map((theme) => {
-                    const tKey = `t-${theme.id}`;
-                    const tOpen = !!open[tKey];
-                    const themeSubs = (subthemesByTheme.get(theme.id) ?? []).sort(
-                      (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-                    );
-
-                    return (
-                      <div key={theme.id} className="rounded-md border">
-                        <Row
-                          level="theme"
-                          open={tOpen}
-                          onToggle={() => toggle(tKey)}
-                          tag={<Tag color="green">Theme</Tag>}
-                          code={theme.code}
-                          name={theme.name}
-                          description={theme.description ?? ""}
-                          actionsSlot={
-                            <Tooltip content="About theme">
-                              <ActionIcon aria-label="Info">
-                                <Info className="h-4 w-4" />
-                              </ActionIcon>
-                            </Tooltip>
-                          }
-                        />
-
-                        {/* Subthemes */}
-                        {tOpen && themeSubs.length > 0 && (
-                          <div className="space-y-1 pb-1 pl-6 pt-1">
-                            {themeSubs.map((sub) => (
-                              <div key={sub.id} className="rounded-md border">
-                                <Row
-                                  level="subtheme"
-                                  open={false}
-                                  onToggle={() => {}}
-                                  isLeaf
-                                  tag={<Tag color="red">Subtheme</Tag>}
-                                  code={sub.code}
-                                  name={sub.name}
-                                  description={sub.description ?? ""}
-                                  actionsSlot={
-                                    <Tooltip content="About subtheme">
-                                      <ActionIcon aria-label="Info">
-                                        <Info className="h-4 w-4" />
-                                      </ActionIcon>
-                                    </Tooltip>
-                                  }
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </CardBody>
-    </Card>
+    <button
+      type="button"
+      aria-label={open ? "Collapse" : "Expand"}
+      onClick={isLeaf ? undefined : onToggle}
+      className={cn(
+        "inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-50",
+        isLeaf && "opacity-0 pointer-events-none"
+      )}
+    >
+      {open ? (
+        <ChevronDown className="h-4 w-4 text-gray-500" />
+      ) : (
+        <ChevronRight className="h-4 w-4 text-gray-500" />
+      )}
+    </button>
   );
 }
 
-/** One row in the hierarchy list */
 function Row({
-  level,
-  open,
-  onToggle,
-  isLeaf = false,
   tag,
   code,
   name,
   description,
-  actionsSlot,
+  right,
+  depth = 0,
 }: {
-  level: "pillar" | "theme" | "subtheme";
-  open: boolean;
-  onToggle: () => void;
-  isLeaf?: boolean;
   tag: React.ReactNode;
-  code: string | null | undefined;
+  code?: string;
   name: string;
-  description: string;
-  actionsSlot?: React.ReactNode;
+  description?: string | null;
+  right?: React.ReactNode;
+  depth?: number; // 0 pillar, 1 theme, 2 subtheme
 }) {
-  const Caret = open ? ChevronDown : ChevronRight;
-
   return (
-    <div className="flex items-start gap-3 px-3 py-2">
-      {/* Caret (tiny and unchanged) */}
-      <button
-        type="button"
-        className={cn(
-          "inline-flex h-6 w-6 items-center justify-center rounded hover:bg-gray-50",
-          { "opacity-0 pointer-events-none": isLeaf }
-        )}
-        onClick={isLeaf ? undefined : onToggle}
-        aria-label={open ? "Collapse" : "Expand"}
-      >
-        {!isLeaf ? <Caret className="h-3.5 w-3.5 text-gray-500" /> : null}
-      </button>
-
-      {/* Tag + code chip */}
-      <div className="min-w-[130px] pt-0.5">
-        <div className="flex items-center">
-          {tag}
-          {code ? <CodeChip>{code}</CodeChip> : null}
-        </div>
+    <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 py-2">
+      {/* Tag + small code inline to the right of the tag */}
+      <div className="flex items-center gap-2">
+        {tag}
+        {code ? <span className="text-xs text-gray-500">{code}</span> : null}
       </div>
 
-      {/* Name + description (description aligns with left edge of NAME) */}
-      <div className="flex-1">
-        <div className="font-medium text-gray-900">{name}</div>
+      {/* Name + description stacked but left edge aligns with Name */}
+      <div className="min-w-0">
+        <div
+          className={cn(
+            "truncate text-sm font-medium text-gray-900",
+            depth === 1 && "pl-4",
+            depth === 2 && "pl-8"
+          )}
+          title={name}
+        >
+          {name}
+        </div>
         {description ? (
-          <div className="text-sm text-gray-600">{description}</div>
+          <div
+            className={cn(
+              "text-sm text-gray-600",
+              depth === 1 && "pl-4",
+              depth === 2 && "pl-8"
+            )}
+          >
+            {description}
+          </div>
         ) : null}
       </div>
 
       {/* Right-aligned actions */}
-      <div className="ml-auto">
-        <div className="flex items-center gap-1">{actionsSlot}</div>
-      </div>
+      <div className="flex items-center justify-end gap-2">{right}</div>
     </div>
+  );
+}
+
+export default function PrimaryFrameworkCards({
+  pillars,
+  themes,
+  subthemes,
+  defaultOpen = false,
+  actions,
+}: Props) {
+  // Build maps using STRING keys (our ids are strings in /types)
+  const themesByPillar = React.useMemo(() => {
+    const m = new Map<string, Theme[]>();
+    for (const t of themes) {
+      if (!t.pillar_id) continue;
+      const arr = m.get(t.pillar_id) ?? [];
+      arr.push(t);
+      m.set(t.pillar_id, arr);
+    }
+    return m;
+  }, [themes]);
+
+  const subthemesByTheme = React.useMemo(() => {
+    const m = new Map<string, Subtheme[]>();
+    for (const st of subthemes) {
+      if (!st.theme_id) continue;
+      const arr = m.get(st.theme_id) ?? [];
+      arr.push(st);
+      m.set(st.theme_id, arr);
+    }
+    return m;
+  }, [subthemes]);
+
+  // Track open state
+  const [openPillars, setOpenPillars] = React.useState<Record<string, boolean>>(
+    () => Object.fromEntries(pillars.map((p) => [p.id, !!defaultOpen]))
+  );
+  const [openThemes, setOpenThemes] = React.useState<Record<string, boolean>>({});
+
+  const togglePillar = (id: string) =>
+    setOpenPillars((s) => ({ ...s, [id]: !s[id] }));
+
+  const toggleTheme = (id: string) =>
+    setOpenThemes((s) => ({ ...s, [id]: !s[id] }));
+
+  return (
+    <section className="rounded-lg border bg-white shadow-sm">
+      {/* header row to hold actions on the right so alignment is consistent */}
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <div className="text-sm font-medium text-gray-700">Primary Framework</div>
+        <div className="flex items-center gap-2">{actions}</div>
+      </div>
+
+      <div className="px-4 py-2">
+        {/* Pillars */}
+        {pillars.map((pillar) => {
+          const pOpen = !!openPillars[pillar.id];
+          const pThemes = themesByPillar.get(pillar.id) ?? [];
+          return (
+            <div key={pillar.id} className="py-2">
+              <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+                {/* caret (kept small) */}
+                <Caret open={pOpen} onToggle={() => togglePillar(pillar.id)} isLeaf={pThemes.length === 0} />
+
+                {/* pillar row */}
+                <Row
+                  tag={<Tag color="blue">Pillar</Tag>}
+                  code={pillar.code}
+                  name={pillar.name}
+                  description={pillar.description ?? ""}
+                  right={
+                    <Tooltip content="Pillar info">
+                      <ActionIcon title="Info">
+                        <Info className="h-4 w-4 text-gray-400" />
+                      </ActionIcon>
+                    </Tooltip>
+                  }
+                  depth={0}
+                />
+              </div>
+
+              {/* Themes under pillar */}
+              {pOpen &&
+                pThemes.map((theme) => {
+                  const tOpen = !!openThemes[theme.id];
+                  const tSubs = subthemesByTheme.get(theme.id) ?? [];
+                  return (
+                    <div key={theme.id} className="ml-6 py-2">
+                      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+                        <Caret
+                          open={tOpen}
+                          onToggle={() => toggleTheme(theme.id)}
+                          isLeaf={tSubs.length === 0}
+                        />
+                        <Row
+                          tag={<Tag color="green">Theme</Tag>}
+                          code={theme.code}
+                          name={theme.name}
+                          description={theme.description ?? ""}
+                          right={
+                            <Tooltip content="Theme info">
+                              <ActionIcon title="Info">
+                                <Info className="h-4 w-4 text-gray-400" />
+                              </ActionIcon>
+                            </Tooltip>
+                          }
+                          depth={1}
+                        />
+                      </div>
+
+                      {/* Subthemes under theme */}
+                      {tOpen &&
+                        tSubs.map((sub) => (
+                          <div key={sub.id} className="ml-6 py-1">
+                            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+                              {/* leaf rows get an invisible caret placeholder to keep columns aligned */}
+                              <div className="h-6 w-6" />
+
+                              <Row
+                                tag={<Tag color="red">Subtheme</Tag>}
+                                code={sub.code}
+                                name={sub.name}
+                                description={sub.description ?? ""}
+                                right={
+                                  <Tooltip content="Subtheme info">
+                                    <ActionIcon title="Info">
+                                      <Info className="h-4 w-4 text-gray-400" />
+                                    </ActionIcon>
+                                  </Tooltip>
+                                }
+                                depth={2}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  );
+                })}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
