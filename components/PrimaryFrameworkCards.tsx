@@ -93,10 +93,26 @@ export default function PrimaryFrameworkCards({
                         <div>{actions}</div>
                       </div>
 
-                      {/* Subthemes (placeholder for now) */}
+                      {/* Subthemes */}
                       {open[`theme-${theme.id}`] && (
-                        <div className="ml-6 text-gray-500 italic">
-                          ⚠ Subthemes not yet loaded
+                        <div className="ml-6 space-y-1 border-l pl-4">
+                          {theme.subthemes && theme.subthemes.length > 0 ? (
+                            theme.subthemes.map((subtheme) => (
+                              <div
+                                key={subtheme.id}
+                                className="flex items-center gap-2 rounded border bg-gray-100 px-3 py-1 text-sm"
+                              >
+                                <span className="rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800">
+                                  Subtheme {subtheme.sort_order}
+                                </span>
+                                <span>{subtheme.name}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-gray-500 italic">
+                              ⚠ No subthemes linked to this theme
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
