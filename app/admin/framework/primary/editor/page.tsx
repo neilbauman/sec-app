@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import type { Pillar, Theme } from "@/types/framework";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function Page() {
   const cookieStore = await cookies();
@@ -24,7 +24,7 @@ export default async function Page() {
     }
   );
 
-  // Step 1: Fetch pillars
+  // Fetch pillars
   const { data: pillars, error: pillarsError } = await supabase
     .from("pillars")
     .select("id, code, name, description, sort_order")
@@ -34,7 +34,7 @@ export default async function Page() {
     console.error("Supabase error fetching pillars:", pillarsError.message);
   }
 
-  // Step 2: Fetch themes
+  // Fetch themes
   const { data: themes, error: themesError } = await supabase
     .from("themes")
     .select("id, code, name, description, sort_order, pillar_id")
@@ -44,15 +44,32 @@ export default async function Page() {
     console.error("Supabase error fetching themes:", themesError.message);
   }
 
-  // Step 3: Attach themes to pillars manually
+  // Fetch subthemes
+  const { data: subthemes, error: subthemesError } = await supabase
+    .from("subthemes")
+    .select("id, code, name, description, sort_order, theme_id")
+    .order("sort_order", { ascending: true });
+
+  if (subthemesError) {
+    console.error("Supabase error fetching subthemes:", subthemesError.message);
+  }
+
+  // Merge data: attach themes → pillars, then subthemes → themes
   const enrichedPillars =
     pillars?.map((pillar) => ({
       ...pillar,
-      themes: (themes ?? []).filter((t) => t.pillar_id === pillar.id),
+      themes: (themes ?? [])
+        .filter((t) => t.pillar_id === pillar.id)
+        .map((theme) => ({
+          ...theme,
+          subthemes: (subthemes ?? []).filter(
+            (s) => s.theme_id === theme.id
+          ),
+        })),
     })) ?? [];
 
   console.log(
-    "Merged pillars + themes:",
+    "Merged pillars + themes + subthemes:",
     JSON.stringify(enrichedPillars, null, 2)
   );
 
@@ -70,7 +87,11 @@ export default async function Page() {
       <div>
         <PrimaryFrameworkCards
           defaultOpen={false}
-          pillars={enrichedPillars as (Pillar & { themes?: Theme[] })[]}
+          pillars={
+            enrichedPillars as (Pillar & {
+              themes?: (Theme & { subthemes?: Subtheme[] })[];
+            })[]
+          }
           actions={<></>}
         />
       </div>
