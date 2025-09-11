@@ -6,13 +6,15 @@ import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
+  const cookieStore = await cookies(); // FIX: cookies() is async in Next.js 15
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          return cookies().get(name)?.value; // FIXED: call cookies() directly
+          return cookieStore.get(name)?.value; // works now
         },
         set() {
           // no-op for server component
