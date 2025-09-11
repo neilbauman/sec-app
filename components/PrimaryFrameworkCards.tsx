@@ -1,149 +1,157 @@
+// /components/PrimaryFrameworkCards.tsx
 "use client";
 
-import * as React from "react";
-import { motion } from "framer-motion";
-import { ChevronRight, PenSquare, Trash2, Plus } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, ChevronRight, SquarePen, Trash2, Plus } from "lucide-react";
 import { Tag, ActionIcon } from "@/lib/ui";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
+
+type NestedPillar = Pillar & {
+  themes?: (Theme & { subthemes?: Subtheme[] })[];
+};
 
 export function PrimaryFrameworkCards({
   pillars,
   defaultOpen = false,
   actions,
 }: {
-  pillars: Pillar[];
+  pillars: NestedPillar[];
   defaultOpen?: boolean;
   actions?: React.ReactNode;
 }) {
-  return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[800px]">
-        {/* Table headers */}
-        <div className="grid grid-cols-[1fr,100px,100px] items-center gap-4 border-b px-2 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          <div>Name / Description</div>
-          <div className="text-center">Sort Order</div>
-          <div className="text-center">Actions</div>
-        </div>
+  const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
 
-        <div className="divide-y">
+  const toggle = (id: string) => {
+    setOpenPillars((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  return (
+    <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+      <table className="w-full border-collapse">
+        <thead className="bg-gray-50 text-left text-sm font-medium text-gray-600">
+          <tr>
+            <th className="px-4 py-3">Name / Description</th>
+            <th className="px-4 py-3 w-28">Sort Order</th>
+            <th className="px-4 py-3 w-28">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y text-sm text-gray-800">
           {pillars.map((pillar) => (
-            <FrameworkRow
-              key={pillar.id}
-              level="pillar"
-              code={pillar.code}
-              label={pillar.name}
-              description={pillar.description}
-              sortOrder={pillar.sort_order}
-              defaultOpen={defaultOpen}
-              childrenData={pillar.themes}
-              actions={actions}
-            />
+            <>
+              {/* Pillar row */}
+              <tr key={pillar.id} className="align-top">
+                <td className="px-4 py-3">
+                  <div className="flex items-start gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggle(pillar.id)}
+                      className="mt-0.5"
+                    >
+                      {openPillars[pillar.id] ? (
+                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-gray-500" />
+                      )}
+                    </button>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Tag color="blue">Pillar</Tag>
+                        <span className="text-xs text-gray-500">{pillar.code}</span>
+                        <span className="font-medium">{pillar.name}</span>
+                      </div>
+                      {pillar.description && (
+                        <p className="text-xs text-gray-500">{pillar.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3">{pillar.sort_order}</td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-2">
+                    <ActionIcon disabled>
+                      <SquarePen className="h-4 w-4" />
+                    </ActionIcon>
+                    <ActionIcon disabled>
+                      <Trash2 className="h-4 w-4" />
+                    </ActionIcon>
+                    <ActionIcon disabled>
+                      <Plus className="h-4 w-4" />
+                    </ActionIcon>
+                  </div>
+                </td>
+              </tr>
+
+              {/* Themes under this pillar */}
+              {openPillars[pillar.id] &&
+                pillar.themes?.map((theme) => (
+                  <tr key={theme.id} className="align-top bg-gray-50">
+                    <td className="px-10 py-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Tag color="green">Theme</Tag>
+                          <span className="text-xs text-gray-500">{theme.code}</span>
+                          <span className="font-medium">{theme.name}</span>
+                        </div>
+                        {theme.description && (
+                          <p className="text-xs text-gray-500">{theme.description}</p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-2">{theme.sort_order}</td>
+                    <td className="px-4 py-2">
+                      <div className="flex gap-2">
+                        <ActionIcon disabled>
+                          <SquarePen className="h-4 w-4" />
+                        </ActionIcon>
+                        <ActionIcon disabled>
+                          <Trash2 className="h-4 w-4" />
+                        </ActionIcon>
+                        <ActionIcon disabled>
+                          <Plus className="h-4 w-4" />
+                        </ActionIcon>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+
+              {/* Subthemes under each theme */}
+              {openPillars[pillar.id] &&
+                pillar.themes?.flatMap((theme) =>
+                  theme.subthemes?.map((subtheme) => (
+                    <tr key={subtheme.id} className="align-top">
+                      <td className="px-16 py-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Tag color="red">Subtheme</Tag>
+                            <span className="text-xs text-gray-500">{subtheme.code}</span>
+                            <span className="font-medium">{subtheme.name}</span>
+                          </div>
+                          {subtheme.description && (
+                            <p className="text-xs text-gray-500">{subtheme.description}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2">{subtheme.sort_order}</td>
+                      <td className="px-4 py-2">
+                        <div className="flex gap-2">
+                          <ActionIcon disabled>
+                            <SquarePen className="h-4 w-4" />
+                          </ActionIcon>
+                          <ActionIcon disabled>
+                            <Trash2 className="h-4 w-4" />
+                          </ActionIcon>
+                          <ActionIcon disabled>
+                            <Plus className="h-4 w-4" />
+                          </ActionIcon>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+            </>
           ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FrameworkRow<
-  T extends { id: string; code: string; name: string; description: string | null; sort_order: number }
->({
-  level,
-  code,
-  label,
-  description,
-  sortOrder,
-  defaultOpen,
-  childrenData,
-  actions,
-}: {
-  level: "pillar" | "theme" | "subtheme";
-  code: string;
-  label: string;
-  description: string | null;
-  sortOrder: number;
-  defaultOpen?: boolean;
-  childrenData?: T[];
-  actions?: React.ReactNode;
-}) {
-  const [open, setOpen] = React.useState(defaultOpen);
-
-  const color =
-    level === "pillar" ? "blue" : level === "theme" ? "green" : "red";
-
-  return (
-    <div className="grid grid-cols-[1fr,100px,100px] items-center gap-4 px-2 py-2 text-sm">
-      {/* Name / Description cell */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          {childrenData && childrenData.length > 0 && (
-            <button
-              onClick={() => setOpen(!open)}
-              className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-gray-100"
-            >
-              <ChevronRight
-                className={`h-4 w-4 transition-transform ${
-                  open ? "rotate-90" : ""
-                }`}
-              />
-            </button>
-          )}
-          <Tag color={color}>{level}</Tag>
-          <span className="text-xs text-gray-400">{code}</span>
-          <span className="font-medium">{label}</span>
-        </div>
-        {description && (
-          <div className="ml-8 text-xs text-gray-500">{description}</div>
-        )}
-      </div>
-
-      {/* Sort Order */}
-      <div className="text-center text-sm text-gray-700">{sortOrder}</div>
-
-      {/* Actions */}
-      <div className="flex justify-center gap-2">
-        <ActionIcon title="Edit" disabled>
-          <PenSquare className="h-4 w-4" />
-        </ActionIcon>
-        <ActionIcon title="Delete" disabled>
-          <Trash2 className="h-4 w-4" />
-        </ActionIcon>
-        <ActionIcon title="Add" disabled>
-          <Plus className="h-4 w-4" />
-        </ActionIcon>
-      </div>
-
-      {/* Nested children */}
-      {childrenData && open && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="col-span-3 ml-6 border-l pl-4"
-        >
-          {childrenData.map((child) => (
-            <FrameworkRow
-              key={child.id}
-              level={
-                level === "pillar"
-                  ? "theme"
-                  : level === "theme"
-                  ? "subtheme"
-                  : "subtheme"
-              }
-              code={child.code}
-              label={child.name}
-              description={child.description}
-              sortOrder={child.sort_order}
-              defaultOpen={defaultOpen}
-              // @ts-expect-error narrowing hierarchy
-              childrenData={child.themes || child.subthemes}
-              actions={actions}
-            />
-          ))}
-        </motion.div>
-      )}
+        </tbody>
+      </table>
     </div>
   );
 }
