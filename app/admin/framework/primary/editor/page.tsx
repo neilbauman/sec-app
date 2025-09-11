@@ -25,7 +25,7 @@ export default async function Page() {
     }
   );
 
-  // Fetch nested data in one call
+  // Fetch nested data in one query
   const { data: pillars } = await supabase
     .from("pillars")
     .select(`
@@ -56,9 +56,11 @@ export default async function Page() {
       <div>
         <PrimaryFrameworkCards
           defaultOpen={false}
-          pillars={(pillars ?? []) as Pillar[]}
-          themes={[] as Theme[]}      // not needed separately, they’re nested under pillars
-          subthemes={[] as Subtheme[]} // not needed separately, they’re nested under themes
+          pillars={
+            (pillars ?? []) as (Pillar & {
+              themes: (Theme & { subthemes: Subtheme[] })[];
+            })[]
+          }
           actions={<></>}
         />
       </div>
