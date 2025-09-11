@@ -1,9 +1,10 @@
+// /components/PrimaryFrameworkCards.tsx
 "use client";
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Trash2, Pencil, Plus } from "lucide-react";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
-import { Tag, ActionIcon, cn } from "@/lib/ui";
+import { Tag, ActionIcon } from "@/lib/ui";
 
 interface Props {
   pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
@@ -15,7 +16,7 @@ export function PrimaryFrameworkCards({ pillars, defaultOpen = false }: Props) {
   if (!pillars || pillars.length === 0) {
     return (
       <div className="rounded-md border bg-white p-4 text-sm text-gray-500">
-        No pillars returned from Supabase.
+        No framework data available.
       </div>
     );
   }
@@ -123,7 +124,7 @@ function FrameworkRow({
         </td>
       </tr>
 
-      {/* Render children */}
+      {/* Children rows */}
       {open &&
         children?.map((child) => (
           <FrameworkRow
