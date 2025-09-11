@@ -6,7 +6,7 @@ import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
-  const cookieStore = await cookies(); // FIX: cookies() is async in Next.js 15
+  const cookieStore = await cookies(); // ✅ FIX: Next.js 15 requires await
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,7 +14,7 @@ async function getData() {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value; // works now
+          return cookieStore.get(name)?.value;
         },
         set() {
           // no-op for server component
@@ -26,7 +26,6 @@ async function getData() {
     }
   );
 
-  // Fetch full hierarchy
   const { data: pillars } = await supabase
     .from("pillars")
     .select(
@@ -52,7 +51,6 @@ export default async function PrimaryEditorPage() {
 
   return (
     <main className="min-h-dvh bg-gray-50">
-      {/* Header with breadcrumb + CSV actions */}
       <PageHeader
         title="Primary Framework Editor"
         breadcrumbItems={[
@@ -63,7 +61,6 @@ export default async function PrimaryEditorPage() {
         ]}
         actions={<CsvActions disableImport disableExport />}
       />
-
       <div className="mx-auto max-w-6xl px-4 py-6">
         <PrimaryFrameworkCards
           pillars={pillars}
