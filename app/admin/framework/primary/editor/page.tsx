@@ -8,7 +8,8 @@ async function getData(): Promise<{
   pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
   error?: string;
 }> {
-  const cookieStore = cookies(); // ✅ sync, no await
+  // ✅ Next.js 15 -> cookies() is async
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
