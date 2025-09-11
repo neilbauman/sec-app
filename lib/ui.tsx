@@ -1,36 +1,81 @@
 // lib/ui.tsx
-"use client";
-
-import Link from "next/link";
-import { Info, Upload, Download } from "lucide-react";
 import * as React from "react";
+import Link from "next/link";
+import { ArrowUpDown } from "lucide-react";
 
-// ---------- Small helpers ----------
-export function cn(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(" ");
+/** ----------------------------------------------------------------
+ *  Classnames helper (accepts strings OR { "class": boolean } maps)
+ *  ---------------------------------------------------------------- */
+type ClassValue =
+  | string
+  | number
+  | null
+  | undefined
+  | false
+  | Record<string, boolean>;
+
+export function cn(...inputs: ClassValue[]): string {
+  const parts: string[] = [];
+  for (const i of inputs) {
+    if (!i) continue;
+    if (typeof i === "string" || typeof i === "number") {
+      parts.push(String(i));
+    } else if (typeof i === "object") {
+      for (const [k, v] of Object.entries(i)) if (v) parts.push(k);
+    }
+  }
+  return parts.join(" ");
 }
 
-// ---------- Tag (color-coded chips for hierarchy) ----------
-type TagColor = "blue" | "green" | "red" | "gray";
+/** ---------------------------------------------------
+ *  Small primitives we’ll reuse everywhere
+ *  --------------------------------------------------- */
+export function Card({
+  children,
+  className,
+}: React.PropsWithChildren<{ className?: string }>) {
+  return (
+    <div className={cn("rounded-2xl border bg-white shadow-sm", className)}>
+      {children}
+    </div>
+  );
+}
+
+export function CardHeader({
+  children,
+  className,
+}: React.PropsWithChildren<{ className?: string }>) {
+  return (
+    <div className={cn("border-b px-4 py-3", className)}>{children}</div>
+  );
+}
+
+export function CardBody({
+  children,
+  className,
+}: React.PropsWithChildren<{ className?: string }>) {
+  return <div className={cn("px-4 py-4", className)}>{children}</div>;
+}
+
+/** Tag with fixed color palette used in hierarchy */
 export function Tag({
   children,
   color = "gray",
   className,
-}: {
-  children: React.ReactNode;
-  color?: TagColor;
+}: React.PropsWithChildren<{
+  color?: "blue" | "green" | "red" | "gray";
   className?: string;
-}) {
-  const palette: Record<TagColor, string> = {
-    blue: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
-    green: "bg-green-50 text-green-700 ring-1 ring-green-200",
-    red: "bg-red-50 text-red-700 ring-1 ring-red-200",
-    gray: "bg-gray-50 text-gray-700 ring-1 ring-gray-200",
+}>) {
+  const palette: Record<string, string> = {
+    blue: "bg-blue-50 text-blue-700 ring-blue-200",
+    green: "bg-green-50 text-green-700 ring-green-200",
+    red: "bg-red-50 text-red-700 ring-red-200",
+    gray: "bg-gray-50 text-gray-700 ring-gray-200",
   };
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded px-2 py-0.5 text-[11px] font-medium ring-1",
         palette[color],
         className
       )}
@@ -40,65 +85,44 @@ export function Tag({
   );
 }
 
-// ---------- Simple Card (optional wrapper) ----------
-export function Card({
+/** Monospace “code” chip used to the RIGHT of the tag */
+export function CodeChip({
   children,
   className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+}: React.PropsWithChildren<{ className?: string }>) {
   return (
-    <div className={cn("rounded-xl border bg-white shadow-sm", className)}>
+    <span
+      className={cn(
+        "ml-2 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-600",
+        className
+      )}
+    >
       {children}
-    </div>
-  );
-}
-
-// ---------- Tooltip (very small, no portal) ----------
-export function Tooltip({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <span className="relative inline-flex">
-      <span className="group inline-flex">{children}</span>
-      <span
-        className={cn(
-          "pointer-events-none absolute left-1/2 z-10 hidden -translate-x-1/2 translate-y-2 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs text-white group-hover:block",
-          className
-        )}
-      >
-        {label}
-      </span>
     </span>
   );
 }
 
-// ---------- ActionIcon ----------
+/** Icon button w/tooltip-friendly wrapper */
 export function ActionIcon({
   children,
-  onClick,
-  "aria-label": ariaLabel,
   className,
-}: {
-  children: React.ReactNode;
+  onClick,
+  "aria-label": aria,
+  disabled,
+}: React.PropsWithChildren<{
+  className?: string;
   onClick?: () => void;
   "aria-label"?: string;
-  className?: string;
-}) {
+  disabled?: boolean;
+}>) {
   return (
     <button
       type="button"
-      aria-label={ariaLabel}
+      aria-label={aria}
+      disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-md border bg-white text-gray-600 hover:bg-gray-50",
+        "inline-flex h-8 w-8 items-center justify-center rounded hover:bg-gray-50 disabled:opacity-50",
         className
       )}
     >
@@ -107,66 +131,15 @@ export function ActionIcon({
   );
 }
 
-// ---------- Breadcrumb (rendered from items) ----------
-export function Breadcrumb({
-  items,
-  className,
-}: {
-  items: Array<{ label: string; href?: string }>;
-  className?: string;
-}) {
-  return (
-    <nav aria-label="Breadcrumb" className={cn("text-sm text-gray-500", className)}>
-      <ol className="flex items-center gap-2">
-        {items.map((it, i) => {
-          const last = i === items.length - 1;
-          return (
-            <li key={`${it.label}-${i}`} className="flex items-center gap-2">
-              {it.href && !last ? (
-                <Link href={it.href} className="hover:text-gray-700">
-                  {it.label}
-                </Link>
-              ) : (
-                <span className="text-gray-700">{it.label}</span>
-              )}
-              {!last && <span className="text-gray-300">/</span>}
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
-  );
+/** Ultra-lightweight tooltip (title attribute) */
+export function Tooltip({
+  content,
+  children,
+}: React.PropsWithChildren<{ content: string }>) {
+  return React.cloneElement(children as React.ReactElement, { title: content });
 }
 
-// ---------- PageHeader (site title + breadcrumb + page title + actions) ----------
-export function PageHeader({
-  title,
-  breadcrumb,
-  actions,
-}: {
-  title: string;
-  breadcrumb?: React.ReactNode;
-  actions?: React.ReactNode;
-}) {
-  return (
-    <header className="sticky top-0 z-10 mb-4 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50">
-      <div className="mx-auto max-w-6xl px-4 py-4">
-        <div className="mb-1 text-xs font-semibold tracking-wide text-gray-500">
-          Shelter and Settlements Vulnerability Index
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            {breadcrumb}
-            <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
-          </div>
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
-        </div>
-      </div>
-    </header>
-  );
-}
-
-// ---------- CSV Actions (placeholders; wire up later) ----------
+/** CSV action placeholders */
 export function CsvActions({
   onImport,
   onExport,
@@ -182,29 +155,89 @@ export function CsvActions({
 }) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <ActionIcon
-        aria-label="Import CSV"
+      <button
+        type="button"
+        disabled={disableImport}
         onClick={onImport}
-        className={disableImport ? "opacity-50 cursor-not-allowed" : ""}
+        className="rounded border px-2.5 py-1 text-sm hover:bg-gray-50 disabled:opacity-50"
       >
-        <Tooltip label="Import CSV">
-          <Upload className="h-4 w-4" />
-        </Tooltip>
-      </ActionIcon>
-      <ActionIcon
-        aria-label="Export CSV"
+        Import CSV
+      </button>
+      <button
+        type="button"
+        disabled={disableExport}
         onClick={onExport}
-        className={disableExport ? "opacity-50 cursor-not-allowed" : ""}
+        className="rounded border px-2.5 py-1 text-sm hover:bg-gray-50 disabled:opacity-50"
       >
-        <Tooltip label="Export CSV">
-          <Download className="h-4 w-4" />
-        </Tooltip>
-      </ActionIcon>
-      <Tooltip label="More info">
-        <span className="inline-flex h-8 w-8 items-center justify-center text-gray-400">
-          <Info className="h-4 w-4" />
-        </span>
-      </Tooltip>
+        Export CSV
+      </button>
     </div>
   );
+}
+
+/** Breadcrumb as list of {label, href?} */
+export function Breadcrumb({
+  items,
+  className,
+}: {
+  items: { label: string; href?: string }[];
+  className?: string;
+}) {
+  return (
+    <nav className={cn("text-sm text-gray-600", className)} aria-label="Breadcrumb">
+      <ol className="flex items-center gap-2">
+        {items.map((it, i) => {
+          const last = i === items.length - 1;
+          const node = it.href ? (
+            <Link className="hover:underline" href={it.href}>
+              {it.label}
+            </Link>
+          ) : (
+            <span className="text-gray-800">{it.label}</span>
+          );
+        return (
+          <li key={`${it.label}-${i}`} className="flex items-center gap-2">
+            {node}
+            {!last && <span className="text-gray-300">/</span>}
+          </li>
+        );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+/** Shared page header (locks header styles everywhere) */
+export function PageHeader({
+  title,
+  breadcrumb,
+  actions,
+}: {
+  title: string;
+  breadcrumb?: React.ReactNode;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <header className="sticky top-0 z-10 mb-4 border-b bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/50">
+      <div className="mx-auto max-w-6xl px-4 py-4">
+        <div className="mb-1 text-xs font-semibold tracking-wide text-gray-500">
+          Shelter and Settlements Vulnerability Index
+        </div>
+
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            {breadcrumb ? <div className="mb-2">{breadcrumb}</div> : null}
+            <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+          </div>
+
+          {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/** Small sort icon (caret stays as-is per your request) */
+export function SortIcon({ className }: { className?: string }) {
+  return <ArrowUpDown className={cn("h-4 w-4 text-gray-400", className)} />;
 }
