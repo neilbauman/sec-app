@@ -26,7 +26,7 @@ export default async function Page() {
   );
 
   // Fetch nested data in one query
-  const { data: pillars } = await supabase
+  const { data: pillars, error } = await supabase
     .from("pillars")
     .select(`
       id,
@@ -50,6 +50,27 @@ export default async function Page() {
       )
     `)
     .order("sort_order", { ascending: true });
+
+  // Debugging: log to server console (check Vercel logs after deploy)
+  console.log("Fetched pillars:", JSON.stringify(pillars, null, 2));
+  if (error) {
+    console.error("Supabase error fetching pillars:", error.message);
+  }
+
+  if (!pillars || pillars.length === 0) {
+    return (
+      <main className="p-4">
+        <h2 className="text-xl font-semibold mb-4">Primary Framework</h2>
+        <p className="text-red-600 font-medium">
+          ⚠ No pillars found in the database.
+        </p>
+        <p className="text-gray-500 text-sm mt-2">
+          Check if your pillars table has data and that themes/subthemes are
+          linked via UUIDs.
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main className="p-4">
