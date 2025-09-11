@@ -1,36 +1,26 @@
-// types/framework.ts
+// /types/framework.ts
 export type Pillar = {
+  id: string;
   code: string;
   name: string;
-  description?: string;
-  // make sorting fields optional so either works
-  sort?: number | string;
-  sort_order?: number | string;
+  description?: string | null;
+  sort_order?: number | null;
 };
 
 export type Theme = {
+  id: string;
+  pillar_id: string; // FK to Pillar.id
   code: string;
   name: string;
-  description?: string;
-  pillar_code?: string;   // preferred snake_case
-  parent_code?: string;   // fallback if your data uses this
-  sort?: number | string;
-  sort_order?: number | string;
+  description?: string | null;
+  sort_order?: number | null;
 };
 
 export type Subtheme = {
+  id: string;
+  theme_id: string; // FK to Theme.id
   code: string;
   name: string;
-  description?: string;
-  theme_code?: string;    // preferred snake_case
-  parent_code?: string;   // fallback if your data uses this
-  pillar_code?: string;   // sometimes present
-  sort?: number | string;
-  sort_order?: number | string;
-};
-
-export type FrameworkList = {
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
+  description?: string | null;
+  sort_order?: number | null;
 };

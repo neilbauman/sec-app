@@ -2,7 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; }
+:root { color-scheme: light;
+        --card-border: 1px solid #e5e7eb; /* gray-200 */
+  --card-radius: 0.75rem;           /* rounded-xl */
+      }
 body { @apply bg-slate-50 text-slate-900; }
 a { @apply text-indigo-600 hover:text-indigo-800 underline; }
 .container { @apply mx-auto max-w-5xl p-6; }
