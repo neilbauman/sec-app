@@ -81,4 +81,10 @@ export default async function PrimaryEditorPage() {
           />
         ) : (
           <div className="rounded-md border bg-white p-4 text-sm text-gray-500">
-            No pillars returned from
+            No pillars returned from Supabase.
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
