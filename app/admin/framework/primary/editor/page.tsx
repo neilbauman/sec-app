@@ -8,7 +8,8 @@ import { Pillar } from "@/types/framework";
 
 async function getData(): Promise<{ pillars: Pillar[]; error?: string }> {
   try {
-    const cookieStore = cookies();
+    // ✅ cookies() must be awaited in Next.js 15
+    const cookieStore = await cookies();
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
