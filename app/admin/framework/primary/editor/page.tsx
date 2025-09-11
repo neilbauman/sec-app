@@ -1,14 +1,14 @@
 // app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
-import { cookies as nextCookies } from "next/headers";
+import { cookies } from "next/headers";
 import { PageHeader, CsvActions } from "@/lib/ui";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
   try {
-    // ✅ Always await cookies() — returns a *synchronous* object but wrapped in a promise
-    const cookieStore = await nextCookies();
+    // ✅ cookies() is synchronous in Next.js 15
+    const cookieStore = cookies();
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,17 +16,13 @@ async function getData() {
       {
         cookies: {
           get(name: string) {
-            try {
-              return cookieStore.get(name)?.value;
-            } catch {
-              return undefined;
-            }
+            return cookieStore.get(name)?.value;
           },
           set() {
-            /* no-op on server */
+            /* server no-op */
           },
           remove() {
-            /* no-op on server */
+            /* server no-op */
           },
         },
       }
