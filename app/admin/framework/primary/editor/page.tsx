@@ -1,13 +1,14 @@
 // app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { PageHeader, CsvActions } from "@/lib/ui";
 import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
-async function getData(): Promise<{ pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[]; error?: string }> {
-  // ✅ Correct usage: no await
-  const cookieStore = cookies();
+async function getData(): Promise<{
+  pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
+  error?: string;
+}> {
+  const cookieStore = cookies(); // ✅ sync, no await
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,67 +18,28 @@ async function getData(): Promise<{ pillars: (Pillar & { themes: (Theme & { subt
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set() {
-          // no-op server
-        },
-        remove() {
-          // no-op server
-        },
+        set() {}, // server no-op
+        remove() {}, // server no-op
       },
     }
   );
 
-  const { data, error } = await supabase.from("pillars").select(`
-    id,
-    name,
-    description,
-    code,
-    themes (
-      id,
-      name,
-      description,
-      code,
-      subthemes (
-        id,
-        name,
-        description,
-        code
-      )
-    )
-  `);
+  const { data, error } = await supabase
+    .from("pillars")
+    .select("*, themes(*, subthemes(*))");
 
-  if (error) {
-    return { pillars: [], error: error.message };
-  }
-
-  // Normalize subthemes
-  const pillars = (data as Pillar[]).map((pillar) => ({
-    ...pillar,
-    themes: pillar.themes.map((theme: Theme) => ({
-      ...theme,
-      subthemes: theme.subthemes ?? [],
-    })),
-  }));
-
-  return { pillars };
+  return {
+    pillars: (data as (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[]) || [],
+    error: error?.message,
+  };
 }
 
-export default async function PrimaryFrameworkEditorPage() {
+export default async function Page() {
   const { pillars, error } = await getData();
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Primary Framework Editor"
-        description="Manage pillars, themes, and subthemes"
-        actions={<CsvActions endpoint="/api/export/pillars" />}
-      />
-
-      {error ? (
-        <div className="text-red-500">Error loading pillars: {error}</div>
-      ) : (
-        <PrimaryFrameworkEditorClient pillars={pillars} />
-      )}
+    <div className="p-4">
+      <PrimaryFrameworkEditorClient pillars={pillars} error={error} />
     </div>
   );
 }
