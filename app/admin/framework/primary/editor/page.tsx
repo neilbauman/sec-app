@@ -1,8 +1,8 @@
-// app/admin/framework/primary/editor/page.tsx
-import Link from "next/link";
+// /app/admin/framework/primary/editor/page.tsx
 import { PageHeader, Breadcrumb, CsvActions } from "@/lib/ui";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import { fetchFrameworkList, type Pillar, type Theme, type Subtheme } from "@/lib/framework";
+import { fetchFrameworkList } from "@/lib/framework";
+import Link from "next/link";
 
 export default async function Page() {
   const data = await fetchFrameworkList();
@@ -12,23 +12,29 @@ export default async function Page() {
       <PageHeader
         title="Primary Framework Editor"
         breadcrumb={
-          <Breadcrumb items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Admin" }, { label: "Primary Editor" }]} />
+          <Breadcrumb
+            items={[
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Admin", href: "/admin" },
+              { label: "Framework", href: "/admin/framework" },
+              { label: "Primary", href: "/admin/framework/primary" },
+              { label: "Editor" },
+            ]}
+          />
         }
-        actions={<CsvActions disableExport disableImport />}
+        actions={<CsvActions disableImport disableExport />}
       />
 
       <div className="mx-auto max-w-6xl px-4 py-6">
         <PrimaryFrameworkCards
           defaultOpen={false}
-          pillars={data.pillars as Pillar[]}
-          themes={data.themes as Theme[]}
-          subthemes={data.subthemes as Subtheme[]}
-          actions={{}}
+          pillars={data.pillars}
+          themes={data.themes}
+          subthemes={data.subthemes}
         />
-
         <div className="mt-6 text-sm text-gray-600">
-          <Link className="hover:underline" href="/dashboard">
-            Back to Dashboard
+          <Link className="text-blue-600 hover:underline" href="/dashboard">
+            ← Back to Dashboard
           </Link>
         </div>
       </div>
