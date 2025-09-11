@@ -26,9 +26,9 @@ async function getData() {
     .from("pillars")
     .select(`
       id, name, code, description, sort_order,
-      themes:themes_pillar_id_fkey (   -- ✅ use correct FK constraint
+      themes (
         id, name, code, description, sort_order,
-        subthemes:fk_subthemes_theme ( -- ✅ use correct FK constraint
+        subthemes (
           id, name, code, description, sort_order
         )
       )
@@ -69,7 +69,9 @@ export default async function PrimaryEditorPage() {
 
         {pillars.length > 0 ? (
           <PrimaryFrameworkCards
-            pillars={pillars}
+            pillars={pillars as (Pillar & {
+              themes: (Theme & { subthemes: Subtheme[] })[];
+            })[]}
             defaultOpen={false}
             actions={
               <div className="text-sm text-gray-400">
