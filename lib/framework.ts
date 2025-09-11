@@ -1,13 +1,14 @@
-// lib/framework.ts
+// /lib/framework.ts
 import { createServerSupabase } from "@/lib/supabase-server";
 export type { Pillar, Theme, Subtheme } from "@/types/framework";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export async function fetchFrameworkList(): Promise<{
-  pillars: import("@/types/framework").Pillar[];
-  themes: import("@/types/framework").Theme[];
-  subthemes: import("@/types/framework").Subtheme[];
+  pillars: Pillar[];
+  themes: Theme[];
+  subthemes: Subtheme[];
 }> {
-  const supabase = createServerSupabase();
+  const supabase = await createServerSupabase();
 
   const { data: pillars } = await supabase
     .from("pillars")
@@ -16,17 +17,17 @@ export async function fetchFrameworkList(): Promise<{
 
   const { data: themes } = await supabase
     .from("themes")
-    .select("id, code, name, description, sort_order, pillar_id")
+    .select("id, pillar_id, code, name, description, sort_order")
     .order("sort_order", { ascending: true });
 
   const { data: subthemes } = await supabase
     .from("subthemes")
-    .select("id, code, name, description, sort_order, theme_id")
+    .select("id, theme_id, code, name, description, sort_order")
     .order("sort_order", { ascending: true });
 
   return {
-    pillars: pillars ?? [],
-    themes: themes ?? [],
-    subthemes: subthemes ?? [],
+    pillars: (pillars ?? []) as Pillar[],
+    themes: (themes ?? []) as Theme[],
+    subthemes: (subthemes ?? []) as Subtheme[],
   };
 }
