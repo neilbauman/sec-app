@@ -6,7 +6,7 @@ import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies(); // ✅ properly awaited
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,10 +17,10 @@ async function getData() {
           return cookieStore.get(name)?.value;
         },
         set() {
-          // server no-op
+          // no-op server side
         },
         remove() {
-          // server no-op
+          // no-op server side
         },
       },
     }
@@ -46,7 +46,12 @@ async function getData() {
     return { pillars: [], error: error.message };
   }
 
-  return { pillars: data as (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[], error: null };
+  return {
+    pillars: data as (Pillar & {
+      themes: (Theme & { subthemes: Subtheme[] })[];
+    })[],
+    error: null,
+  };
 }
 
 export default async function PrimaryFrameworkEditorPage() {
@@ -57,49 +62,61 @@ export default async function PrimaryFrameworkEditorPage() {
       <PageHeader
         title="Primary Framework Editor"
         breadcrumbItems={[
-          { title: "Home", href: "/" },
-          { title: "Admin", href: "/admin" },
-          { title: "Framework", href: "/admin/framework" },
-          { title: "Primary Editor", href: "/admin/framework/primary/editor" },
+          { label: "Home", href: "/" },
+          { label: "Admin", href: "/admin" },
+          { label: "Framework", href: "/admin/framework" },
+          { label: "Primary Editor", href: "/admin/framework/primary/editor" },
         ]}
         actions={<CsvActions />}
       />
 
-      {/* Debug Data */}
-      <section className="p-4">
-        <div className="mb-4 rounded border bg-white p-4">
-          <h2 className="mb-2 text-sm font-semibold text-gray-700">Debug Data</h2>
+      <div className="p-6 space-y-6">
+        {/* Debug Data */}
+        <div className="rounded-md border bg-white shadow-sm p-4">
+          <h2 className="text-sm font-semibold mb-2">Debug Data</h2>
           {error ? (
-            <div className="text-sm text-red-600">Supabase error: {error}</div>
+            <pre className="text-red-600">{error}</pre>
           ) : (
-            <pre className="overflow-x-auto rounded bg-gray-50 p-2 text-xs text-gray-700">
+            <pre className="text-xs text-gray-600 overflow-x-auto">
               {JSON.stringify(pillars, null, 2)}
             </pre>
           )}
         </div>
 
-        {/* Main Data */}
+        {/* Render Cards */}
         {pillars.length > 0 ? (
           <PrimaryFrameworkCards
             pillars={pillars}
             defaultOpen={false}
             actions={(item, level) => (
-              <div className="flex gap-2 justify-end text-sm text-gray-500">
-                {/* Replace these placeholders with real handlers */}
-                <button className="hover:text-blue-600">Edit</button>
-                <button className="hover:text-red-600">Delete</button>
-                {level !== "subtheme" && (
-                  <button className="hover:text-green-600">Add</button>
-                )}
+              <div className="flex gap-2">
+                <button
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                  onClick={() => console.log("Edit", level, item.id)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="text-red-600 hover:text-red-800 text-sm"
+                  onClick={() => console.log("Delete", level, item.id)}
+                >
+                  Delete
+                </button>
+                <button
+                  className="text-gray-600 hover:text-gray-800 text-sm"
+                  onClick={() => console.log("Add Child", level, item.id)}
+                >
+                  +
+                </button>
               </div>
             )}
           />
         ) : (
-          <div className="rounded border bg-white p-4 text-gray-500">
+          <div className="rounded-md border bg-white shadow-sm p-4 text-gray-500">
             No pillars returned from Supabase.
           </div>
         )}
-      </section>
+      </div>
     </main>
   );
 }
