@@ -1,110 +1,58 @@
 // /lib/ui.tsx
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { Download, Upload } from "lucide-react";
-import React from "react";
+import { cn } from "@/lib/utils";
 
-// ----------------------------------------------------
-// Page Header with Breadcrumb + optional actions
-// ----------------------------------------------------
-export function PageHeader({
-  title,
-  breadcrumbItems,
-  actions,
-}: {
-  title: string;
-  breadcrumbItems: { label: string; href?: string }[];
-  actions?: React.ReactNode;
-}) {
-  return (
-    <header className="mb-4 border-b border-gray-200 bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-        {/* Left: Breadcrumb + title */}
-        <div>
-          <Breadcrumb items={breadcrumbItems} />
-          <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
-        </div>
-
-        {/* Right: Actions (export, import, etc.) */}
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
-      </div>
-    </header>
-  );
-}
-
-// ----------------------------------------------------
-// Breadcrumbs
-// ----------------------------------------------------
-export function Breadcrumb({
-  items,
-}: {
-  items: { label: string; href?: string }[];
-}) {
-  return (
-    <nav className="text-sm text-gray-500">
-      <ol className="flex flex-wrap items-center gap-1">
-        {items.map((item, i) => (
-          <li key={i} className="flex items-center gap-1">
-            {item.href ? (
-              <Link href={item.href} className="hover:underline text-blue-600">
-                {item.label}
-              </Link>
-            ) : (
-              <span className="text-gray-700">{item.label}</span>
-            )}
-            {i < items.length - 1 && <span className="text-gray-400">/</span>}
-          </li>
-        ))}
-      </ol>
-    </nav>
-  );
-}
-
-// ----------------------------------------------------
-// Tag (colored labels for Pillar / Theme / Subtheme)
-// ----------------------------------------------------
+/* -------------------- Tag -------------------- */
 export function Tag({
-  color = "gray",
   children,
+  color = "gray",
 }: {
-  color?: "blue" | "green" | "red" | "gray";
   children: React.ReactNode;
+  color?: "blue" | "green" | "red" | "gray";
 }) {
-  const base =
-    "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium";
-  const colors: Record<string, string> = {
+  const colorClasses = {
     blue: "bg-blue-100 text-blue-800",
     green: "bg-green-100 text-green-800",
     red: "bg-red-100 text-red-800",
     gray: "bg-gray-100 text-gray-800",
   };
 
-  return <span className={cn(base, colors[color])}>{children}</span>;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
+        colorClasses[color]
+      )}
+    >
+      {children}
+    </span>
+  );
 }
 
-// ----------------------------------------------------
-// Icon Button for Actions (edit, delete, add...)
-// ----------------------------------------------------
+/* -------------------- Action Icon -------------------- */
 export function ActionIcon({
-  title,
   children,
-  onClick,
+  title,
   disabled,
+  onClick,
 }: {
-  title: string;
   children: React.ReactNode;
-  onClick?: () => void;
+  title: string;
   disabled?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       title={title}
-      onClick={onClick}
       disabled={disabled}
+      onClick={onClick}
       className={cn(
-        "rounded p-1 hover:bg-gray-100",
-        disabled && "cursor-not-allowed opacity-50"
+        "inline-flex h-8 w-8 items-center justify-center rounded-md border text-gray-500 hover:bg-gray-50",
+        disabled && "opacity-50 cursor-not-allowed"
       )}
     >
       {children}
@@ -112,9 +60,47 @@ export function ActionIcon({
   );
 }
 
-// ----------------------------------------------------
-// CSV Import/Export (placeholder)
-// ----------------------------------------------------
+/* -------------------- Page Header -------------------- */
+export function PageHeader({
+  title,
+  breadcrumbItems,
+  actions,
+}: {
+  title: string;
+  breadcrumbItems?: { label: string; href?: string }[];
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="border-b bg-white">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+          {breadcrumbItems && breadcrumbItems.length > 0 && (
+            <nav className="mt-1 text-sm text-gray-500">
+              {breadcrumbItems.map((item, i) => (
+                <React.Fragment key={i}>
+                  {item.href ? (
+                    <Link href={item.href} className="hover:underline">
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <span>{item.label}</span>
+                  )}
+                  {i < breadcrumbItems.length - 1 && (
+                    <span className="mx-1">/</span>
+                  )}
+                </React.Fragment>
+              ))}
+            </nav>
+          )}
+        </div>
+        {actions && <div className="flex items-center gap-2">{actions}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------- CSV Actions -------------------- */
 export function CsvActions({
   disableImport,
   disableExport,
@@ -123,24 +109,19 @@ export function CsvActions({
   disableExport?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex gap-2">
       {!disableImport && (
-        <ActionIcon title="Import CSV" disabled>
-          <Upload className="h-4 w-4 text-gray-500" />
-        </ActionIcon>
+        <button className="btn btn-secondary flex items-center gap-1">
+          <Upload className="h-4 w-4" />
+          Import CSV
+        </button>
       )}
       {!disableExport && (
-        <ActionIcon title="Export CSV" disabled>
-          <Download className="h-4 w-4 text-gray-500" />
-        </ActionIcon>
+        <button className="btn btn-primary flex items-center gap-1">
+          <Download className="h-4 w-4" />
+          Export CSV
+        </button>
       )}
     </div>
   );
-}
-
-// ----------------------------------------------------
-// Utility: cn (conditional classNames)
-// ----------------------------------------------------
-export function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(" ");
 }
