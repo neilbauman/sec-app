@@ -4,32 +4,7 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import { ChevronRight, PenSquare, Trash2, Plus } from "lucide-react";
 import { Tag, ActionIcon } from "@/lib/ui";
-
-type Subtheme = {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  sort_order: number;
-};
-
-type Theme = {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  sort_order: number;
-  subthemes?: Subtheme[];
-};
-
-type Pillar = {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  sort_order: number;
-  themes?: Theme[];
-};
+import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export function PrimaryFrameworkCards({
   pillars,
@@ -70,7 +45,9 @@ export function PrimaryFrameworkCards({
   );
 }
 
-function FrameworkRow<T extends { id: string; code: string; name: string; description: string | null; sort_order: number }>({
+function FrameworkRow<
+  T extends { id: string; code: string; name: string; description: string | null; sort_order: number }
+>({
   level,
   code,
   label,
