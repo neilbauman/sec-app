@@ -7,7 +7,7 @@ import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
   try {
-    // ✅ cookies() is synchronous in Next.js 15
+    // ✅ cookies() is synchronous
     const cookieStore = cookies();
 
     const supabase = createServerClient(
@@ -16,13 +16,13 @@ async function getData() {
       {
         cookies: {
           get(name: string) {
-            return cookieStore.get(name)?.value;
+            return cookieStore.get(name)?.value; // ✅ works, not a Promise
           },
           set() {
-            /* server no-op */
+            // server no-op
           },
           remove() {
-            /* server no-op */
+            // server no-op
           },
         },
       }
