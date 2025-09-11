@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    typedRoutes: true
-    serverActions: { enabled: true }
-  }
+    serverActions: true,
+  },
 };
+
 export default nextConfig;
