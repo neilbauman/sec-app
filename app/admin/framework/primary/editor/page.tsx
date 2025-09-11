@@ -1,12 +1,13 @@
 // /app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
-import { cookies as getCookies } from "next/headers";
+import { cookies } from "next/headers";
 import { PageHeader, Breadcrumb, CsvActions } from "@/lib/ui";
 import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
-  const cookieStore = await getCookies(); // FIX: cookies() is async in Vercel
+  // ✅ FIX: cookies() must be awaited once here
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,7 +15,7 @@ async function getData() {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          return cookieStore.get(name)?.value; // use cookieStore reference
         },
         set() {
           // no-op on server
