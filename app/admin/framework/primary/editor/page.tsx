@@ -1,10 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import type { Pillar } from "@/types/framework";
+import type { Pillar, Theme } from "@/types/framework";
 
 export default async function Page() {
-  // Next.js 15 requires awaiting cookies()
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -25,29 +24,35 @@ export default async function Page() {
     }
   );
 
-  // ✅ Step 1: Flat query (no nesting)
+  // ✅ Step 2: Fetch pillars + themes explicitly via FK
   const { data: pillars, error } = await supabase
     .from("pillars")
-    .select("id, code, name, description, sort_order")
+    .select(`
+      id,
+      code,
+      name,
+      description,
+      sort_order,
+      themes:themes!fk_themes_pillar (
+        id,
+        code,
+        name,
+        description,
+        sort_order
+      )
+    `)
     .order("sort_order", { ascending: true });
 
-  // Debug logs
-  console.log("Fetched pillars:", JSON.stringify(pillars, null, 2));
+  console.log("Fetched pillars with themes:", JSON.stringify(pillars, null, 2));
   if (error) {
-    console.error("Supabase error fetching pillars:", error.message);
+    console.error("Supabase error fetching pillars/themes:", error.message);
   }
 
   if (!pillars || pillars.length === 0) {
     return (
       <main className="p-4">
         <h2 className="text-xl font-semibold mb-4">Primary Framework</h2>
-        <p className="text-red-600 font-medium">
-          ⚠ No pillars found in the database.
-        </p>
-        <p className="text-gray-500 text-sm mt-2">
-          Check if your pillars table has data and that themes/subthemes are
-          linked via UUIDs.
-        </p>
+        <p className="text-red-600 font-medium">⚠ No pillars found.</p>
       </main>
     );
   }
@@ -57,8 +62,9 @@ export default async function Page() {
       <div>
         <PrimaryFrameworkCards
           defaultOpen={false}
-          // For now, pass only pillars (without themes/subthemes)
-          pillars={pillars as Pillar[]}
+          pillars={
+            (pillars ?? []) as (Pillar & { themes?: Theme[] })[]
+          }
           actions={<></>}
         />
       </div>
