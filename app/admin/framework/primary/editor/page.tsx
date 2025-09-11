@@ -26,9 +26,9 @@ async function getData() {
     .from("pillars")
     .select(`
       id, name, code, description, sort_order,
-      themes:pillar_id (
+      themes:themes_pillar_id_fkey (  -- 👈 replace with actual FK name
         id, name, code, description, sort_order,
-        subthemes:theme_id (
+        subthemes:subthemes_theme_id_fkey ( -- 👈 replace with actual FK name
           id, name, code, description, sort_order
         )
       )
