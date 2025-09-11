@@ -1,4 +1,3 @@
-// /app/admin/framework/primary/editor/page.tsx
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { PageHeader, CsvActions } from "@/lib/ui";
@@ -6,7 +5,7 @@ import { PrimaryFrameworkCards } from "@/components/PrimaryFrameworkCards";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 async function getData() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,24 +21,31 @@ async function getData() {
     }
   );
 
-  const { data: pillars, error } = await supabase
+  const { data, error } = await supabase
     .from("pillars")
     .select(`
       id, name, code, description, sort_order,
-      themes:themes!themes_pillar_id_fkey (
+      themes:themes_pillar_id_fkey (
         id, name, code, description, sort_order,
-        subthemes:subthemes!fk_subthemes_theme (
+        subthemes:fk_subthemes_theme (
           id, name, code, description, sort_order
         )
       )
     `)
     .order("sort_order", { ascending: true });
 
-  return { pillars: pillars ?? [], error };
+  if (error) {
+    console.error("Supabase error:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as (Pillar & {
+    themes: (Theme & { subthemes: Subtheme[] })[];
+  })[];
 }
 
 export default async function PrimaryEditorPage() {
-  const { pillars, error } = await getData();
+  const pillars = await getData();
 
   return (
     <main className="min-h-dvh bg-gray-50">
@@ -54,36 +60,16 @@ export default async function PrimaryEditorPage() {
         actions={<CsvActions disableImport disableExport />}
       />
 
-      <div className="mx-auto max-w-6xl px-4 py-6 space-y-6">
-        <section className="rounded-md border bg-white p-4">
-          <h2 className="text-sm font-semibold text-gray-700">Debug Data</h2>
-          {error && (
-            <div className="text-red-600 text-sm mb-2">
-              Supabase error: {error.message}
+      <div className="mx-auto max-w-6xl px-4 py-6">
+        <PrimaryFrameworkCards
+          pillars={pillars}
+          defaultOpen={false}
+          actions={(item, level) => (
+            <div className="text-sm text-gray-400">
+              {level} actions placeholder
             </div>
           )}
-          <pre className="mt-2 max-h-64 overflow-x-auto overflow-y-auto rounded bg-gray-100 p-2 text-xs text-gray-600">
-            {JSON.stringify(pillars, null, 2)}
-          </pre>
-        </section>
-
-        {pillars.length > 0 ? (
-          <PrimaryFrameworkCards
-            pillars={pillars as (Pillar & {
-              themes: (Theme & { subthemes: Subtheme[] })[];
-            })[]}
-            defaultOpen={false}
-            actions={
-              <div className="text-sm text-gray-400">
-                Right-side actions placeholder
-              </div>
-            }
-          />
-        ) : (
-          <div className="rounded-md border bg-white p-4 text-sm text-gray-500">
-            No pillars returned from Supabase.
-          </div>
-        )}
+        />
       </div>
     </main>
   );
