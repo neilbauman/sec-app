@@ -32,6 +32,7 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
         <tbody className="divide-y divide-gray-200 bg-white">
           {pillars.map((pillar) => (
             <React.Fragment key={pillar.id}>
+              {/* Pillar Row */}
               <tr className="bg-gray-50">
                 <td className="px-4 py-2 text-sm font-medium">
                   <span
@@ -67,6 +68,7 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
                 </td>
               </tr>
 
+              {/* Theme Rows */}
               {pillar.themes.map((theme) => (
                 <React.Fragment key={theme.id}>
                   <tr>
@@ -106,6 +108,7 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
                     </td>
                   </tr>
 
+                  {/* Subtheme Rows */}
                   {theme.subthemes.map((subtheme) => (
                     <tr key={subtheme.id}>
                       <td className="px-4 py-2 pl-20 text-sm font-medium">
@@ -140,3 +143,16 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
                         </button>
                         <button className="text-gray-400 hover:text-gray-600">
                           <ArrowDown size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
+              ))}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
