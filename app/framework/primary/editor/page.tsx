@@ -40,7 +40,7 @@ export default async function Page() {
   const { pillars, error } = await getData();
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-6">
       <PageHeader
         title="Primary Framework Editor"
         breadcrumbItems={[
@@ -51,7 +51,9 @@ export default async function Page() {
         actions={<CsvActions />}
       />
 
-      <PrimaryFrameworkEditorClient pillars={pillars} error={error} />
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <PrimaryFrameworkEditorClient pillars={pillars} error={error} />
+      </div>
     </div>
   );
 }
