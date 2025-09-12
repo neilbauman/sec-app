@@ -3,8 +3,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-function getSupabase() {
-  const cookieStore = cookies();
+async function getSupabase() {
+  const cookieStore = await cookies(); // ✅ await here
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,17 +21,27 @@ function getSupabase() {
   );
 }
 
-export async function addPillar(pillar: {
-  code: string;
-  name: string;
-  description?: string;
-  sort_order?: number;
-}) {
-  const supabase = getSupabase();
+export async function addPillar() {
+  const supabase = await getSupabase();
+
+  // Get count of existing pillars
+  const { count, error: countError } = await supabase
+    .from("pillars")
+    .select("*", { count: "exact", head: true });
+
+  if (countError) throw new Error(countError.message);
+
+  const nextIndex = (count || 0) + 1;
+  const newPillar = {
+    code: `P${nextIndex}`, // auto-generate code
+    name: `New Pillar ${nextIndex}`, // placeholder until edited
+    description: "",
+    sort_order: nextIndex,
+  };
 
   const { data, error } = await supabase
     .from("pillars")
-    .insert([pillar])
+    .insert([newPillar])
     .select();
 
   if (error) throw new Error(error.message);
@@ -39,9 +49,7 @@ export async function addPillar(pillar: {
 }
 
 export async function deletePillar(id: string) {
-  const supabase = getSupabase();
-
+  const supabase = await getSupabase();
   const { error } = await supabase.from("pillars").delete().eq("id", id);
-
   if (error) throw new Error(error.message);
 }
