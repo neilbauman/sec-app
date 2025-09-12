@@ -14,7 +14,6 @@ type Props = {
 export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) {
   const [isPending, startTransition] = useTransition();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
 
@@ -23,10 +22,8 @@ export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) 
     startTransition(async () => {
       try {
         await addPillar({
-          code: newCode,
           name: newName,
           description: newDescription,
-          sort_order: pillars.length + 1,
         });
         window.location.reload();
       } catch (err) {
@@ -70,14 +67,6 @@ export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) 
           onSubmit={handleAddPillar}
           className="p-4 space-y-2 bg-gray-50 border rounded-md"
         >
-          <input
-            type="text"
-            placeholder="Code"
-            value={newCode}
-            onChange={(e) => setNewCode(e.target.value)}
-            className="w-full border px-2 py-1 rounded"
-            required
-          />
           <input
             type="text"
             placeholder="Name"
