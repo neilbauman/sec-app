@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Pillar } from "@/types/framework";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { PlusCircle } from "lucide-react";
-import { addPillar } from "./actions"; // ✅ imported server action
+import { addPillar } from "./actions"; // ✅ server action
 
 type Props = {
   pillars: Pillar[];
@@ -38,7 +38,7 @@ export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) 
 
       {showAddForm && (
         <form
-          action={addPillar} // ✅ bind server action directly
+          action={addPillar} // ✅ Server action now takes FormData
           className="p-4 space-y-2 bg-gray-50 border rounded-md"
         >
           <input
@@ -50,7 +50,7 @@ export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) 
           />
           <textarea
             name="description"
-            placeholder="Description"
+            placeholder="Description (optional)"
             className="w-full border px-2 py-1 rounded"
           />
           <div className="flex space-x-2">
