@@ -21,23 +21,24 @@ It ensures that future contributors (human or AI) follow consistent standards.
 
 ## 2. Directory Structure
 
+```
 app/                         # Next.js App Router pages
-├── layout.tsx             # Global themed layout
-├── globals.css            # Tailwind base styles
-├── page.tsx               # Dashboard (home)
+├── layout.tsx               # Global themed layout
+├── globals.css              # Tailwind base styles
+├── page.tsx                 # Dashboard (home)
 ├── framework/
-│   ├── page.tsx           # Framework landing
-│   ├── primary/editor/    # Primary framework editor
+│   ├── page.tsx             # Framework landing
+│   ├── primary/editor/      # Primary framework editor
 │   │   ├── page.tsx
 │   │   ├── PrimaryFrameworkEditorClient.tsx
 │   │   ├── PrimaryFrameworkCards.tsx
-│   │   ├── actions.ts     # (future) action handlers
+│   │   ├── actions.ts       # (future) action handlers
 │   │   └── error.tsx
 │   └── comprehensive/editor/
-│       └── page.tsx       # Comprehensive editor (placeholder)
-├── country/page.tsx       # Country config (placeholder)
-├── ssc/page.tsx           # SSC management (placeholder)
-└── about/page.tsx         # About page
+│       └── page.tsx         # Comprehensive editor (placeholder)
+├── country/page.tsx         # Country config (placeholder)
+├── ssc/page.tsx             # SSC management (placeholder)
+└── about/page.tsx           # About page
 
 components/                  # Shared UI components
 ├── PageHeader.tsx
@@ -50,7 +51,7 @@ lib/                         # Utility libs
 types/                       # TypeScript definitions
 └── framework.ts
 
-tests/ or tests/         # Jest + RTL unit tests
+tests/ or __tests__/         # Jest + RTL unit tests
 ├── PrimaryFrameworkCards.test.tsx
 └── PrimaryFrameworkEditorClient.test.tsx
 
@@ -59,6 +60,7 @@ postcss.config.js
 package.json
 PROJECT_GUIDE.md             # This file
 README.md
+```
 
 ---
 
@@ -95,9 +97,11 @@ create table subthemes (
   sort_order int not null,
   theme_id uuid references themes(id) on delete cascade
 );
+```
 
-Future Tables (Indicators & Criteria)
+### Future Tables (Indicators & Criteria)
 
+```sql
 -- Indicators (child of subthemes)
 create table indicators (
   id uuid primary key default gen_random_uuid(),
@@ -116,25 +120,30 @@ create table criteria (
   weight numeric, -- scoring weight
   indicator_id uuid references indicators(id) on delete cascade
 );
+```
 
-Hierarchy:
-Pillars → Themes → Subthemes → Indicators → Criteria
+**Hierarchy**:  
+`Pillars → Themes → Subthemes → Indicators → Criteria`
 
-⸻
+---
 
-4. Data Fetching
-	•	All data is fetched via Supabase in server components using createServerClient.
-	•	Cookies are injected from next/headers.
+## 4. Data Fetching
 
-Query Pattern
+- All data is fetched via Supabase in **server components** using `createServerClient`.
+- Cookies are injected from `next/headers`.
 
+### Query Pattern
+
+```ts
 supabase
   .from("pillars")
   .select("*, themes!themes_pillar_id_fkey(*, subthemes(*))")
   .order("sort_order", { ascending: true });
+```
 
 When indicators/criteria are added, this will extend:
 
+```ts
 supabase
   .from("pillars")
   .select(`
@@ -151,11 +160,15 @@ supabase
     )
   `)
   .order("sort_order", { ascending: true });
+```
 
-5. TypeScript Types
+---
 
-Defined in types/framework.ts:
+## 5. TypeScript Types
 
+Defined in `types/framework.ts`:
+
+```ts
 export type Criterion = {
   id: string;
   code: string;
@@ -202,32 +215,37 @@ export type Pillar = {
   sort_order: number;
   themes: Theme[];
 };
+```
 
-6. UI Standards
-	•	TailwindCSS with global base styles in app/globals.css.
-	•	Icons via lucide-react.
-	•	Dashboard (/) is the home page:
-	•	Card-based navigation
-	•	Each block links into a feature area
-	•	Page Layout (app/layout.tsx):
-	•	Top nav: tool title + logo placeholder
-	•	Footer with © notice
-	•	Consistent padding (p-6) on content
-	•	PageHeader Component:
-	•	Props: title, breadcrumbItems, actions?
-	•	Renders breadcrumbs, title, and actions (e.g. CSV upload/download)
-	•	Primary Framework Editor Table:
-	•	Columns: Type/Code | Name/Description | Sort Order | Actions
-	•	Codes: small, grey text
-	•	Collapsible hierarchy (Pillars → Themes → Subthemes)
-	•	Default collapsed
-	•	Sorted by sort_order
-	•	Actions: Edit / Delete / Up / Down (greyed until wired)
+---
 
-⸻
+## 6. UI Standards
 
-7. Navigation
+- **TailwindCSS** with global base styles in `app/globals.css`.
+- **Icons** via `lucide-react`.
+- **Dashboard** (`/`) is the **home page**:
+  - Card-based navigation
+  - Each block links into a feature area
+- **Page Layout (`app/layout.tsx`)**:
+  - Top nav: tool title + logo placeholder
+  - Footer with © notice
+  - Consistent padding (`p-6`) on content
+- **PageHeader Component**:
+  - Props: `title`, `breadcrumbItems`, `actions?`
+  - Renders breadcrumbs, title, and actions (e.g. CSV upload/download)
+- **Primary Framework Editor Table**:
+  - Columns: `Type/Code | Name/Description | Sort Order | Actions`
+  - Codes: small, grey text
+  - Collapsible hierarchy (Pillars → Themes → Subthemes)
+  - Default collapsed
+  - Sorted by `sort_order`
+  - Actions: Edit / Delete / Up / Down (greyed until wired)
 
+---
+
+## 7. Navigation
+
+```
 Dashboard (/)
   ├── Framework (/framework)
   │    ├── Primary Editor (/framework/primary/editor)
@@ -235,41 +253,51 @@ Dashboard (/)
   ├── Country Config (/country)
   ├── SSC Management (/ssc)
   └── About (/about)
+```
 
-8. Testing
-	•	Testing framework: Jest + React Testing Library.
-	•	Example tests:
-	•	PrimaryFrameworkCards.test.tsx: verifies rendering of Pillars → Themes → Subthemes.
-	•	PrimaryFrameworkEditorClient.test.tsx: verifies error, empty, and populated states.
-	•	Future: add tests for API routes and UI interactions (expand/collapse, CSV upload).
+Breadcrumbs always start at **Dashboard**.
 
-⸻
+---
 
-9. Future Development
-	•	Add Indicators and Criteria tables to DB + type definitions.
-	•	Extend Supabase queries to nest Indicators + Criteria.
-	•	Build Comprehensive Framework Editor to manage Indicators/Criteria.
-	•	Implement Country Configuration and SSC Management pages.
-	•	Add Auth (Supabase) for admin-only access.
-	•	Wire up action icons (edit, delete, reorder).
-	•	Implement CSV Upload/Download integration.
-	•	Add About page content and branding.
+## 8. Testing
 
-⸻
+- Testing framework: **Jest + React Testing Library**.
+- Example tests:
+  - `PrimaryFrameworkCards.test.tsx`: verifies rendering of Pillars → Themes → Subthemes.
+  - `PrimaryFrameworkEditorClient.test.tsx`: verifies error, empty, and populated states.
+- Future: add tests for API routes and UI interactions (expand/collapse, CSV upload).
 
-🔑 Key Conventions
-	•	DB schema: hierarchical, strongly typed, with sort_order controlling display order.
-	•	Navigation: Dashboard = home, consistent breadcrumbs.
-	•	UI: Tailwind for layout, lucide-react for icons, consistent headers + cards.
-	•	Testing: React Testing Library for UI components.
-	•	Extendability: Future-proofed to add Indicators + Criteria.
+---
 
-⸻
+## 9. Future Development
 
-10. Visual Schema
+- Add **Indicators** and **Criteria** tables to DB + type definitions.
+- Extend Supabase queries to nest Indicators + Criteria.
+- Build **Comprehensive Framework Editor** to manage Indicators/Criteria.
+- Implement **Country Configuration** and **SSC Management** pages.
+- Add **Auth** (Supabase) for admin-only access.
+- Wire up **action icons** (edit, delete, reorder).
+- Implement **CSV Upload/Download** integration.
+- Add **About page** content and branding.
 
+---
+
+# 🔑 Key Conventions
+
+- **DB schema**: hierarchical, strongly typed, with `sort_order` controlling display order.
+- **Navigation**: Dashboard = home, consistent breadcrumbs.
+- **UI**: Tailwind for layout, lucide-react for icons, consistent headers + cards.
+- **Testing**: React Testing Library for UI components.
+- **Extendability**: Future-proofed to add Indicators + Criteria.
+
+---
+
+## 10. Visual Schema
+
+```mermaid
 graph TD
   Pillar --> Theme
   Theme --> Subtheme
   Subtheme --> Indicator
   Indicator --> Criterion
+```
