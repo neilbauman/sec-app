@@ -46,16 +46,6 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
     });
   };
 
-  // Header row
-  const renderHeader = () => (
-    <div className="grid grid-cols-[200px_1fr_100px_auto] bg-gray-100 font-medium text-sm text-gray-600 border-b px-2 py-2">
-      <div>Type / Code</div>
-      <div>Name / Description</div>
-      <div className="text-center">Sort Order</div>
-      <div className="text-right">Actions</div>
-    </div>
-  );
-
   const renderSubtheme = (subtheme: Subtheme) => (
     <div
       key={subtheme.id}
@@ -143,70 +133,58 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
   );
 
   return (
-    <div className="border rounded-md divide-y">
-      {renderHeader()}
-
-      {/* Add Pillar Row */}
-      <div className="grid grid-cols-[200px_1fr_100px_auto] items-center bg-gray-50 border-b px-2 py-2">
-        <div className="flex items-center space-x-2 text-sm font-medium">
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center space-x-2 px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            <PlusCircle size={16} />
-            <span>Add Pillar</span>
-          </button>
-        </div>
-        <div className="text-gray-500 text-sm">Create a new top-level Pillar</div>
-        <div></div>
-        <div></div>
+    <div className="space-y-4">
+      {/* Add Pillar Button */}
+      <div className="flex justify-start">
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center space-x-2 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          <PlusCircle size={16} />
+          <span>Add Pillar</span>
+        </button>
       </div>
 
-      {/* Add Pillar Form Row */}
+      {/* Add Pillar Form */}
       {showAddForm && (
         <form
           onSubmit={handleAddPillar}
-          className="grid grid-cols-[200px_1fr_100px_auto] items-center bg-white border-b px-2 py-2 gap-2"
+          className="p-4 space-y-2 bg-gray-50 border rounded-md"
         >
-          <div className="flex flex-col space-y-1">
-            <input
-              type="text"
-              placeholder="Code"
-              value={newCode}
-              onChange={(e) => setNewCode(e.target.value)}
-              className="border px-2 py-1 rounded text-sm"
-              required
-            />
-          </div>
-          <div className="flex flex-col space-y-1">
-            <input
-              type="text"
-              placeholder="Name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className="border px-2 py-1 rounded text-sm"
-              required
-            />
-            <textarea
-              placeholder="Description"
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              className="border px-2 py-1 rounded text-sm"
-            />
-          </div>
-          <div className="text-center">—</div>
-          <div className="flex space-x-2 justify-end">
+          <input
+            type="text"
+            placeholder="Code"
+            value={newCode}
+            onChange={(e) => setNewCode(e.target.value)}
+            className="w-full border px-2 py-1 rounded"
+            required
+          />
+          <input
+            type="text"
+            placeholder="Name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            className="w-full border px-2 py-1 rounded"
+            required
+          />
+          <textarea
+            placeholder="Description"
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+            className="w-full border px-2 py-1 rounded"
+          />
+          <div className="flex space-x-2">
             <button
               type="submit"
               disabled={isPending}
-              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 text-sm"
+              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
             >
               Save
             </button>
             <button
               type="button"
               onClick={() => setShowAddForm(false)}
-              className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400 text-sm"
+              className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
             >
               Cancel
             </button>
@@ -214,8 +192,17 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
         </form>
       )}
 
-      {/* Render Pillars */}
-      {pillars.map(renderPillar)}
+      {/* Pillars Table */}
+      <div className="border rounded-md divide-y">
+        {/* Header */}
+        <div className="grid grid-cols-[200px_1fr_100px_auto] bg-gray-100 font-medium text-sm text-gray-600 border-b px-2 py-2">
+          <div>Type / Code</div>
+          <div>Name / Description</div>
+          <div className="text-center">Sort Order</div>
+          <div className="text-right">Actions</div>
+        </div>
+        {pillars.map(renderPillar)}
+      </div>
     </div>
   );
 }
