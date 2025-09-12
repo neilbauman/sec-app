@@ -1,50 +1,118 @@
-// app/admin/framework/primary/editor/actions.ts
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-// Update entity name
-export async function actionUpdateName(opts: {
-  level: "pillar" | "theme" | "subtheme";
+// Helper: get Supabase client for server actions
+function getSupabase() {
+  const cookieStore = cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set() {},
+        remove() {},
+      },
+    }
+  );
+}
+
+//
+// ─── PILLARS ──────────────────────────────────────────────
+//
+export async function addPillar(pillar: {
   code: string;
   name: string;
+  description?: string;
+  sort_order?: number;
 }) {
-  // TODO: update DB
-  revalidatePath("/admin/framework/primary/editor");
-  return { ok: true as const };
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("pillars").insert([pillar]).select();
+  if (error) throw new Error(error.message);
+  return data?.[0];
 }
 
-// Update entity description
-export async function actionUpdateDescription(opts: {
-  level: "pillar" | "theme" | "subtheme";
+export async function updatePillar(id: string, updates: Partial<{ code: string; name: string; description: string; sort_order: number; }>) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("pillars").update(updates).eq("id", id).select();
+  if (error) throw new Error(error.message);
+  return data?.[0];
+}
+
+export async function deletePillar(id: string) {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("pillars").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+//
+// ─── THEMES ──────────────────────────────────────────────
+//
+export async function addTheme(theme: {
   code: string;
-  description: string;
+  name: string;
+  description?: string;
+  sort_order?: number;
+  pillar_id: string;
 }) {
-  // TODO: update DB
-  revalidatePath("/admin/framework/primary/editor");
-  return { ok: true as const };
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("themes").insert([theme]).select();
+  if (error) throw new Error(error.message);
+  return data?.[0];
 }
 
-// Reorder entities
-export async function actionReorder(opts: {
-  level: "pillar" | "theme" | "subtheme";
+export async function updateTheme(id: string, updates: Partial<{ code: string; name: string; description: string; sort_order: number; }>) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("themes").update(updates).eq("id", id).select();
+  if (error) throw new Error(error.message);
+  return data?.[0];
+}
+
+export async function deleteTheme(id: string) {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("themes").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+//
+// ─── SUBTHEMES ──────────────────────────────────────────────
+//
+export async function addSubtheme(subtheme: {
   code: string;
-  newSort: number; // ✅ fixed typo
+  name: string;
+  description?: string;
+  sort_order?: number;
+  theme_id: string;
 }) {
-  // TODO: update DB
-  revalidatePath("/admin/framework/primary/editor");
-  return { ok: true as const };
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("subthemes").insert([subtheme]).select();
+  if (error) throw new Error(error.message);
+  return data?.[0];
 }
 
-// Placeholder CSV import
-export async function actionImportCsv(_formData: FormData) {
-  // TODO: implement import
-  revalidatePath("/admin/framework/primary/editor");
-  return { ok: true as const };
+export async function updateSubtheme(id: string, updates: Partial<{ code: string; name: string; description: string; sort_order: number; }>) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from("subthemes").update(updates).eq("id", id).select();
+  if (error) throw new Error(error.message);
+  return data?.[0];
 }
 
-// Placeholder CSV export
-export async function actionExportCsv() {
-  // TODO: implement export
-  return { ok: true as const };
+export async function deleteSubtheme(id: string) {
+  const supabase = getSupabase();
+  const { error } = await supabase.from("subthemes").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+//
+// ─── SORTING ──────────────────────────────────────────────
+//
+export async function reorderItem(table: "pillars" | "themes" | "subthemes", id: string, newSort: number) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from(table).update({ sort_order: newSort }).eq("id", id).select();
+  if (error) throw new Error(error.message);
+  return data?.[0];
 }
