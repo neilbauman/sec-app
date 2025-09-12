@@ -3,8 +3,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-async function getSupabase() {
-  // ✅ cookies() is synchronous in Next.js 15
+function getSupabase() {
+  // ✅ cookies() is sync now
   const cookieStore = cookies();
 
   return createServerClient(
@@ -16,10 +16,10 @@ async function getSupabase() {
           return cookieStore.get(name)?.value;
         },
         set() {
-          // no-op for server actions
+          // no-op
         },
         remove() {
-          // no-op for server actions
+          // no-op
         },
       },
     }
@@ -35,9 +35,9 @@ export async function addPillar(formData: FormData) {
     description = `Auto-generated description for ${name}`;
   }
 
-  const supabase = await getSupabase();
+  const supabase = getSupabase();
 
-  // Find current count of pillars
+  // ✅ get current count of pillars
   const { count } = await supabase
     .from("pillars")
     .select("*", { count: "exact", head: true });
