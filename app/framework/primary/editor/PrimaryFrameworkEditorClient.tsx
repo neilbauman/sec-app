@@ -69,11 +69,10 @@ export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) 
         >
           <input
             type="text"
-            placeholder="Name"
+            placeholder="Name (optional)"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             className="w-full border px-2 py-1 rounded"
-            required
           />
           <textarea
             placeholder="Description"
