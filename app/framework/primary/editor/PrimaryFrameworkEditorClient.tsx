@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState } from "react";
 import { Pillar } from "@/types/framework";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { PlusCircle } from "lucide-react";
@@ -12,25 +12,7 @@ type Props = {
 };
 
 export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) {
-  const [isPending, startTransition] = useTransition();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newDescription, setNewDescription] = useState("");
-
-  const handleAddPillar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    startTransition(async () => {
-      try {
-        await addPillar({
-          name: newName,
-          description: newDescription,
-        });
-        window.location.reload();
-      } catch (err) {
-        alert("Error adding pillar: " + (err as Error).message);
-      }
-    });
-  };
 
   if (error) {
     return (
@@ -64,27 +46,29 @@ export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) 
 
       {showAddForm && (
         <form
-          onSubmit={handleAddPillar}
+          action={async (formData: FormData) => {
+            "use server";
+            const name = formData.get("name") as string;
+            const description = formData.get("description") as string;
+            await addPillar({ name, description });
+          }}
           className="p-4 space-y-2 bg-gray-50 border rounded-md"
         >
           <input
             type="text"
+            name="name"
             placeholder="Name (optional)"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
             className="w-full border px-2 py-1 rounded"
           />
           <textarea
+            name="description"
             placeholder="Description"
-            value={newDescription}
-            onChange={(e) => setNewDescription(e.target.value)}
             className="w-full border px-2 py-1 rounded"
           />
           <div className="flex space-x-2">
             <button
               type="submit"
-              disabled={isPending}
-              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
             >
               Save
             </button>
