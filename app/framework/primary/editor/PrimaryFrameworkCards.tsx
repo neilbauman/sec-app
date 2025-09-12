@@ -46,10 +46,20 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
     });
   };
 
+  // Header row
+  const renderHeader = () => (
+    <div className="grid grid-cols-[200px_1fr_100px_auto] bg-gray-100 font-medium text-sm text-gray-600 border-b px-2 py-2">
+      <div>Type / Code</div>
+      <div>Name / Description</div>
+      <div className="text-center">Sort Order</div>
+      <div className="text-right">Actions</div>
+    </div>
+  );
+
   const renderSubtheme = (subtheme: Subtheme) => (
     <div
       key={subtheme.id}
-      className="grid grid-cols-[200px_1fr_auto] items-center border-b pl-12 pr-2 py-2"
+      className="grid grid-cols-[200px_1fr_100px_auto] items-center border-b pl-12 pr-2 py-2"
     >
       <div className="text-sm font-medium flex items-center space-x-2">
         <span
@@ -66,13 +76,14 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
         <div className="font-medium">{subtheme.name}</div>
         <div className="text-xs text-gray-500">{subtheme.description}</div>
       </div>
-      <div className="flex justify-end space-x-2"></div>
+      <div className="text-center text-sm">{subtheme.sort_order}</div>
+      <div></div>
     </div>
   );
 
   const renderTheme = (theme: Theme & { subthemes: Subtheme[] }) => (
     <div key={theme.id} className="border-b">
-      <div className="grid grid-cols-[200px_1fr_auto] items-center pl-6 pr-2 py-2">
+      <div className="grid grid-cols-[200px_1fr_100px_auto] items-center pl-6 pr-2 py-2">
         <div className="text-sm font-medium flex items-center space-x-2">
           <span
             className={cn(
@@ -88,7 +99,8 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
           <div className="font-medium">{theme.name}</div>
           <div className="text-xs text-gray-500">{theme.description}</div>
         </div>
-        <div className="flex justify-end space-x-2"></div>
+        <div className="text-center text-sm">{theme.sort_order}</div>
+        <div></div>
       </div>
       <div>{theme.subthemes.map(renderSubtheme)}</div>
     </div>
@@ -98,7 +110,7 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
     pillar: Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] }
   ) => (
     <div key={pillar.id} className="border-b">
-      <div className="grid grid-cols-[200px_1fr_auto] items-center p-2 bg-gray-50">
+      <div className="grid grid-cols-[200px_1fr_100px_auto] items-center p-2 bg-gray-50">
         <div className="text-sm font-medium flex items-center space-x-2">
           <span
             className={cn(
@@ -114,6 +126,7 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
           <div className="font-medium">{pillar.name}</div>
           <div className="text-xs text-gray-500">{pillar.description}</div>
         </div>
+        <div className="text-center text-sm">{pillar.sort_order}</div>
         <div className="flex justify-end space-x-2">
           <button
             onClick={() => handleDeletePillar(pillar.id)}
@@ -131,8 +144,10 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
 
   return (
     <div className="border rounded-md divide-y">
+      {renderHeader()}
+
       {/* Add Pillar Row */}
-      <div className="grid grid-cols-[200px_1fr_auto] items-center bg-gray-50 border-b px-2 py-2">
+      <div className="grid grid-cols-[200px_1fr_100px_auto] items-center bg-gray-50 border-b px-2 py-2">
         <div className="flex items-center space-x-2 text-sm font-medium">
           <button
             onClick={() => setShowAddForm(!showAddForm)}
@@ -144,13 +159,14 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
         </div>
         <div className="text-gray-500 text-sm">Create a new top-level Pillar</div>
         <div></div>
+        <div></div>
       </div>
 
       {/* Add Pillar Form Row */}
       {showAddForm && (
         <form
           onSubmit={handleAddPillar}
-          className="grid grid-cols-[200px_1fr_auto] items-center bg-white border-b px-2 py-2 gap-2"
+          className="grid grid-cols-[200px_1fr_100px_auto] items-center bg-white border-b px-2 py-2 gap-2"
         >
           <div className="flex flex-col space-y-1">
             <input
@@ -178,6 +194,7 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
               className="border px-2 py-1 rounded text-sm"
             />
           </div>
+          <div className="text-center">—</div>
           <div className="flex space-x-2 justify-end">
             <button
               type="submit"
