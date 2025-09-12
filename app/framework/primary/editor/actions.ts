@@ -4,7 +4,9 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 async function getSupabase() {
+  // ✅ cookies() is synchronous in Next.js 15
   const cookieStore = cookies();
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -13,33 +15,29 @@ async function getSupabase() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set() {},
-        remove() {},
+        set() {
+          // no-op for server actions
+        },
+        remove() {
+          // no-op for server actions
+        },
       },
     }
   );
 }
 
-/**
- * Add a new pillar.
- * Auto-generates code + sort_order.
- * If description is empty, auto-generates a placeholder.
- */
 export async function addPillar(formData: FormData) {
   const name = formData.get("name") as string;
   let description = formData.get("description") as string | null;
 
-  if (!name) {
-    throw new Error("Name is required");
-  }
-
+  if (!name) throw new Error("Name is required");
   if (!description || description.trim() === "") {
     description = `Auto-generated description for ${name}`;
   }
 
   const supabase = await getSupabase();
 
-  // Find current count
+  // Find current count of pillars
   const { count } = await supabase
     .from("pillars")
     .select("*", { count: "exact", head: true });
