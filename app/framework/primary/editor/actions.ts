@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 async function getSupabase() {
-  const cookieStore = await cookies(); // ✅ await here
+  const cookieStore = await cookies(); // ✅ fix: cookies() is async
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,10 +21,13 @@ async function getSupabase() {
   );
 }
 
-export async function addPillar() {
+export async function addPillar(input: {
+  name: string;
+  description?: string;
+}) {
   const supabase = await getSupabase();
 
-  // Get count of existing pillars
+  // Count existing pillars to set code/sort_order
   const { count, error: countError } = await supabase
     .from("pillars")
     .select("*", { count: "exact", head: true });
@@ -32,10 +35,11 @@ export async function addPillar() {
   if (countError) throw new Error(countError.message);
 
   const nextIndex = (count || 0) + 1;
+
   const newPillar = {
-    code: `P${nextIndex}`, // auto-generate code
-    name: `New Pillar ${nextIndex}`, // placeholder until edited
-    description: "",
+    code: `P${nextIndex}`, // auto-generated
+    name: input.name,
+    description: input.description || "",
     sort_order: nextIndex,
   };
 
