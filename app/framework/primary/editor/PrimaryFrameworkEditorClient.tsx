@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Pillar } from "@/types/framework";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { PlusCircle } from "lucide-react";
-import { addPillar } from "./actions";
+import { addPillar } from "./actions"; // ✅ imported server action
 
 type Props = {
   pillars: Pillar[];
@@ -23,17 +23,9 @@ export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) 
     );
   }
 
-  if (!pillars || pillars.length === 0) {
-    return (
-      <div className="p-4 text-gray-500 text-sm border rounded-md">
-        No framework data found.
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Add Pillar Section */}
+      {/* Add Pillar Button */}
       <div className="flex justify-start">
         <button
           onClick={() => setShowAddForm(!showAddForm)}
@@ -46,18 +38,14 @@ export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) 
 
       {showAddForm && (
         <form
-          action={async (formData: FormData) => {
-            "use server";
-            const name = formData.get("name") as string;
-            const description = formData.get("description") as string;
-            await addPillar({ name, description });
-          }}
+          action={addPillar} // ✅ bind server action directly
           className="p-4 space-y-2 bg-gray-50 border rounded-md"
         >
           <input
             type="text"
             name="name"
-            placeholder="Name (optional)"
+            placeholder="Name"
+            required
             className="w-full border px-2 py-1 rounded"
           />
           <textarea
@@ -83,7 +71,7 @@ export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) 
         </form>
       )}
 
-      {/* Existing Framework Cards */}
+      {/* Existing Framework */}
       <PrimaryFrameworkCards pillars={pillars} />
     </div>
   );
