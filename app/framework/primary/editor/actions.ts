@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 async function getSupabase() {
-  const cookieStore = cookies(); // ✅ no await here
+  const cookieStore = cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -23,14 +23,20 @@ async function getSupabase() {
 /**
  * Add a new pillar.
  * Auto-generates code + sort_order.
+ * If description is empty, auto-generates a placeholder.
  */
-export async function addPillar({
-  name,
-  description,
-}: {
-  name: string;
-  description: string;
-}) {
+export async function addPillar(formData: FormData) {
+  const name = formData.get("name") as string;
+  let description = formData.get("description") as string | null;
+
+  if (!name) {
+    throw new Error("Name is required");
+  }
+
+  if (!description || description.trim() === "") {
+    description = `Auto-generated description for ${name}`;
+  }
+
   const supabase = await getSupabase();
 
   // Find current count
