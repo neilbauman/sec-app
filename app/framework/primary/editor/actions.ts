@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 async function getSupabase() {
-  const cookieStore = await cookies(); // ✅ fix: cookies() is async
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,7 +22,7 @@ async function getSupabase() {
 }
 
 export async function addPillar(input: {
-  name: string;
+  name?: string;
   description?: string;
 }) {
   const supabase = await getSupabase();
@@ -38,7 +38,7 @@ export async function addPillar(input: {
 
   const newPillar = {
     code: `P${nextIndex}`, // auto-generated
-    name: input.name,
+    name: input.name && input.name.trim() !== "" ? input.name : `Pillar ${nextIndex}`,
     description: input.description || "",
     sort_order: nextIndex,
   };
