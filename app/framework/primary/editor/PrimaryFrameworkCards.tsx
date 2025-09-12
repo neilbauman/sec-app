@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useTransition } from "react";
+import React, { useState, useTransition } from "react";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 import { cn } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
-import { deletePillar } from "./actions";
+import { PlusCircle, Trash2 } from "lucide-react";
+import { addPillar, deletePillar } from "./actions";
 
 type Props = {
   pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
@@ -12,13 +12,33 @@ type Props = {
 
 export default function PrimaryFrameworkCards({ pillars }: Props) {
   const [isPending, startTransition] = useTransition();
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+
+  const handleAddPillar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    startTransition(async () => {
+      try {
+        await addPillar({
+          code: newCode,
+          name: newName,
+          description: newDescription,
+          sort_order: pillars.length + 1,
+        });
+        window.location.reload();
+      } catch (err) {
+        alert("Error adding pillar: " + (err as Error).message);
+      }
+    });
+  };
 
   const handleDeletePillar = async (id: string) => {
     if (!confirm("Are you sure you want to delete this pillar?")) return;
     startTransition(async () => {
       try {
         await deletePillar(id);
-        // Refresh page data after deletion
         window.location.reload();
       } catch (err) {
         alert("Error deleting pillar: " + (err as Error).message);
@@ -95,7 +115,6 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
           <div className="text-xs text-gray-500">{pillar.description}</div>
         </div>
         <div className="flex justify-end space-x-2">
-          {/* Delete Button */}
           <button
             onClick={() => handleDeletePillar(pillar.id)}
             disabled={isPending}
@@ -111,7 +130,63 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
   );
 
   return (
-    <div className="border rounded-md divide-y">
+    <div className="border rounded-md divide-y space-y-4">
+      {/* Add Pillar Button */}
+      <div className="p-2 flex justify-between items-center">
+        <button
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center space-x-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          <PlusCircle size={16} />
+          <span>Add Pillar</span>
+        </button>
+      </div>
+
+      {/* Add Pillar Form */}
+      {showAddForm && (
+        <form onSubmit={handleAddPillar} className="p-4 space-y-2 bg-gray-50 border rounded-md">
+          <input
+            type="text"
+            placeholder="Code"
+            value={newCode}
+            onChange={(e) => setNewCode(e.target.value)}
+            className="w-full border px-2 py-1 rounded"
+            required
+          />
+          <input
+            type="text"
+            placeholder="Name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            className="w-full border px-2 py-1 rounded"
+            required
+          />
+          <textarea
+            placeholder="Description"
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+            className="w-full border px-2 py-1 rounded"
+          />
+          <div className="flex space-x-2">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAddForm(false)}
+              className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Render Pillars */}
       {pillars.map(renderPillar)}
     </div>
   );
