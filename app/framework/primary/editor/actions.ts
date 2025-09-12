@@ -4,8 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 async function getSupabase() {
-  const cookieStore = await cookies();
-
+  const cookieStore = cookies(); // ✅ no await here
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,39 +20,40 @@ async function getSupabase() {
   );
 }
 
-export async function addPillar(input: {
-  name?: string;
-  description?: string;
+/**
+ * Add a new pillar.
+ * Auto-generates code + sort_order.
+ */
+export async function addPillar({
+  name,
+  description,
+}: {
+  name: string;
+  description: string;
 }) {
   const supabase = await getSupabase();
 
-  // Count existing pillars to set code/sort_order
-  const { count, error: countError } = await supabase
+  // Find current count
+  const { count } = await supabase
     .from("pillars")
     .select("*", { count: "exact", head: true });
 
-  if (countError) throw new Error(countError.message);
-
-  const nextIndex = (count || 0) + 1;
-
-  const newPillar = {
-    code: `P${nextIndex}`, // auto-generated
-    name: input.name && input.name.trim() !== "" ? input.name : `Pillar ${nextIndex}`,
-    description: input.description || "",
-    sort_order: nextIndex,
-  };
+  const newSortOrder = (count ?? 0) + 1;
+  const newCode = `P${newSortOrder}`;
 
   const { data, error } = await supabase
     .from("pillars")
-    .insert([newPillar])
+    .insert([
+      {
+        code: newCode,
+        name,
+        description,
+        sort_order: newSortOrder,
+      },
+    ])
     .select();
 
   if (error) throw new Error(error.message);
-  return data?.[0];
-}
 
-export async function deletePillar(id: string) {
-  const supabase = await getSupabase();
-  const { error } = await supabase.from("pillars").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  return data?.[0];
 }
