@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 function getSupabase() {
-  // ✅ cookies() is synchronous in Next.js 15
+  // ✅ No await here — cookies() is synchronous
   const cookieStore = cookies();
 
   return createServerClient(
@@ -13,6 +13,7 @@ function getSupabase() {
     {
       cookies: {
         get(name: string) {
+          // ✅ cookieStore is not a Promise — it’s a real ReadonlyRequestCookies
           return cookieStore.get(name)?.value;
         },
         set() {
@@ -37,7 +38,7 @@ export async function addPillar(formData: FormData) {
     description = `Auto-generated description for ${name}`;
   }
 
-  // ✅ get count of existing pillars
+  // ✅ Get count of existing pillars
   const { count, error: countError } = await supabase
     .from("pillars")
     .select("*", { count: "exact", head: true });
@@ -47,7 +48,7 @@ export async function addPillar(formData: FormData) {
   const newSortOrder = (count ?? 0) + 1;
   const newCode = `P${newSortOrder}`;
 
-  // ✅ insert new pillar
+  // ✅ Insert new pillar
   const { data, error } = await supabase
     .from("pillars")
     .insert([
