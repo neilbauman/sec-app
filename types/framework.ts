@@ -1,4 +1,5 @@
-// types.ts
+// types/framework.ts
+
 export interface Subtheme {
   id: number;
   theme_id: number;
