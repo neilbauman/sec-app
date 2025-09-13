@@ -1,9 +1,13 @@
 // lib/supabase-server.ts
+
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
+/**
+ * Create a Supabase client for server components.
+ */
 export function createClient() {
-  const cookieStore = cookies();
+  const cookieStore = cookies(); // ✅ synchronous in Next.js 13/14/15 App Router
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,13 +15,13 @@ export function createClient() {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          return cookieStore.get(name)?.value ?? null;
         },
         set() {
-          // no-op for server components
+          // no-op: setting cookies doesn’t work in server components
         },
         remove() {
-          // no-op for server components
+          // no-op: removing cookies doesn’t work in server components
         },
       },
     }
