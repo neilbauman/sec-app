@@ -1,10 +1,10 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
 import type { Pillar } from "@/types/framework";
 
 export async function getPillarById(id: string): Promise<Pillar> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createClient();
 
   const { data, error } = await supabase
     .from("pillars")
