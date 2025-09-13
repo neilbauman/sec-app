@@ -1,5 +1,5 @@
 // components/PrimaryFrameworkCards.tsx
-import type { Pillar } from "@/types";
+import type { Pillar } from "@/types/framework";
 
 interface Props {
   pillar: Pillar;
