@@ -1,6 +1,7 @@
+// app/framework/primary/editor/PrimaryFrameworkEditorClient.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Pillar } from "@/types/framework";
 
 interface Props {
@@ -8,31 +9,33 @@ interface Props {
 }
 
 export default function PrimaryFrameworkEditorClient({ initialData }: Props) {
-  const [pillars, setPillars] = useState<Pillar[]>(initialData || []);
-
-  useEffect(() => {
-    console.log("Framework editor received pillars:", pillars);
-  }, [pillars]);
-
-  if (!pillars || pillars.length === 0) {
-    return (
-      <div className="p-6">
-        <h2 className="text-xl font-bold mb-4">Primary Framework Editor</h2>
-        <p className="bg-yellow-100 text-yellow-800 p-4 rounded">
-          No framework data available.
-        </p>
-      </div>
-    );
-  }
+  const [pillars] = useState(initialData);
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">Primary Framework Editor</h2>
+    <div className="space-y-6">
+      {pillars.map((pillar) => (
+        <div
+          key={pillar.id}
+          className="rounded-lg border border-gray-200 bg-white shadow-sm p-6"
+        >
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {pillar.ref_code}: {pillar.name}
+              </h2>
+              <p className="text-gray-600 mt-1">{pillar.description}</p>
+            </div>
+            <span className="text-sm text-gray-400">
+              Order: {pillar.sort_order}
+            </span>
+          </div>
 
-      {/* Debug mode: render JSON */}
-      <pre className="bg-gray-100 p-4 rounded text-sm overflow-x-auto">
-        {JSON.stringify(pillars, null, 2)}
-      </pre>
+          {/* Placeholder for themes */}
+          <div className="mt-4">
+            <p className="text-gray-500 italic">Themes will display here…</p>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
