@@ -6,13 +6,13 @@ interface Props {
   pillars: Pillar[];
 }
 
-export default function PrimaryFrameworkCards({ pillars }: Props) {
+export default function PrimaryFrameworkCardsEditor({ pillars }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {pillars.map((pillar) => (
         <div
           key={pillar.id}
-          className="border rounded-lg p-4 shadow-sm bg-white"
+          className="border rounded-lg p-4 shadow-sm bg-gray-50"
         >
           <h2 className="text-lg font-semibold">
             {pillar.ref_code} – {pillar.name}
