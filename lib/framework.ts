@@ -3,13 +3,10 @@ import { createClient } from "@/lib/supabase-server";
 export type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 /**
- * Fetch the full framework hierarchy:
- * - Pillars
- * - Themes
- * - Subthemes
+ * Fetch the full framework hierarchy from Supabase.
  */
 export async function fetchFramework() {
-  const supabase = createClient();
+  const supabase = await createClient(); // 👈 must await now
 
   const { data, error } = await supabase
     .from("pillars")
@@ -38,6 +35,9 @@ export async function fetchFramework() {
     `)
     .order("sort_order");
 
-  if (error) throw error;
-  return data;
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? [];
 }
