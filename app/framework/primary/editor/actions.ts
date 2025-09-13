@@ -21,27 +21,27 @@ export async function fetchFramework(): Promise<Pillar[]> {
       name,
       description,
       sort_order,
-      themes!inner (
+      themes (
         id,
         ref_code,
         name,
         description,
         sort_order,
-        pillar_id,  -- ✅ include FK
+        pillar_id,
         subthemes (
           id,
           ref_code,
           name,
           description,
           sort_order,
-          theme_id,  -- ✅ include FK
+          theme_id,
           indicators (
             id,
             ref_code,
             name,
             description,
             sort_order,
-            subtheme_id  -- ✅ include FK
+            subtheme_id
           )
         ),
         indicators (
@@ -50,7 +50,7 @@ export async function fetchFramework(): Promise<Pillar[]> {
           name,
           description,
           sort_order,
-          theme_id  -- ✅ include FK
+          theme_id
         )
       )
     `
