@@ -2,54 +2,48 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { v4 as uuidv4 } from "uuid";
+import { Pillar } from "@/types/framework";
 
-// ✅ Pillar insert
-export async function addPillar(formData: FormData) {
-  const name = formData.get("name") as string;
-  let description = formData.get("description") as string | null;
-
-  if (!description || description.trim() === "") {
-    description = `Auto-generated description for ${name}`;
-  }
-
-  // Get Supabase client
-  const cookieStore = cookies();
-  const supabase = createServerClient(
+function getSupabase() {
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set() {},
-        remove() {},
-      },
-    }
+    { cookies }
   );
+}
 
-  // Find the current max sort_order
+export async function addPillar(formData: FormData): Promise<Pillar | null> {
+  const supabase = getSupabase();
+
+  const name = formData.get("name") as string;
+  const description = (formData.get("description") as string) ?? null;
+
+  // ✅ Find current max sort order
   const { data: existing, error: fetchError } = await supabase
     .from("pillars")
-    .select("sort_order, code")
-    .order("sort_order", { ascending: false })
-    .limit(1);
+    .select("sort_order, code");
 
   if (fetchError) throw fetchError;
 
-  const nextSortOrder = existing?.[0]?.sort_order
-    ? existing[0].sort_order + 1
-    : 1;
-  const nextCode = `P${nextSortOrder}`;
+  const sortOrder = (existing?.length ?? 0) + 1;
+  const code = `P${sortOrder}`;
 
-  const { error } = await supabase.from("pillars").insert([
-    {
-      name,
-      description,
-      sort_order: nextSortOrder,
-      code: nextCode,
-    },
-  ]);
+  const { data, error } = await supabase
+    .from("pillars")
+    .insert([
+      {
+        id: uuidv4(),
+        name,
+        description: description || `Auto description for ${name}`,
+        code,
+        sort_order: sortOrder,
+      },
+    ])
+    .select("id, name, description, code, sort_order, themes")
+    .single();
 
   if (error) throw error;
+
+  return data as Pillar;
 }
