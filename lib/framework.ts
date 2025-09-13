@@ -7,13 +7,27 @@ export async function fetchFramework(): Promise<Pillar[]> {
 
   const { data, error } = await supabase
     .from("pillars")
-    .select("*");
+    .select(`
+      id,
+      ref_code,
+      name,
+      description,
+      sort_order,
+      themes (
+        id,
+        ref_code,
+        name,
+        description,
+        sort_order
+      )
+    `)
+    .order("sort_order", { ascending: true });
 
   if (error) {
     console.error("Error fetching framework:", error);
     return [];
   }
 
-  console.log("Fetched pillars:", data);
+  console.log("Fetched pillars with themes:", data);
   return data as Pillar[];
 }
