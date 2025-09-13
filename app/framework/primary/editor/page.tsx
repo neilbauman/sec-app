@@ -1,76 +1,53 @@
 // app/framework/primary/editor/page.tsx
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/utils/supabase/server";
 import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
-import { Pillar, Theme, Subtheme } from "@/types/framework";
+import { Pillar } from "@/types/framework";
 
 export default async function Page() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createClient();
 
-  // Fetch pillars + themes
-  const { data: pillars, error: pillarsError } = await supabase
+  // ✅ Explicitly tell Supabase to use themes.pillar_id_fkey → pillars.id
+  const { data: pillars, error } = await supabase
     .from("pillars")
-    .select(
-      `
+    .select(`
       id,
+      code,
       name,
       description,
-      code,
       sort_order,
       themes:themes!themes_pillar_id_fkey (
         id,
+        code,
         name,
         description,
-        code,
-        sort_order
+        sort_order,
+        subthemes (
+          id,
+          code,
+          name,
+          description,
+          sort_order
+        )
       )
-    `
-    )
-    .order("sort_order", { ascending: true });
+    `)
+    .order("sort_order");
 
-  if (pillarsError) {
+  if (error) {
+    console.error("Failed to load pillars:", error.message);
     return (
-      <div className="p-6 text-red-600">
-        ❌ Failed to load pillars: {pillarsError.message}
+      <div className="p-6">
+        <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
+        <p className="mt-4 text-red-600">
+          ❌ Failed to load pillars: {error.message}
+        </p>
       </div>
     );
   }
-
-  // Fetch subthemes separately
-  const { data: subthemes, error: subthemesError } = await supabase
-    .from("subthemes")
-    .select(`
-      id,
-      name,
-      description,
-      code,
-      sort_order,
-      theme_id
-    `);
-
-  if (subthemesError) {
-    return (
-      <div className="p-6 text-red-600">
-        ❌ Failed to load subthemes: {subthemesError.message}
-      </div>
-    );
-  }
-
-  // Merge subthemes into themes manually
-  const pillarsWithSubthemes = (pillars as Pillar[]).map((pillar) => ({
-    ...pillar,
-    themes: pillar.themes.map((theme: Theme) => ({
-      ...theme,
-      subthemes: subthemes?.filter((st) => st.theme_id === theme.id) ?? [],
-    })),
-  }));
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6">
       <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
-      <PrimaryFrameworkEditorClient pillars={pillarsWithSubthemes} />
+      <PrimaryFrameworkEditorClient pillars={(pillars as Pillar[]) ?? []} />
     </div>
   );
 }
