@@ -4,7 +4,7 @@ import { useState } from "react";
 import { addPillar } from "./actions";
 import { PlusCircle } from "lucide-react";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import { Pillar } from "@/types/pillar"; // ✅ new type import
+import { Pillar } from "@/types/pillar";
 
 type Props = {
   pillars: Pillar[];
@@ -27,19 +27,9 @@ export default function PrimaryFrameworkEditorClient({ pillars }: Props) {
         </button>
       </div>
 
-      {/* Add Pillar Form */}
       {showAddForm && (
         <form
-          action={async (formData: FormData) => {
-            const name = formData.get("name") as string;
-            let description = formData.get("description") as string | null;
-
-            if (!description || description.trim() === "") {
-              description = `Auto-generated description for ${name}`;
-            }
-
-            await addPillar({ name, description: description ?? "" });
-          }}
+          action={addPillar} // ✅ Now directly passes FormData
           className="p-4 space-y-2 bg-gray-50 border rounded-md"
         >
           <input
@@ -64,7 +54,6 @@ export default function PrimaryFrameworkEditorClient({ pillars }: Props) {
         </form>
       )}
 
-      {/* Existing Pillars */}
       <PrimaryFrameworkCards pillars={pillars} />
     </div>
   );
