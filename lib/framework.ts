@@ -1,4 +1,7 @@
 // lib/framework.ts
+import { createClient } from "@/lib/supabase-server";
+import type { Pillar } from "@/types/framework";
+
 export async function fetchFramework(): Promise<Pillar[]> {
   const supabase = createClient();
 
@@ -32,7 +35,10 @@ export async function fetchFramework(): Promise<Pillar[]> {
         )
       )
     `)
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true }) // top-level: pillars
+    .order("sort_order", { foreignTable: "themes", ascending: true }) // nested: themes
+    .order("sort_order", { foreignTable: "themes.subthemes", ascending: true }) // nested: subthemes
+    .order("sort_order", { foreignTable: "themes.subthemes.indicators", ascending: true }); // nested: indicators
 
   if (error) throw error;
   return data as Pillar[];
