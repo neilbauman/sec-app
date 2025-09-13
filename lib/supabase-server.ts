@@ -5,10 +5,9 @@ import { cookies } from "next/headers";
 
 /**
  * Create a Supabase client for server components.
- * Casted to SupabaseClient so type mismatches don't block builds.
  */
-export function createClient(): SupabaseClient {
-  const cookieStore = cookies();
+export async function createClient(): Promise<SupabaseClient> {
+  const cookieStore = await cookies(); // 👈 must await since it's async in Next 15
 
   const client = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,5 +24,6 @@ export function createClient(): SupabaseClient {
     }
   );
 
-  return client as unknown as SupabaseClient; // 👈 safe cast, avoids schema mismatch errors
+  // Cast to SupabaseClient to avoid schema mismatch errors
+  return client as unknown as SupabaseClient;
 }
