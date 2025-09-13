@@ -6,7 +6,7 @@ import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function PrimaryFrameworkEditorPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies(); // ✅ FIX: await it
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
