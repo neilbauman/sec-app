@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
 
 export default async function PrimaryFrameworkEditorPage() {
-  const supabase = await createClient(); // ✅ now awaited
+  const supabase = await createClient(); // ✅ Await client
 
   const { data: pillars, error } = await supabase
     .from("pillars")
@@ -16,7 +16,16 @@ export default async function PrimaryFrameworkEditorPage() {
       themes (
         id,
         name,
-        description
+        description,
+        code,
+        sort_order,
+        subthemes (
+          id,
+          name,
+          description,
+          code,
+          sort_order
+        )
       )
     `)
     .order("sort_order", { ascending: true });
