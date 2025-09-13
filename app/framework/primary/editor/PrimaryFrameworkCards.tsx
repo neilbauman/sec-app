@@ -1,6 +1,6 @@
 "use client";
 
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+import type { Pillar } from "@/types/framework";
 
 interface Props {
   pillars: Pillar[];
@@ -8,13 +8,12 @@ interface Props {
 
 export default function PrimaryFrameworkCards({ pillars }: Props) {
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {pillars.map((pillar) => (
         <div
           key={pillar.id}
-          className="rounded-xl border bg-white p-4 shadow-sm"
+          className="border rounded-lg p-4 shadow-sm bg-white"
         >
-          {/* Pillar header */}
           <h2 className="text-lg font-semibold">
             {pillar.ref_code} – {pillar.name}
           </h2>
@@ -22,19 +21,17 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
             <p className="text-sm text-gray-600">{pillar.description}</p>
           )}
 
-          {/* Themes */}
-          {pillar.themes?.map((theme: Theme) => (
-            <div key={theme.id} className="ml-4 mt-4">
-              <h3 className="text-md font-medium">
+          {pillar.themes?.map((theme) => (
+            <div key={theme.id} className="mt-4 pl-4 border-l">
+              <h3 className="font-medium">
                 {theme.ref_code} – {theme.name}
               </h3>
               {theme.description && (
                 <p className="text-sm text-gray-600">{theme.description}</p>
               )}
 
-              {/* Subthemes */}
-              {theme.subthemes?.map((subtheme: Subtheme) => (
-                <div key={subtheme.id} className="ml-6 mt-2">
+              {theme.subthemes?.map((subtheme) => (
+                <div key={subtheme.id} className="mt-2 pl-4 border-l">
                   <span className="block text-sm font-medium">
                     {subtheme.ref_code} – {subtheme.name}
                   </span>
