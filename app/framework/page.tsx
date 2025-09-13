@@ -1,14 +1,44 @@
-import Link from "next/link";
+// app/framework/primary/editor/page.tsx
 
-export default function FrameworkPage() {
+import { createClient } from "@/lib/supabase-server";
+import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
+
+export default async function PrimaryFrameworkEditorPage() {
+  const supabase = await createClient(); // ✅ FIXED: now awaited
+
+  const { data: pillars, error } = await supabase
+    .from("pillars")
+    .select(
+      `
+        id,
+        name,
+        description,
+        code,
+        sort_order,
+        themes (
+          id,
+          name,
+          description,
+          subthemes (
+            id,
+            name,
+            description
+          )
+        )
+      `
+    )
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching pillars:", error.message);
+  }
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Framework Configuration</h2>
-      <p className="text-gray-600">Select an editor below:</p>
-      <ul className="list-disc list-inside space-y-2">
-        <li><Link href="/framework/primary/editor" className="text-blue-600 hover:underline">Primary Framework Editor</Link></li>
-        <li><Link href="/framework/comprehensive/editor" className="text-blue-600 hover:underline">Comprehensive Framework Editor</Link></li>
-      </ul>
+    <div className="p-6">
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <PrimaryFrameworkEditorClient pillars={pillars ?? []} />
+      </div>
     </div>
   );
 }
