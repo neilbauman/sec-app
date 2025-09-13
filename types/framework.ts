@@ -1,28 +1,28 @@
-// types/framework.ts
-export type Subtheme = {
-  id: string;
+// types.ts
+export interface Subtheme {
+  id: number;
+  theme_id: number;
   name: string;
-  description?: string;
-  code?: string;
-  sort_order?: number;
-  theme_id?: string;   // 👈 make optional
-};
+  description: string;
+  ref_code: string;  // was "code"
+  sort_order: number;
+}
 
-export type Theme = {
-  id: string;
+export interface Theme {
+  id: number;
+  pillar_id: number;
   name: string;
-  description?: string;
-  code?: string;
-  sort_order?: number;
-  pillar_id?: string;  // 👈 make optional
+  description: string;
+  ref_code: string;  // was "code"
+  sort_order: number;
   subthemes: Subtheme[];
-};
+}
 
-export type Pillar = {
-  id: string;
+export interface Pillar {
+  id: number;
   name: string;
-  description?: string;
-  code?: string;
-  sort_order?: number;
+  description: string;
+  ref_code: string;  // was "code"
+  sort_order: number;
   themes: Theme[];
-};
+}
