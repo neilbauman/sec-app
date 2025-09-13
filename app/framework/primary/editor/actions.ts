@@ -3,10 +3,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-// ✅ Correct usage: cookies() is synchronous
-const cookieStore = cookies();
-
 function getSupabase() {
+  const cookieStore = cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -15,27 +13,20 @@ function getSupabase() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set() {
-          // no-op on server
-        },
-        remove() {
-          // no-op on server
-        },
+        set() {}, // no-op
+        remove() {}, // no-op
       },
     }
   );
 }
 
-export async function addPillar({
-  name,
-  description,
-}: {
-  name: string;
-  description?: string;
-}) {
+export async function addPillar(formData: FormData) {
   const supabase = getSupabase();
 
-  // Get count to compute next sort order and code
+  const name = formData.get("name") as string;
+  const description = (formData.get("description") as string) || undefined;
+
+  // Count pillars to assign next code + sort_order
   const { count } = await supabase
     .from("pillars")
     .select("*", { count: "exact", head: true });
@@ -62,6 +53,7 @@ export async function addPillar({
 
 export async function deletePillar(id: string) {
   const supabase = getSupabase();
+  // ✅ Use UUID id here
   const { error } = await supabase.from("pillars").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
