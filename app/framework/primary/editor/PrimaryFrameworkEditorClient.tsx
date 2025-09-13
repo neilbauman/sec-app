@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Pillar } from "@/types";
+import type { Pillar } from "@/types/framework";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 
 interface Props {
