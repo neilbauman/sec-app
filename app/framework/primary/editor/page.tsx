@@ -1,69 +1,62 @@
 // app/framework/primary/editor/page.tsx
-
-import { createServerClient } from "@supabase/ssr";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import PageHeader from "@/components/PageHeader";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
-import { Pillar } from "@/types/framework";
+import { redirect } from "next/navigation";
 
-export default async function FrameworkPage() {
+import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
+import { Pillar, Theme, Subtheme } from "@/types/framework";
+
+export default async function PrimaryFrameworkEditorPage() {
   const cookieStore = cookies();
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: () => cookieStore,
-    }
-  );
+  const supabase = createServerComponentClient({
+    cookies: () => cookieStore,
+  });
 
-  // ✅ Explicit joins to disambiguate the relationships
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    redirect("/login");
+  }
+
   const { data: pillars, error } = await supabase
     .from("pillars")
-    .select(`
-      id,
-      code,
-      name,
-      description,
-      sort_order,
-      themes:themes!themes_pillar_id_fkey (
-        id,
-        code,
-        name,
-        description,
-        sort_order,
-        subthemes:subthemes!subthemes_theme_id_fkey (
-          id,
-          code,
-          name,
-          description,
-          sort_order
+    .select(
+      `
+      *,
+      themes:themes(
+        *,
+        subthemes:subthemes(
+          *,
+          indicators:indicators(
+            *,
+            criteria_levels(*)
+          )
         )
       )
-    `)
-    .order("sort_order");
+    `
+    )
+    .order("sort_order", { ascending: true });
 
   if (error) {
     console.error("Error fetching pillars:", error.message);
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 text-red-600 p-4 rounded-md">
+          Could not load pillars: {error.message}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {/* ✅ Page header restored */}
-      <PageHeader title="Primary Framework Editor" />
-
-      {/* ✅ Breadcrumbs restored */}
-      <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Primary Framework Editor" },
-        ]}
-      />
-
-      <div className="bg-white rounded-lg shadow-sm p-4">
-        <PrimaryFrameworkEditorClient pillars={(pillars as Pillar[]) ?? []} />
-      </div>
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">Primary Framework Editor</h1>
+      <PrimaryFrameworkEditorClient pillars={pillars as (Pillar & {
+        themes: (Theme & { subthemes: Subtheme[] })[];
+      })[]} />
     </div>
   );
 }
