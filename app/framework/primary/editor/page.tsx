@@ -9,11 +9,12 @@ export default async function PrimaryFrameworkEditorPage() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Primary Framework Editor</h1>
       {pillars.length === 0 ? (
-        <p className="text-yellow-700 bg-yellow-100 p-4 rounded">
+        <p className="bg-yellow-100 text-yellow-800 p-4 rounded">
           No framework data available.
         </p>
       ) : (
-        <PrimaryFrameworkEditorClient pillars={pillars} />
+        // ✅ Pass data with the correct prop name
+        <PrimaryFrameworkEditorClient initialData={pillars} />
       )}
     </div>
   );
