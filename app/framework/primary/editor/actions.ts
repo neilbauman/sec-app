@@ -1,13 +1,20 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import { v4 as uuidv4 } from "uuid";
+import { cookies } from "next/headers";
 
-function getSupabase() {
+// ✅ Pillar insert
+export async function addPillar(formData: FormData) {
+  const name = formData.get("name") as string;
+  let description = formData.get("description") as string | null;
+
+  if (!description || description.trim() === "") {
+    description = `Auto-generated description for ${name}`;
+  }
+
+  // Get Supabase client
   const cookieStore = cookies();
-
-  return createServerClient(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -15,53 +22,34 @@ function getSupabase() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set() {
-          // no-op
-        },
-        remove() {
-          // no-op
-        },
+        set() {},
+        remove() {},
       },
     }
   );
-}
 
-/**
- * Add a new Pillar
- * Matches DB schema: id (uuid), code (text), name (text), description (text), sort_order (int)
- */
-export async function addPillar(formData: FormData) {
-  const supabase = getSupabase();
-
-  const name = (formData.get("name") as string)?.trim();
-  let description = (formData.get("description") as string)?.trim();
-
-  if (!name) {
-    throw new Error("Name is required");
-  }
-
-  // Fetch current pillars to determine next code and sort order
+  // Find the current max sort_order
   const { data: existing, error: fetchError } = await supabase
     .from("pillars")
-    .select("code, sort_order")
-    .order("sort_order", { ascending: true });
+    .select("sort_order, code")
+    .order("sort_order", { ascending: false })
+    .limit(1);
 
   if (fetchError) throw fetchError;
 
-  const nextSort = existing?.length ? existing.length + 1 : 1;
-  const nextCode = `P${nextSort}`;
+  const nextSortOrder = existing?.[0]?.sort_order
+    ? existing[0].sort_order + 1
+    : 1;
+  const nextCode = `P${nextSortOrder}`;
 
-  if (!description) {
-    description = `Auto-generated description for ${name}`;
-  }
+  const { error } = await supabase.from("pillars").insert([
+    {
+      name,
+      description,
+      sort_order: nextSortOrder,
+      code: nextCode,
+    },
+  ]);
 
-  const { error: insertError } = await supabase.from("pillars").insert({
-    id: uuidv4(),
-    code: nextCode,
-    name,
-    description,
-    sort_order: nextSort,
-  });
-
-  if (insertError) throw insertError;
+  if (error) throw error;
 }
