@@ -3,83 +3,60 @@
 "use client";
 
 import { useState } from "react";
-import { addPillar } from "./actions";
-import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import { PlusCircle } from "lucide-react";
-import type { Pillar } from "@/types/framework";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 type Props = {
-  pillars: Pillar[];
-  error?: string; // ✅ allow error to be passed
+  pillars: (Pillar & { themes?: (Theme & { subthemes?: Subtheme[] })[] })[];
 };
 
-export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) {
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [loading, setLoading] = useState(false);
+export default function PrimaryFrameworkEditorClient({ pillars }: Props) {
+  const [expandedPillar, setExpandedPillar] = useState<string | null>(null);
+  const [expandedTheme, setExpandedTheme] = useState<string | null>(null);
 
   return (
-    <div className="space-y-6">
-      {/* ✅ Error banner */}
-      {error && (
-        <div className="rounded-md bg-red-100 text-red-800 p-2">
-          {error}
-        </div>
-      )}
-
-      {/* Add Pillar Form */}
-      {showAddForm ? (
-        <form
-          action={async (formData: FormData) => {
-            setLoading(true);
-            try {
-              await addPillar(formData);
-            } finally {
-              setLoading(false);
-              setShowAddForm(false);
-            }
-          }}
-          className="p-4 space-y-2 bg-gray-50 border rounded-md"
-        >
-          <input
-            type="text"
-            name="name"
-            placeholder="Pillar name"
-            required
-            className="w-full p-2 border rounded-md"
-          />
-          <textarea
-            name="description"
-            placeholder="Description (optional)"
-            className="w-full p-2 border rounded-md"
-          />
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? "Adding..." : "Add Pillar"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAddForm(false)}
-              className="px-3 py-1 bg-gray-300 rounded-md hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+    <div>
+      <h1 className="text-2xl font-bold mb-4">Primary Framework Editor</h1>
+      {pillars.length === 0 ? (
+        <p className="text-gray-500">No pillars found.</p>
       ) : (
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-        >
-          <PlusCircle size={18} /> Add Pillar
-        </button>
+        <ul className="space-y-4">
+          {pillars.map((pillar) => (
+            <li key={pillar.id} className="border rounded p-4">
+              <button
+                className="w-full text-left font-semibold text-lg"
+                onClick={() =>
+                  setExpandedPillar(expandedPillar === pillar.id ? null : pillar.id)
+                }
+              >
+                {pillar.name}
+              </button>
+              {expandedPillar === pillar.id && pillar.themes && (
+                <ul className="ml-6 mt-2 space-y-2">
+                  {pillar.themes.map((theme) => (
+                    <li key={theme.id} className="border rounded p-2">
+                      <button
+                        className="w-full text-left font-medium"
+                        onClick={() =>
+                          setExpandedTheme(expandedTheme === theme.id ? null : theme.id)
+                        }
+                      >
+                        {theme.name}
+                      </button>
+                      {expandedTheme === theme.id && theme.subthemes && (
+                        <ul className="ml-6 mt-1 list-disc">
+                          {theme.subthemes.map((subtheme) => (
+                            <li key={subtheme.id}>{subtheme.name}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
-
-      {/* Render Pillars */}
-      <PrimaryFrameworkCards pillars={pillars} />
     </div>
   );
 }
