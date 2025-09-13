@@ -10,32 +10,37 @@ export default async function FrameworkPage() {
     .select(
       `
         id,
-        ref_code,
         name,
         description,
+        ref_code,
         sort_order,
         themes (
           id,
-          ref_code,
           name,
           description,
+          ref_code,
           sort_order,
           subthemes (
             id,
-            ref_code,
             name,
             description,
+            ref_code,
             sort_order
           )
         )
       `
     )
-    .order("sort_order");
+    .order("sort_order", { ascending: true });
 
   if (error) {
-    console.error(error);
-    return <p>Error loading framework.</p>;
+    console.error("Error fetching framework:", error);
+    return <p>Error loading framework</p>;
   }
 
-  return <PrimaryFrameworkCards pillars={(pillars as Pillar[]) ?? []} />;
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-6">Framework</h1>
+      <PrimaryFrameworkCards pillars={pillars as Pillar[]} />
+    </div>
+  );
 }
