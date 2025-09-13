@@ -1,23 +1,18 @@
-// app/framework/primary/editor/PrimaryFrameworkCards.tsx
 "use client";
 
-import type { Pillar } from "@/types";
+import type { Pillar } from "@/types/framework";
 
 interface Props {
   pillars: Pillar[];
 }
 
 export default function PrimaryFrameworkCards({ pillars }: Props) {
-  if (!pillars?.length) {
-    return <p className="text-gray-500">No pillars available</p>;
-  }
-
   return (
-    <div className="space-y-4">
+    <div className="grid gap-4 md:grid-cols-2">
       {pillars.map((pillar) => (
         <div
           key={pillar.id}
-          className="rounded-lg border bg-white p-4 shadow-sm"
+          className="rounded-lg border p-4 shadow hover:shadow-md transition"
         >
           <h2 className="text-lg font-semibold">
             {pillar.ref_code} – {pillar.name}
