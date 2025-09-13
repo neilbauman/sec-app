@@ -2,21 +2,27 @@
 
 export interface Indicator {
   id: string;
+  ref_code: string;
   name: string;
+  description?: string;
   subtheme_id?: string | null;
   theme_id?: string | null;
 }
 
 export interface Subtheme {
   id: string;
+  ref_code: string;
   name: string;
+  description?: string;
   theme_id: string;
   indicators?: Indicator[];
 }
 
 export interface Theme {
   id: string;
+  ref_code: string;
   name: string;
+  description?: string;
   pillar_id: string;
   subthemes?: Subtheme[];
   indicators?: Indicator[]; // supports themes with direct indicators
@@ -24,7 +30,10 @@ export interface Theme {
 
 export interface Pillar {
   id: string;
+  ref_code: string;
   name: string;
+  description?: string;
+  sort_order?: number;
   themes: Theme[];
 }
 
