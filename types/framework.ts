@@ -1,29 +1,27 @@
 // types/framework.ts
 
 export interface Subtheme {
-  id: number;
-  theme_id: number;
+  id: string;
   name: string;
-  description: string;
-  ref_code: string;  // was "code"
-  sort_order: number;
+  description?: string;
+  ref_code: string; // human readable reference code
+  sort_order?: number;
 }
 
 export interface Theme {
-  id: number;
-  pillar_id: number;
+  id: string;
   name: string;
-  description: string;
-  ref_code: string;  // was "code"
-  sort_order: number;
-  subthemes: Subtheme[];
+  description?: string;
+  ref_code: string;
+  sort_order?: number;
+  subthemes?: Subtheme[];
 }
 
 export interface Pillar {
-  id: number;
+  id: string;
   name: string;
-  description: string;
-  ref_code: string;  // was "code"
-  sort_order: number;
-  themes: Theme[];
+  description?: string;
+  ref_code: string;
+  sort_order?: number;
+  themes?: Theme[];
 }
