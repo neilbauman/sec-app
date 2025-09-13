@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase-server";
 import type { Pillar } from "@/types/framework";
 
 export default async function FrameworkPage() {
-  const supabase = createClient();
+  const supabase = createClient(); // ✅ no await here
 
   const { data: pillars, error } = await supabase
     .from("pillars")
