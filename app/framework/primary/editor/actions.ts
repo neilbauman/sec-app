@@ -5,14 +5,16 @@ import { cookies } from "next/headers";
 import { v4 as uuidv4 } from "uuid";
 import { Pillar } from "@/types/framework";
 
-function getSupabase() {
+async function getSupabase() {
+  const cookieStore = await cookies(); // ✅ Await cookies() in Next.js 15
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          return cookies().get(name)?.value;
+          return cookieStore.get(name)?.value;
         },
         set() {
           // server actions don’t persist cookies here
@@ -26,7 +28,7 @@ function getSupabase() {
 }
 
 export async function addPillar(formData: FormData): Promise<Pillar | null> {
-  const supabase = getSupabase();
+  const supabase = await getSupabase(); // ✅ getSupabase is now async
 
   const name = formData.get("name") as string;
   const description = (formData.get("description") as string) ?? null;
