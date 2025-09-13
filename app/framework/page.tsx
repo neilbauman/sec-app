@@ -1,46 +1,24 @@
-import { createClient } from "@/lib/supabase-server";
-import type { Pillar } from "@/types/framework";
+import { fetchFramework } from "@/lib/framework";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 
 export default async function FrameworkPage() {
-  const supabase = createClient();
+  let pillars = [];
 
-  const { data: pillars, error } = await supabase
-    .from("pillars")
-    .select(
-      `
-        id,
-        name,
-        description,
-        ref_code,
-        sort_order,
-        themes (
-          id,
-          name,
-          description,
-          ref_code,
-          sort_order,
-          subthemes (
-            id,
-            name,
-            description,
-            ref_code,
-            sort_order
-          )
-        )
-      `
-    )
-    .order("sort_order", { ascending: true });
+  try {
+    pillars = await fetchFramework();
+  } catch (error) {
+    console.error("FrameworkPage failed:", error);
+    return <div className="text-red-600">Error loading data</div>;
+  }
 
-  if (error) {
-    console.error("Error fetching framework:", error);
-    return <p>Error loading framework</p>;
+  if (!pillars || pillars.length === 0) {
+    return <div className="text-gray-600">⚠️ No framework data found</div>;
   }
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Framework</h1>
-      <PrimaryFrameworkCards pillars={pillars as Pillar[]} />
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Framework Editor</h1>
+      <PrimaryFrameworkCards pillars={pillars} />
     </div>
   );
 }
