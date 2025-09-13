@@ -1,19 +1,19 @@
 // app/framework/primary/editor/page.tsx
 import { createClient } from "@supabase/supabase-js";
 import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
-import { Pillar } from "@/types/framework";
+import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function Page() {
-  // ✅ Create Supabase client directly
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // ✅ Explicit join paths to disambiguate relationships
-  const { data: pillars, error } = await supabase
+  // Fetch pillars + themes
+  const { data: pillars, error: pillarsError } = await supabase
     .from("pillars")
-    .select(`
+    .select(
+      `
       id,
       name,
       description,
@@ -24,30 +24,53 @@ export default async function Page() {
         name,
         description,
         code,
-        sort_order,
-        subthemes:subthemes!subthemes_theme_id_fkey (
-          id,
-          name,
-          description,
-          code,
-          sort_order
-        )
+        sort_order
       )
-    `)
+    `
+    )
     .order("sort_order", { ascending: true });
 
-  if (error) {
+  if (pillarsError) {
     return (
       <div className="p-6 text-red-600">
-        ❌ Failed to load pillars: {error.message}
+        ❌ Failed to load pillars: {pillarsError.message}
       </div>
     );
   }
 
+  // Fetch subthemes separately
+  const { data: subthemes, error: subthemesError } = await supabase
+    .from("subthemes")
+    .select(`
+      id,
+      name,
+      description,
+      code,
+      sort_order,
+      theme_id
+    `);
+
+  if (subthemesError) {
+    return (
+      <div className="p-6 text-red-600">
+        ❌ Failed to load subthemes: {subthemesError.message}
+      </div>
+    );
+  }
+
+  // Merge subthemes into themes manually
+  const pillarsWithSubthemes = (pillars as Pillar[]).map((pillar) => ({
+    ...pillar,
+    themes: pillar.themes.map((theme: Theme) => ({
+      ...theme,
+      subthemes: subthemes?.filter((st) => st.theme_id === theme.id) ?? [],
+    })),
+  }));
+
   return (
     <div className="p-6 space-y-4">
       <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
-      <PrimaryFrameworkEditorClient pillars={(pillars as Pillar[]) ?? []} />
+      <PrimaryFrameworkEditorClient pillars={pillarsWithSubthemes} />
     </div>
   );
 }
