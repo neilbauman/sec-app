@@ -1,10 +1,19 @@
-import { fetchFramework } from "@/lib/framework";
-import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
+"use client";
 
-export default async function FrameworkEditorPage() {
-  const pillars = await fetchFramework();
+import { useState } from "react";
+import type { Pillar } from "@/types/framework";
+import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+
+interface Props {
+  pillars: Pillar[];
+}
+
+export default function PrimaryFrameworkEditorClient({ pillars }: Props) {
+  const [data] = useState(pillars ?? []);
 
   return (
-    <PrimaryFrameworkEditorClient initialPillars={pillars ?? []} />
+    <div className="space-y-6">
+      <PrimaryFrameworkCards pillars={data} />
+    </div>
   );
 }
