@@ -6,6 +6,8 @@ import type { Pillar } from "@/types";
 export async function fetchFramework(): Promise<Pillar[]> {
   const supabase = createClient();
 
+  console.log("🚀 Running fetchFramework...");
+
   const { data, error } = await supabase
     .from("pillars")
     .select(`
@@ -47,12 +49,13 @@ export async function fetchFramework(): Promise<Pillar[]> {
     `)
     .order("sort_order", { ascending: true });
 
-  console.log("📊 fetchFramework result:", { data, error });
-
   if (error) {
     console.error("❌ Supabase fetch error:", error);
-    throw error;
+    return [];
   }
+
+  console.log("✅ Supabase fetch success. Rows returned:", data?.length ?? 0);
+  console.dir(data, { depth: null });
 
   return (data ?? []) as Pillar[];
 }
