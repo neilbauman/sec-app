@@ -6,8 +6,8 @@ import { createServerClient } from "@supabase/ssr";
 /**
  * Create a Supabase client for server components.
  */
-export function createClient() {
-  const cookieStore = cookies(); // ✅ synchronous in Next.js 13/14/15 App Router
+export async function createClient() {
+  const cookieStore = await cookies(); // ✅ now explicitly awaited
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
