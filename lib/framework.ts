@@ -1,48 +1,44 @@
 // lib/framework.ts
 import { createClient } from "@/lib/supabase-server";
-import type { Pillar } from "@/types/framework";
+import { Database } from "@/types/supabase";
 
-export async function fetchFramework(): Promise<Pillar[]> {
+type Pillar = Database["public"]["Tables"]["pillars"]["Row"];
+type Theme = Database["public"]["Tables"]["themes"]["Row"];
+type Subtheme = Database["public"]["Tables"]["subthemes"]["Row"];
+type Indicator = Database["public"]["Tables"]["indicators"]["Row"];
+
+export async function fetchFramework(): Promise<
+  (Pillar & {
+    themes: (Theme & {
+      subthemes: (Subtheme & {
+        indicators: Indicator[];
+      })[];
+    })[];
+  })[]
+> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from("pillars")
-    .select(
-      `
-      id,
-      name,
-      description,
-      ref_code,
-      sort_order,
-      themes:themes(
-        id,
-        name,
-        description,
-        ref_code,
-        sort_order,
-        subthemes:subthemes(
-          id,
-          name,
-          description,
-          ref_code,
-          sort_order,
-          indicators:indicators(
-            id,
-            name,
-            description,
-            ref_code,
-            sort_order
-          )
-        )
-      )
-    `
-    )
-    .order("sort_order", { ascending: true });
+  // Fetch pillars
+  const { data: pillars } = await supabase.from("pillars").select("*").order("sort_order");
+  if (!pillars) return [];
 
-  if (error) {
-    console.error("Error fetching framework:", error);
-    return [];
-  }
+  // Fetch themes
+  const { data: themes } = await supabase.from("themes").select("*").order("sort_order");
+  const { data: subthemes } = await supabase.from("subthemes").select("*").order("sort_order");
+  const { data: indicators } = await supabase.from("indicators").select("*").order("sort_order");
 
-  return data as Pillar[];
+  return pillars.map((pillar) => ({
+    ...pillar,
+    themes: (themes || [])
+      .filter((t) => t.pillar_id === pillar.id)
+      .map((theme) => ({
+        ...theme,
+        subthemes: (subthemes || [])
+          .filter((st) => st.theme_id === theme.id)
+          .map((subtheme) => ({
+            ...subtheme,
+            indicators: (indicators || []).filter((ind) => ind.subtheme_id === subtheme.id),
+          })),
+      })),
+  }));
 }
