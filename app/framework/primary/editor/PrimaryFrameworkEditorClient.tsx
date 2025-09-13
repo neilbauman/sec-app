@@ -1,55 +1,56 @@
 "use client";
 
-import { useState } from "react";
-import { addPillar } from "./actions";
+import { useState, useTransition } from "react";
 import { PlusCircle } from "lucide-react";
+import { Pillar } from "@/types/framework";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
-import { Pillar } from "@/types/pillar";
+import { addPillar } from "./actions";
 
 type Props = {
   pillars: Pillar[];
 };
 
 export default function PrimaryFrameworkEditorClient({ pillars }: Props) {
+  const [isPending, startTransition] = useTransition();
   const [showAddForm, setShowAddForm] = useState(false);
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Pillars</h2>
-        <button
-          type="button"
-          onClick={() => setShowAddForm((prev) => !prev)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          <PlusCircle className="w-4 h-4" />
-          Add Pillar
-        </button>
-      </div>
+    <div className="p-4 space-y-4">
+      <button
+        onClick={() => setShowAddForm(!showAddForm)}
+        className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+      >
+        <PlusCircle className="w-4 h-4" />
+        Add Pillar
+      </button>
 
       {showAddForm && (
         <form
-          action={addPillar} // ✅ Now directly passes FormData
+          action={async (formData: FormData) => {
+            startTransition(async () => {
+              await addPillar(formData);
+            });
+          }}
           className="p-4 space-y-2 bg-gray-50 border rounded-md"
         >
           <input
             type="text"
             name="name"
-            placeholder="Name"
+            placeholder="Pillar name"
             required
-            className="w-full p-2 border rounded"
+            className="w-full px-2 py-1 border rounded"
           />
-          <input
-            type="text"
+          <textarea
             name="description"
-            placeholder="Description (optional)"
-            className="w-full p-2 border rounded"
+            placeholder="Optional description"
+            className="w-full px-2 py-1 border rounded"
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            disabled={isPending}
+            className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
           >
-            Save
+            {isPending ? "Adding..." : "Add Pillar"}
           </button>
         </form>
       )}
