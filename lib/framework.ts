@@ -1,14 +1,13 @@
 // lib/framework.ts
 import { createClient } from "@/lib/supabase-server";
-import type { Pillar } from "@/types";
+import type { Pillar } from "@/types/framework";
 
 export async function fetchFramework(): Promise<Pillar[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
     .from("pillars")
-    .select(
-      `
+    .select(`
       id,
       ref_code,
       name,
@@ -17,32 +16,31 @@ export async function fetchFramework(): Promise<Pillar[]> {
       themes (
         id,
         ref_code,
+        pillar_id,
+        pillar_ref_code,
         name,
         description,
         sort_order,
         subthemes (
           id,
           ref_code,
+          theme_id,
+          theme_ref_code,
           name,
           description,
           sort_order,
           indicators (
             id,
             ref_code,
+            subtheme_id,
+            subtheme_ref_code,
             name,
             description,
-            sort_order,
-            criteria_levels (
-              id,
-              label,
-              default_score,
-              sort_order
-            )
+            sort_order
           )
         )
       )
-    `
-    )
+    `)
     .order("sort_order", { ascending: true });
 
   if (error) {
