@@ -4,17 +4,24 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 function getSupabase() {
+  // ❌ old: const cookieStore = await cookies();
+  // ✅ fixed:
   const cookieStore = cookies();
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          return cookieStore.get(name)?.value ?? null;
         },
-        set() {}, // no-op
-        remove() {}, // no-op
+        set() {
+          // no-op for server actions
+        },
+        remove() {
+          // no-op for server actions
+        },
       },
     }
   );
@@ -26,7 +33,7 @@ export async function addPillar(formData: FormData) {
   const name = formData.get("name") as string;
   const description = (formData.get("description") as string) || undefined;
 
-  // Count pillars to assign next code + sort_order
+  // Count existing pillars for code + sort_order
   const { count } = await supabase
     .from("pillars")
     .select("*", { count: "exact", head: true });
@@ -53,7 +60,6 @@ export async function addPillar(formData: FormData) {
 
 export async function deletePillar(id: string) {
   const supabase = getSupabase();
-  // ✅ Use UUID id here
   const { error } = await supabase.from("pillars").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
