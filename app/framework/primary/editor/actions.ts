@@ -23,14 +23,14 @@ export async function fetchFramework(): Promise<Pillar[]> {
         name,
         description,
         sort_order,
-        pillar_id,   -- ✅ ensure pillar_id is included
+        pillar_id,
         subthemes (
           id,
           ref_code,
           name,
           description,
           sort_order,
-          theme_id,  -- ✅ ensure theme_id is included
+          theme_id,
           indicators (
             id,
             ref_code,
