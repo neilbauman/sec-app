@@ -1,10 +1,14 @@
 // app/framework/primary/editor/page.tsx
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
 import { Pillar } from "@/types/framework";
 
 export default async function Page() {
-  const supabase = createClient();
+  // ✅ Create Supabase client directly
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   // ✅ Explicit join paths to disambiguate relationships
   const { data: pillars, error } = await supabase
