@@ -13,7 +13,7 @@ export async function fetchFramework(): Promise<Pillar[]> {
       name,
       description,
       sort_order,
-      themes (
+      themes:pillar_id (   -- 👈 force the relation
         id,
         ref_code,
         name,
