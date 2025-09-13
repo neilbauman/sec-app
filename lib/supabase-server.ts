@@ -2,6 +2,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+/**
+ * Creates a Supabase client instance for server components.
+ */
 export function createClient() {
   const cookieStore = cookies();
 
@@ -14,10 +17,10 @@ export function createClient() {
           return cookieStore.get(name)?.value ?? null;
         },
         set() {
-          // no-op: can't set cookies in server components
+          // no-op: cannot set cookies in server components
         },
         remove() {
-          // no-op: can't remove cookies in server components
+          // no-op
         },
       },
     }
