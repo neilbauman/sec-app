@@ -5,7 +5,8 @@ import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
 import { Pillar, Theme } from "@/types/framework";
 
 export default async function PrimaryFrameworkEditorPage() {
-  const cookieStore = cookies();
+  // ✅ Await cookies because Next.js 15 returns a Promise
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,7 +26,7 @@ export default async function PrimaryFrameworkEditorPage() {
     }
   );
 
-  // ✅ Explicitly specify which FK to use for themes → pillars
+  // ✅ Explicit foreign key for themes → pillars
   const { data: pillars, error } = await supabase
     .from("pillars")
     .select(`
@@ -57,7 +58,9 @@ export default async function PrimaryFrameworkEditorPage() {
   return (
     <div className="p-4">
       <div className="bg-white rounded-lg shadow-sm p-4">
-        <PrimaryFrameworkEditorClient pillars={(pillars as (Pillar & { themes: Theme[] })[]) ?? []} />
+        <PrimaryFrameworkEditorClient
+          pillars={(pillars as (Pillar & { themes: Theme[] })[]) ?? []}
+        />
       </div>
     </div>
   );
