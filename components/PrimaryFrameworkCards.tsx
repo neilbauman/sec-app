@@ -1,54 +1,41 @@
-"use client";
+// components/PrimaryFrameworkCards.tsx
+import { Database } from "@/types/supabase";
 
-import type { Pillar, Theme, Subtheme, Indicator } from "@/types/framework";
+type Pillar = Database["public"]["Tables"]["pillars"]["Row"];
+type Theme = Database["public"]["Tables"]["themes"]["Row"];
+type Subtheme = Database["public"]["Tables"]["subthemes"]["Row"];
+type Indicator = Database["public"]["Tables"]["indicators"]["Row"];
 
-interface Props {
-  pillars: Pillar[];
+interface FrameworkData extends Pillar {
+  themes: (Theme & {
+    subthemes: (Subtheme & {
+      indicators: Indicator[];
+    })[];
+  })[];
 }
 
-export default function PrimaryFrameworkCards({ pillars }: Props) {
-  if (!pillars || pillars.length === 0) {
-    return <p className="text-gray-600">No framework data found.</p>;
-  }
-
+export default function PrimaryFrameworkCards({ pillar }: { pillar: FrameworkData }) {
   return (
-    <div className="space-y-6">
-      {pillars.map((pillar: Pillar) => (
-        <div key={pillar.id} className="rounded-lg border p-4 bg-white shadow-sm">
-          <h2 className="text-lg font-semibold">
-            {pillar.ref_code} – {pillar.name}
-          </h2>
-          {pillar.description && (
-            <p className="text-sm text-gray-600">{pillar.description}</p>
-          )}
-
-          {pillar.themes?.map((theme: Theme) => (
-            <div key={theme.id} className="ml-4 mt-4">
-              <h3 className="font-medium">
-                {theme.ref_code} – {theme.name}
-              </h3>
-              {theme.description && (
-                <p className="text-sm text-gray-600">{theme.description}</p>
-              )}
-
-              {theme.subthemes?.map((subtheme: Subtheme) => (
-                <div key={subtheme.id} className="ml-4 mt-3">
-                  <h4 className="text-sm font-semibold">
-                    {subtheme.ref_code} – {subtheme.name}
-                  </h4>
-                  {subtheme.description && (
-                    <p className="text-xs text-gray-600">{subtheme.description}</p>
-                  )}
-
-                  {subtheme.indicators?.length > 0 && (
-                    <ul className="ml-4 mt-2 list-disc text-gray-700 text-sm">
-                      {subtheme.indicators.map((indicator: Indicator) => (
+    <div className="border rounded-lg p-4 bg-white shadow">
+      <h2 className="text-xl font-semibold">{pillar.name}</h2>
+      <p className="text-gray-600">{pillar.description}</p>
+      <div className="mt-4 space-y-4">
+        {pillar.themes.map((theme) => (
+          <div key={theme.id}>
+            <h3 className="text-lg font-bold">{theme.name}</h3>
+            <p className="text-gray-600">{theme.description}</p>
+            <div className="ml-4 space-y-2">
+              {theme.subthemes.map((subtheme) => (
+                <div key={subtheme.id}>
+                  <h4 className="font-medium">{subtheme.name}</h4>
+                  <p className="text-gray-500">{subtheme.description}</p>
+                  {subtheme.indicators.length > 0 && (
+                    <ul className="ml-4 list-disc text-gray-700">
+                      {subtheme.indicators.map((indicator) => (
                         <li key={indicator.id}>
-                          {indicator.ref_code} – {indicator.name}
+                          <span className="font-medium">{indicator.name}</span>{" "}
                           {indicator.description && (
-                            <p className="text-xs text-gray-500">
-                              {indicator.description}
-                            </p>
+                            <span className="text-gray-500">- {indicator.description}</span>
                           )}
                         </li>
                       ))}
@@ -57,9 +44,9 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
                 </div>
               ))}
             </div>
-          ))}
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
