@@ -2,7 +2,7 @@
 import { createClient } from "@/lib/supabase-server";
 import type { Pillar } from "@/types";
 
-export async function getFramework(): Promise<Pillar[]> {
+export async function fetchFramework(): Promise<Pillar[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
