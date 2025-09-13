@@ -5,8 +5,8 @@ import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
 import { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function Page() {
-  // Get cookies from Next.js
-  const cookieStore = cookies();
+  // ✅ Await cookies() because it returns a Promise in Next 15
+  const cookieStore = await cookies();
 
   // Create Supabase client
   const supabase = createServerClient(
@@ -18,10 +18,10 @@ export default async function Page() {
           return cookieStore.get(name)?.value ?? null;
         },
         set() {
-          // no-op for server components
+          // no-op in server components
         },
         remove() {
-          // no-op for server components
+          // no-op in server components
         },
       },
     }
@@ -65,7 +65,13 @@ export default async function Page() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Primary Framework Editor</h1>
-      <PrimaryFrameworkEditorClient pillars={pillars as (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[]} />
+      <PrimaryFrameworkEditorClient
+        pillars={
+          pillars as (Pillar & {
+            themes: (Theme & { subthemes: Subtheme[] })[];
+          })[]
+        }
+      />
     </div>
   );
 }
