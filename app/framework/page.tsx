@@ -1,9 +1,9 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
 import type { Pillar } from "@/types/framework";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 
 export default async function FrameworkPage() {
-  const supabase = await createServerSupabaseClient();
+  const supabase = createClient();
 
   const { data: pillars, error } = await supabase
     .from("pillars")
