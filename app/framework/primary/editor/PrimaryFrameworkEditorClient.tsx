@@ -1,69 +1,57 @@
 "use client";
 
-import React, { useState } from "react";
-import { Pillar } from "@/types/framework";
+import { useState } from "react";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
 import { PlusCircle } from "lucide-react";
-import { addPillar } from "./actions"; // ✅ server action
+import { addPillar } from "./actions"; // ✅ now exported
 
 type Props = {
   pillars: Pillar[];
-  error?: string;
 };
 
-export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) {
+export default function PrimaryFrameworkEditorClient({ pillars }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
 
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 text-red-600 border border-red-200 rounded-md">
-        <p className="font-medium">Error loading framework data</p>
-        <p className="text-sm">{error}</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Add Pillar Button */}
-      <div className="flex justify-start">
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center space-x-2 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          <PlusCircle size={16} />
-          <span>Add Pillar</span>
-        </button>
-      </div>
+    <div>
+      <button
+        onClick={() => setShowAddForm(true)}
+        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md shadow"
+      >
+        <PlusCircle className="w-5 h-5" />
+        <span>Add Pillar</span>
+      </button>
 
       {showAddForm && (
         <form
-          action={addPillar} // ✅ Server action now takes FormData
-          className="p-4 space-y-2 bg-gray-50 border rounded-md"
+          action={addPillar} // ✅ bind server action
+          className="p-4 space-y-2 bg-gray-50 border rounded-md mt-4"
         >
           <input
             type="text"
             name="name"
-            placeholder="Name"
+            placeholder="Pillar name"
             required
-            className="w-full border px-2 py-1 rounded"
+            className="w-full p-2 border rounded"
           />
-          <textarea
+          <input
+            type="text"
             name="description"
-            placeholder="Description (optional)"
-            className="w-full border px-2 py-1 rounded"
+            placeholder="Optional description"
+            className="w-full p-2 border rounded"
           />
+
           <div className="flex space-x-2">
             <button
               type="submit"
-              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+              className="px-4 py-2 bg-green-600 text-white rounded-md"
             >
               Save
             </button>
             <button
               type="button"
               onClick={() => setShowAddForm(false)}
-              className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+              className="px-4 py-2 bg-gray-300 rounded-md"
             >
               Cancel
             </button>
@@ -71,8 +59,9 @@ export default function PrimaryFrameworkEditorClient({ pillars, error }: Props) 
         </form>
       )}
 
-      {/* Existing Framework */}
-      <PrimaryFrameworkCards pillars={pillars} />
+      <div className="mt-6">
+        <PrimaryFrameworkCards pillars={pillars} />
+      </div>
     </div>
   );
 }
