@@ -1,39 +1,26 @@
 // app/framework/primary/editor/page.tsx
-import { createClient } from "@/lib/supabase-server";
+import { fetchFramework } from "@/lib/framework";
 import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
 
+/**
+ * Server component page for framework editor.
+ */
 export default async function PrimaryFrameworkEditorPage() {
-  const supabase = await createClient(); // ✅ Await client
+  try {
+    // Fetch data from Supabase
+    const pillars = await fetchFramework();
 
-  const { data: pillars, error } = await supabase
-    .from("pillars")
-    .select(`
-      id,
-      name,
-      description,
-      code,
-      sort_order,
-      themes (
-        id,
-        name,
-        description,
-        code,
-        sort_order,
-        subthemes (
-          id,
-          name,
-          description,
-          code,
-          sort_order
-        )
-      )
-    `)
-    .order("sort_order", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching pillars:", error.message);
-    return <div>Error loading data</div>;
+    return (
+      <div className="p-6">
+        <PrimaryFrameworkEditorClient initialPillars={pillars ?? []} />
+      </div>
+    );
+  } catch (err) {
+    console.error("❌ Error loading data in PrimaryFrameworkEditorPage:", err);
+    return (
+      <div className="p-6 text-red-600">
+        <p>Error loading data</p>
+      </div>
+    );
   }
-
-  return <PrimaryFrameworkEditorClient initialPillars={pillars ?? []} />;
 }
