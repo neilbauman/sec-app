@@ -1,29 +1,41 @@
 // lib/framework.ts
-import { createServerSupabase } from "@/lib/supabase-server";
+
+import { createClient } from "@/lib/supabase-server"; // ✅ fixed import
 export type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 /**
- * Fetches the full framework (pillars → themes → subthemes) in a nested hierarchy.
- * Uses explicit relationship disambiguation to avoid Supabase ambiguity errors.
+ * Get pillars with their themes and subthemes from Supabase.
  */
-export async function fetchFramework(): Promise<{
-  pillars: (import("@/types/framework").Pillar & {
-    themes: (import("@/types/framework").Theme & {
-      subthemes: import("@/types/framework").Subtheme[];
-    })[];
-  })[];
-  error?: string;
-}> {
-  const supabase = await createServerSupabase();
+export async function getFrameworkData() {
+  const supabase = createClient();
 
   const { data, error } = await supabase
     .from("pillars")
-    // ✅ Explicit disambiguation for themes relation
-    .select("*, themes!themes_pillar_id_fkey(*, subthemes(*))")
+    .select(
+      `
+        id,
+        name,
+        description,
+        code,
+        sort_order,
+        themes (
+          id,
+          name,
+          description,
+          subthemes (
+            id,
+            name,
+            description
+          )
+        )
+      `
+    )
     .order("sort_order", { ascending: true });
 
-  return {
-    pillars: (data as any) || [],
-    error: error?.message,
-  };
+  if (error) {
+    console.error("Error fetching framework data:", error.message);
+    throw new Error(error.message);
+  }
+
+  return data;
 }
