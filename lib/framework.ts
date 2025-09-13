@@ -13,12 +13,13 @@ export async function fetchFramework(): Promise<Pillar[]> {
       name,
       description,
       sort_order,
-      themes:pillar_id (   -- 👈 force the relation
+      themes (
         id,
         ref_code,
         name,
         description,
-        sort_order
+        sort_order,
+        pillar_id
       )
     `)
     .order("sort_order", { ascending: true });
