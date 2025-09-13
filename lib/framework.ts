@@ -7,25 +7,26 @@ export async function fetchFramework(): Promise<Pillar[]> {
 
   const { data, error } = await supabase
     .from("pillars")
-    .select(`
+    .select(
+      `
       id,
       name,
       description,
       ref_code,
       sort_order,
-      themes (
+      themes:themes(
         id,
         name,
         description,
         ref_code,
         sort_order,
-        subthemes (
+        subthemes:subthemes(
           id,
           name,
           description,
           ref_code,
           sort_order,
-          indicators (
+          indicators:indicators(
             id,
             name,
             description,
@@ -34,12 +35,14 @@ export async function fetchFramework(): Promise<Pillar[]> {
           )
         )
       )
-    `)
-    .order("sort_order", { ascending: true }) // top-level: pillars
-    .order("sort_order", { foreignTable: "themes", ascending: true }) // nested: themes
-    .order("sort_order", { foreignTable: "themes.subthemes", ascending: true }) // nested: subthemes
-    .order("sort_order", { foreignTable: "themes.subthemes.indicators", ascending: true }); // nested: indicators
+    `
+    )
+    .order("sort_order", { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error fetching framework:", error);
+    return [];
+  }
+
   return data as Pillar[];
 }
