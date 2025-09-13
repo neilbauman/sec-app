@@ -3,7 +3,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
-import type { Pillar, Theme } from "@/types/framework";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export default async function PrimaryFrameworkEditorPage() {
   const cookieStore = cookies();
@@ -12,11 +12,22 @@ export default async function PrimaryFrameworkEditorPage() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: () => cookieStore,
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set() {
+          // no-op in server components
+        },
+        remove() {
+          // no-op in server components
+        },
+      },
     }
   );
 
-  let pillars: (Pillar & { themes: Theme[] })[] = [];
+  let pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[] =
+    [];
   let error: string | undefined;
 
   try {
@@ -32,7 +43,12 @@ export default async function PrimaryFrameworkEditorPage() {
         themes (
           id,
           name,
-          description
+          description,
+          subthemes (
+            id,
+            name,
+            description
+          )
         )
       `
       )
@@ -41,7 +57,7 @@ export default async function PrimaryFrameworkEditorPage() {
     if (fetchError) {
       error = fetchError.message;
     } else if (data) {
-      pillars = data as (Pillar & { themes: Theme[] })[];
+      pillars = data as (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
     }
   } catch (err: any) {
     error = err.message || "Unexpected error loading pillars.";
