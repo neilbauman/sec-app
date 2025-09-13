@@ -2,10 +2,14 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** Client-side (browser) Supabase client for React client components/hooks. */
-export function createBrowserSupabase(): SupabaseClient {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  // Cast to the stable SupabaseClient type to avoid “GenericSchema vs 'public'” noise on CI
-  return createBrowserClient(supabaseUrl, supabaseAnonKey) as unknown as SupabaseClient;
+/**
+ * Create a Supabase client for browser components.
+ */
+export function createClient(): SupabaseClient {
+  const client = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  return client as unknown as SupabaseClient;
 }
