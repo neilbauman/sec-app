@@ -1,11 +1,11 @@
 // lib/supabase-server.ts
-import { createServerClient, type SupabaseClient } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 /**
  * Create a Supabase client for server components.
- * Loosened typing so we don’t clash with Supabase's GenericSchema vs "public".
- * Later, you can switch to a generated Database type for stricter safety.
+ * Loosened typing for now so build passes.
  */
 export function createClient(): SupabaseClient {
   const cookieStore = cookies();
@@ -19,9 +19,9 @@ export function createClient(): SupabaseClient {
           return cookieStore.get(name)?.value ?? null;
         },
         set() {
-          // no-op: server components can’t set cookies
+          // no-op: cannot set cookies in server components
         },
       },
     }
-  ) as SupabaseClient; // 👈 loosened type to bypass "GenericSchema" mismatch
+  ) as SupabaseClient; // 👈 forced cast so schema mismatch doesn’t block build
 }
