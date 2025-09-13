@@ -11,21 +11,21 @@ export async function getPillarById(id: string): Promise<Pillar> {
     .select(
       `
         id,
-        ref_code,
         name,
         description,
+        ref_code,
         sort_order,
         themes (
           id,
-          ref_code,
           name,
           description,
+          ref_code,
           sort_order,
           subthemes (
             id,
-            ref_code,
             name,
             description,
+            ref_code,
             sort_order
           )
         )
