@@ -1,12 +1,11 @@
 // app/framework/primary/editor/page.tsx
-
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import PrimaryFrameworkEditorClient from "./PrimaryFrameworkEditorClient";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+import { Pillar, Theme } from "@/types/framework";
 
 export default async function PrimaryFrameworkEditorPage() {
-  const cookieStore = await cookies(); // ✅ FIX: await it
+  const cookieStore = cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,61 +13,51 @@ export default async function PrimaryFrameworkEditorPage() {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          return cookieStore.get(name)?.value ?? null;
         },
         set() {
-          // no-op in server components
+          // server actions don’t persist cookies here
         },
         remove() {
-          // no-op in server components
+          // server actions don’t persist cookies here
         },
       },
     }
   );
 
-  let pillars: (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[] =
-    [];
-  let error: string | undefined;
-
-  try {
-    const { data, error: fetchError } = await supabase
-      .from("pillars")
-      .select(
-        `
+  // ✅ Explicitly specify which FK to use for themes → pillars
+  const { data: pillars, error } = await supabase
+    .from("pillars")
+    .select(`
+      id,
+      name,
+      description,
+      code,
+      sort_order,
+      themes:themes!themes_pillar_id_fkey (
         id,
         name,
         description,
-        code,
-        sort_order,
-        themes (
-          id,
-          name,
-          description,
-          subthemes (
-            id,
-            name,
-            description
-          )
-        )
-      `
+        sort_order
       )
-      .order("sort_order", { ascending: true });
+    `)
+    .order("sort_order");
 
-    if (fetchError) {
-      error = fetchError.message;
-    } else if (data) {
-      pillars = data as (Pillar & { themes: (Theme & { subthemes: Subtheme[] })[] })[];
-    }
-  } catch (err: any) {
-    error = err.message || "Unexpected error loading pillars.";
+  if (error) {
+    console.error("Error loading pillars:", error.message);
+    return (
+      <div className="p-4">
+        <div className="text-red-600">
+          Failed to load pillars: {error.message}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
-
+    <div className="p-4">
       <div className="bg-white rounded-lg shadow-sm p-4">
-        <PrimaryFrameworkEditorClient pillars={pillars} error={error} />
+        <PrimaryFrameworkEditorClient pillars={(pillars as (Pillar & { themes: Theme[] })[]) ?? []} />
       </div>
     </div>
   );
