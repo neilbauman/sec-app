@@ -7,7 +7,43 @@ export async function fetchFramework(): Promise<Pillar[]> {
 
   const { data, error } = await supabase
     .from("pillars")
-    .select("id, ref_code, name, description, sort_order")
+    .select(`
+      id,
+      ref_code,
+      name,
+      description,
+      sort_order,
+      themes (
+        id,
+        ref_code,
+        pillar_code,
+        name,
+        description,
+        sort_order,
+        subthemes (
+          id,
+          ref_code,
+          theme_code,
+          name,
+          description,
+          sort_order,
+          indicators (
+            id,
+            ref_code,
+            name,
+            description,
+            sort_order,
+            level,
+            criteria_levels (
+              id,
+              label,
+              default_score,
+              sort_order
+            )
+          )
+        )
+      )
+    `)
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -15,6 +51,5 @@ export async function fetchFramework(): Promise<Pillar[]> {
     return [];
   }
 
-  console.log("Fetched pillars:", data); // Debug output
   return data as Pillar[];
 }
