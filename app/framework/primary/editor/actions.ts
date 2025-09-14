@@ -1,40 +1,38 @@
 // app/framework/primary/editor/actions.ts
-
 "use server";
 
-import { createClient } from "@/utils/supabase/server";
-import { Pillar } from "@/types/framework";
+import { supabase } from "@/lib/supabase-server";
+import type { Pillar } from "@/types/pillar";
 
 /**
  * Fetch the full framework hierarchy:
- * Pillars → Themes → Subthemes → Indicators
+ * Pillars -> Themes -> Subthemes -> Indicators
  */
-export async function getFramework(): Promise<Pillar[]> {
-  const supabase = createClient();
-
+export async function fetchFramework(): Promise<Pillar[]> {
   const { data, error } = await supabase
     .from("pillars")
-    .select(`
+    .select(
+      `
       id,
       ref_code,
       name,
       description,
       sort_order,
-      themes:themes!fk_themes_pillar (
+      themes!fk_themes_pillar (
         id,
         ref_code,
         name,
         description,
         sort_order,
         pillar_id,
-        subthemes:subthemes!fk_subthemes_theme (
+        subthemes (
           id,
           ref_code,
           name,
           description,
           sort_order,
           theme_id,
-          indicators:indicators!fk_indicators_subtheme (
+          indicators (
             id,
             ref_code,
             name,
@@ -43,7 +41,7 @@ export async function getFramework(): Promise<Pillar[]> {
             subtheme_id
           )
         ),
-        indicators:indicators!fk_indicators_theme (
+        indicators (
           id,
           ref_code,
           name,
@@ -52,14 +50,15 @@ export async function getFramework(): Promise<Pillar[]> {
           theme_id
         )
       )
-    `)
+    `
+    )
     .order("sort_order", { ascending: true });
 
   if (error) {
     console.error("❌ Error fetching framework:", error);
-    return [];
+    throw new Error(error.message);
   }
 
-  console.log("✅ Framework fetched:", data);
-  return (data ?? []) as Pillar[];
+  console.log("✅ Fetched framework:", data);
+  return (data as Pillar[]) ?? [];
 }
