@@ -1,41 +1,64 @@
-// types/framework.ts
+// lib/framework.ts
+import { createClient } from "@/utils/supabase/server";
+import type { Pillar } from "@/types/pillar";
 
-export interface Indicator {
-  id: string;
-  ref_code: string;
-  name: string;
-  description?: string | null;
-  sort_order: number;
-  subtheme_id?: string | null; // belongs to subtheme OR null
-  theme_id?: string | null;    // if directly linked to theme
-}
+/**
+ * Fetch the full framework hierarchy:
+ * Pillars → Themes → Subthemes → Indicators
+ */
+export async function fetchFramework(): Promise<Pillar[]> {
+  const supabase = createClient();
 
-export interface Subtheme {
-  id: string;
-  ref_code: string;
-  name: string;
-  description?: string | null;
-  sort_order: number;
-  theme_id: string;
-  indicators: Indicator[];
-}
+  const { data, error } = await supabase
+    .from("pillars")
+    .select(`
+      id,
+      ref_code,
+      name,
+      description,
+      sort_order,
+      themes:themes!themes_pillar_id_fkey (
+        id,
+        ref_code,
+        name,
+        description,
+        sort_order,
+        pillar_id,
+        subthemes (
+          id,
+          ref_code,
+          name,
+          description,
+          sort_order,
+          theme_id,
+          indicators (
+            id,
+            ref_code,
+            name,
+            description,
+            sort_order,
+            theme_id,
+            subtheme_id
+          )
+        ),
+        indicators (
+          id,
+          ref_code,
+          name,
+          description,
+          sort_order,
+          theme_id,
+          subtheme_id
+        )
+      )
+    `)
+    .order("sort_order", { ascending: true });
 
-export interface Theme {
-  id: string;
-  ref_code: string;
-  name: string;
-  description?: string | null;
-  sort_order: number;
-  pillar_id: string;
-  subthemes: Subtheme[];
-  indicators: Indicator[]; // indicators can attach directly to a theme
-}
+  if (error) {
+    console.error("❌ Error fetching framework:", error);
+    return [];
+  }
 
-export interface Pillar {
-  id: string;
-  ref_code: string;
-  name: string;
-  description?: string | null;
-  sort_order: number;
-  themes: Theme[];
+  console.log("✅ Framework data:", data);
+  return data as Pillar[];
 }
