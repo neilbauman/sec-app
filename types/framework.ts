@@ -4,40 +4,38 @@ export interface Indicator {
   id: string;
   ref_code: string;
   name: string;
-  description?: string;
-  subtheme_id?: string | null;
-  theme_id?: string | null;
+  description?: string | null;
+  sort_order: number;
+  subtheme_id?: string | null; // belongs to subtheme OR null
+  theme_id?: string | null;    // if directly linked to theme
 }
 
 export interface Subtheme {
   id: string;
   ref_code: string;
   name: string;
-  description?: string;
+  description?: string | null;
+  sort_order: number;
   theme_id: string;
-  indicators?: Indicator[];
+  indicators: Indicator[];
 }
 
 export interface Theme {
   id: string;
   ref_code: string;
   name: string;
-  description?: string;
+  description?: string | null;
+  sort_order: number;
   pillar_id: string;
-  subthemes?: Subtheme[];
-  indicators?: Indicator[]; // supports themes with direct indicators
+  subthemes: Subtheme[];
+  indicators: Indicator[]; // indicators can attach directly to a theme
 }
 
 export interface Pillar {
   id: string;
   ref_code: string;
   name: string;
-  description?: string;
-  sort_order?: number;
+  description?: string | null;
+  sort_order: number;
   themes: Theme[];
-}
-
-// Root type for the whole framework hierarchy
-export interface FrameworkData {
-  pillars: Pillar[];
 }
