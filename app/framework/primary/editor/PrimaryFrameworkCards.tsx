@@ -1,49 +1,88 @@
+// app/framework/primary/editor/PrimaryFrameworkCards.tsx
+
 "use client";
 
-import type { Pillar } from "@/types/framework";
+import { Pillar, Theme, Subtheme, Indicator } from "@/types/framework";
 
 interface Props {
   pillars: Pillar[];
 }
 
-export default function PrimaryFrameworkCardsEditor({ pillars }: Props) {
+export default function PrimaryFrameworkCards({ pillars }: Props) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-6">
       {pillars.map((pillar) => (
         <div
           key={pillar.id}
-          className="border rounded-lg p-4 shadow-sm bg-gray-50"
+          className="rounded-xl border border-gray-200 bg-white p-6 shadow"
         >
-          <h2 className="text-lg font-semibold">
-            {pillar.ref_code} – {pillar.name}
+          <h2 className="text-xl font-bold text-gray-900">
+            {pillar.ref_code} — {pillar.name}
           </h2>
           {pillar.description && (
-            <p className="text-sm text-gray-600">{pillar.description}</p>
+            <p className="mt-2 text-gray-600">{pillar.description}</p>
           )}
 
-          {pillar.themes?.map((theme) => (
-            <div key={theme.id} className="mt-4 pl-4 border-l">
-              <h3 className="font-medium">
-                {theme.ref_code} – {theme.name}
-              </h3>
-              {theme.description && (
-                <p className="text-sm text-gray-600">{theme.description}</p>
-              )}
+          {/* THEMES */}
+          <div className="mt-4 space-y-4">
+            {pillar.themes?.map((theme: Theme) => (
+              <div
+                key={theme.id}
+                className="rounded-lg border border-gray-100 bg-gray-50 p-4"
+              >
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {theme.ref_code} — {theme.name}
+                </h3>
+                {theme.description && (
+                  <p className="mt-1 text-gray-600">{theme.description}</p>
+                )}
 
-              {theme.subthemes?.map((subtheme) => (
-                <div key={subtheme.id} className="mt-2 pl-4 border-l">
-                  <span className="block text-sm font-medium">
-                    {subtheme.ref_code} – {subtheme.name}
-                  </span>
-                  {subtheme.description && (
-                    <p className="text-xs text-gray-500">
-                      {subtheme.description}
-                    </p>
-                  )}
+                {/* SUBTHEMES */}
+                <div className="mt-3 ml-4 space-y-3">
+                  {theme.subthemes?.map((sub: Subtheme) => (
+                    <div
+                      key={sub.id}
+                      className="rounded-md border border-gray-200 bg-white p-3"
+                    >
+                      <h4 className="text-md font-medium text-gray-700">
+                        {sub.ref_code} — {sub.name}
+                      </h4>
+                      {sub.description && (
+                        <p className="text-sm text-gray-500">{sub.description}</p>
+                      )}
+
+                      {/* INDICATORS under Subtheme */}
+                      <ul className="mt-2 ml-4 list-disc text-sm text-gray-600">
+                        {sub.indicators?.map((ind: Indicator) => (
+                          <li key={ind.id}>
+                            <span className="font-medium">{ind.ref_code}</span>{" "}
+                            — {ind.name}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ))}
+
+                {/* INDICATORS directly under Theme */}
+                {theme.indicators && theme.indicators.length > 0 && (
+                  <div className="mt-3 ml-4">
+                    <h4 className="text-sm font-semibold text-gray-700">
+                      Indicators
+                    </h4>
+                    <ul className="ml-4 list-disc text-sm text-gray-600">
+                      {theme.indicators.map((ind: Indicator) => (
+                        <li key={ind.id}>
+                          <span className="font-medium">{ind.ref_code}</span>{" "}
+                          — {ind.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       ))}
     </div>
