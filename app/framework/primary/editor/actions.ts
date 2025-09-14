@@ -1,6 +1,6 @@
 // app/framework/primary/editor/actions.ts
 import { createClient } from "@/lib/supabase-server";
-import type { Pillar } from "@/types/framework"; // ✅ updated
+import type { Pillar } from "@/types/framework";
 
 export async function fetchFramework(): Promise<Pillar[]> {
   const supabase = createClient();
