@@ -1,64 +1,41 @@
-// lib/framework.ts
-import { createClient } from "@/utils/supabase/server";
-import type { Pillar } from "@/types/pillar";
+// types/framework.ts
 
-/**
- * Fetch the full framework hierarchy:
- * Pillars → Themes → Subthemes → Indicators
- */
-export async function fetchFramework(): Promise<Pillar[]> {
-  const supabase = createClient();
+export interface Indicator {
+  id: string;
+  ref_code: string;
+  name: string;
+  description?: string;
+  sort_order?: number;
+  theme_id?: string | null;
+  subtheme_id?: string | null;
+}
 
-  const { data, error } = await supabase
-    .from("pillars")
-    .select(`
-      id,
-      ref_code,
-      name,
-      description,
-      sort_order,
-      themes:themes!themes_pillar_id_fkey (
-        id,
-        ref_code,
-        name,
-        description,
-        sort_order,
-        pillar_id,
-        subthemes (
-          id,
-          ref_code,
-          name,
-          description,
-          sort_order,
-          theme_id,
-          indicators (
-            id,
-            ref_code,
-            name,
-            description,
-            sort_order,
-            theme_id,
-            subtheme_id
-          )
-        ),
-        indicators (
-          id,
-          ref_code,
-          name,
-          description,
-          sort_order,
-          theme_id,
-          subtheme_id
-        )
-      )
-    `)
-    .order("sort_order", { ascending: true });
+export interface Subtheme {
+  id: string;
+  ref_code: string;
+  name: string;
+  description?: string;
+  sort_order?: number;
+  theme_id: string;
+  indicators?: Indicator[];
+}
 
-  if (error) {
-    console.error("❌ Error fetching framework:", error);
-    return [];
-  }
+export interface Theme {
+  id: string;
+  ref_code: string;
+  name: string;
+  description?: string;
+  sort_order?: number;
+  pillar_id: string;
+  subthemes?: Subtheme[];
+  indicators?: Indicator[];
+}
 
-  console.log("✅ Framework data:", data);
-  return data as Pillar[];
+export interface Pillar {
+  id: string;
+  ref_code: string;
+  name: string;
+  description?: string;
+  sort_order?: number;
+  themes?: Theme[];
 }
