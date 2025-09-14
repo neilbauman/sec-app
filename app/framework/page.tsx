@@ -1,7 +1,7 @@
 // app/framework/page.tsx
-import { fetchFramework } from "@/app/framework/primary/editor/actions";
-import type { Pillar } from "@/types/framework";
+import { fetchFramework } from "@/lib/framework";
 import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+import type { Pillar } from "@/types/framework";
 
 export default async function FrameworkPage() {
   const pillars: Pillar[] = await fetchFramework();
@@ -9,7 +9,11 @@ export default async function FrameworkPage() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Framework</h1>
-      <PrimaryFrameworkCards pillars={pillars} />
+      {pillars.length === 0 ? (
+        <p className="text-gray-600">No pillars found.</p>
+      ) : (
+        <PrimaryFrameworkCards pillars={pillars} />
+      )}
     </div>
   );
 }
