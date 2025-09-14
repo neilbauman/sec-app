@@ -6,7 +6,7 @@ export interface Indicator {
   subtheme_id: string | null;
   theme_id: string | null;
   name: string;
-  description: string;
+  description?: string;   // optional
   sort_order: number;
 }
 
@@ -15,7 +15,7 @@ export interface Subtheme {
   ref_code: string;
   theme_id: string;
   name: string;
-  description: string;
+  description?: string;   // optional
   sort_order: number;
   indicators: Indicator[];
 }
@@ -25,7 +25,7 @@ export interface Theme {
   ref_code: string;
   pillar_id: string;
   name: string;
-  description: string;
+  description?: string;   // optional
   sort_order: number;
   subthemes: Subtheme[];
   indicators: Indicator[];
@@ -35,10 +35,9 @@ export interface Pillar {
   id: string;
   ref_code: string;
   name: string;
-  description: string;
+  description?: string;   // optional
   sort_order: number;
   themes: Theme[];
 }
 
-// ✅ Unify: FrameworkData = Pillar
 export type FrameworkData = Pillar;
