@@ -1,7 +1,7 @@
 // components/PrimaryFrameworkCards.tsx
 "use client";
 
-import type { Pillar, Theme, Subtheme, Indicator } from "@/types/framework";
+import type { Pillar } from "@/types/framework";
 
 interface Props {
   pillars: Pillar[];
@@ -13,47 +13,32 @@ export default function PrimaryFrameworkCards({ pillars }: Props) {
       {pillars.map((pillar) => (
         <div
           key={pillar.id}
-          className="border rounded-lg p-4 shadow-md bg-white"
+          className="p-4 border rounded-xl shadow-sm bg-white"
         >
-          <h2 className="text-xl font-bold mb-2">{pillar.name}</h2>
-          <p className="text-gray-600 mb-4">{pillar.description}</p>
+          <h2 className="text-xl font-semibold mb-2">{pillar.name}</h2>
+          <p className="text-gray-600">{pillar.description}</p>
 
-          {/* Themes */}
-          <div className="ml-4 space-y-3">
-            {pillar.themes?.map((theme: Theme) => (
-              <div
-                key={theme.id}
-                className="border-l-2 pl-3 border-gray-300"
-              >
-                <h3 className="text-lg font-semibold">{theme.name}</h3>
-                <p className="text-gray-500 mb-2">{theme.description}</p>
+          <div className="mt-4">
+            {pillar.themes?.map((theme) => (
+              <div key={theme.id} className="ml-4 mb-2">
+                <h3 className="font-medium">{theme.name}</h3>
+                <p className="text-gray-500">{theme.description}</p>
 
-                {/* Subthemes */}
-                <div className="ml-4 space-y-2">
-                  {theme.subthemes?.map((sub: Subtheme) => (
-                    <div
-                      key={sub.id}
-                      className="border-l pl-3 border-gray-200"
-                    >
-                      <h4 className="font-medium">{sub.name}</h4>
-                      <p className="text-gray-500">{sub.description}</p>
+                {theme.subthemes?.map((sub) => (
+                  <div key={sub.id} className="ml-6 mt-1">
+                    <h4 className="text-sm font-semibold">{sub.name}</h4>
+                    <p className="text-gray-500">{sub.description}</p>
 
-                      {/* Indicators */}
-                      <ul className="list-disc ml-5 text-gray-700">
-                        {sub.indicators?.map((indicator: Indicator) => (
-                          <li key={indicator.id}>{indicator.name}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Indicators directly under theme */}
-                <ul className="list-disc ml-5 text-gray-700">
-                  {theme.indicators?.map((indicator: Indicator) => (
-                    <li key={indicator.id}>{indicator.name}</li>
-                  ))}
-                </ul>
+                    {sub.indicators?.map((ind) => (
+                      <div
+                        key={ind.id}
+                        className="ml-6 text-xs text-gray-400 mt-1"
+                      >
+                        • {ind.name} ({ind.ref_code})
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
