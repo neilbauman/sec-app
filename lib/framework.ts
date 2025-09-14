@@ -1,5 +1,5 @@
 // lib/framework.ts
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/lib/supabase-server";
 import type { Pillar } from "@/types/pillar";
 
 export async function fetchFramework(): Promise<Pillar[]> {
@@ -13,7 +13,7 @@ export async function fetchFramework(): Promise<Pillar[]> {
       name,
       description,
       sort_order,
-      themes:themes!themes_pillar_id_fkey (
+      themes (
         id,
         ref_code,
         name,
@@ -36,15 +36,6 @@ export async function fetchFramework(): Promise<Pillar[]> {
             theme_id,
             subtheme_id
           )
-        ),
-        indicators (
-          id,
-          ref_code,
-          name,
-          description,
-          sort_order,
-          theme_id,
-          subtheme_id
         )
       )
     `)
@@ -55,5 +46,6 @@ export async function fetchFramework(): Promise<Pillar[]> {
     return [];
   }
 
+  console.log("✅ Fetched framework:", data);
   return (data ?? []) as Pillar[];
 }
