@@ -1,33 +1,17 @@
-// app/components/PrimaryFrameworkCards.tsx
-import type { Pillar } from "@/types/pillar";
+// components/PrimaryFrameworkCards.tsx
+"use client";
+
+import type { FrameworkData } from "@/types/framework";
 
 interface Props {
-  pillars: Pillar[];
+  pillar: FrameworkData;
 }
 
-export default function PrimaryFrameworkCards({ pillars }: Props) {
+export default function PrimaryFrameworkCards({ pillar }: Props) {
   return (
-    <div className="grid grid-cols-1 gap-6">
-      {pillars.map((pillar) => (
-        <div key={pillar.id} className="border rounded-xl shadow p-4">
-          <h2 className="text-lg font-semibold">
-            {pillar.ref_code} – {pillar.name}
-          </h2>
-          {pillar.description && (
-            <p className="text-sm text-gray-600">{pillar.description}</p>
-          )}
-
-          {pillar.themes && pillar.themes.length > 0 && (
-            <ul className="list-disc pl-6 mt-2">
-              {pillar.themes.map((theme) => (
-                <li key={theme.id}>
-                  {theme.ref_code} – {theme.name}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ))}
+    <div className="p-4 bg-white rounded-xl shadow">
+      <h2 className="text-xl font-bold mb-2">{pillar.name}</h2>
+      <p className="text-gray-600">{pillar.description}</p>
     </div>
   );
 }
