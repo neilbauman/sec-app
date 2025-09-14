@@ -19,36 +19,31 @@ export async function fetchFramework(): Promise<Pillar[]> {
         name,
         description,
         sort_order,
+        pillar_id,
         subthemes (
           id,
           ref_code,
           name,
           description,
           sort_order,
+          theme_id,
           indicators (
             id,
             ref_code,
             name,
             description,
-            sort_order
+            sort_order,
+            subtheme_id
           )
-        ),
-        indicators (
-          id,
-          ref_code,
-          name,
-          description,
-          sort_order
         )
       )
     `)
-    .order("sort_order", { ascending: true });
+    .order("sort_order");
 
   if (error) {
     console.error("❌ Error fetching framework:", error);
     return [];
   }
 
-  console.log("✅ Fetched framework:", data);
   return data ?? [];
 }
