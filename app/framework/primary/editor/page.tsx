@@ -1,10 +1,10 @@
 // app/framework/primary/editor/page.tsx
 import { fetchFramework } from "@/lib/framework";
 import PrimaryFrameworkEditorClient from "@/components/PrimaryFrameworkEditorClient";
-import type { Pillar } from "@/types/framework";
+import type { FrameworkData } from "@/types/framework";
 
 export default async function FrameworkEditorPage() {
-  const pillars: Pillar[] = await fetchFramework();
+  const pillars: FrameworkData[] = await fetchFramework();
 
   return (
     <div className="p-6">
@@ -12,7 +12,6 @@ export default async function FrameworkEditorPage() {
       {pillars.length === 0 ? (
         <p className="text-gray-600">No pillars found.</p>
       ) : (
-        // ✅ Use `data`, not `pillars`
         <PrimaryFrameworkEditorClient data={pillars} />
       )}
     </div>
