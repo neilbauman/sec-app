@@ -1,9 +1,10 @@
 // app/framework/page.tsx
-import { fetchFramework } from "@/lib/framework";
-import PrimaryFrameworkCards from "@/components/PrimaryFrameworkCards";
+import { fetchFramework } from "@/app/framework/primary/editor/actions";
+import PrimaryFrameworkCards from "@/app/framework/primary/editor/PrimaryFrameworkCards";
+import type { Pillar } from "@/types/framework";
 
 export default async function FrameworkPage() {
-  const pillars = await fetchFramework();
+  const pillars: Pillar[] = await fetchFramework();
 
   return (
     <div className="p-6">
