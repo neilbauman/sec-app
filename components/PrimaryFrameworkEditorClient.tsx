@@ -10,12 +10,13 @@ interface Props {
 }
 
 export default function PrimaryFrameworkEditorClient({ data }: Props) {
-  const [pillars, setPillars] = useState<Pillar[]>(data);
+  const [pillars] = useState<Pillar[]>(data);
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">Editor View</h2>
-      <PrimaryFrameworkCards pillars={pillars} />
+    <div className="grid grid-cols-1 gap-6">
+      {pillars.map((pillar) => (
+        <PrimaryFrameworkCards key={pillar.id} pillars={[pillar]} />
+      ))}
     </div>
   );
 }
