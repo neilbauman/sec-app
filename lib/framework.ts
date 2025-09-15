@@ -1,34 +1,20 @@
 // lib/framework.ts
 import { createClient } from "@/lib/supabase-server";
 
-// Fetch framework data: pillars and their themes
 export async function fetchFramework() {
   const supabase = createClient();
 
+  // ✅ Start super simple: just grab pillars
   const { data, error } = await supabase
     .from("pillars")
-    .select(`
-      id,
-      ref_code,
-      name,
-      description,
-      sort_order,
-      themes (
-        id,
-        ref_code,
-        pillar_code,
-        name,
-        description,
-        sort_order
-      )
-    `)
+    .select("*")
     .order("sort_order", { ascending: true });
 
   if (error) {
-    console.error("Error fetching framework:", error);
+    console.error("Error fetching pillars:", error);
     return [];
   }
 
-  console.log("Pillars with themes:", data);
+  console.log("Fetched pillars:", data);
   return data ?? [];
 }
