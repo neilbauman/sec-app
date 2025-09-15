@@ -1,6 +1,8 @@
 // app/framework/primary/editor/actions.ts
+"use server";
+
 import { createClient } from "@/lib/supabase-server";
-import type { Pillar } from "@/types/framework";
+import { Pillar } from "@/types/framework";
 
 export async function fetchFramework(): Promise<Pillar[]> {
   const supabase = createClient();
@@ -13,37 +15,44 @@ export async function fetchFramework(): Promise<Pillar[]> {
       name,
       description,
       sort_order,
-      themes (
+      themes:themes (
         id,
         ref_code,
+        pillar_code, -- ✅ use pillar_code instead of pillar_id
         name,
         description,
         sort_order,
-        pillar_id,
-        subthemes (
+        subthemes:subthemes (
           id,
           ref_code,
+          theme_code, -- ✅ use theme_code instead of theme_id
           name,
           description,
           sort_order,
-          theme_id,
-          indicators (
+          indicators:indicators (
             id,
             ref_code,
+            subtheme_id,
+            theme_code,
             name,
             description,
             sort_order,
-            subtheme_id
+            criteria_levels:criteria_levels (
+              id,
+              indicator_id,
+              level,
+              description
+            )
           )
         )
       )
     `)
-    .order("sort_order");
+    .order("sort_order", { ascending: true });
 
   if (error) {
-    console.error("❌ Error fetching framework:", error);
+    console.error("❌ Supabase fetchFramework (editor) error:", error.message);
     return [];
   }
 
-  return data ?? [];
+  return (data as Pillar[]) ?? [];
 }
