@@ -1,5 +1,7 @@
+// lib/framework.ts
 import { createClient } from "@/lib/supabase-server";
 
+// Fetch pillars with all nested relations
 export async function fetchFramework() {
   const supabase = createClient();
 
@@ -32,14 +34,20 @@ export async function fetchFramework() {
             description,
             sort_order,
             level,
-            criteria_levels (*)
+            criteria_levels (
+              id,
+              label,
+              default_score,
+              sort_order
+            )
           )
         )
       )
-    `);
+    `)
+    .order("sort_order", { ascending: true });
 
   if (error) {
-    console.error("Error fetching pillars:", error);
+    console.error("❌ Error fetching framework:", error);
     return [];
   }
 
