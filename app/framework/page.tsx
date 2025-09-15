@@ -10,9 +10,23 @@ export default async function FrameworkPage() {
       <h1 className="text-2xl font-bold mb-6">Framework Editor</h1>
 
       {pillars.length === 0 ? (
-        <p className="text-gray-600">No pillars found.</p>
+        <>
+          <p className="text-gray-600">No pillars found.</p>
+
+          {/* ✅ Debug: dump raw data */}
+          <pre className="mt-6 bg-gray-100 p-4 text-xs overflow-x-auto">
+            {JSON.stringify(pillars, null, 2)}
+          </pre>
+        </>
       ) : (
-        <PrimaryFrameworkCards pillars={pillars} />
+        <>
+          <PrimaryFrameworkCards pillars={pillars} />
+
+          {/* ✅ Debug: also show raw JSON even if we render */}
+          <pre className="mt-6 bg-gray-100 p-4 text-xs overflow-x-auto">
+            {JSON.stringify(pillars, null, 2)}
+          </pre>
+        </>
       )}
     </div>
   );
