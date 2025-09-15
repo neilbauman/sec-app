@@ -1,6 +1,4 @@
 // lib/framework.ts
-import { createClient } from "@/lib/supabase-server";
-
 export async function fetchFramework() {
   const supabase = createClient();
 
@@ -16,6 +14,7 @@ export async function fetchFramework() {
         id,
         ref_code,
         pillar_code,
+        pillar_id,      -- ✅ include this
         name,
         description,
         sort_order,
@@ -23,6 +22,7 @@ export async function fetchFramework() {
           id,
           ref_code,
           theme_code,
+          theme_id,     -- ✅ include this
           name,
           description,
           sort_order,
@@ -33,11 +33,14 @@ export async function fetchFramework() {
             description,
             sort_order,
             level,
+            subtheme_id, -- ✅ include this
+            theme_id,    -- ✅ include this
             criteria_levels (
               id,
               label,
               default_score,
-              sort_order
+              sort_order,
+              indicator_id -- ✅ include this
             )
           )
         )
