@@ -9,11 +9,11 @@ export async function fetchFramework() {
     .select("*")
     .order("sort_order", { ascending: true });
 
+  console.log("Supabase pillars result:", { data, error });
+
   if (error) {
-    console.error("Error fetching pillars:", error);
-    return [];
+    throw new Error(error.message);
   }
 
-  console.log("Fetched pillars:", data);
   return data ?? [];
 }
