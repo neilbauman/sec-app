@@ -1,6 +1,6 @@
 // lib/framework.ts
 import { createClient } from "@/lib/supabase-server";
-import type { Pillar } from "@/types/framework";
+import { Pillar } from "@/types/framework";
 
 export async function fetchFramework(): Promise<Pillar[]> {
   const supabase = createClient();
@@ -13,32 +13,33 @@ export async function fetchFramework(): Promise<Pillar[]> {
       name,
       description,
       sort_order,
-      themes (
+      themes:themes (
         id,
         ref_code,
         pillar_code,
         name,
         description,
         sort_order,
-        subthemes (
+        subthemes:subthemes (
           id,
           ref_code,
           theme_code,
           name,
           description,
           sort_order,
-          indicators (
+          indicators:indicators (
             id,
             ref_code,
+            subtheme_id,
+            theme_code,
             name,
             description,
-            level,
             sort_order,
-            criteria_levels (
+            criteria_levels:criteria_levels (
               id,
-              label,
-              default_score,
-              sort_order
+              indicator_id,
+              level,
+              description
             )
           )
         )
@@ -47,9 +48,9 @@ export async function fetchFramework(): Promise<Pillar[]> {
     .order("sort_order", { ascending: true });
 
   if (error) {
-    console.error("❌ Supabase fetchFramework error:", error);
+    console.error("❌ Supabase fetchFramework error:", error.message);
     return [];
   }
 
-  return data as Pillar[];
+  return (data as Pillar[]) ?? [];
 }
