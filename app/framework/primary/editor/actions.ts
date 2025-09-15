@@ -18,14 +18,14 @@ export async function fetchFramework(): Promise<Pillar[]> {
       themes:themes (
         id,
         ref_code,
-        pillar_code, -- ✅ use pillar_code instead of pillar_id
+        pillar_code,
         name,
         description,
         sort_order,
         subthemes:subthemes (
           id,
           ref_code,
-          theme_code, -- ✅ use theme_code instead of theme_id
+          theme_code,
           name,
           description,
           sort_order,
@@ -54,5 +54,5 @@ export async function fetchFramework(): Promise<Pillar[]> {
     return [];
   }
 
-  return (data as Pillar[]) ?? [];
+  return (data ?? []) as Pillar[];
 }
