@@ -1,8 +1,7 @@
 // lib/framework.ts
 import { createClient } from "@/lib/supabase-server";
-import type { Pillar } from "@/types/framework";
 
-export async function fetchFramework(): Promise<Pillar[]> {
+export async function fetchFramework() {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -16,18 +15,40 @@ export async function fetchFramework(): Promise<Pillar[]> {
       themes (
         id,
         ref_code,
-        pillar_id,
+        pillar_code,
         name,
         description,
-        sort_order
+        sort_order,
+        subthemes (
+          id,
+          ref_code,
+          theme_code,
+          name,
+          description,
+          sort_order,
+          indicators (
+            id,
+            ref_code,
+            name,
+            description,
+            sort_order,
+            level,
+            criteria_levels (
+              id,
+              label,
+              default_score,
+              sort_order
+            )
+          )
+        )
       )
     `)
     .order("sort_order", { ascending: true });
 
   if (error) {
-    console.error("❌ Error fetching framework:", error.message);
+    console.error("Error fetching framework:", error);
     return [];
   }
 
-  return data ?? [];
+  return data;
 }
