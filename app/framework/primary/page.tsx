@@ -1,22 +1,18 @@
-import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
 import PageHeader from "@/components/ui/PageHeader";
-import Breadcrumbs from "@/components/ui/Breadcrumbs";
 
 export default function PrimaryFrameworkPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
         title="Primary Framework Editor"
-        description="Manage pillars, themes, and subthemes for the primary framework."
+        description="Create and manage pillars, themes, and subthemes."
       />
-      <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/" },
-          { label: "Framework", href: "/framework" },
-          { label: "Primary Framework Editor" },
-        ]}
-      />
-      <PrimaryFrameworkEditorClient />
+
+      <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <p className="text-gray-600">
+          Placeholder: Primary Framework Editor will be built here.
+        </p>
+      </div>
     </div>
   );
 }
