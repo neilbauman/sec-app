@@ -1,33 +1,22 @@
-// app/framework/page.tsx
-import { fetchFramework } from "@/lib/framework";
-import PrimaryFrameworkCards from "./primary/editor/PrimaryFrameworkCards";
+import PrimaryFrameworkEditorClient from "../../../components/ui/PrimaryFrameworkEditorClient";
+import PageHeader from "../../../components/ui/PageHeader";
+import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 
-export default async function FrameworkPage() {
-  const pillars = await fetchFramework();
-
+export default function PrimaryFrameworkPage() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Framework Editor</h1>
-
-      {pillars.length === 0 ? (
-        <>
-          <p className="text-gray-600">No pillars found.</p>
-
-          {/* ✅ Debug: dump raw data */}
-          <pre className="mt-6 bg-gray-100 p-4 text-xs overflow-x-auto">
-            {JSON.stringify(pillars, null, 2)}
-          </pre>
-        </>
-      ) : (
-        <>
-          <PrimaryFrameworkCards pillars={pillars} />
-
-          {/* ✅ Debug: also show raw JSON even if we render */}
-          <pre className="mt-6 bg-gray-100 p-4 text-xs overflow-x-auto">
-            {JSON.stringify(pillars, null, 2)}
-          </pre>
-        </>
-      )}
+    <div className="space-y-8">
+      <PageHeader
+        title="Primary Framework Editor"
+        description="Manage pillars, themes, and subthemes for the primary framework."
+      />
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/" },
+          { label: "Framework", href: "/framework" },
+          { label: "Primary Framework Editor" },
+        ]}
+      />
+      <PrimaryFrameworkEditorClient />
     </div>
   );
 }
