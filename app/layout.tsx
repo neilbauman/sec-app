@@ -1,11 +1,13 @@
-// app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import Breadcrumbs from "@/components/Breadcrumbs";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SSC App",
-  description: "Severity Scoring Configuration",
+  description: "Severity Scoring & Configuration Application",
 };
 
 export default function RootLayout({
@@ -15,11 +17,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 text-gray-900">
-        <main className="mx-auto max-w-6xl p-6">
+      <body className={`${inter.className} bg-gray-50 min-h-screen`}>
+        <div className="max-w-7xl mx-auto p-6">
+          {/* ✅ Shared breadcrumbs on every page */}
           <Breadcrumbs />
           {children}
-        </main>
+        </div>
       </body>
     </html>
   );
