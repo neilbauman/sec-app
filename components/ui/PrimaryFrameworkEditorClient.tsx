@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Edit, Trash } from "lucide-react";
-import { supabase } from "@/components/lib/supabase-browser";
+import { supabase } from "../lib/supabase-browser"; // ✅ FIXED PATH
 
 interface Subtheme {
   id: string;
@@ -37,7 +37,9 @@ export default function PrimaryFrameworkEditorClient() {
     async function fetchFramework() {
       const { data: pillarsData, error } = await supabase
         .from("pillars")
-        .select("id, name, description, sort_order, themes(id, name, description, sort_order, subthemes(id, name, description, sort_order)))")
+        .select(
+          "id, name, description, sort_order, themes(id, name, description, sort_order, subthemes(id, name, description, sort_order)))"
+        )
         .order("sort_order");
 
       if (error) {
@@ -103,7 +105,10 @@ export default function PrimaryFrameworkEditorClient() {
                   {expanded[theme.id] && (
                     <div className="ml-6 mt-2 space-y-2">
                       {theme.subthemes.map((sub) => (
-                        <div key={sub.id} className="border-l-2 pl-4 flex items-center">
+                        <div
+                          key={sub.id}
+                          className="border-l-2 pl-4 flex items-center"
+                        >
                           <span className="text-yellow-600">{sub.name}</span>
                           <div className="ml-auto flex space-x-2">
                             <Edit className="w-4 h-4 cursor-pointer text-yellow-600" />
