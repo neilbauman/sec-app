@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Layers, Settings, Globe, Server } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import Breadcrumbs from "@/components/ui/Breadcrumbs.tsx";
 
 export default function Dashboard() {
   return (
