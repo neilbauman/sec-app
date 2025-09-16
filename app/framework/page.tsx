@@ -1,5 +1,6 @@
 import PageHeader from "@/components/ui/PageHeader";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
 
 export default function FrameworkPage() {
   return (
