@@ -1,9 +1,8 @@
-// components/ui/PrimaryFrameworkEditorClient.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Edit, Trash } from "lucide-react";
-import { supabase } from "../lib/supabase-browser"; // ✅ FIXED PATH
+import { supabase } from "../../lib/supabase-browser"; // ✅ FIXED PATH
 
 interface Subtheme {
   id: string;
@@ -32,7 +31,6 @@ export default function PrimaryFrameworkEditorClient() {
   const [pillars, setPillars] = useState<Pillar[]>([]);
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
 
-  // Fetch data
   useEffect(() => {
     async function fetchFramework() {
       const { data: pillarsData, error } = await supabase
@@ -65,7 +63,6 @@ export default function PrimaryFrameworkEditorClient() {
 
       {pillars.map((pillar) => (
         <div key={pillar.id} className="border rounded-lg p-4 shadow-sm bg-white">
-          {/* Pillar Header */}
           <div
             className="flex items-center cursor-pointer"
             onClick={() => toggleExpand(pillar.id)}
