@@ -1,28 +1,16 @@
 import "./globals.css";
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import Breadcrumbs from "@/components/Breadcrumbs";
+import { ReactNode } from "react";
 
-const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "SSC App",
-  description: "Severity Scoring & Configuration Application",
+export const metadata = {
+  title: "Shelter and Settlements Severity Classification Toolset",
+  description: "Manage frameworks, country datasets, and SSC instances.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-50 min-h-screen`}>
-        <div className="max-w-7xl mx-auto p-6">
-          {/* ✅ Shared breadcrumbs on every page */}
-          <Breadcrumbs />
-          {children}
-        </div>
+      <body className="bg-gray-50 text-gray-900">
+        <div className="max-w-6xl mx-auto px-4 py-6">{children}</div>
       </body>
     </html>
   );
