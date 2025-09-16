@@ -4,25 +4,21 @@ import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditor
 
 export default function FrameworkPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <PageHeader
-        title="Framework"
-        description="Choose between managing the Primary or Comprehensive framework."
+        title="Frameworks"
+        description="Manage both Primary and Comprehensive frameworks."
       />
+
       <Breadcrumbs
         items={[
           { label: "Dashboard", href: "/" },
-          { label: "Framework" },
+          { label: "Frameworks", href: "/framework" },
         ]}
       />
-      <div className="space-y-4">
-        <p>
-          Navigate to the editor you want to configure:
-        </p>
-        <ul className="list-disc list-inside text-blue-600">
-          <li><a href="/framework/primary">Primary Framework Editor</a></li>
-          <li><a href="/framework/comprehensive">Comprehensive Framework Editor</a></li>
-        </ul>
+
+      <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <PrimaryFrameworkEditorClient />
       </div>
     </div>
   );
