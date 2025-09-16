@@ -1,4 +1,4 @@
-import PageHeader from "@/components/ui/PageHeader";
+import PageHeader from "@/components/ui/PageHeader.tsx";
 
 export default function PrimaryFrameworkPage() {
   return (
