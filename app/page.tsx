@@ -1,6 +1,6 @@
 import { Layers } from "lucide-react";
 import Link from "next/link";
-import Breadcrumbs from "../components/ui/Breadcrumbs"; // 👈 fixed path
+import Breadcrumbs from "@/components/ui/Breadcrumbs"; // 👈 use alias
 
 export default function Dashboard() {
   return (
