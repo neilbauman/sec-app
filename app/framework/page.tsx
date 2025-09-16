@@ -1,5 +1,5 @@
-import PageHeader from "@/components/ui/PageHeader.tsx";
-import Breadcrumbs from "@/components/ui/Breadcrumbs.tsx";
+import PageHeader from "@/components/ui/PageHeader";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
 
 export default function FrameworkPage() {
   return (
