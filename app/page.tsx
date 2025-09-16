@@ -1,81 +1,41 @@
 import Link from "next/link";
-import { FileText, Globe, Server, Info } from "lucide-react";
 
-export default function Dashboard() {
+export default function HomePage() {
   return (
-    <div className="space-y-8">
-      {/* Page Title */}
-      <div className="flex items-center justify-between border-b pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-      </div>
+    <div className="p-6 space-y-6">
+      {/* About section */}
+      <section>
+        <h1 className="text-2xl font-bold mb-2">About</h1>
+        <p className="text-gray-600">
+          Welcome to the Shelter and Settlements Severity Index Tool. Use this dashboard to manage
+          and edit your framework.
+        </p>
+      </section>
 
-      {/* Navigation Blocks */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Framework Config */}
-        <div className="border rounded-lg p-6 shadow-sm bg-white hover:shadow-md transition">
-          <div className="flex items-center space-x-2 mb-3">
-            <FileText className="text-blue-600" size={20} />
-            <h2 className="text-lg font-semibold">Framework Configuration</h2>
-          </div>
-          <p className="text-sm text-gray-500 mb-4">
-            Manage the structure and details of the framework.
-          </p>
-          <ul className="space-y-2">
-            <li>
-              <Link
-                href="/framework/primary/editor"
-                className="text-blue-600 hover:underline"
-              >
-                Primary Framework Editor
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/framework/comprehensive/editor"
-                className="text-blue-600 hover:underline"
-              >
-                Comprehensive Framework Editor
-              </Link>
-            </li>
-          </ul>
-        </div>
+      {/* Framework Editor */}
+      <section>
+        <h2 className="text-xl font-semibold mb-2">Framework</h2>
+        <p className="mb-2 text-gray-600">
+          View and edit the full severity framework, including pillars, themes, subthemes, and
+          indicators.
+        </p>
+        <Link
+          href="/framework"
+          className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Go to Framework Editor
+        </Link>
+      </section>
 
-        {/* Country Config */}
-        <div className="border rounded-lg p-6 shadow-sm bg-white hover:shadow-md transition">
-          <div className="flex items-center space-x-2 mb-3">
-            <Globe className="text-green-600" size={20} />
-            <h2 className="text-lg font-semibold">Country Configuration</h2>
-          </div>
-          <p className="text-sm text-gray-500">
-            Coming soon — configure countries in the system.
-          </p>
-        </div>
-
-        {/* SSC Management */}
-        <div className="border rounded-lg p-6 shadow-sm bg-white hover:shadow-md transition">
-          <div className="flex items-center space-x-2 mb-3">
-            <Server className="text-purple-600" size={20} />
-            <h2 className="text-lg font-semibold">SSC Instance Management</h2>
-          </div>
-          <p className="text-sm text-gray-500">
-            Coming soon — manage SSC instances.
-          </p>
-        </div>
-
-        {/* About */}
-        <div className="border rounded-lg p-6 shadow-sm bg-white hover:shadow-md transition">
-          <div className="flex items-center space-x-2 mb-3">
-            <Info className="text-gray-600" size={20} />
-            <h2 className="text-lg font-semibold">About</h2>
-          </div>
-          <p className="text-sm text-gray-500 mb-2">
-            Learn more about this tool and its purpose.
-          </p>
-          <Link href="/about" className="text-blue-600 hover:underline">
-            About Page
-          </Link>
-        </div>
-      </div>
+      {/* Other Sections */}
+      <section>
+        <h2 className="text-xl font-semibold mb-2">Other Sections</h2>
+        <ul className="list-disc pl-5 text-gray-600 space-y-1">
+          <li>Data entry forms</li>
+          <li>Analysis tools</li>
+          <li>Export options</li>
+        </ul>
+      </section>
     </div>
   );
 }
