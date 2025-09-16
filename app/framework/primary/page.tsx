@@ -1,7 +1,7 @@
 // app/framework/primary/page.tsx
-import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
-import PageHeader from "@/components/ui/PageHeader";
-import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import PrimaryFrameworkEditorClient from "../../../components/ui/PrimaryFrameworkEditorClient";
+import PageHeader from "../../../components/ui/PageHeader";
+import Breadcrumbs from "../../../components/ui/Breadcrumbs";
 
 export default function PrimaryFrameworkPage() {
   return (
