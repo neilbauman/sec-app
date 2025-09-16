@@ -8,7 +8,10 @@ interface BreadcrumbItem {
 
 export default function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <nav className="flex items-center space-x-2 text-sm text-gray-600" aria-label="Breadcrumb">
+    <nav
+      className="flex items-center space-x-2 text-sm text-gray-600"
+      aria-label="Breadcrumb"
+    >
       {items.map((item, index) => (
         <span key={index} className="flex items-center">
           {item.href ? (
