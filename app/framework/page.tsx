@@ -1,22 +1,28 @@
-import PrimaryFrameworkEditorClient from "../../../components/ui/PrimaryFrameworkEditorClient";
-import PageHeader from "../../../components/ui/PageHeader";
-import Breadcrumbs from "../../../components/ui/Breadcrumbs";
+import PageHeader from "@/components/ui/PageHeader";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
 
-export default function PrimaryFrameworkPage() {
+export default function FrameworkPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Primary Framework Editor"
-        description="Manage pillars, themes, and subthemes for the primary framework."
+        title="Framework"
+        description="Choose between managing the Primary or Comprehensive framework."
       />
       <Breadcrumbs
         items={[
           { label: "Dashboard", href: "/" },
-          { label: "Framework", href: "/framework" },
-          { label: "Primary Framework Editor" },
+          { label: "Framework" },
         ]}
       />
-      <PrimaryFrameworkEditorClient />
+      <div className="space-y-4">
+        <p>
+          Navigate to the editor you want to configure:
+        </p>
+        <ul className="list-disc list-inside text-blue-600">
+          <li><a href="/framework/primary">Primary Framework Editor</a></li>
+          <li><a href="/framework/comprehensive">Comprehensive Framework Editor</a></li>
+        </ul>
+      </div>
     </div>
   );
 }
