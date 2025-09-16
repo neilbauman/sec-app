@@ -1,74 +1,56 @@
-// app/page.tsx
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/Card";
 import { Info, Settings, Globe, Layers } from "lucide-react";
 
-export default function DashboardPage() {
+export default function Dashboard() {
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Shelter and Settlements Severity Index Tool</h1>
+    <div className="space-y-8">
+      {/* ✅ App Header with Icon */}
+      <div className="flex items-center space-x-3">
+        <Layers className="w-8 h-8 text-gray-700" />
+        <h1 className="text-3xl font-bold">
+          Shelter and Settlements Severity Index Tool
+        </h1>
+      </div>
 
-      {/* About */}
+      {/* About Section */}
       <Card>
-        <CardHeader className="flex items-center gap-2">
-          <Info className="w-5 h-5 text-blue-500" />
-          <CardTitle>About</CardTitle>
-        </CardHeader>
         <CardContent>
-          <p>
+          <div className="flex items-center space-x-2 mb-2">
+            <Info className="w-5 h-5 text-blue-500" />
+            <h2 className="text-xl font-semibold">About</h2>
+          </div>
+          <p className="text-gray-700">
             Welcome to the Shelter and Settlements Severity Index Tool. Use this
             dashboard to manage and edit your framework.
           </p>
         </CardContent>
       </Card>
 
-      {/* SSC Configuration */}
+      {/* SSC Configuration Section */}
       <Card>
-        <CardHeader className="flex items-center gap-2">
-          <Settings className="w-5 h-5 text-green-500" />
-          <CardTitle>SSC Configuration</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Link
-            href="/framework/primary"
-            className="block text-blue-600 hover:underline"
-          >
-            Primary Framework Editor
-          </Link>
-          <Link
-            href="/framework/comprehensive"
-            className="block text-blue-600 hover:underline"
-          >
-            Comprehensive Framework Editor
-          </Link>
+        <CardContent>
+          <div className="flex items-center space-x-2 mb-2">
+            <Settings className="w-5 h-5 text-green-600" />
+            <h2 className="text-xl font-semibold">SSC Configuration</h2>
+          </div>
+          <ul className="list-disc list-inside text-blue-600 space-y-1">
+            <li>
+              <Link href="/framework">Primary Framework Editor</Link>
+            </li>
+            <li>
+              <Link href="/framework/comprehensive">
+                Comprehensive Framework Editor
+              </Link>
+            </li>
+          </ul>
         </CardContent>
       </Card>
 
-      {/* Country Configuration */}
+      {/* Country Configuration Section */}
       <Card>
-        <CardHeader className="flex items-center gap-2">
-          <Globe className="w-5 h-5 text-purple-500" />
-          <CardTitle>Country Configuration</CardTitle>
-        </CardHeader>
         <CardContent>
-          <Link href="/country" className="text-blue-600 hover:underline">
-            Manage Country Data
-          </Link>
-        </CardContent>
-      </Card>
-
-      {/* Manage SSC Instances */}
-      <Card>
-        <CardHeader className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-orange-500" />
-          <CardTitle>SSC Instances</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Link href="/instances" className="text-blue-600 hover:underline">
-            Manage SSC Instances
-          </Link>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+          <div className="flex items-center space-x-2 mb-2">
+            <Globe className="w-5 h-5 text-purple-600" />
+            <h2 className="text-xl font-semibold">Country Configuration</h2>
+         
