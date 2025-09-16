@@ -2,7 +2,8 @@
 "use client";
 
 import { Layers } from "lucide-react";
-import { Card, CardContent } from "@/components/Card";
+// ⬇️ Correct import
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Dashboard() {
   return (
@@ -39,7 +40,9 @@ export default function Dashboard() {
       <Card>
         <CardContent>
           <h2 className="text-xl font-semibold mb-2">Country Configuration</h2>
-          <p className="text-sm text-gray-600">Set up baseline datasets and mapping boundaries.</p>
+          <p className="text-sm text-gray-600">
+            Set up baseline datasets and mapping boundaries.
+          </p>
         </CardContent>
       </Card>
 
