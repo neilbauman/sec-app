@@ -1,73 +1,82 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ChevronRight, Edit, Plus, Trash2, Upload, Download } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Edit, Plus, Trash } from "lucide-react";
 
 interface FrameworkItem {
   id: string;
-  ref_code: string;
   type: string;
+  ref_code?: string;
+  refCode?: string;
   name: string;
   description: string;
   sort_order: number;
 }
 
 export default function PrimaryFrameworkEditorClient() {
-  const [frameworkData, setFrameworkData] = useState<FrameworkItem[]>([]);
+  const [items, setItems] = useState<FrameworkItem[]>([]);
 
   useEffect(() => {
-    fetch("/api/framework/primary")
-      .then((res) => res.json())
-      .then((data) => setFrameworkData(data));
+    async function fetchData() {
+      const res = await fetch("/api/framework/primary");
+      if (!res.ok) return;
+      const data = await res.json();
+      setItems(data);
+    }
+    fetchData();
   }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Bulk actions */}
-      <div className="flex justify-end gap-2">
-        <Button variant="outline">
-          <Upload className="mr-2 h-4 w-4" /> Upload CSV
-        </Button>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" /> Download CSV
-        </Button>
+    <div>
+      <div className="flex justify-end space-x-2 mb-4">
+        <Button variant="outline">Upload CSV</Button>
+        <Button variant="outline">Download CSV</Button>
       </div>
 
-      {/* Plain Tailwind Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-600">
+      <div className="overflow-x-auto border rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left">Type / Ref Code</th>
-              <th className="px-4 py-3 text-left">Name / Description</th>
-              <th className="px-4 py-3 text-left">Sort Order</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                TYPE / REF CODE
+              </th>
+              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                NAME / DESCRIPTION
+              </th>
+              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                SORT ORDER
+              </th>
+              <th className="px-4 py-2 text-right text-sm font-semibold text-gray-700">
+                ACTIONS
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {frameworkData.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50">
+            {items.map((item) => (
+              <tr key={item.id || item.ref_code || item.refCode}>
                 <td className="px-4 py-3">
-                  <span className="inline-flex items-center rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                    {item.type}
+                  <span className="text-sm font-medium text-blue-600">
+                    {item.type || "Pillar"}
                   </span>{" "}
-                  {item.ref_code}
+                  {item.ref_code || item.refCode || item.id}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="font-medium">{item.name}</div>
-                  <div className="text-gray-500">{item.description}</div>
+                  <div>
+                    <span className="font-semibold">{item.name}</span>
+                    <p className="text-sm text-gray-500">{item.description}</p>
+                  </div>
                 </td>
                 <td className="px-4 py-3">{item.sort_order}</td>
                 <td className="px-4 py-3 text-right space-x-2">
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="sm">
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="sm">
                     <Plus className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon">
-                    <Trash2 className="h-4 w-4" />
+                  <Button variant="ghost" size="sm">
+                    <Trash className="h-4 w-4" />
                   </Button>
                 </td>
               </tr>
