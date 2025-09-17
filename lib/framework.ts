@@ -11,16 +11,6 @@ export async function getFramework(): Promise<Pillar[]> {
       name,
       description,
       sort_order,
-      indicators (
-        id,
-        ref_code,
-        name,
-        description,
-        sort_order,
-        pillar_id,
-        theme_id,
-        subtheme_id
-      ),
       themes (
         id,
         ref_code,
@@ -29,16 +19,6 @@ export async function getFramework(): Promise<Pillar[]> {
         name,
         description,
         sort_order,
-        indicators (
-          id,
-          ref_code,
-          name,
-          description,
-          sort_order,
-          pillar_id,
-          theme_id,
-          subtheme_id
-        ),
         subthemes (
           id,
           ref_code,
@@ -46,26 +26,17 @@ export async function getFramework(): Promise<Pillar[]> {
           theme_code,
           name,
           description,
-          sort_order,
-          indicators (
-            id,
-            ref_code,
-            name,
-            description,
-            sort_order,
-            pillar_id,
-            theme_id,
-            subtheme_id
-          )
+          sort_order
         )
       )
     `)
-    .order("sort_order");
+    .order("sort_order", { ascending: true });
 
   if (error) {
     console.error("Error fetching framework:", error);
     return [];
   }
 
+  // Return data even if indicators are missing
   return data || [];
 }
