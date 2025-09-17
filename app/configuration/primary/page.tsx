@@ -10,8 +10,12 @@ export default function PrimaryFrameworkPage() {
         breadcrumbs={[
           { label: "Dashboard", href: "/" },
           { label: "SSC Configuration", href: "/configuration" },
+          { label: "Primary Framework Editor" },
         ]}
+        group="framework" // ✅ green cog, aligns with dashboard grouping
       />
+
+      {/* Framework editor */}
       <PrimaryFrameworkEditorClient />
     </div>
   );
