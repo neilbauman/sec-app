@@ -1,26 +1,26 @@
 // /lib/framework.ts
-import { supabase } from "@/lib/supabase-browser";
+import { supabaseServer } from "@/lib/supabase-server";
 import type { Pillar } from "@/types/framework";
 
-export async function getFramework(): Promise<Pillar[]> {
+export async function getPrimaryFramework(): Promise<Pillar[]> {
+  const supabase = supabaseServer();
+
+  // Pull pillars with nested themes and subthemes, all ordered by sort_order
   const { data, error } = await supabase
     .from("pillars")
     .select(`
       id,
-      ref_code,
       name,
       description,
       sort_order,
-      themes (
+      themes:themes (
         id,
-        ref_code,
         pillar_id,
         name,
         description,
         sort_order,
-        subthemes (
+        subthemes:subthemes (
           id,
-          ref_code,
           theme_id,
           name,
           description,
@@ -28,12 +28,21 @@ export async function getFramework(): Promise<Pillar[]> {
         )
       )
     `)
-    .order("sort_order", { ascending: true });
+    .order("sort_order", { ascending: true })
+    .order("sort_order", { foreignTable: "themes", ascending: true })
+    .order("sort_order", { foreignTable: "themes.subthemes", ascending: true });
 
   if (error) {
-    console.error("Error fetching framework:", error);
+    console.error("[getPrimaryFramework]", error);
     return [];
   }
 
-  return data || [];
+  // PostgREST returns null when there are no children; coerce to arrays.
+  return (data ?? []).map((p) => ({
+    ...p,
+    themes: (p.themes ?? []).map((t: any) => ({
+      ...t,
+      subthemes: t.subthemes ?? [],
+    })),
+  }));
 }
