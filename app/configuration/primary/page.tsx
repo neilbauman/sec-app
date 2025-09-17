@@ -1,4 +1,4 @@
-import ToolHeader from "@/components/ui/ToolHeader";
+import { ToolHeader } from "@/components/ui/ToolHeader";
 import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
 
 export default function PrimaryFrameworkEditorPage() {
@@ -14,6 +14,7 @@ export default function PrimaryFrameworkEditorPage() {
         ]}
         group="configuration"
       />
+
       <PrimaryFrameworkEditorClient />
     </div>
   );
