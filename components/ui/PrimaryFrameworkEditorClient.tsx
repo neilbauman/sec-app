@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { fetchFramework } from "@/lib/framework";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+import type { Pillar } from "@/types/framework";
 import { Button } from "@/components/ui/button";
 import {
   Download,
@@ -53,15 +54,12 @@ export default function PrimaryFrameworkEditorClient() {
   ) => {
     const isExpanded = expanded[id] ?? false;
 
-    // Indentation by level
-    const indentClass =
-      level === 1 ? "ml-6" : level === 2 ? "ml-12" : "";
+    const indentClass = level === 1 ? "ml-3" : level === 2 ? "ml-6" : "";
 
     return (
       <>
         <tr key={id} className="border-b">
           <td className={`px-4 py-2 flex items-center gap-2 ${indentClass}`}>
-            {/* Expand/Collapse caret */}
             {children ? (
               <button
                 onClick={() => toggleExpand(id)}
@@ -73,7 +71,6 @@ export default function PrimaryFrameworkEditorClient() {
               <span className="w-4" />
             )}
 
-            {/* Type Tag */}
             <span
               className={`px-2 py-1 rounded-full text-xs font-medium ${
                 type === "Pillar"
@@ -86,20 +83,16 @@ export default function PrimaryFrameworkEditorClient() {
               {type}
             </span>
 
-            {/* Ref code */}
             <span className="text-xs text-gray-500">{ref_code}</span>
           </td>
 
-          {/* Name + description */}
           <td className="px-4 py-2">
             <div className="text-sm font-medium">{name}</div>
             <div className="text-xs text-gray-500">{description}</div>
           </td>
 
-          {/* Sort order */}
           <td className="px-4 py-2 text-sm text-gray-600">{sort_order}</td>
 
-          {/* Actions */}
           <td className="px-4 py-2 flex gap-2">
             <button className="p-1 hover:text-blue-600">
               <Edit size={16} />
@@ -123,6 +116,29 @@ export default function PrimaryFrameworkEditorClient() {
 
   return (
     <div className="space-y-6">
+      {/* Tool title (shared header, replace with <ToolHeader /> later) */}
+      <h1 className="text-2xl font-bold">Primary Framework</h1>
+      <p className="text-gray-600">Configure pillars, themes, and sub-themes.</p>
+
+      {/* Breadcrumbs */}
+      <nav className="text-sm text-gray-500 mb-4">
+        <ol className="flex items-center space-x-2">
+          <li>
+            <Link href="/dashboard" className="hover:underline">
+              Dashboard
+            </Link>
+          </li>
+          <li>&gt;</li>
+          <li>
+            <span>Frameworks</span>
+          </li>
+          <li>&gt;</li>
+          <li>
+            <span className="text-gray-700 font-medium">Primary Framework</span>
+          </li>
+        </ol>
+      </nav>
+
       {/* Bulk actions */}
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Primary Framework Editor</h2>
