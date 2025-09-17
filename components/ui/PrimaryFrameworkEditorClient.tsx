@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import { fetchFramework } from "@/lib/framework";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, Edit, Plus, Trash, ChevronRight, ChevronDown } from "lucide-react";
+import {
+  Download,
+  Upload,
+  Edit,
+  Plus,
+  Trash,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react";
 import ToolHeader from "@/components/ui/ToolHeader";
 
 interface NodeState {
@@ -41,16 +49,18 @@ export default function PrimaryFrameworkEditorClient() {
     name: string,
     description: string,
     sort_order: number,
+    level: number,
     children?: React.ReactNode
   ) => {
     const isExpanded = expanded[id] ?? false;
+    const indent = `${level * 1.25}rem`; // subtle indentation
 
     return (
       <>
         <tr key={id} className="border-b">
           {/* Type / Ref */}
-          <td className="px-4 py-2 w-1/4">
-            <div className="flex items-center gap-2">
+          <td className="px-4 py-2 w-1/5">
+            <div className="flex items-center gap-2" style={{ paddingLeft: indent }}>
               {children ? (
                 <button onClick={() => toggleExpand(id)} className="focus:outline-none">
                   {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -74,18 +84,18 @@ export default function PrimaryFrameworkEditorClient() {
           </td>
 
           {/* Name / Description */}
-          <td className="px-4 py-2 w-2/5">
+          <td className="px-4 py-2 w-2/3">
             <div className="font-medium text-sm">{name}</div>
             <div className="text-xs text-gray-600">{description}</div>
           </td>
 
           {/* Sort Order */}
-          <td className="px-4 py-2 w-1/6 text-center text-sm text-gray-600">
+          <td className="px-4 py-2 w-1/12 text-center text-sm text-gray-600">
             {sort_order}
           </td>
 
           {/* Actions */}
-          <td className="px-4 py-2 w-1/6 text-center">
+          <td className="px-4 py-2 w-1/12 text-center">
             <div className="flex justify-center gap-2">
               <button className="p-1 hover:text-blue-600">
                 <Edit size={16} />
@@ -116,7 +126,7 @@ export default function PrimaryFrameworkEditorClient() {
         description="Configure pillars, themes, and sub-themes."
         breadcrumbs={[
           { label: "Dashboard", href: "/" },
-          { label: "Frameworks", href: "/frameworks" },
+          { label: "SSC Configuration", href: "/configuration" },
           { label: "Primary Framework Editor" },
         ]}
       />
@@ -138,16 +148,16 @@ export default function PrimaryFrameworkEditorClient() {
         <table className="w-full text-sm table-fixed">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-2 w-1/4 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 w-1/5 text-left text-xs font-medium text-gray-500 uppercase">
                 Type / Ref
               </th>
-              <th className="px-4 py-2 w-2/5 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 w-2/3 text-left text-xs font-medium text-gray-500 uppercase">
                 Name / Description
               </th>
-              <th className="px-4 py-2 w-1/6 text-center text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 w-1/12 text-center text-xs font-medium text-gray-500 uppercase">
                 Sort Order
               </th>
-              <th className="px-4 py-2 w-1/6 text-center text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 w-1/12 text-center text-xs font-medium text-gray-500 uppercase">
                 Actions
               </th>
             </tr>
@@ -161,6 +171,7 @@ export default function PrimaryFrameworkEditorClient() {
                 pillar.name,
                 pillar.description,
                 pillar.sort_order,
+                0,
                 pillar.themes.map((theme) =>
                   renderRow(
                     "Theme",
@@ -169,6 +180,7 @@ export default function PrimaryFrameworkEditorClient() {
                     theme.name,
                     theme.description,
                     theme.sort_order,
+                    1,
                     theme.subthemes.map((sub) =>
                       renderRow(
                         "Subtheme",
@@ -176,7 +188,8 @@ export default function PrimaryFrameworkEditorClient() {
                         sub.id,
                         sub.name,
                         sub.description,
-                        sub.sort_order
+                        sub.sort_order,
+                        2
                       )
                     )
                   )
