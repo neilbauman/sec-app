@@ -1,34 +1,53 @@
-// /types/framework.ts (add only the ? fields shown)
+// /types/framework.ts
+
+export interface Indicator {
+  id: string;             // uuid PK
+  ref_code: string;
+  name: string;
+  description: string;
+  sort_order: number;
+
+  // Foreign keys
+  pillar_id?: string;     // uuid FK (nullable — only if linked to a pillar)
+  theme_id?: string;      // uuid FK (nullable — only if linked to a theme)
+  subtheme_id?: string;   // uuid FK (nullable — only if linked to a subtheme)
+}
+
 export interface Subtheme {
-  id: string;
-  theme_id: string;
+  id: string;             // uuid PK
+  theme_id: string;       // uuid FK
   ref_code: string;
   theme_code: string;
   name: string;
   description: string;
   sort_order: number;
+
+  // Relationships
   indicators: Indicator[];
-  default_indicator_id?: string;   // <— add
 }
 
 export interface Theme {
-  id: string;
-  pillar_id: string;
+  id: string;             // uuid PK
+  pillar_id: string;      // uuid FK
   ref_code: string;
   pillar_code: string;
   name: string;
   description: string;
   sort_order: number;
+
+  // Relationships
   subthemes: Subtheme[];
-  default_indicator_id?: string;   // <— add
+  indicators: Indicator[];
 }
 
 export interface Pillar {
-  id: string;
+  id: string;             // uuid PK
   ref_code: string;
   name: string;
   description: string;
   sort_order: number;
+
+  // Relationships
   themes: Theme[];
-  default_indicator_id?: string;   // <— add
+  indicators: Indicator[];
 }
