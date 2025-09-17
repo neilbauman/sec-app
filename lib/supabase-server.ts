@@ -3,8 +3,10 @@ import { cookies } from "next/headers";
 import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/supabase";
 
+// ⚠️ Do NOT make this function async
 export function createServerClient() {
-  const cookieStore = cookies(); // ✅ This is a synchronous object, not a Promise
+  // ✅ cookies() is synchronous
+  const cookieStore = cookies();
 
   return createSupabaseServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,7 +14,7 @@ export function createServerClient() {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value;
+          return cookieStore.get(name)?.value ?? null;
         },
         set(name: string, value: string, options: any) {
           // no-op during SSR
