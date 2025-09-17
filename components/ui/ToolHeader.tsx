@@ -1,55 +1,59 @@
 "use client";
 
-import { Layers, Cog, Globe, Server } from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { Layers, Cog } from "lucide-react";
 
-export type ToolGroup = "dashboard" | "configuration" | "country" | "instances";
+export type ToolGroup = "dashboard" | "configuration";
 
-interface ToolHeaderProps {
+export interface Breadcrumb {
+  label: string;
+  href?: string;
+}
+
+export interface ToolHeaderProps {
   pageTitle: string;
-  pageDescription: string;
-  breadcrumbs: { label: string; href?: string }[];
+  pageDescription?: string;
+  breadcrumbs?: Breadcrumb[];
   group: ToolGroup;
 }
+
+const groupIcons: Record<ToolGroup, JSX.Element> = {
+  dashboard: <Layers className="h-6 w-6 text-blue-600" />,
+  configuration: <Cog className="h-6 w-6 text-green-600" />,
+};
 
 export function ToolHeader({
   pageTitle,
   pageDescription,
-  breadcrumbs,
+  breadcrumbs = [],
   group,
 }: ToolHeaderProps) {
-  const iconMap: Record<ToolGroup, JSX.Element> = {
-    dashboard: <Layers className="h-6 w-6 text-blue-600" />,
-    configuration: <Cog className="h-6 w-6 text-green-600" />,
-    country: <Globe className="h-6 w-6 text-purple-600" />,
-    instances: <Server className="h-6 w-6 text-red-600" />,
-  };
-
   return (
-    <div className="space-y-2">
-      {/* Breadcrumbs */}
-      <div className="text-sm text-gray-500 flex space-x-1">
-        {breadcrumbs.map((crumb, i) => (
-          <span key={i} className="flex items-center space-x-1">
-            {crumb.href ? (
-              <a href={crumb.href} className="hover:underline">
-                {crumb.label}
-              </a>
-            ) : (
-              <span>{crumb.label}</span>
-            )}
-            {i < breadcrumbs.length - 1 && <span>/</span>}
-          </span>
-        ))}
-      </div>
-
-      {/* Title */}
-      <div className="flex items-center space-x-2">
-        {iconMap[group]}
+    <div className="border-b border-gray-200 pb-4 mb-6">
+      <div className="flex items-center space-x-3">
+        {groupIcons[group]}
         <h1 className="text-2xl font-bold">{pageTitle}</h1>
       </div>
-
-      {/* Description */}
-      <p className="text-gray-600">{pageDescription}</p>
+      {pageDescription && (
+        <p className="mt-1 text-sm text-gray-600">{pageDescription}</p>
+      )}
+      {breadcrumbs.length > 0 && (
+        <nav className="mt-2 text-sm text-gray-500">
+          {breadcrumbs.map((crumb, idx) => (
+            <span key={idx}>
+              {crumb.href ? (
+                <Link href={crumb.href} className="hover:underline">
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span>{crumb.label}</span>
+              )}
+              {idx < breadcrumbs.length - 1 && " / "}
+            </span>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }
