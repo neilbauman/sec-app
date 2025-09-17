@@ -1,7 +1,8 @@
-import Link from "next/link";
 import ToolHeader from "@/components/ui/ToolHeader";
+import Link from "next/link";
+import { Layers } from "lucide-react";
 
-export default function SSCConfigurationPage() {
+export default function ConfigurationPage() {
   return (
     <div className="space-y-6">
       <ToolHeader
@@ -11,27 +12,40 @@ export default function SSCConfigurationPage() {
           { label: "Dashboard", href: "/" },
           { label: "SSC Configuration" },
         ]}
-        group="ssc"
+        group="configuration"
       />
 
+      {/* Cards for Editors */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Framework Editors */}
-        <div className="rounded-lg border border-gray-200 p-6 shadow-sm bg-white">
-          <h3 className="text-lg font-semibold mb-2">📚 Framework Editors</h3>
-          <p className="text-gray-600 text-sm mb-2">
-            Manage the Primary and Comprehensive Framework editors.
+        <Link
+          href="/configuration/primary"
+          className="p-6 border rounded-lg shadow hover:shadow-md transition bg-white"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <Layers className="w-6 h-6 text-blue-600" />
+            <h2 className="text-lg font-semibold text-blue-600">
+              Primary Framework Editor
+            </h2>
+          </div>
+          <p className="text-sm text-gray-600">
+            Configure pillars, themes, and sub-themes.
           </p>
-          <ul className="list-disc list-inside text-blue-600 text-sm">
-            <li>
-              <Link href="/configuration/primary">Primary Framework Editor</Link>
-            </li>
-            <li>
-              <Link href="/configuration/comprehensive">
-                Comprehensive Framework Editor
-              </Link>
-            </li>
-          </ul>
-        </div>
+        </Link>
+
+        <Link
+          href="/configuration/comprehensive"
+          className="p-6 border rounded-lg shadow hover:shadow-md transition bg-white"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <Layers className="w-6 h-6 text-purple-600" />
+            <h2 className="text-lg font-semibold text-purple-600">
+              Comprehensive Framework Editor
+            </h2>
+          </div>
+          <p className="text-sm text-gray-600">
+            Configure pillars, themes, sub-themes, and indicators.
+          </p>
+        </Link>
       </div>
     </div>
   );
