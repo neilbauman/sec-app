@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 interface Subtheme {
-  id: string;
+  id: string; // keep for joins
   ref_code: string;
   name: string;
   description: string;
@@ -21,7 +21,7 @@ interface Subtheme {
 }
 
 interface Theme {
-  id: string;
+  id: string; // keep for joins
   ref_code: string;
   name: string;
   description: string;
@@ -30,7 +30,7 @@ interface Theme {
 }
 
 interface Pillar {
-  id: string;
+  id: string; // keep for joins
   ref_code: string;
   name: string;
   description: string;
@@ -75,8 +75,7 @@ export default function PrimaryFrameworkEditorClient() {
 
   const renderRow = (
     item: Pillar | Theme | Subtheme,
-    type: "Pillar" | "Theme" | "Subtheme",
-    parentId?: string
+    type: "Pillar" | "Theme" | "Subtheme"
   ) => {
     const isExpanded = expanded[item.id];
     const hasChildren =
@@ -96,7 +95,7 @@ export default function PrimaryFrameworkEditorClient() {
     return (
       <>
         <tr key={item.id}>
-          {/* TYPE / ID */}
+          {/* TYPE / REF CODE */}
           <td className={`w-1/6 align-top ${indentClass}`}>
             <div className="flex items-center gap-2">
               {hasChildren && (
@@ -159,12 +158,12 @@ export default function PrimaryFrameworkEditorClient() {
         {isExpanded &&
           type === "Pillar" &&
           (item as Pillar).themes.map((theme) =>
-            renderRow(theme, "Theme", item.id)
+            renderRow(theme, "Theme")
           )}
         {isExpanded &&
           type === "Theme" &&
           (item as Theme).subthemes.map((sub) =>
-            renderRow(sub, "Subtheme", item.id)
+            renderRow(sub, "Subtheme")
           )}
       </>
     );
@@ -187,7 +186,7 @@ export default function PrimaryFrameworkEditorClient() {
         <table className="w-full">
           <thead className="bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
             <tr>
-              <th className="px-6 py-3 w-1/6">Type / ID</th>
+              <th className="px-6 py-3 w-1/6">Type / Ref Code</th>
               <th className="px-6 py-3 w-2/3">Name / Description</th>
               <th className="px-6 py-3 w-1/12">Sort Order</th>
               <th className="px-6 py-3 w-1/6">Actions</th>
