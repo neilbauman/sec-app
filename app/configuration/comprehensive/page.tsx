@@ -1,4 +1,4 @@
-import ToolHeader from "@/components/ui/ToolHeader";
+import { ToolHeader } from "@/components/ui/ToolHeader";
 
 export default function ComprehensiveFrameworkEditorPage() {
   return (
@@ -14,10 +14,7 @@ export default function ComprehensiveFrameworkEditorPage() {
         group="configuration"
       />
 
-      {/* Placeholder until functionality is built */}
-      <div className="p-6 border rounded-lg bg-gray-50 text-gray-600">
-        Comprehensive editor functionality coming soon.
-      </div>
+      <p className="text-gray-600">Coming soon...</p>
     </div>
   );
 }
