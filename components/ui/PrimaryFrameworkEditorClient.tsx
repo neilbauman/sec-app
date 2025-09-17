@@ -44,69 +44,61 @@ export default function PrimaryFrameworkEditorClient() {
 
   const renderRow = (
     type: "Pillar" | "Theme" | "Subtheme",
-    refCode: string,
     id: string,
     name: string,
     description: string,
     sort_order: number,
-    level: number,
     children?: React.ReactNode
   ) => {
     const isExpanded = expanded[id] ?? false;
-    const indent = `${level * 1.25}rem`; // subtle indentation
 
     return (
       <>
         <tr key={id} className="border-b">
-          {/* Type / Ref */}
-          <td className="px-4 py-2 w-1/5">
-            <div className="flex items-center gap-2" style={{ paddingLeft: indent }}>
-              {children ? (
-                <button onClick={() => toggleExpand(id)} className="focus:outline-none">
-                  {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </button>
-              ) : (
-                <span className="w-4" />
-              )}
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  type === "Pillar"
-                    ? "bg-blue-100 text-blue-800"
-                    : type === "Theme"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {type}
-              </span>
-              <span className="text-xs text-gray-500">{refCode}</span>
-            </div>
+          <td
+            className={`px-4 py-2 flex items-center gap-2 ${
+              type !== "Pillar" ? "pl-8" : ""
+            }`}
+          >
+            {/* Expand/Collapse */}
+            {children ? (
+              <button onClick={() => toggleExpand(id)} className="focus:outline-none">
+                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </button>
+            ) : (
+              <span className="w-4" />
+            )}
+            {/* Tag */}
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                type === "Pillar"
+                  ? "bg-blue-100 text-blue-800"
+                  : type === "Theme"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              {type}
+            </span>
+            <span className="text-xs text-gray-500">{id}</span>
           </td>
-
-          {/* Name / Description */}
-          <td className="px-4 py-2 w-2/3">
+          <td className="px-4 py-2">
             <div className="font-medium text-sm">{name}</div>
             <div className="text-xs text-gray-600">{description}</div>
           </td>
-
-          {/* Sort Order */}
-          <td className="px-4 py-2 w-1/12 text-center text-sm text-gray-600">
+          <td className="px-4 py-2 text-center text-sm text-gray-600">
             {sort_order}
           </td>
-
-          {/* Actions */}
-          <td className="px-4 py-2 w-1/12 text-center">
-            <div className="flex justify-center gap-2">
-              <button className="p-1 hover:text-blue-600">
-                <Edit size={16} />
-              </button>
-              <button className="p-1 hover:text-green-600">
-                <Plus size={16} />
-              </button>
-              <button className="p-1 hover:text-red-600">
-                <Trash size={16} />
-              </button>
-            </div>
+          <td className="px-4 py-2 flex gap-2">
+            <button className="p-1 hover:text-blue-600">
+              <Edit size={16} />
+            </button>
+            <button className="p-1 hover:text-green-600">
+              <Plus size={16} />
+            </button>
+            <button className="p-1 hover:text-red-600">
+              <Trash size={16} />
+            </button>
           </td>
         </tr>
         {isExpanded && children}
@@ -122,8 +114,8 @@ export default function PrimaryFrameworkEditorClient() {
     <div className="space-y-6">
       {/* Tool Header */}
       <ToolHeader
-        title="Primary Framework Editor"
-        description="Configure pillars, themes, and sub-themes."
+        pageTitle="Primary Framework Editor"
+        pageDescription="Configure pillars, themes, and sub-themes."
         breadcrumbs={[
           { label: "Dashboard", href: "/" },
           { label: "SSC Configuration", href: "/configuration" },
@@ -132,7 +124,8 @@ export default function PrimaryFrameworkEditorClient() {
       />
 
       {/* Bulk actions */}
-      <div className="flex justify-end items-center">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Manage Framework</h2>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Upload className="w-4 h-4 mr-1" /> Upload CSV
@@ -148,16 +141,16 @@ export default function PrimaryFrameworkEditorClient() {
         <table className="w-full text-sm table-fixed">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-2 w-1/5 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="w-[20%] px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                 Type / Ref
               </th>
-              <th className="px-4 py-2 w-2/3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="w-[50%] px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                 Name / Description
               </th>
-              <th className="px-4 py-2 w-1/12 text-center text-xs font-medium text-gray-500 uppercase">
+              <th className="w-[15%] px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
                 Sort Order
               </th>
-              <th className="px-4 py-2 w-1/12 text-center text-xs font-medium text-gray-500 uppercase">
+              <th className="w-[15%] px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                 Actions
               </th>
             </tr>
@@ -166,30 +159,24 @@ export default function PrimaryFrameworkEditorClient() {
             {pillars.map((pillar) =>
               renderRow(
                 "Pillar",
-                pillar.ref_code,
                 pillar.id,
                 pillar.name,
                 pillar.description,
                 pillar.sort_order,
-                0,
                 pillar.themes.map((theme) =>
                   renderRow(
                     "Theme",
-                    theme.ref_code,
                     theme.id,
                     theme.name,
                     theme.description,
                     theme.sort_order,
-                    1,
                     theme.subthemes.map((sub) =>
                       renderRow(
                         "Subtheme",
-                        sub.ref_code,
                         sub.id,
                         sub.name,
                         sub.description,
-                        sub.sort_order,
-                        2
+                        sub.sort_order
                       )
                     )
                   )
