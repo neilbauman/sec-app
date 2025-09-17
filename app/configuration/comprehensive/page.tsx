@@ -1,4 +1,4 @@
-import ToolHeader from "@/components/ui/ToolHeader";
+import ToolHeader from "@/components/ui/ToolHeader"
 
 export default function ComprehensiveFrameworkPage() {
   return (
@@ -11,15 +11,13 @@ export default function ComprehensiveFrameworkPage() {
           { label: "SSC Configuration", href: "/configuration" },
           { label: "Comprehensive Framework Editor" },
         ]}
-        group="framework" // ✅ green cog, aligns with dashboard grouping
+        group="configuration"
       />
 
-      {/* Placeholder until functionality is built */}
-      <div className="p-6 bg-white border rounded-2xl shadow-sm">
-        <p className="text-gray-600">
-          The Comprehensive Framework Editor will be implemented here.
-        </p>
+      {/* Placeholder until editor is implemented */}
+      <div className="border rounded-lg p-6 text-gray-500">
+        Comprehensive framework editor UI coming soon.
       </div>
     </div>
-  );
+  )
 }
