@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fetchFramework } from "@/lib/framework";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
-import ToolHeader from "@/components/ui/ToolHeader";
 import { Button } from "@/components/ui/button";
 import {
   Download,
@@ -15,6 +14,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-react";
+import ToolHeader from "@/components/ui/ToolHeader";
 
 interface NodeState {
   [id: string]: boolean;
@@ -49,18 +49,15 @@ export default function PrimaryFrameworkEditorClient() {
     name: string,
     description: string,
     sort_order: number,
-    children?: React.ReactNode,
-    level: number = 0
+    children?: React.ReactNode
   ) => {
     const isExpanded = expanded[ref_code] ?? false;
 
     return (
       <>
         <tr key={ref_code} className="border-b">
-          <td
-            className="px-4 py-2 flex items-center gap-2"
-            style={{ paddingLeft: `${level * 16}px` }} // Indent
-          >
+          <td className="px-4 py-2 flex items-center gap-2">
+            {/* Expand/Collapse */}
             {children ? (
               <button
                 onClick={() => toggleExpand(ref_code)}
@@ -87,7 +84,7 @@ export default function PrimaryFrameworkEditorClient() {
           </td>
           <td className="px-4 py-2">
             <div className="text-sm font-medium text-gray-900">{name}</div>
-            <div className="text-xs text-gray-500">{description}</div>
+            <div className="text-xs text-gray-600">{description}</div>
           </td>
           <td className="px-4 py-2 text-sm text-gray-600">{sort_order}</td>
           <td className="px-4 py-2 flex gap-2">
@@ -113,18 +110,19 @@ export default function PrimaryFrameworkEditorClient() {
 
   return (
     <div className="space-y-6">
-      {/* Tool header with breadcrumb + page title injected */}
-      <ToolHeader>
-        <nav className="text-sm text-gray-500 mb-2">
-          <Link href="/dashboard" className="hover:underline text-blue-600">
-            Dashboard
-          </Link>{" "}
-          &gt; Frameworks &gt;{" "}
-          <span className="text-gray-700 font-medium">Primary Framework</span>
-        </nav>
-        <h2 className="text-xl font-semibold text-gray-900">Primary Framework</h2>
-        <p className="text-gray-600">Configure pillars, themes, and sub-themes.</p>
-      </ToolHeader>
+      {/* Global Tool Header */}
+      <ToolHeader />
+
+      {/* Page-specific breadcrumb + title */}
+      <nav className="text-sm text-gray-500 mt-4 mb-2">
+        <Link href="/" className="hover:underline text-blue-600">
+          Dashboard
+        </Link>{" "}
+        &gt; Frameworks &gt;{" "}
+        <span className="text-gray-700 font-medium">Primary Framework</span>
+      </nav>
+      <h2 className="text-xl font-semibold text-gray-900">Primary Framework</h2>
+      <p className="text-gray-600 mb-4">Configure pillars, themes, and sub-themes.</p>
 
       {/* Bulk actions */}
       <div className="flex justify-between items-center">
@@ -179,15 +177,11 @@ export default function PrimaryFrameworkEditorClient() {
                         sub.ref_code,
                         sub.name,
                         sub.description,
-                        sub.sort_order,
-                        undefined,
-                        3
+                        sub.sort_order
                       )
-                    ),
-                    2
+                    )
                   )
-                ),
-                1
+                )
               )
             )}
           </tbody>
