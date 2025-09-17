@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { fetchFramework } from "@/lib/framework";
-import type { Pillar } from "@/types/framework";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 import { Button } from "@/components/ui/button";
 import {
   Download,
@@ -14,6 +13,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-react";
+import Link from "next/link";
 import ToolHeader from "@/components/ui/ToolHeader";
 
 interface NodeState {
@@ -53,15 +53,13 @@ export default function PrimaryFrameworkEditorClient() {
     children?: React.ReactNode
   ) => {
     const isExpanded = expanded[id] ?? false;
+    const indent =
+      type === "Theme" ? "pl-6" : type === "Subtheme" ? "pl-10" : "";
 
     return (
       <>
         <tr key={id} className="border-b">
-          <td
-            className={`px-4 py-2 flex items-center gap-2 ${
-              type === "Theme" ? "pl-8" : type === "Subtheme" ? "pl-12" : ""
-            }`}
-          >
+          <td className={`px-4 py-2 flex items-center gap-2 ${indent}`}>
             {/* Expand/Collapse */}
             {children ? (
               <button
@@ -73,6 +71,7 @@ export default function PrimaryFrameworkEditorClient() {
             ) : (
               <span className="w-4" />
             )}
+
             {/* Tag */}
             <span
               className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -87,11 +86,14 @@ export default function PrimaryFrameworkEditorClient() {
             </span>
             <span className="text-xs text-gray-500">{ref_code}</span>
           </td>
+
           <td className="px-4 py-2">
             <div className="font-medium text-gray-900">{name}</div>
-            <div className="text-sm text-gray-600">{description}</div>
+            <div className="text-sm text-gray-500">{description}</div>
           </td>
+
           <td className="px-4 py-2 text-sm text-gray-600">{sort_order}</td>
+
           <td className="px-4 py-2 flex gap-2">
             <button className="p-1 hover:text-blue-600">
               <Edit size={16} />
@@ -115,35 +117,25 @@ export default function PrimaryFrameworkEditorClient() {
 
   return (
     <div className="space-y-6">
-      {/* Global Tool Header */}
+      {/* Global tool header */}
       <ToolHeader />
 
-      {/* Breadcrumbs */}
-      <nav className="text-sm text-gray-500 mb-4">
-        <ol className="flex items-center space-x-2">
-          <li>
-            <Link href="/" className="hover:underline">
-              Dashboard
-            </Link>
-          </li>
-          <li>&gt;</li>
-          <li>
-            <span>Frameworks</span>
-          </li>
-          <li>&gt;</li>
-          <li>
-            <span className="text-gray-700 font-medium">Primary Framework</span>
-          </li>
-        </ol>
-      </nav>
-
-      {/* Page Title */}
-      <h1 className="text-xl font-semibold">Primary Framework</h1>
-      <p className="text-gray-600 mb-4">Configure pillars, themes, and sub-themes.</p>
+      {/* Breadcrumbs + page-specific title */}
+      <div>
+        <nav className="text-sm text-gray-500 mb-2">
+          <Link href="/dashboard" className="hover:underline text-blue-600">
+            Dashboard
+          </Link>{" "}
+          &gt; Frameworks &gt;{" "}
+          <span className="text-gray-700 font-medium">Primary Framework</span>
+        </nav>
+        <h2 className="text-xl font-semibold text-gray-900">Primary Framework</h2>
+        <p className="text-gray-600">Configure pillars, themes, and sub-themes.</p>
+      </div>
 
       {/* Bulk actions */}
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Primary Framework Editor</h2>
+        <h3 className="text-lg font-semibold">Primary Framework Editor</h3>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Upload className="w-4 h-4 mr-1" /> Upload CSV
