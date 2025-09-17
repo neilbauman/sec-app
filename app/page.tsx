@@ -1,73 +1,58 @@
-import { Layers, Settings, Globe, Database } from "lucide-react";
 import Link from "next/link";
-import Breadcrumbs from "@/components/ui/Breadcrumbs";
 
-export default function Dashboard() {
+export default function DashboardPage() {
   return (
     <div className="space-y-8">
-      {/* ✅ App Header with Icon */}
-      <div className="flex items-center space-x-3">
-        <Layers className="w-8 h-8 text-gray-700" />
-        <h1 className="text-3xl font-bold">
-          Shelter and Settlements Severity Classification Toolset
-        </h1>
-      </div>
+      <h1 className="text-2xl font-semibold">
+        Shelter and Settlements Severity Classification Toolset
+      </h1>
+      <p className="text-gray-600">
+        Welcome to the Shelter and Settlements Severity Classification Toolset (SSC).
+        This tool helps configure, manage, and evaluate primary and comprehensive frameworks,
+        country datasets, and SSC instances.
+      </p>
 
-      {/* ✅ Breadcrumb below header */}
-      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }]} />
+      <div className="space-y-6">
+        {/* About */}
+        <div className="p-4 border rounded-lg shadow-sm bg-white">
+          <h2 className="text-lg font-semibold mb-2">About</h2>
+          <p className="text-gray-600">
+            Welcome to the Shelter and Settlements Severity Classification Toolset (SSC). This tool
+            helps configure, manage, and evaluate primary and comprehensive frameworks, country
+            datasets, and SSC instances.
+          </p>
+        </div>
 
-      {/* ✅ About Section */}
-      <div className="p-6 bg-white rounded-2xl shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
-          <Layers className="w-6 h-6 text-blue-600" />
-          <span>About</span>
-        </h2>
-        <p>
-          Welcome to the Shelter and Settlements Severity Classification Toolset
-          (SSC). This tool helps configure, manage, and evaluate primary and
-          comprehensive frameworks, country datasets, and SSC instances.
-        </p>
-      </div>
+        {/* SSC Configuration */}
+        <div className="p-4 border rounded-lg shadow-sm bg-white">
+          <h2 className="text-lg font-semibold mb-2">SSC Configuration</h2>
+          <ul className="list-disc list-inside text-blue-600 space-y-1">
+            <li>
+              <Link href="/configuration/primary" className="hover:underline">
+                Primary Framework Editor
+              </Link>
+            </li>
+            <li>
+              <Link href="/configuration/comprehensive" className="hover:underline">
+                Comprehensive Framework Editor
+              </Link>
+            </li>
+          </ul>
+        </div>
 
-      {/* ✅ SSC Configuration Section */}
-      <div className="p-6 bg-white rounded-2xl shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
-          <Settings className="w-6 h-6 text-green-600" />
-          <span>SSC Configuration</span>
-        </h2>
-        <ul className="list-disc list-inside space-y-1 text-blue-600">
-          <li>
-            <Link href="/framework/primary">Primary Framework Editor</Link>
-          </li>
-          <li>
-            <Link href="/framework/comprehensive">
-              Comprehensive Framework Editor
-            </Link>
-          </li>
-        </ul>
-      </div>
+        {/* Country Configuration */}
+        <div className="p-4 border rounded-lg shadow-sm bg-white">
+          <h2 className="text-lg font-semibold mb-2">Country Configuration</h2>
+          <p className="text-gray-600">Set up baseline datasets and mapping boundaries.</p>
+        </div>
 
-      {/* ✅ Country Configuration Section */}
-      <div className="p-6 bg-white rounded-2xl shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
-          <Globe className="w-6 h-6 text-purple-600" />
-          <span>Country Configuration</span>
-        </h2>
-        <p className="text-gray-700">
-          Set up baseline datasets and mapping boundaries.
-        </p>
-      </div>
-
-      {/* ✅ SSC Instances Section */}
-      <div className="p-6 bg-white rounded-2xl shadow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center space-x-2">
-          <Database className="w-6 h-6 text-red-600" />
-          <span>SSC Instances</span>
-        </h2>
-        <p className="text-gray-700">
-          Manage post-disaster and secondary datasets to calculate severity
-          scores.
-        </p>
+        {/* SSC Instances */}
+        <div className="p-4 border rounded-lg shadow-sm bg-white">
+          <h2 className="text-lg font-semibold mb-2">SSC Instances</h2>
+          <p className="text-gray-600">
+            Manage post-disaster and secondary datasets to calculate severity scores.
+          </p>
+        </div>
       </div>
     </div>
   );
