@@ -1,5 +1,6 @@
+// /lib/framework.ts
 import { createClient } from "@/utils/supabase/server";
-import { Pillar } from "@/lib/types";
+import { Pillar } from "@/types/framework";
 
 export async function getFrameworkWithThemes(): Promise<Pillar[]> {
   const supabase = createClient();
@@ -25,7 +26,26 @@ export async function getFrameworkWithThemes(): Promise<Pillar[]> {
           ref_code,
           name,
           description,
-          sort_order
+          sort_order,
+          theme_id,
+          theme_code,
+          indicators (
+            id,
+            subtheme_id,
+            theme_id,
+            ref_code,
+            level,
+            name,
+            description,
+            sort_order,
+            criteria_levels (
+              id,
+              indicator_id,
+              label,
+              default_score,
+              sort_order
+            )
+          )
         )
       )
     `)
@@ -36,6 +56,5 @@ export async function getFrameworkWithThemes(): Promise<Pillar[]> {
     return [];
   }
 
-  // Cast explicitly to your types
   return (data as unknown as Pillar[]) || [];
 }
