@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Info, Settings, Globe, Database } from "lucide-react";
+import { Info, Settings, Globe, Cog, Layers } from "lucide-react";
 
 export default function DashboardPage() {
   return (
     <div className="space-y-10">
       {/* Title with Icon */}
       <div className="flex items-center gap-3">
-        <Database className="w-8 h-8 text-blue-600" />
+        <Layers className="w-8 h-8 text-blue-600" />
         <h1 className="text-2xl font-bold">
           Shelter and Settlements Severity Classification Toolset
         </h1>
@@ -72,7 +72,7 @@ export default function DashboardPage() {
         {/* SSC Instances */}
         <div className="p-6 border rounded-xl shadow-sm bg-white hover:shadow-md transition">
           <div className="flex items-center gap-2 mb-3">
-            <Database className="w-5 h-5 text-red-600" />
+            <Cog className="w-5 h-5 text-red-600" />
             <h2 className="text-lg font-semibold">SSC Instances</h2>
           </div>
           <p className="text-gray-600">
