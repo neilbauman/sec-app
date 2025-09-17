@@ -1,5 +1,5 @@
-import ToolHeader from "@/components/ui/ToolHeader";
-import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
+import ToolHeader from "@/components/ui/ToolHeader"
+import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient"
 
 export default function PrimaryFrameworkPage() {
   return (
@@ -12,11 +12,10 @@ export default function PrimaryFrameworkPage() {
           { label: "SSC Configuration", href: "/configuration" },
           { label: "Primary Framework Editor" },
         ]}
-        group="framework" // ✅ green cog, aligns with dashboard grouping
+        group="configuration"
       />
 
-      {/* Framework editor */}
       <PrimaryFrameworkEditorClient />
     </div>
-  );
+  )
 }
