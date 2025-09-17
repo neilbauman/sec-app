@@ -1,4 +1,4 @@
-import React from "react";
+// /components/ui/ToolHeader.tsx
 import Link from "next/link";
 
 export interface Breadcrumb {
@@ -8,34 +8,42 @@ export interface Breadcrumb {
 
 export interface ToolHeaderProps {
   title: string;
-  group: "Configuration" | "Instances"; // ✅ consistent usage
-  breadcrumbs: Breadcrumb[]; // ✅ always required
-  description?: string; // ✅ optional, only when needed
+  description?: string;
+  breadcrumbs: Breadcrumb[];
+  group: "Configuration" | "Instances";
 }
 
-export function ToolHeader({ title, group, breadcrumbs, description }: ToolHeaderProps) {
+export function ToolHeader({ title, description, breadcrumbs, group }: ToolHeaderProps) {
   return (
-    <div className="mb-6">
-      <h1 className="text-2xl font-bold flex items-center space-x-2">
-        <span>{title}</span>
-      </h1>
-      <nav className="text-sm text-gray-500 mt-1">
-        {breadcrumbs.map((crumb, index) => (
-          <span key={index}>
+    <header className="mb-6">
+      {/* Breadcrumbs */}
+      <nav className="text-sm text-gray-500 mb-2 flex items-center space-x-2">
+        {breadcrumbs.map((crumb, idx) => (
+          <span key={idx} className="flex items-center space-x-1">
             {crumb.href ? (
-              <Link href={crumb.href} className="hover:underline">
+              <Link href={crumb.href} className="hover:text-gray-700 underline">
                 {crumb.label}
               </Link>
             ) : (
-              crumb.label
+              <span>{crumb.label}</span>
             )}
-            {index < breadcrumbs.length - 1 && " / "}
+            {idx < breadcrumbs.length - 1 && <span>/</span>}
           </span>
         ))}
       </nav>
+
+      {/* Title + Group */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+        <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
+          {group}
+        </span>
+      </div>
+
+      {/* Optional description */}
       {description && (
-        <p className="text-gray-600 mt-2">{description}</p>
+        <p className="mt-2 text-gray-600 text-sm">{description}</p>
       )}
-    </div>
+    </header>
   );
 }
