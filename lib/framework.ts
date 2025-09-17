@@ -1,20 +1,41 @@
-// lib/framework.ts
-import { createClient } from "@/lib/supabase-server";
+// /lib/framework.ts
+import { supabase } from "./supabase-client";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
-export async function fetchFramework() {
-  const supabase = createClient();
-
-  // ✅ Start super simple: just grab pillars
-  const { data, error } = await supabase
+export async function fetchFramework(): Promise<Pillar[]> {
+  // Fetch pillars, themes, subthemes separately
+  const { data: pillarsData, error: pillarsError } = await supabase
     .from("pillars")
     .select("*")
     .order("sort_order", { ascending: true });
 
-  if (error) {
-    console.error("Error fetching pillars:", error);
-    return [];
-  }
+  if (pillarsError) throw pillarsError;
 
-  console.log("Fetched pillars:", data);
-  return data ?? [];
+  const { data: themesData, error: themesError } = await supabase
+    .from("themes")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (themesError) throw themesError;
+
+  const { data: subthemesData, error: subthemesError } = await supabase
+    .from("subthemes")
+    .select("*")
+    .order("sort_order", { ascending: true });
+
+  if (subthemesError) throw subthemesError;
+
+  // Join manually (schema locked to UUID keys)
+  return (pillarsData || []).map((pillar) => {
+    const pillarThemes: Theme[] = (themesData || [])
+      .filter((t) => t.pillar_id === pillar.id)
+      .map((theme) => {
+        const themeSubthemes: Subtheme[] = (subthemesData || []).filter(
+          (s) => s.theme_id === theme.id
+        );
+        return { ...theme, subthemes: themeSubthemes };
+      });
+
+    return { ...pillar, themes: pillarThemes };
+  });
 }
