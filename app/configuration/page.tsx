@@ -3,18 +3,18 @@ import { ToolHeader } from "@/components/ui/ToolHeader";
 
 export default function ConfigurationPage() {
   return (
-    <div className="space-y-6">
+    <main className="p-6 space-y-6">
       <ToolHeader
         title="SSC Configuration"
-        description="Configure pillars, themes, sub-themes, and indicators."
         breadcrumbs={[
           { label: "Dashboard", href: "/" },
           { label: "Configuration" },
         ]}
         group="Configuration"
       />
-
-      <p className="text-gray-600">Select a configuration tool from the options above.</p>
-    </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* configuration cards go here */}
+      </div>
+    </main>
   );
 }
