@@ -1,196 +1,77 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchFramework } from "@/lib/framework";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Download,
-  Upload,
-  Edit,
-  Plus,
-  Trash,
-  ChevronRight,
-  ChevronDown,
-} from "lucide-react";
-import ToolHeader from "@/components/ui/ToolHeader";
-
-interface NodeState {
-  [id: string]: boolean;
-}
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { FrameworkItem } from "@/types";
 
 export default function PrimaryFrameworkEditorClient() {
-  const [pillars, setPillars] = useState<Pillar[]>([]);
-  const [expanded, setExpanded] = useState<NodeState>({});
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<FrameworkItem[]>([]);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await fetchFramework();
-        setPillars(data);
-      } catch (err) {
-        console.error("Error fetching framework:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
+    async function fetchData() {
+      const res = await fetch("/api/frameworks/primary");
+      const data = await res.json();
+      setItems(data);
+    }
+    fetchData();
   }, []);
-
-  const toggleExpand = (id: string) => {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const renderRow = (
-    type: "Pillar" | "Theme" | "Subtheme",
-    ref_code: string,
-    name: string,
-    description: string,
-    sort_order: number,
-    children?: React.ReactNode
-  ) => {
-    const isExpanded = expanded[ref_code] ?? false;
-
-    return (
-      <>
-        <tr key={ref_code} className="border-b">
-          <td className="px-4 py-2 flex items-center gap-2">
-            {/* Expand/Collapse */}
-            {children ? (
-              <button
-                onClick={() => toggleExpand(ref_code)}
-                className="focus:outline-none"
-              >
-                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </button>
-            ) : (
-              <span className="w-4" />
-            )}
-            {/* Tag */}
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                type === "Pillar"
-                  ? "bg-blue-100 text-blue-800"
-                  : type === "Theme"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
-              }`}
-            >
-              {type}
-            </span>
-            <span className="text-xs text-gray-500">{ref_code}</span>
-          </td>
-          <td className="px-4 py-2">
-            <div className="font-medium text-sm">{name}</div>
-            <div className="text-xs text-gray-600">{description}</div>
-          </td>
-          <td className="px-4 py-2 text-center text-sm text-gray-600">
-            {sort_order}
-          </td>
-          <td className="px-4 py-2 flex gap-2">
-            <button className="p-1 hover:text-blue-600">
-              <Edit size={16} />
-            </button>
-            <button className="p-1 hover:text-green-600">
-              <Plus size={16} />
-            </button>
-            <button className="p-1 hover:text-red-600">
-              <Trash size={16} />
-            </button>
-          </td>
-        </tr>
-        {isExpanded && children}
-      </>
-    );
-  };
-
-  if (loading) {
-    return <div className="p-4">Loading framework data...</div>;
-  }
 
   return (
     <div className="space-y-6">
-      {/* Tool Header */}
-      <ToolHeader
-        pageTitle="Primary Framework Editor"
-        pageDescription="Configure pillars, themes, and sub-themes."
-        breadcrumbs={[
-          { label: "Dashboard", href: "/" },
-          { label: "SSC Configuration", href: "/configuration" },
-          { label: "Primary Framework Editor" },
-        ]}
-        group="configuration"
-      />
-
-      {/* Bulk actions */}
-      <div className="flex justify-between items-center">
+      {/* Bulk actions placeholder */}
+      <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Bulk Actions</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Upload className="w-4 h-4 mr-1" /> Upload CSV
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-1" /> Download CSV
-          </Button>
-        </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto border rounded-lg bg-white shadow-sm">
-        <table className="w-full text-sm">
-          <colgroup>
-            <col style={{ width: "20%" }} />
-            <col style={{ width: "55%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "15%" }} />
-          </colgroup>
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Type / Ref Code
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Name / Description
-              </th>
-              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
-                Sort Order
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {pillars.map((pillar) =>
-              renderRow(
-                "Pillar",
-                pillar.ref_code,
-                pillar.name,
-                pillar.description,
-                pillar.sort_order,
-                pillar.themes.map((theme) =>
-                  renderRow(
-                    "Theme",
-                    theme.ref_code,
-                    theme.name,
-                    theme.description,
-                    theme.sort_order,
-                    theme.subthemes.map((sub) =>
-                      renderRow(
-                        "Subtheme",
-                        sub.ref_code,
-                        sub.name,
-                        sub.description,
-                        sub.sort_order
-                      )
-                    )
-                  )
-                )
-              )
-            )}
-          </tbody>
-        </table>
+      {/* Framework table */}
+      <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[15%]">Type / Ref Code</TableHead>
+              <TableHead className="w-[55%]">Name / Description</TableHead>
+              <TableHead className="w-[15%] text-center">Sort Order</TableHead>
+              <TableHead className="w-[15%] text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>
+                  <span className="inline-flex items-center rounded-md bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                    {item.type}
+                  </span>{" "}
+                  {item.ref_code}
+                </TableCell>
+                <TableCell>
+                  <div className="font-semibold">{item.name}</div>
+                  <div className="text-sm text-gray-500">{item.description}</div>
+                </TableCell>
+                <TableCell className="text-center">{item.sort_order}</TableCell>
+                <TableCell className="text-right space-x-2">
+                  <Button size="icon" variant="ghost">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
