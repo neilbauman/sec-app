@@ -3,9 +3,9 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { Database } from "@/types/supabase";
 
-export const createServerSupabase = () => {
-  // ✅ Call cookies() properly for Next.js 15.1.6
-  const cookieStore = cookies();
+export const createServerSupabase = async () => {
+  // ✅ Await cookies() because in your Next.js version it returns a Promise
+  const cookieStore = await cookies();
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
