@@ -1,5 +1,3 @@
-// /app/configuration/comprehensive/page.tsx
-
 import { ToolHeader } from "@/components/ui/ToolHeader";
 
 export default function ComprehensiveFrameworkPage() {
