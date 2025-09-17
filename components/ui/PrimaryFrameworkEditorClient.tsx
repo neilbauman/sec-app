@@ -9,6 +9,7 @@ interface Subtheme {
   name: string;
   description: string;
   sort_order: number;
+  theme_id: string;
 }
 
 interface Theme {
@@ -17,6 +18,7 @@ interface Theme {
   name: string;
   description: string;
   sort_order: number;
+  pillar_id: string;
   subthemes: Subtheme[];
 }
 
@@ -35,25 +37,57 @@ export default function PrimaryFrameworkEditorClient() {
 
   useEffect(() => {
     const fetchFramework = async () => {
-      const { data, error } = await supabase
+      // Step 1: Fetch pillars
+      const { data: pillarsData, error: pillarsError } = await supabase
         .from("pillars")
-        .select(`
-          id, ref_code, name, description, sort_order,
-          themes (
-            id, ref_code, name, description, sort_order, pillar_id,
-            subthemes (
-              id, ref_code, name, description, sort_order, theme_id
-            )
-          )
-        `)
+        .select("*")
         .order("sort_order", { ascending: true });
 
-      if (error) {
-        console.error("Error fetching framework:", error);
-      } else {
-        setPillars(data || []);
+      if (pillarsError) {
+        console.error("Error fetching pillars:", pillarsError);
+        setLoading(false);
+        return;
       }
 
+      // Step 2: Fetch themes
+      const { data: themesData, error: themesError } = await supabase
+        .from("themes")
+        .select("*")
+        .order("sort_order", { ascending: true });
+
+      if (themesError) {
+        console.error("Error fetching themes:", themesError);
+        setLoading(false);
+        return;
+      }
+
+      // Step 3: Fetch subthemes
+      const { data: subthemesData, error: subthemesError } = await supabase
+        .from("subthemes")
+        .select("*")
+        .order("sort_order", { ascending: true });
+
+      if (subthemesError) {
+        console.error("Error fetching subthemes:", subthemesError);
+        setLoading(false);
+        return;
+      }
+
+      // Step 4: Manually join
+      const pillarsWithRelations = (pillarsData || []).map((pillar) => {
+        const pillarThemes = (themesData || [])
+          .filter((t) => t.pillar_id === pillar.id)
+          .map((theme) => {
+            const themeSubthemes = (subthemesData || []).filter(
+              (s) => s.theme_id === theme.id
+            );
+            return { ...theme, subthemes: themeSubthemes };
+          });
+
+        return { ...pillar, themes: pillarThemes };
+      });
+
+      setPillars(pillarsWithRelations);
       setLoading(false);
     };
 
