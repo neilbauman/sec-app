@@ -1,14 +1,28 @@
-// components/ui/ToolHeader.tsx
-import { Layers, Cog, Globe, Database } from "lucide-react"
+"use client";
 
-export type ToolGroup = "dashboard" | "configuration" | "instances" | "country"
+import Link from "next/link";
+import { Layers, Settings } from "lucide-react";
 
-interface ToolHeaderProps {
-  pageTitle: string
-  pageDescription: string
-  breadcrumbs: { label: string; href?: string }[]
-  group: ToolGroup
+export type ToolGroup = "dashboard" | "framework" | "instances" | "configuration";
+
+interface Breadcrumb {
+  label: string;
+  href?: string;
 }
+
+export interface ToolHeaderProps {
+  pageTitle: string;
+  pageDescription?: string;
+  breadcrumbs?: Breadcrumb[];
+  group: ToolGroup;
+}
+
+const groupConfig: Record<ToolGroup, { icon: JSX.Element; color: string }> = {
+  dashboard: { icon: <Layers className="w-6 h-6 text-blue-600" />, color: "text-blue-600" },
+  framework: { icon: <Layers className="w-6 h-6 text-purple-600" />, color: "text-purple-600" },
+  instances: { icon: <Settings className="w-6 h-6 text-orange-600" />, color: "text-orange-600" },
+  configuration: { icon: <Settings className="w-6 h-6 text-green-600" />, color: "text-green-600" },
+};
 
 export default function ToolHeader({
   pageTitle,
@@ -16,34 +30,40 @@ export default function ToolHeader({
   breadcrumbs,
   group,
 }: ToolHeaderProps) {
-  const iconMap: Record<ToolGroup, JSX.Element> = {
-    dashboard: <Layers className="w-6 h-6 text-blue-500" />,
-    configuration: <Cog className="w-6 h-6 text-green-500" />,
-    country: <Globe className="w-6 h-6 text-purple-500" />,
-    instances: <Database className="w-6 h-6 text-red-500" />,
-  }
+  const { icon, color } = groupConfig[group];
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center space-x-3">
-        {iconMap[group]}
-        <h1 className="text-2xl font-bold">{pageTitle}</h1>
+    <div className="mb-6">
+      {/* Breadcrumbs */}
+      {breadcrumbs && (
+        <nav className="flex mb-2 text-sm text-gray-500">
+          {breadcrumbs.map((crumb, index) => (
+            <span key={index} className="flex items-center">
+              {crumb.href ? (
+                <Link href={crumb.href} className="hover:underline">
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span>{crumb.label}</span>
+              )}
+              {index < breadcrumbs.length - 1 && (
+                <span className="mx-2 text-gray-400">/</span>
+              )}
+            </span>
+          ))}
+        </nav>
+      )}
+
+      {/* Title + Icon */}
+      <div className="flex items-center gap-2">
+        {icon}
+        <h1 className={`text-2xl font-bold ${color}`}>{pageTitle}</h1>
       </div>
-      <p className="text-gray-600">{pageDescription}</p>
-      <nav className="text-sm text-gray-500">
-        {breadcrumbs.map((crumb, i) => (
-          <span key={i}>
-            {crumb.href ? (
-              <a href={crumb.href} className="hover:underline text-blue-600">
-                {crumb.label}
-              </a>
-            ) : (
-              <span>{crumb.label}</span>
-            )}
-            {i < breadcrumbs.length - 1 && " > "}
-          </span>
-        ))}
-      </nav>
+
+      {/* Description */}
+      {pageDescription && (
+        <p className="text-gray-600 mt-1">{pageDescription}</p>
+      )}
     </div>
-  )
+  );
 }
