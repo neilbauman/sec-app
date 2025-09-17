@@ -3,29 +3,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase-client";
 
-interface CriteriaLevel {
-  id: number;
-  label: string;
-  default_score: number;
-  sort_order: number;
-}
-
-interface Indicator {
-  id: string;
-  ref_code: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  criteria_levels: CriteriaLevel[];
-}
-
 interface Subtheme {
   id: string;
   ref_code: string;
   name: string;
   description: string;
   sort_order: number;
-  indicators: Indicator[];
 }
 
 interface Theme {
@@ -59,13 +42,7 @@ export default function PrimaryFrameworkEditorClient() {
           themes (
             id, ref_code, name, description, sort_order, pillar_id,
             subthemes (
-              id, ref_code, name, description, sort_order, theme_id,
-              indicators (
-                id, ref_code, name, description, sort_order, subtheme_id,
-                criteria_levels (
-                  id, label, default_score, sort_order, indicator_id
-                )
-              )
+              id, ref_code, name, description, sort_order, theme_id
             )
           )
         `)
@@ -113,27 +90,6 @@ export default function PrimaryFrameworkEditorClient() {
                     <div key={subtheme.id}>
                       <h4 className="font-medium">{subtheme.name}</h4>
                       <p className="text-gray-500">{subtheme.description}</p>
-
-                      {/* Indicators */}
-                      <div className="ml-4 mt-1 space-y-1">
-                        {subtheme.indicators?.map((indicator) => (
-                          <div key={indicator.id}>
-                            <span className="font-semibold">{indicator.name}</span>{" "}
-                            <span className="text-gray-500">
-                              {indicator.description}
-                            </span>
-
-                            {/* Criteria Levels */}
-                            <ul className="ml-4 list-disc text-sm text-gray-600">
-                              {indicator.criteria_levels?.map((level) => (
-                                <li key={level.id}>
-                                  {level.label} (default: {level.default_score})
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   ))}
                 </div>
