@@ -14,19 +14,17 @@ export async function getFramework(): Promise<Pillar[]> {
       themes (
         id,
         ref_code,
-        pillar_code,
+        pillar_id,
         name,
         description,
         sort_order,
-        pillar_id,
         subthemes (
           id,
           ref_code,
-          theme_code,
+          theme_id,
           name,
           description,
-          sort_order,
-          theme_id
+          sort_order
         )
       )
     `)
