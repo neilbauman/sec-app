@@ -4,7 +4,8 @@ import { createServerClient } from "@supabase/ssr";
 import { Database } from "@/types/supabase";
 
 export const createServerSupabase = () => {
-  const cookieStore = cookies; // ✅ no ()
+  // ✅ Call cookies() properly for Next.js 15.1.6
+  const cookieStore = cookies();
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,11 +16,11 @@ export const createServerSupabase = () => {
           return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: any) {
-          // SSR no-op
+          // SSR no-op during build
           return;
         },
         remove(name: string, options: any) {
-          // SSR no-op
+          // SSR no-op during build
           return;
         },
       },
