@@ -1,7 +1,7 @@
-import ToolHeader from "@/components/ui/ToolHeader"
-import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient"
+import ToolHeader from "@/components/ui/ToolHeader";
+import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
 
-export default function PrimaryFrameworkPage() {
+export default function PrimaryFrameworkEditorPage() {
   return (
     <div className="space-y-6">
       <ToolHeader
@@ -14,8 +14,7 @@ export default function PrimaryFrameworkPage() {
         ]}
         group="configuration"
       />
-
       <PrimaryFrameworkEditorClient />
     </div>
-  )
+  );
 }
