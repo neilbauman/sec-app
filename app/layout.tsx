@@ -15,7 +15,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-gray-50">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          {/* Each page now controls its own ToolHeader */}
+          {/* Each page will explicitly include its own ToolHeader */}
           <main>{children}</main>
         </div>
       </body>
