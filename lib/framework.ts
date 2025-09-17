@@ -1,9 +1,9 @@
 // /lib/framework.ts
-import { createClient } from "@/lib/supabase-client";
+import { createServerSupabase } from "@/lib/supabase-server";
 import { Pillar } from "@/types/framework";
 
 export async function getFramework(): Promise<Pillar[]> {
-  const supabase = createClient();
+  const supabase = createServerSupabase();
 
   const { data, error } = await supabase
     .from("pillars")
