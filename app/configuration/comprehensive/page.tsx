@@ -9,11 +9,13 @@ export default function ComprehensiveFrameworkPage() {
         breadcrumbs={[
           { label: "Dashboard", href: "/" },
           { label: "SSC Configuration", href: "/configuration" },
+          { label: "Comprehensive Framework Editor" },
         ]}
       />
-      {/* Placeholder until functionality is built */}
-      <div className="p-4 border rounded-md bg-gray-50 text-gray-600">
-        Comprehensive editor coming soon.
+
+      {/* Placeholder until Comprehensive editor functionality is built */}
+      <div className="p-6 border rounded-lg bg-white shadow-sm text-gray-500">
+        Comprehensive Framework Editor functionality coming soon.
       </div>
     </div>
   );
