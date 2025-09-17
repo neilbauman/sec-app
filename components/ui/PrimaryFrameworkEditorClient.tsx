@@ -1,86 +1,119 @@
-// /components/ui/PrimaryFrameworkEditorClient.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { getFramework } from "@/lib/framework";
+import React, { useEffect, useState } from "react";
+import { ChevronDown, ChevronRight, Plus, Edit, Trash } from "lucide-react";
+import { ToolHeader } from "@/components/ui/ToolHeader"; // ✅ fixed import
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
-import ToolHeader from "@/components/ui/ToolHeader";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { getFramework } from "@/lib/framework";
+
+interface NodeState {
+  [id: string]: boolean;
+}
 
 export default function PrimaryFrameworkEditorClient() {
   const [framework, setFramework] = useState<Pillar[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<NodeState>({});
 
   useEffect(() => {
-    async function loadData() {
+    async function fetchData() {
       const data = await getFramework();
       setFramework(data);
-      setLoading(false);
     }
-    loadData();
+    fetchData();
   }, []);
 
-  if (loading) {
-    return <p className="text-gray-500">Loading framework...</p>;
-  }
+  const toggleExpand = (id: string) => {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   return (
-    <div className="space-y-6">
+    <div>
       <ToolHeader
         title="Primary Framework Editor"
+        breadcrumbs={[{ label: "Configuration", href: "/configuration" }, { label: "Primary Framework Editor" }]}
         group="Configuration"
-        breadcrumbs={[
-          { label: "Dashboard", href: "/" },
-          { label: "Configuration" },
-          { label: "Primary Framework Editor" },
-        ]}
       />
 
-      <div className="flex space-x-2">
-        <Button>+ New Pillar</Button>
-        <Button variant="outline">+ New Theme</Button>
-        <Button variant="outline">+ New Sub-theme</Button>
+      <div className="mt-6 space-y-4">
+        {framework.map((pillar) => (
+          <div key={pillar.id} className="border rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => toggleExpand(pillar.id)}
+                className="flex items-center font-semibold text-lg"
+              >
+                {expanded[pillar.id] ? (
+                  <ChevronDown className="w-5 h-5 mr-2" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 mr-2" />
+                )}
+                {pillar.name}
+              </button>
+              <div className="space-x-2">
+                <button className="p-1 text-gray-600 hover:text-blue-600">
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button className="p-1 text-gray-600 hover:text-red-600">
+                  <Trash className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 ml-7">{pillar.description}</p>
+
+            {expanded[pillar.id] && (
+              <div className="ml-7 mt-3 space-y-2">
+                {pillar.themes.map((theme: Theme) => (
+                  <div key={theme.id} className="border-l pl-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{theme.name}</span>
+                      <div className="space-x-2">
+                        <button className="p-1 text-gray-600 hover:text-blue-600">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button className="p-1 text-gray-600 hover:text-red-600">
+                          <Trash className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600">{theme.description}</p>
+
+                    {theme.subthemes.map((subtheme: Subtheme) => (
+                      <div key={subtheme.id} className="ml-4 border-l pl-4 mt-2">
+                        <div className="flex items-center justify-between">
+                          <span>{subtheme.name}</span>
+                          <div className="space-x-2">
+                            <button className="p-1 text-gray-600 hover:text-blue-600">
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button className="p-1 text-gray-600 hover:text-red-600">
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600">{subtheme.description}</p>
+                      </div>
+                    ))}
+
+                    <button className="mt-2 flex items-center text-sm text-blue-600 hover:underline">
+                      <Plus className="w-4 h-4 mr-1" /> Add Subtheme
+                    </button>
+                  </div>
+                ))}
+
+                <button className="mt-2 flex items-center text-sm text-blue-600 hover:underline">
+                  <Plus className="w-4 h-4 mr-1" /> Add Theme
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
-      {framework.length === 0 ? (
-        <p className="text-gray-500">
-          No framework found. Add your first pillar to get started.
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {framework.map((pillar) => (
-            <Card key={pillar.id} className="p-4">
-              <h2 className="text-lg font-semibold">{pillar.name}</h2>
-              <p className="text-gray-600">{pillar.description}</p>
-
-              {pillar.themes?.length ? (
-                <ul className="ml-6 mt-2 list-disc">
-                  {pillar.themes.map((theme: Theme) => (
-                    <li key={theme.id}>
-                      <strong>{theme.name}</strong> — {theme.description}
-                      {theme.subthemes?.length ? (
-                        <ul className="ml-6 mt-1 list-disc text-sm text-gray-700">
-                          {theme.subthemes.map((sub: Subtheme) => (
-                            <li key={sub.id}>
-                              <span className="font-medium">{sub.name}</span> —{" "}
-                              {sub.description}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="ml-4 text-sm text-gray-500">
-                  No themes under this pillar.
-                </p>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
+      <div className="mt-4">
+        <button className="flex items-center text-sm text-green-600 hover:underline">
+          <Plus className="w-4 h-4 mr-1" /> Add Pillar
+        </button>
+      </div>
     </div>
   );
 }
