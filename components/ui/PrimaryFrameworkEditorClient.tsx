@@ -44,27 +44,22 @@ export default function PrimaryFrameworkEditorClient() {
 
   const renderRow = (
     type: "Pillar" | "Theme" | "Subtheme",
-    id: string,
     ref_code: string,
     name: string,
     description: string,
     sort_order: number,
-    depth: number,
     children?: React.ReactNode
   ) => {
-    const isExpanded = expanded[id] ?? false;
+    const isExpanded = expanded[ref_code] ?? false;
 
     return (
       <>
-        <tr key={id} className="border-b">
-          <td
-            className="px-4 py-2 flex items-center gap-2"
-            style={{ paddingLeft: `${depth * 1.25}rem` }}
-          >
+        <tr key={ref_code} className="border-b">
+          <td className="px-4 py-2 flex items-center gap-2">
             {/* Expand/Collapse */}
             {children ? (
               <button
-                onClick={() => toggleExpand(id)}
+                onClick={() => toggleExpand(ref_code)}
                 className="focus:outline-none"
               >
                 {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -125,11 +120,12 @@ export default function PrimaryFrameworkEditorClient() {
           { label: "SSC Configuration", href: "/configuration" },
           { label: "Primary Framework Editor" },
         ]}
-        group="ssc"
+        group="configuration"
       />
 
       {/* Bulk actions */}
-      <div className="flex justify-end items-center">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Bulk Actions</h2>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Upload className="w-4 h-4 mr-1" /> Upload CSV
@@ -142,7 +138,7 @@ export default function PrimaryFrameworkEditorClient() {
 
       {/* Table */}
       <div className="overflow-x-auto border rounded-lg bg-white shadow-sm">
-        <table className="w-full text-sm table-fixed">
+        <table className="w-full text-sm">
           <colgroup>
             <col style={{ width: "20%" }} />
             <col style={{ width: "55%" }} />
@@ -152,7 +148,7 @@ export default function PrimaryFrameworkEditorClient() {
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Type / Ref
+                Type / Ref Code
               </th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                 Name / Description
@@ -169,30 +165,24 @@ export default function PrimaryFrameworkEditorClient() {
             {pillars.map((pillar) =>
               renderRow(
                 "Pillar",
-                pillar.id,
                 pillar.ref_code,
                 pillar.name,
                 pillar.description,
                 pillar.sort_order,
-                0,
                 pillar.themes.map((theme) =>
                   renderRow(
                     "Theme",
-                    theme.id,
                     theme.ref_code,
                     theme.name,
                     theme.description,
                     theme.sort_order,
-                    1,
                     theme.subthemes.map((sub) =>
                       renderRow(
                         "Subtheme",
-                        sub.id,
                         sub.ref_code,
                         sub.name,
                         sub.description,
-                        sub.sort_order,
-                        2
+                        sub.sort_order
                       )
                     )
                   )
