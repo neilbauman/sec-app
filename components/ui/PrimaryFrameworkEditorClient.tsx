@@ -13,15 +13,15 @@ import {
 } from "lucide-react";
 
 interface Subtheme {
-  id: string; // keep for joins
-  ref_code: string;
+  id: string; // internal
+  ref_code: string; // human readable
   name: string;
   description: string;
   sort_order: number;
 }
 
 interface Theme {
-  id: string; // keep for joins
+  id: string;
   ref_code: string;
   name: string;
   description: string;
@@ -30,7 +30,7 @@ interface Theme {
 }
 
 interface Pillar {
-  id: string; // keep for joins
+  id: string;
   ref_code: string;
   name: string;
   description: string;
