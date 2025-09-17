@@ -1,10 +1,10 @@
 // /lib/supabase-server.ts
-import { cookies as nextCookies } from "next/headers";
+import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { Database } from "@/types/supabase";
 
 export const createServerSupabase = () => {
-  const cookieStore = nextCookies(); // capture once
+  const cookieStore = cookies; // ✅ no ()
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
