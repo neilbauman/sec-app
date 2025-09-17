@@ -1,19 +1,16 @@
+// /app/configuration/comprehensive/page.tsx
 import { ToolHeader } from "@/components/ui/ToolHeader";
 
 export default function ComprehensiveFrameworkPage() {
   return (
-    <div className="space-y-6">
+    <div>
       <ToolHeader
-        pageTitle="Comprehensive Framework Editor"
-        pageDescription="Configure pillars, themes, sub-themes, and indicators."
-        breadcrumbs={[
-          { label: "Dashboard", href: "/" },
-          { label: "Configuration", href: "/configuration" },
-          { label: "Comprehensive Framework Editor" },
-        ]}
-        group="configuration"
+        title="Comprehensive Framework Editor"
+        group="Configuration" // ✅ must be capitalized
       />
-      <p className="text-gray-600">Comprehensive editor functionality coming soon.</p>
+      <p className="text-gray-600">
+        Comprehensive editor functionality coming soon.
+      </p>
     </div>
   );
 }
