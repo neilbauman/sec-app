@@ -8,10 +8,10 @@ export default function Page() {
         title="SSC Dashboard"
         description="Welcome to the Shelter and Settlements Severity Classification Toolset (SSC)."
         breadcrumbs={[{ label: "Dashboard" }]}
-        group="Configuration" // ✅ required
+        group="Configuration"
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Add dashboard widgets or cards here */}
+        {/* dashboard cards go here */}
       </div>
     </main>
   );
