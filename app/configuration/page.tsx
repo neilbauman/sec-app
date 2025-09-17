@@ -1,6 +1,4 @@
-import ToolHeader from "@/components/ui/ToolHeader";
-import Link from "next/link";
-import { Layers } from "lucide-react";
+import { ToolHeader } from "@/components/ui/ToolHeader";
 
 export default function ConfigurationPage() {
   return (
@@ -15,37 +13,26 @@ export default function ConfigurationPage() {
         group="configuration"
       />
 
-      {/* Cards for Editors */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Link
+        <a
           href="/configuration/primary"
-          className="p-6 border rounded-lg shadow hover:shadow-md transition bg-white"
+          className="p-4 border rounded-lg shadow hover:bg-gray-50"
         >
-          <div className="flex items-center gap-3 mb-2">
-            <Layers className="w-6 h-6 text-blue-600" />
-            <h2 className="text-lg font-semibold text-blue-600">
-              Primary Framework Editor
-            </h2>
-          </div>
+          <h2 className="font-semibold">Primary Framework Editor</h2>
           <p className="text-sm text-gray-600">
             Configure pillars, themes, and sub-themes.
           </p>
-        </Link>
+        </a>
 
-        <Link
+        <a
           href="/configuration/comprehensive"
-          className="p-6 border rounded-lg shadow hover:shadow-md transition bg-white"
+          className="p-4 border rounded-lg shadow hover:bg-gray-50"
         >
-          <div className="flex items-center gap-3 mb-2">
-            <Layers className="w-6 h-6 text-purple-600" />
-            <h2 className="text-lg font-semibold text-purple-600">
-              Comprehensive Framework Editor
-            </h2>
-          </div>
+          <h2 className="font-semibold">Comprehensive Framework Editor</h2>
           <p className="text-sm text-gray-600">
             Configure pillars, themes, sub-themes, and indicators.
           </p>
-        </Link>
+        </a>
       </div>
     </div>
   );
