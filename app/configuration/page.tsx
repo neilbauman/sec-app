@@ -1,14 +1,13 @@
 import ToolHeader from "@/components/ui/ToolHeader";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Layers, Cog } from "lucide-react";
+import { Layers } from "lucide-react";
 
 export default function ConfigurationPage() {
   return (
     <div className="space-y-6">
       <ToolHeader
         pageTitle="SSC Configuration"
-        pageDescription="Manage frameworks and SSC instances."
+        pageDescription="Manage frameworks and SSC configuration."
         breadcrumbs={[
           { label: "Dashboard", href: "/" },
           { label: "SSC Configuration" },
@@ -16,29 +15,34 @@ export default function ConfigurationPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Framework Editors Card */}
-        <Link href="/configuration/primary">
-          <Card className="hover:shadow-lg transition cursor-pointer">
-            <CardHeader className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-blue-600" />
-              <CardTitle>Framework Editors</CardTitle>
-            </CardHeader>
-            <CardContent>
-              Manage the Primary and Comprehensive Framework editors.
-            </CardContent>
-          </Card>
+        {/* Framework Editors card */}
+        <Link
+          href="/configuration/primary"
+          className="border rounded-xl p-6 shadow-sm hover:shadow-md transition bg-white"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Layers className="h-6 w-6 text-blue-600" />
+            <h3 className="text-lg font-semibold">Framework Editors</h3>
+          </div>
+          <p className="text-gray-600">
+            Manage the Primary and Comprehensive Framework editors.
+          </p>
+          <ul className="mt-3 list-disc list-inside text-blue-600">
+            <li>
+              <Link href="/configuration/primary" className="hover:underline">
+                Primary Framework Editor
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/configuration/comprehensive"
+                className="hover:underline"
+              >
+                Comprehensive Framework Editor
+              </Link>
+            </li>
+          </ul>
         </Link>
-
-        {/* SSC Instances Card */}
-        <Card>
-          <CardHeader className="flex items-center gap-2">
-            <Cog className="w-5 h-5 text-green-600" />
-            <CardTitle>SSC Instances</CardTitle>
-          </CardHeader>
-          <CardContent>
-            Manage your SSC instances and configuration details.
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
