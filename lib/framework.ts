@@ -1,38 +1,48 @@
 // /lib/framework.ts
-import { createServerClient } from "@/lib/supabase-server";
-import type { Pillar } from "@/types/framework";
+import { createServerSupabase } from "@/lib/supabase-server";
+import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 export async function getFramework(): Promise<Pillar[]> {
-  const supabase = createServerClient();
+  const supabase = createServerSupabase();
 
-  const { data, error } = await supabase
+  // Get all pillars
+  const { data: pillars, error: pillarError } = await supabase
     .from("pillars")
-    .select(`
-      id,
-      name,
-      description,
-      sort_order,
-      themes (
-        id,
-        pillar_id,
-        name,
-        description,
-        sort_order,
-        subthemes (
-          id,
-          theme_id,
-          name,
-          description,
-          sort_order
-        )
-      )
-    `)
-    .order("sort_order", { ascending: true });
+    .select("id, name, description, sort_order");
 
-  if (error) {
-    console.error("Error fetching framework:", error);
+  if (pillarError) {
+    console.error("Error fetching pillars:", pillarError);
     return [];
   }
 
-  return data || [];
+  // Get all themes
+  const { data: themes, error: themeError } = await supabase
+    .from("themes")
+    .select("id, name, description, sort_order, pillar_id");
+
+  if (themeError) {
+    console.error("Error fetching themes:", themeError);
+    return [];
+  }
+
+  // Get all subthemes
+  const { data: subthemes, error: subthemeError } = await supabase
+    .from("subthemes")
+    .select("id, name, description, sort_order, theme_id");
+
+  if (subthemeError) {
+    console.error("Error fetching subthemes:", subthemeError);
+    return [];
+  }
+
+  // Assemble hierarchy
+  return pillars.map((pillar) => ({
+    ...pillar,
+    themes: themes
+      .filter((t) => t.pillar_id === pillar.id)
+      .map((theme) => ({
+        ...theme,
+        subthemes: subthemes.filter((st) => st.theme_id === theme.id),
+      })),
+  }));
 }
