@@ -1,131 +1,114 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase-client";
-
-// Types matching your schema
-interface CriteriaLevel {
-  id: number;
-  label: string;
-  default_score: number;
-  sort_order: number;
-}
-
-interface Indicator {
-  id: string;
-  ref_code: string;
-  level: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  criteria_levels: CriteriaLevel[];
-}
-
-interface Subtheme {
-  id: string;
-  ref_code: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  indicators: Indicator[];
-}
-
-interface Theme {
-  id: string;
-  ref_code: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  subthemes: Subtheme[];
-}
-
-interface Pillar {
-  id: string;
-  ref_code: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  themes: Theme[];
-}
+import { useEffect, useState } from 'react'
+import { supabase, Pillar } from '@/lib/supabase-client'
 
 export default function PrimaryFrameworkEditorClient() {
-  const [pillars, setPillars] = useState<Pillar[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [pillars, setPillars] = useState<Pillar[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchFramework = async () => {
-      setLoading(true);
-
-      const { data: pillarsData, error } = await supabase
-        .from("pillars")
-        .select(
-          `
-          id, ref_code, name, description, sort_order,
-          themes:themes (
-            id, ref_code, name, description, sort_order,
-            subthemes:subthemes (
-              id, ref_code, name, description, sort_order,
-              indicators:indicators (
-                id, ref_code, level, name, description, sort_order,
-                criteria_levels:criteria_levels (
-                  id, label, default_score, sort_order
+      const { data, error } = await supabase
+        .from('pillars')
+        .select(`
+          id,
+          ref_code,
+          name,
+          description,
+          sort_order,
+          themes (
+            id,
+            pillar_id,
+            ref_code,
+            pillar_code,
+            name,
+            description,
+            sort_order,
+            subthemes (
+              id,
+              theme_id,
+              ref_code,
+              theme_code,
+              name,
+              description,
+              sort_order,
+              indicators (
+                id,
+                subtheme_id,
+                theme_id,
+                ref_code,
+                name,
+                description,
+                level,
+                sort_order,
+                criteria_levels (
+                  id,
+                  indicator_id,
+                  label,
+                  default_score,
+                  sort_order
                 )
               )
             )
           )
-        `
-        )
-        .order("sort_order", { ascending: true });
+        `)
+        .order('sort_order', { ascending: true })
 
       if (error) {
-        console.error("Error fetching framework:", error.message);
+        console.error('Error loading framework:', error)
+        setPillars([])
       } else {
-        setPillars(pillarsData || []);
+        setPillars(data || [])
       }
 
-      setLoading(false);
-    };
+      setLoading(false)
+    }
 
-    fetchFramework();
-  }, []);
+    fetchFramework()
+  }, [])
 
   if (loading) {
-    return <div>Loading framework...</div>;
+    return (
+      <div className="p-4 text-gray-500 text-sm">
+        Loading framework...
+      </div>
+    )
   }
 
   if (!pillars.length) {
-    return <div>No framework data found.</div>;
+    return (
+      <div className="p-4 border rounded-md bg-white shadow-sm">
+        No framework data found.
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
       {pillars.map((pillar) => (
-        <div
-          key={pillar.id}
-          className="rounded-lg border p-4 shadow-sm bg-white"
-        >
-          <h2 className="text-xl font-bold">{pillar.name}</h2>
-          <p className="text-gray-600">{pillar.description}</p>
+        <div key={pillar.id} className="p-4 border rounded-md bg-white shadow">
+          <h2 className="text-lg font-semibold">{pillar.name}</h2>
+          <p className="text-sm text-gray-600">{pillar.description}</p>
 
-          {pillar.themes.map((theme) => (
+          {pillar.themes?.map((theme) => (
             <div key={theme.id} className="ml-4 mt-4">
-              <h3 className="text-lg font-semibold">{theme.name}</h3>
-              <p className="text-gray-500">{theme.description}</p>
+              <h3 className="font-medium">{theme.name}</h3>
+              <p className="text-sm text-gray-500">{theme.description}</p>
 
-              {theme.subthemes.map((subtheme) => (
-                <div key={subtheme.id} className="ml-6 mt-2">
-                  <h4 className="font-medium">{subtheme.name}</h4>
-                  <p className="text-gray-400">{subtheme.description}</p>
+              {theme.subthemes?.map((sub) => (
+                <div key={sub.id} className="ml-6 mt-2">
+                  <h4 className="font-medium">{sub.name}</h4>
+                  <p className="text-sm text-gray-500">{sub.description}</p>
 
-                  {subtheme.indicators.map((indicator) => (
-                    <div key={indicator.id} className="ml-6 mt-2">
-                      <p className="font-semibold">{indicator.name}</p>
-                      <p className="text-gray-400">{indicator.description}</p>
+                  {sub.indicators?.map((ind) => (
+                    <div key={ind.id} className="ml-6 mt-1">
+                      <p className="font-medium">{ind.name}</p>
+                      <p className="text-sm text-gray-500">{ind.description}</p>
 
-                      {indicator.criteria_levels.map((level) => (
-                        <div key={level.id} className="ml-6 mt-1 text-sm">
-                          <span className="font-medium">{level.label}</span>{" "}
-                          (Default Score: {level.default_score})
+                      {ind.criteria_levels?.map((crit) => (
+                        <div key={crit.id} className="ml-6 mt-1 text-sm">
+                          {crit.label} (default: {crit.default_score})
                         </div>
                       ))}
                     </div>
@@ -137,5 +120,5 @@ export default function PrimaryFrameworkEditorClient() {
         </div>
       ))}
     </div>
-  );
+  )
 }
