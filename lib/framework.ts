@@ -1,6 +1,6 @@
 // /lib/framework.ts
 import { createServerClient } from "@/lib/supabase-server";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+import type { Pillar } from "@/types/framework";
 
 export async function getFramework(): Promise<Pillar[]> {
   const supabase = createServerClient();
