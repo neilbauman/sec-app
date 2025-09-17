@@ -1,77 +1,79 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronRight, Edit, Plus, Trash2, Upload, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { FrameworkItem } from "@/types";
+
+interface FrameworkItem {
+  id: string;
+  ref_code: string;
+  type: string;
+  name: string;
+  description: string;
+  sort_order: number;
+}
 
 export default function PrimaryFrameworkEditorClient() {
-  const [items, setItems] = useState<FrameworkItem[]>([]);
+  const [frameworkData, setFrameworkData] = useState<FrameworkItem[]>([]);
 
   useEffect(() => {
-    async function fetchData() {
-      const res = await fetch("/api/frameworks/primary");
-      const data = await res.json();
-      setItems(data);
-    }
-    fetchData();
+    fetch("/api/framework/primary")
+      .then((res) => res.json())
+      .then((data) => setFrameworkData(data));
   }, []);
 
   return (
     <div className="space-y-6">
-      {/* Bulk actions placeholder */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Bulk Actions</h2>
+      {/* Bulk actions */}
+      <div className="flex justify-end gap-2">
+        <Button variant="outline">
+          <Upload className="mr-2 h-4 w-4" /> Upload CSV
+        </Button>
+        <Button variant="outline">
+          <Download className="mr-2 h-4 w-4" /> Download CSV
+        </Button>
       </div>
 
-      {/* Framework table */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[15%]">Type / Ref Code</TableHead>
-              <TableHead className="w-[55%]">Name / Description</TableHead>
-              <TableHead className="w-[15%] text-center">Sort Order</TableHead>
-              <TableHead className="w-[15%] text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>
-                  <span className="inline-flex items-center rounded-md bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+      {/* Plain Tailwind Table */}
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-xs font-semibold uppercase text-gray-600">
+            <tr>
+              <th className="px-4 py-3 text-left">Type / Ref Code</th>
+              <th className="px-4 py-3 text-left">Name / Description</th>
+              <th className="px-4 py-3 text-left">Sort Order</th>
+              <th className="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {frameworkData.map((item) => (
+              <tr key={item.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <span className="inline-flex items-center rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
                     {item.type}
                   </span>{" "}
                   {item.ref_code}
-                </TableCell>
-                <TableCell>
-                  <div className="font-semibold">{item.name}</div>
-                  <div className="text-sm text-gray-500">{item.description}</div>
-                </TableCell>
-                <TableCell className="text-center">{item.sort_order}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button size="icon" variant="ghost">
-                    <Pencil className="h-4 w-4" />
+                </td>
+                <td className="px-4 py-3">
+                  <div className="font-medium">{item.name}</div>
+                  <div className="text-gray-500">{item.description}</div>
+                </td>
+                <td className="px-4 py-3">{item.sort_order}</td>
+                <td className="px-4 py-3 text-right space-x-2">
+                  <Button variant="ghost" size="icon">
+                    <Edit className="h-4 w-4" />
                   </Button>
-                  <Button size="icon" variant="ghost">
+                  <Button variant="ghost" size="icon">
                     <Plus className="h-4 w-4" />
                   </Button>
-                  <Button size="icon" variant="ghost">
+                  <Button variant="ghost" size="icon">
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
     </div>
   );
