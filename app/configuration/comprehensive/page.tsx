@@ -1,6 +1,6 @@
 import { ToolHeader } from "@/components/ui/ToolHeader";
 
-export default function ComprehensiveFrameworkEditorPage() {
+export default function ComprehensiveFrameworkPage() {
   return (
     <div className="space-y-6">
       <ToolHeader
@@ -8,13 +8,12 @@ export default function ComprehensiveFrameworkEditorPage() {
         pageDescription="Configure pillars, themes, sub-themes, and indicators."
         breadcrumbs={[
           { label: "Dashboard", href: "/" },
-          { label: "SSC Configuration", href: "/configuration" },
+          { label: "Configuration", href: "/configuration" },
           { label: "Comprehensive Framework Editor" },
         ]}
         group="configuration"
       />
-
-      <p className="text-gray-600">Coming soon...</p>
+      <p className="text-gray-600">Comprehensive editor functionality coming soon.</p>
     </div>
   );
 }
