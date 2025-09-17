@@ -1,43 +1,38 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "default" | "outline" | "ghost" | "destructive";
-  size?: "sm" | "md" | "lg";
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "default" | "ghost";
+  size?: "sm" | "md" | "lg" | "icon";
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "md", ...props }, ref) => {
-    const base =
-      "inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
+export function Button({
+  className,
+  variant = "default",
+  size = "md",
+  ...props
+}: ButtonProps) {
+  const variants: Record<string, string> = {
+    default: "bg-blue-600 text-white hover:bg-blue-700",
+    ghost: "bg-transparent hover:bg-gray-100 text-gray-700",
+  };
 
-    const variants = {
-      default: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
-      outline:
-        "border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 focus:ring-gray-400",
-      ghost:
-        "bg-transparent hover:bg-gray-100 text-gray-700 focus:ring-gray-400",
-      destructive:
-        "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
-    };
+  const sizes: Record<string, string> = {
+    sm: "px-2 py-1 text-sm",
+    md: "px-3 py-2 text-base",
+    lg: "px-4 py-2 text-lg",
+    icon: "p-2 rounded-full", // ✅ fix here
+  };
 
-    const sizes = {
-      sm: "px-3 py-1.5 text-xs",
-      md: "px-4 py-2 text-sm",
-      lg: "px-5 py-3 text-base",
-    };
-
-    return (
-      <button
-        ref={ref}
-        className={cn(base, variants[variant], sizes[size], className)}
-        {...props}
-      />
-    );
-  }
-);
-
-Button.displayName = "Button";
-
-export { Button };
+  return (
+    <button
+      className={cn(
+        "inline-flex items-center justify-center rounded-md transition",
+        variants[variant],
+        sizes[size],
+        className
+      )}
+      {...props}
+    />
+  );
+}
