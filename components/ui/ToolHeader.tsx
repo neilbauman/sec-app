@@ -1,4 +1,3 @@
-// components/ui/ToolHeader.tsx
 "use client";
 
 interface ToolHeaderProps {
