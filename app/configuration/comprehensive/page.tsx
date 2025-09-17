@@ -6,12 +6,14 @@ export default function ComprehensiveFrameworkPage() {
       <ToolHeader
         pageTitle="Comprehensive Framework Editor"
         pageDescription="Configure pillars, themes, sub-themes, and indicators."
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "SSC Configuration", href: "/configuration" },
+        ]}
       />
       {/* Placeholder until functionality is built */}
-      <div className="p-4 border rounded-lg bg-white shadow-sm">
-        <p className="text-gray-600">
-          Comprehensive Framework Editor functionality coming soon.
-        </p>
+      <div className="p-4 border rounded-md bg-gray-50 text-gray-600">
+        Comprehensive editor coming soon.
       </div>
     </div>
   );
