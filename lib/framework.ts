@@ -5,23 +5,15 @@ import type { Pillar } from "@/types/framework";
 export async function getFramework(): Promise<Pillar[]> {
   const supabase = createServerClient();
 
-  const { data, error } = await supabase
+  const { data: pillars, error } = await supabase
     .from("pillars")
-    .select(`
-      id, name, description, sort_order,
-      themes (
-        id, name, description, sort_order,
-        subthemes (
-          id, name, description, sort_order
-        )
-      )
-    `)
+    .select("id, name, description, sort_order, themes(id, name, description, sort_order, subthemes(id, name, description, sort_order))")
     .order("sort_order");
 
   if (error) {
-    console.error("Error fetching framework:", error.message);
+    console.error("Error fetching framework:", error);
     return [];
   }
 
-  return data || [];
+  return pillars ?? [];
 }
