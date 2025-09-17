@@ -1,162 +1,200 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchFramework } from "@/lib/framework";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
-import { Button } from "@/components/ui/button";
-import { Download, Upload, Edit, Plus, Trash, ChevronRight, ChevronDown } from "lucide-react";
+import { supabase } from "@/lib/supabase-client";
+import {
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  Edit2,
+  Trash2,
+  Upload,
+  Download,
+} from "lucide-react";
 
-interface NodeState {
-  [id: string]: boolean;
+interface Subtheme {
+  id: string;
+  ref_code: string;
+  name: string;
+  description: string;
+  sort_order: number;
+}
+
+interface Theme {
+  id: string;
+  ref_code: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  subthemes: Subtheme[];
+}
+
+interface Pillar {
+  id: string;
+  ref_code: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  themes: Theme[];
 }
 
 export default function PrimaryFrameworkEditorClient() {
   const [pillars, setPillars] = useState<Pillar[]>([]);
-  const [expanded, setExpanded] = useState<NodeState>({});
-  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const data = await fetchFramework();
-        setPillars(data);
-      } catch (err) {
-        console.error("Error fetching framework:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
+    fetchFramework();
   }, []);
+
+  async function fetchFramework() {
+    const { data: pillarsData, error } = await supabase
+      .from("pillars")
+      .select(
+        `
+        id, ref_code, name, description, sort_order,
+        themes (
+          id, ref_code, name, description, sort_order,
+          subthemes (
+            id, ref_code, name, description, sort_order
+          )
+        )
+      `
+      )
+      .order("sort_order");
+
+    if (error) {
+      console.error("Error fetching framework:", error);
+    } else {
+      setPillars(pillarsData || []);
+    }
+  }
 
   const toggleExpand = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const renderRow = (
+    item: Pillar | Theme | Subtheme,
     type: "Pillar" | "Theme" | "Subtheme",
-    id: string,
-    name: string,
-    description: string,
-    sort_order: number,
-    children?: React.ReactNode
+    parentId?: string
   ) => {
-    const isExpanded = expanded[id] ?? false;
+    const isExpanded = expanded[item.id];
+    const hasChildren =
+      type === "Pillar"
+        ? (item as Pillar).themes?.length > 0
+        : type === "Theme"
+        ? (item as Theme).subthemes?.length > 0
+        : false;
+
+    const indentClass =
+      type === "Theme"
+        ? "pl-6"
+        : type === "Subtheme"
+        ? "pl-12"
+        : "";
 
     return (
       <>
-        <tr key={id} className="border-b">
-          <td className="px-4 py-2 flex items-center gap-2">
-            {/* Expand/Collapse */}
-            {children ? (
-              <button onClick={() => toggleExpand(id)} className="focus:outline-none">
-                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        <tr key={item.id}>
+          {/* TYPE / ID */}
+          <td className={`w-1/6 align-top ${indentClass}`}>
+            <div className="flex items-center gap-2">
+              {hasChildren && (
+                <button
+                  onClick={() => toggleExpand(item.id)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  {isExpanded ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
+                </button>
+              )}
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  type === "Pillar"
+                    ? "bg-blue-100 text-blue-800"
+                    : type === "Theme"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {type}
+              </span>
+            </div>
+            <div className="text-xs text-gray-500 mt-1">{item.ref_code}</div>
+          </td>
+
+          {/* NAME / DESCRIPTION */}
+          <td className="w-2/3 align-top">
+            <div className="text-sm font-medium text-gray-900">
+              {item.name}
+            </div>
+            <div className="text-xs text-gray-600">{item.description}</div>
+          </td>
+
+          {/* SORT ORDER */}
+          <td className="w-1/12 align-top text-sm text-gray-700">
+            {item.sort_order}
+          </td>
+
+          {/* ACTIONS */}
+          <td className="w-1/6 align-top">
+            <div className="flex gap-2">
+              <button className="p-1 hover:bg-gray-100 rounded">
+                <Edit2 size={16} className="text-gray-600" />
               </button>
-            ) : (
-              <span className="w-4" />
-            )}
-            {/* Tag */}
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                type === "Pillar"
-                  ? "bg-blue-100 text-blue-800"
-                  : type === "Theme"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-purple-100 text-purple-800"
-              }`}
-            >
-              {type}
-            </span>
-            <span className="text-xs text-gray-500">{id}</span>
-          </td>
-          <td className="px-4 py-2">
-            <div className="font-medium">{name}</div>
-            <div className="text-sm text-gray-600">{description}</div>
-          </td>
-          <td className="px-4 py-2 text-sm text-gray-600">{sort_order}</td>
-          <td className="px-4 py-2 flex gap-2">
-            <button className="p-1 hover:text-blue-600">
-              <Edit size={16} />
-            </button>
-            <button className="p-1 hover:text-green-600">
-              <Plus size={16} />
-            </button>
-            <button className="p-1 hover:text-red-600">
-              <Trash size={16} />
-            </button>
+              <button className="p-1 hover:bg-gray-100 rounded">
+                <Plus size={16} className="text-gray-600" />
+              </button>
+              <button className="p-1 hover:bg-gray-100 rounded">
+                <Trash2 size={16} className="text-gray-600" />
+              </button>
+            </div>
           </td>
         </tr>
-        {isExpanded && children}
+
+        {/* Render Children */}
+        {isExpanded &&
+          type === "Pillar" &&
+          (item as Pillar).themes.map((theme) =>
+            renderRow(theme, "Theme", item.id)
+          )}
+        {isExpanded &&
+          type === "Theme" &&
+          (item as Theme).subthemes.map((sub) =>
+            renderRow(sub, "Subtheme", item.id)
+          )}
       </>
     );
   };
 
-  if (loading) {
-    return <div className="p-4">Loading framework data...</div>;
-  }
-
   return (
     <div className="space-y-6">
-      {/* Bulk actions */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Primary Framework Editor</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Upload className="w-4 h-4 mr-1" /> Upload CSV
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-1" /> Download CSV
-          </Button>
-        </div>
+      {/* CSV Actions */}
+      <div className="flex justify-end gap-2">
+        <button className="flex items-center gap-1 px-3 py-2 border rounded text-sm text-gray-700 hover:bg-gray-50">
+          <Upload size={16} /> Upload CSV
+        </button>
+        <button className="flex items-center gap-1 px-3 py-2 border rounded text-sm text-gray-700 hover:bg-gray-50">
+          <Download size={16} /> Download CSV
+        </button>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto border rounded-lg bg-white shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
             <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Type / Id
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Name / Description
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Sort Order
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                Actions
-              </th>
+              <th className="px-6 py-3 w-1/6">Type / ID</th>
+              <th className="px-6 py-3 w-2/3">Name / Description</th>
+              <th className="px-6 py-3 w-1/12">Sort Order</th>
+              <th className="px-6 py-3 w-1/6">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {pillars.map((pillar) =>
-              renderRow(
-                "Pillar",
-                pillar.id,
-                pillar.name,
-                pillar.description,
-                pillar.sort_order,
-                pillar.themes.map((theme) =>
-                  renderRow(
-                    "Theme",
-                    theme.id,
-                    theme.name,
-                    theme.description,
-                    theme.sort_order,
-                    theme.subthemes.map((sub) =>
-                      renderRow(
-                        "Subtheme",
-                        sub.id,
-                        sub.name,
-                        sub.description,
-                        sub.sort_order
-                      )
-                    )
-                  )
-                )
-              )
-            )}
+          <tbody className="divide-y divide-gray-200 text-sm">
+            {pillars.map((pillar) => renderRow(pillar, "Pillar"))}
           </tbody>
         </table>
       </div>
