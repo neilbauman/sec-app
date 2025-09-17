@@ -1,4 +1,3 @@
-// /lib/framework.ts
 import { createServerSupabase } from "@/lib/supabase-server";
 import { Pillar } from "@/types/framework";
 
