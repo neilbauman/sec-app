@@ -1,19 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { fetchFramework } from "@/lib/framework";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 import { Button } from "@/components/ui/button";
-import {
-  Download,
-  Upload,
-  Edit,
-  Plus,
-  Trash,
-  ChevronRight,
-  ChevronDown,
-} from "lucide-react";
+import { Download, Upload, Edit, Plus, Trash, ChevronRight, ChevronDown } from "lucide-react";
 import ToolHeader from "@/components/ui/ToolHeader";
 
 interface NodeState {
@@ -45,58 +36,67 @@ export default function PrimaryFrameworkEditorClient() {
 
   const renderRow = (
     type: "Pillar" | "Theme" | "Subtheme",
-    ref_code: string,
+    refCode: string,
+    id: string,
     name: string,
     description: string,
     sort_order: number,
     children?: React.ReactNode
   ) => {
-    const isExpanded = expanded[ref_code] ?? false;
+    const isExpanded = expanded[id] ?? false;
 
     return (
       <>
-        <tr key={ref_code} className="border-b">
-          <td className="px-4 py-2 flex items-center gap-2">
-            {/* Expand/Collapse */}
-            {children ? (
-              <button
-                onClick={() => toggleExpand(ref_code)}
-                className="focus:outline-none"
+        <tr key={id} className="border-b">
+          {/* Type / Ref */}
+          <td className="px-4 py-2 w-1/4">
+            <div className="flex items-center gap-2">
+              {children ? (
+                <button onClick={() => toggleExpand(id)} className="focus:outline-none">
+                  {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </button>
+              ) : (
+                <span className="w-4" />
+              )}
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  type === "Pillar"
+                    ? "bg-blue-100 text-blue-800"
+                    : type === "Theme"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
               >
-                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </button>
-            ) : (
-              <span className="w-4" />
-            )}
-            {/* Tag */}
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                type === "Pillar"
-                  ? "bg-blue-100 text-blue-800"
-                  : type === "Theme"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
-              }`}
-            >
-              {type}
-            </span>
-            <span className="text-xs text-gray-500">{ref_code}</span>
+                {type}
+              </span>
+              <span className="text-xs text-gray-500">{refCode}</span>
+            </div>
           </td>
-          <td className="px-4 py-2">
-            <div className="text-sm font-medium text-gray-900">{name}</div>
+
+          {/* Name / Description */}
+          <td className="px-4 py-2 w-2/5">
+            <div className="font-medium text-sm">{name}</div>
             <div className="text-xs text-gray-600">{description}</div>
           </td>
-          <td className="px-4 py-2 text-sm text-gray-600">{sort_order}</td>
-          <td className="px-4 py-2 flex gap-2">
-            <button className="p-1 hover:text-blue-600">
-              <Edit size={16} />
-            </button>
-            <button className="p-1 hover:text-green-600">
-              <Plus size={16} />
-            </button>
-            <button className="p-1 hover:text-red-600">
-              <Trash size={16} />
-            </button>
+
+          {/* Sort Order */}
+          <td className="px-4 py-2 w-1/6 text-center text-sm text-gray-600">
+            {sort_order}
+          </td>
+
+          {/* Actions */}
+          <td className="px-4 py-2 w-1/6 text-center">
+            <div className="flex justify-center gap-2">
+              <button className="p-1 hover:text-blue-600">
+                <Edit size={16} />
+              </button>
+              <button className="p-1 hover:text-green-600">
+                <Plus size={16} />
+              </button>
+              <button className="p-1 hover:text-red-600">
+                <Trash size={16} />
+              </button>
+            </div>
           </td>
         </tr>
         {isExpanded && children}
@@ -110,23 +110,19 @@ export default function PrimaryFrameworkEditorClient() {
 
   return (
     <div className="space-y-6">
-      {/* Global Tool Header */}
-      <ToolHeader />
-
-      {/* Page-specific breadcrumb + title */}
-      <nav className="text-sm text-gray-500 mt-4 mb-2">
-        <Link href="/" className="hover:underline text-blue-600">
-          Dashboard
-        </Link>{" "}
-        &gt; Frameworks &gt;{" "}
-        <span className="text-gray-700 font-medium">Primary Framework</span>
-      </nav>
-      <h2 className="text-xl font-semibold text-gray-900">Primary Framework</h2>
-      <p className="text-gray-600 mb-4">Configure pillars, themes, and sub-themes.</p>
+      {/* Tool Header */}
+      <ToolHeader
+        title="Primary Framework Editor"
+        description="Configure pillars, themes, and sub-themes."
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "Frameworks", href: "/frameworks" },
+          { label: "Primary Framework Editor" },
+        ]}
+      />
 
       {/* Bulk actions */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Primary Framework Editor</h3>
+      <div className="flex justify-end items-center">
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Upload className="w-4 h-4 mr-1" /> Upload CSV
@@ -139,19 +135,19 @@ export default function PrimaryFrameworkEditorClient() {
 
       {/* Table */}
       <div className="overflow-x-auto border rounded-lg bg-white shadow-sm">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 w-1/4 text-left text-xs font-medium text-gray-500 uppercase">
                 Type / Ref
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 w-2/5 text-left text-xs font-medium text-gray-500 uppercase">
                 Name / Description
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 w-1/6 text-center text-xs font-medium text-gray-500 uppercase">
                 Sort Order
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-2 w-1/6 text-center text-xs font-medium text-gray-500 uppercase">
                 Actions
               </th>
             </tr>
@@ -161,6 +157,7 @@ export default function PrimaryFrameworkEditorClient() {
               renderRow(
                 "Pillar",
                 pillar.ref_code,
+                pillar.id,
                 pillar.name,
                 pillar.description,
                 pillar.sort_order,
@@ -168,6 +165,7 @@ export default function PrimaryFrameworkEditorClient() {
                   renderRow(
                     "Theme",
                     theme.ref_code,
+                    theme.id,
                     theme.name,
                     theme.description,
                     theme.sort_order,
@@ -175,6 +173,7 @@ export default function PrimaryFrameworkEditorClient() {
                       renderRow(
                         "Subtheme",
                         sub.ref_code,
+                        sub.id,
                         sub.name,
                         sub.description,
                         sub.sort_order
