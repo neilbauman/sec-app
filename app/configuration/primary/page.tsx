@@ -1,27 +1,14 @@
-// /app/configuration/primary/page.tsx
-import { ToolHeader } from "@/components/ui/ToolHeader";
-import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
+// /app/framework/primary/page.tsx
 import { getFramework } from "@/lib/framework";
+import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
 
-export default async function PrimaryFrameworkEditorPage() {
-  // ✅ fetch framework data server-side
+export default async function FrameworkPrimaryPage() {
+  // ✅ fetch data
   const framework = await getFramework();
 
   return (
-    <div className="space-y-6">
-      <ToolHeader
-        title="Primary Framework Editor"
-        description="Configure pillars, themes, and sub-themes of the SSC framework."
-        breadcrumbs={[
-          { label: "Dashboard", href: "/" },
-          { label: "Configuration", href: "/configuration" },
-          { label: "Primary Framework Editor" },
-        ]}
-        group="Configuration"
-      />
-
-      {/* ✅ pass framework as prop */}
+    <main className="p-6 space-y-6">
       <PrimaryFrameworkEditorClient framework={framework} />
-    </div>
+    </main>
   );
 }
