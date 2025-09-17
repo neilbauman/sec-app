@@ -1,3 +1,17 @@
+// /types/framework.ts
+
+export interface Indicator {
+  id: string;
+  ref_code: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  // optional foreign keys for flexibility
+  pillar_id?: string | null;
+  theme_id?: string | null;
+  subtheme_id?: string | null;
+}
+
 export interface Subtheme {
   id: string;
   ref_code: string;
@@ -6,7 +20,7 @@ export interface Subtheme {
   name: string;
   description: string;
   sort_order: number;
-  indicators?: Indicator[];   // ✅ optional
+  indicators?: Indicator[];          // ✅ optional
   default_indicator_id?: string | null;
 }
 
@@ -19,7 +33,7 @@ export interface Theme {
   description: string;
   sort_order: number;
   subthemes: Subtheme[];
-  indicators?: Indicator[];   // ✅ optional
+  indicators?: Indicator[];          // ✅ optional
   default_indicator_id?: string | null;
 }
 
@@ -30,6 +44,6 @@ export interface Pillar {
   description: string;
   sort_order: number;
   themes: Theme[];
-  indicators?: Indicator[];   // ✅ optional
+  indicators?: Indicator[];          // ✅ optional
   default_indicator_id?: string | null;
 }
