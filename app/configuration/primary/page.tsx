@@ -1,22 +1,13 @@
 // /app/configuration/primary/page.tsx
 import { getFramework } from "@/lib/framework";
 import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
-import { ToolHeader } from "@/components/ui/ToolHeader";
 
-export default async function ConfigurationPrimaryPage() {
+export default async function PrimaryFrameworkPage() {
   const framework = await getFramework();
 
   return (
     <main className="p-6 space-y-6">
-      <ToolHeader
-        title="Primary Framework Editor"
-        group="Configuration"
-        breadcrumbs={[
-          { label: "Dashboard", href: "/" },
-          { label: "Configuration" },
-          { label: "Primary Framework Editor" },
-        ]}
-      />
+      <h1 className="text-2xl font-bold">Primary Framework Editor (Read-Only)</h1>
       <PrimaryFrameworkEditorClient framework={framework} />
     </main>
   );
