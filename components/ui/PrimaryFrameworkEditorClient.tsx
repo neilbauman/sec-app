@@ -122,7 +122,7 @@ export default function PrimaryFrameworkEditorClient() {
       <nav className="text-sm text-gray-500 mb-4">
         <ol className="flex items-center space-x-2">
           <li>
-            <Link href="/dashboard" className="hover:underline">
+            <Link href="/" className="hover:underline">
               Dashboard
             </Link>
           </li>
@@ -136,6 +136,10 @@ export default function PrimaryFrameworkEditorClient() {
           </li>
         </ol>
       </nav>
+
+      {/* Page Title */}
+      <h1 className="text-xl font-semibold">Primary Framework</h1>
+      <p className="text-gray-600 mb-4">Configure pillars, themes, and sub-themes.</p>
 
       {/* Bulk actions */}
       <div className="flex justify-between items-center">
