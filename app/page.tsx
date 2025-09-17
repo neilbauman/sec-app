@@ -1,5 +1,5 @@
 // /app/page.tsx
-import ToolHeader from "@/components/ui/ToolHeader";
+import { ToolHeader } from "@/components/ui/ToolHeader";
 
 export default function Page() {
   return (
