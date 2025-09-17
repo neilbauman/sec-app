@@ -1,49 +1,31 @@
 // /types/framework.ts
 
-export interface Indicator {
-  id: string;
-  ref_code: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  // optional foreign keys for flexibility
-  pillar_id?: string | null;
-  theme_id?: string | null;
-  subtheme_id?: string | null;
-}
-
 export interface Subtheme {
   id: string;
   ref_code: string;
-  theme_id: string;
   theme_code: string;
   name: string;
-  description: string;
+  description: string | null;
   sort_order: number;
-  indicators?: Indicator[];          // ✅ optional
-  default_indicator_id?: string | null;
+  theme_id: string;
 }
 
 export interface Theme {
   id: string;
   ref_code: string;
-  pillar_id: string;
   pillar_code: string;
   name: string;
-  description: string;
+  description: string | null;
   sort_order: number;
-  subthemes: Subtheme[];
-  indicators?: Indicator[];          // ✅ optional
-  default_indicator_id?: string | null;
+  pillar_id: string;
+  subthemes?: Subtheme[];
 }
 
 export interface Pillar {
   id: string;
   ref_code: string;
   name: string;
-  description: string;
+  description: string | null;
   sort_order: number;
-  themes: Theme[];
-  indicators?: Indicator[];          // ✅ optional
-  default_indicator_id?: string | null;
+  themes?: Theme[];
 }
