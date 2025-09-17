@@ -1,18 +1,18 @@
-// /app/configuration/primary/page.tsx
+// /app/framework/primary/page.tsx
 import { ToolHeader } from "@/components/ui/ToolHeader";
 import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
 
-export default function PrimaryFrameworkPage() {
+export default function FrameworkPrimaryPage() {
   return (
     <main className="p-6 space-y-6">
       <ToolHeader
-        title="Primary Framework Editor"
+        title="Framework – Primary"
         breadcrumbs={[
           { label: "Dashboard", href: "/" },
-          { label: "Configuration", href: "/configuration" },
-          { label: "Primary Framework Editor" },
+          { label: "Framework" },
+          { label: "Primary" },
         ]}
-        group="Configuration"
+        group="Instances"
       />
       <PrimaryFrameworkEditorClient />
     </main>
