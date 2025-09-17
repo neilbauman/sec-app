@@ -1,20 +1,27 @@
 // /lib/framework.ts
-import { createServerSupabase } from "@/lib/supabase-server";
+import { createServerClient } from "@/lib/supabase-server";
 import type { Pillar } from "@/types/framework";
 
 export async function getFramework(): Promise<Pillar[]> {
-  // ✅ Await the client
-  const supabase = await createServerSupabase();
+  const supabase = createServerClient();
 
-  // ✅ Now you can query
-  const { data: pillars, error: pillarError } = await supabase
+  const { data, error } = await supabase
     .from("pillars")
-    .select("id, name, description, sort_order, themes(id, name, description, sort_order, subthemes(id, name, description, sort_order))");
+    .select(`
+      id, name, description, sort_order,
+      themes (
+        id, name, description, sort_order,
+        subthemes (
+          id, name, description, sort_order
+        )
+      )
+    `)
+    .order("sort_order");
 
-  if (pillarError) {
-    console.error("Error fetching framework:", pillarError);
+  if (error) {
+    console.error("Error fetching framework:", error.message);
     return [];
   }
 
-  return pillars ?? [];
+  return data || [];
 }
