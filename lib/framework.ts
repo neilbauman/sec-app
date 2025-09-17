@@ -1,7 +1,7 @@
-import { createClient } from "@/utils/supabase/client";
-import type { Pillar } from "@/types/framework";
+import { createClient } from "@/utils/supabase/server";
+import { Pillar } from "@/lib/types";
 
-export async function fetchFramework(): Promise<Pillar[]> {
+export async function getFrameworkWithThemes(): Promise<Pillar[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
@@ -18,6 +18,8 @@ export async function fetchFramework(): Promise<Pillar[]> {
         name,
         description,
         sort_order,
+        pillar_id,
+        pillar_code,
         subthemes (
           id,
           ref_code,
@@ -30,9 +32,10 @@ export async function fetchFramework(): Promise<Pillar[]> {
     .order("sort_order");
 
   if (error) {
-    console.error("Error fetching framework:", error);
-    throw new Error(error.message);
+    console.error("Supabase error:", error);
+    return [];
   }
 
-  return data || [];
+  // Cast explicitly to your types
+  return (data as unknown as Pillar[]) || [];
 }
