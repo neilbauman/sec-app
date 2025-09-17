@@ -1,52 +1,28 @@
-// --- Database Schema Types for Framework ---
-
-export interface CriterionLevel {
-  id: number            // PK
-  indicator_id: string  // FK → indicators.id
-  label: string
-  default_score: number
-  sort_order: number
-}
-
-export interface Indicator {
-  id: string            // PK
-  subtheme_id: string   // FK → subthemes.id
-  theme_id: string      // FK → themes.id
-  ref_code: string
-  name: string
-  description: string
-  level: string
-  sort_order: number
-  criteria_levels?: CriterionLevel[]
-}
-
+// /types/framework.ts
 export interface Subtheme {
-  id: string            // PK
-  theme_id: string      // FK → themes.id
-  ref_code: string
-  theme_code: string
-  name: string
-  description: string | null
-  sort_order: number
-  indicators?: Indicator[]
+  id: string;
+  theme_id: string;
+  ref_code: string;
+  name: string;
+  description: string;
+  sort_order: number;
 }
 
 export interface Theme {
-  id: string            // PK
-  pillar_id: string     // FK → pillars.id
-  ref_code: string
-  pillar_code: string
-  name: string
-  description: string | null
-  sort_order: number
-  subthemes?: Subtheme[]
+  id: string;
+  pillar_id: string;
+  ref_code: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  subthemes: Subtheme[];
 }
 
 export interface Pillar {
-  id: string            // PK
-  ref_code: string
-  name: string
-  description: string | null
-  sort_order: number
-  themes?: Theme[]
+  id: string;
+  ref_code: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  themes: Theme[];
 }
