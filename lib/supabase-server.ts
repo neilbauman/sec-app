@@ -1,9 +1,11 @@
 // /lib/supabase-server.ts
-import { createClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
+import { Database } from "@/types/supabase";
 
-export const createServerSupabase = () => {
-  return createClient(
+export const createServerSupabase = () =>
+  createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY! // service role key for secure server access
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies }
   );
-};
