@@ -7,7 +7,7 @@ export default function ComprehensiveFrameworkPage() {
         pageTitle="Comprehensive Framework Editor"
         pageDescription="Configure pillars, themes, sub-themes, and indicators."
       />
-      {/* Placeholder until the editor is implemented */}
+      {/* Placeholder until functionality is built */}
       <div className="p-4 border rounded-lg bg-white shadow-sm">
         <p className="text-gray-600">
           Comprehensive Framework Editor functionality coming soon.
