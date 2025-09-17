@@ -1,16 +1,16 @@
 "use client";
 
+import { Layers } from "lucide-react";
 import Link from "next/link";
-import { ChevronRight, Layers } from "lucide-react";
 
 export interface Breadcrumb {
   label: string;
-  href?: string; // href is now optional
+  href?: string;
 }
 
 interface ToolHeaderProps {
-  pageTitle: string;
-  pageDescription: string;
+  pageTitle?: string;
+  pageDescription?: string;
   breadcrumbs?: Breadcrumb[];
 }
 
@@ -20,42 +20,50 @@ export default function ToolHeader({
   breadcrumbs = [],
 }: ToolHeaderProps) {
   return (
-    <header className="mb-6">
-      {/* Title with icon */}
-      <div className="flex items-center gap-2 mb-2">
-        <Layers className="w-6 h-6 text-blue-600" />
-        <h1 className="text-2xl font-bold">{pageTitle}</h1>
+    <div className="mb-6">
+      {/* Global Title */}
+      <div className="flex items-center gap-2">
+        <Layers className="h-7 w-7 text-blue-600" />
+        <h1 className="text-2xl font-bold">
+          Shelter and Settlements Severity Classification Toolset
+        </h1>
       </div>
+      <p className="text-gray-600 mt-1">
+        Welcome to the Shelter and Settlements Severity Classification Toolset
+        (SSC). This tool helps configure, manage, and evaluate primary and
+        comprehensive frameworks, country datasets, and SSC instances.
+      </p>
 
-      {/* Description */}
-      {pageDescription && (
-        <p className="text-gray-600 mb-4">{pageDescription}</p>
+      {/* Page-specific title */}
+      {pageTitle && (
+        <div className="mt-6">
+          <h2 className="text-xl font-semibold">{pageTitle}</h2>
+          {pageDescription && (
+            <p className="text-gray-600">{pageDescription}</p>
+          )}
+        </div>
       )}
 
       {/* Breadcrumbs */}
       {breadcrumbs.length > 0 && (
-        <nav className="mb-4">
-          <ol className="flex items-center gap-2 text-sm">
-            {breadcrumbs.map((crumb, i) => (
-              <li key={i} className="flex items-center gap-2">
-                {crumb.href && i !== breadcrumbs.length - 1 ? (
-                  <Link
-                    href={crumb.href}
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    {crumb.label}
-                  </Link>
-                ) : (
-                  <span className="text-gray-500">{crumb.label}</span>
-                )}
-                {i < breadcrumbs.length - 1 && (
-                  <ChevronRight size={14} className="text-gray-400" />
-                )}
-              </li>
-            ))}
-          </ol>
-        </nav>
+        <div className="mt-4 text-sm text-gray-500 flex gap-1">
+          {breadcrumbs.map((crumb, idx) => (
+            <span key={idx} className="flex items-center gap-1">
+              {crumb.href ? (
+                <Link
+                  href={crumb.href}
+                  className="text-blue-600 hover:underline"
+                >
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span>{crumb.label}</span>
+              )}
+              {idx < breadcrumbs.length - 1 && <span>›</span>}
+            </span>
+          ))}
+        </div>
       )}
-    </header>
+    </div>
   );
 }
