@@ -1,46 +1,55 @@
 "use client";
 
-import { Home, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { Home } from "lucide-react";
+
+interface Breadcrumb {
+  label: string;
+  href?: string;
+}
 
 interface ToolHeaderProps {
   title: string;
-  description: string;
-  breadcrumbs?: { label: string; href?: string }[];
+  description?: string;
+  breadcrumbs?: Breadcrumb[];
 }
 
-export default function ToolHeader({ title, description, breadcrumbs }: ToolHeaderProps) {
+export default function ToolHeader({
+  title,
+  description,
+  breadcrumbs = [],
+}: ToolHeaderProps) {
   return (
     <div className="mb-6">
-      {/* Title + Description */}
-      <div className="flex items-start gap-3 mb-2">
-        {/* Logo */}
-        <Home className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-        <div>
-          <h1 className="text-2xl font-bold">{title}</h1>
-          <p className="text-gray-600">{description}</p>
-        </div>
+      {/* Title + Logo */}
+      <div className="flex items-center gap-2 mb-2">
+        <Home className="w-6 h-6 text-blue-600" />
+        <h1 className="text-xl font-semibold">{title}</h1>
       </div>
+      {description && (
+        <p className="text-gray-600 mb-4">{description}</p>
+      )}
 
       {/* Breadcrumbs */}
-      {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="flex items-center text-sm text-gray-500 space-x-1">
-          {breadcrumbs.map((crumb, idx) => (
-            <span key={idx} className="flex items-center">
-              {crumb.href ? (
-                <Link href={crumb.href} className="text-blue-600 hover:underline">
-                  {crumb.label}
-                </Link>
-              ) : (
-                <span className="text-gray-700 font-medium">{crumb.label}</span>
-              )}
-              {idx < breadcrumbs.length - 1 && (
-                <ChevronRight className="w-4 h-4 mx-1 text-gray-400" />
-              )}
-            </span>
-          ))}
-        </nav>
-      )}
+      <div className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
+        {breadcrumbs.map((crumb, index) => (
+          <span key={index} className="flex items-center">
+            {crumb.href ? (
+              <Link
+                href={crumb.href}
+                className="text-blue-600 hover:underline"
+              >
+                {crumb.label}
+              </Link>
+            ) : (
+              <span>{crumb.label}</span>
+            )}
+            {index < breadcrumbs.length - 1 && (
+              <span className="mx-2 text-gray-400">›</span>
+            )}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
