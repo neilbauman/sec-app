@@ -7,6 +7,10 @@ export default function PrimaryFrameworkPage() {
       <ToolHeader
         pageTitle="Primary Framework Editor"
         pageDescription="Configure pillars, themes, and sub-themes."
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "SSC Configuration", href: "/configuration" },
+        ]}
       />
       <PrimaryFrameworkEditorClient />
     </div>
