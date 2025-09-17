@@ -14,19 +14,19 @@ export async function getFramework(): Promise<Pillar[]> {
       themes (
         id,
         ref_code,
-        pillar_id,
         pillar_code,
         name,
         description,
         sort_order,
+        pillar_id,
         subthemes (
           id,
           ref_code,
-          theme_id,
           theme_code,
           name,
           description,
-          sort_order
+          sort_order,
+          theme_id
         )
       )
     `)
@@ -37,6 +37,5 @@ export async function getFramework(): Promise<Pillar[]> {
     return [];
   }
 
-  // Return data even if indicators are missing
   return data || [];
 }
