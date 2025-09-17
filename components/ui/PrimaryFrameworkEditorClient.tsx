@@ -1,91 +1,53 @@
+// /components/ui/PrimaryFrameworkEditorClient.tsx
 "use client";
 
-import { useState } from "react";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
-import { PlusCircle, ChevronDown, ChevronRight } from "lucide-react";
+import type { Pillar } from "@/types/framework";
 
-interface Props {
-  framework: Pillar[];
-}
+type Props = { framework: Pillar[] };
 
 export default function PrimaryFrameworkEditorClient({ framework }: Props) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
-  const toggleExpand = (id: string) => {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  if (!framework?.length) {
+    return (
+      <div className="text-gray-600">
+        No framework found. Add your first pillar to get started.
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex space-x-2">
-        <button className="px-3 py-2 bg-blue-600 text-white rounded flex items-center space-x-1">
-          <PlusCircle className="w-4 h-4" />
-          <span>New Pillar</span>
-        </button>
-        <button className="px-3 py-2 bg-gray-200 rounded flex items-center space-x-1">
-          <PlusCircle className="w-4 h-4" />
-          <span>New Theme</span>
-        </button>
-        <button className="px-3 py-2 bg-gray-200 rounded flex items-center space-x-1">
-          <PlusCircle className="w-4 h-4" />
-          <span>New Sub-theme</span>
-        </button>
-      </div>
+    <div className="space-y-4">
+      {framework.map((p) => (
+        <div key={p.id} className="rounded-lg border p-4">
+          <div className="font-semibold">
+            {p.name || "(Untitled Pillar)"}{" "}
+            <span className="text-sm text-gray-500">• {p.description}</span>
+          </div>
 
-      {framework.length === 0 ? (
-        <p className="text-gray-500">No framework found. Add your first pillar to get started.</p>
-      ) : (
-        <div className="space-y-4">
-          {framework.map((pillar) => (
-            <div key={pillar.id} className="border rounded p-4">
-              <div
-                className="flex items-center cursor-pointer"
-                onClick={() => toggleExpand(pillar.id)}
-              >
-                {expanded[pillar.id] ? (
-                  <ChevronDown className="w-4 h-4 mr-2" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 mr-2" />
-                )}
-                <h2 className="font-semibold">{pillar.name}</h2>
-              </div>
-              <p className="text-sm text-gray-600 ml-6">{pillar.description}</p>
+          {!!p.themes?.length && (
+            <ul className="mt-2 ml-4 list-disc space-y-2">
+              {p.themes.map((t) => (
+                <li key={t.id}>
+                  <div className="font-medium">
+                    {t.name || "(Untitled Theme)"}{" "}
+                    <span className="text-sm text-gray-500">• {t.description}</span>
+                  </div>
 
-              {expanded[pillar.id] && pillar.themes?.length > 0 && (
-                <div className="ml-6 mt-2 space-y-2">
-                  {pillar.themes.map((theme: Theme) => (
-                    <div key={theme.id} className="border-l-2 pl-3">
-                      <div
-                        className="flex items-center cursor-pointer"
-                        onClick={() => toggleExpand(theme.id)}
-                      >
-                        {expanded[theme.id] ? (
-                          <ChevronDown className="w-4 h-4 mr-2" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 mr-2" />
-                        )}
-                        <h3 className="font-medium">{theme.name}</h3>
-                      </div>
-                      <p className="text-sm text-gray-600 ml-6">{theme.description}</p>
-
-                      {expanded[theme.id] && theme.subthemes?.length > 0 && (
-                        <div className="ml-6 mt-2 space-y-2">
-                          {theme.subthemes.map((sub: Subtheme) => (
-                            <div key={sub.id} className="border-l-2 pl-3">
-                              <h4 className="font-normal">{sub.name}</h4>
-                              <p className="text-sm text-gray-600">{sub.description}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                  {!!t.subthemes?.length && (
+                    <ul className="mt-1 ml-6 list-[circle] space-y-1">
+                      {t.subthemes.map((s) => (
+                        <li key={s.id}>
+                          {s.name || "(Untitled Sub-theme)"}{" "}
+                          <span className="text-sm text-gray-500">• {s.description}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 }
