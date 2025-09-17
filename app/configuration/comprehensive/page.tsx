@@ -11,11 +11,14 @@ export default function ComprehensiveFrameworkPage() {
           { label: "SSC Configuration", href: "/configuration" },
           { label: "Comprehensive Framework Editor" },
         ]}
+        group="framework" // ✅ required group prop (green cog icon)
       />
 
-      {/* Placeholder until Comprehensive editor functionality is built */}
-      <div className="p-6 border rounded-lg bg-white shadow-sm text-gray-500">
-        Comprehensive Framework Editor functionality coming soon.
+      {/* Placeholder until functionality is built */}
+      <div className="p-6 bg-white border rounded-2xl shadow-sm">
+        <p className="text-gray-600">
+          The Comprehensive Framework Editor will be implemented here.
+        </p>
       </div>
     </div>
   );
