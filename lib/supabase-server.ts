@@ -1,23 +1,19 @@
-// /lib/supabase-server.ts
+// Server-only Supabase client for Next 15
 import { cookies } from "next/headers";
-import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 
-export function createServerClient() {
-  return createSupabaseServerClient(
+export async function getServerSupabase() {
+  const cookieStore = await cookies(); // Next 15 API is async
+
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        async get(name: string) {
-          const store = await cookies(); // ✅ must be awaited in Next.js 15
-          return store.get(name)?.value ?? null;
-        },
-        set() {
-          // no-op during SSR
-        },
-        remove() {
-          // no-op during SSR
-        },
+        get: (name: string) => cookieStore.get(name)?.value ?? null,
+        // no-ops to satisfy the interface in SSR
+        set: () => {},
+        remove: () => {},
       },
     }
   );
