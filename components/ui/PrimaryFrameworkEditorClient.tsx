@@ -14,6 +14,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-react";
+import ToolHeader from "@/components/ui/ToolHeader";
 
 interface NodeState {
   [id: string]: boolean;
@@ -44,22 +45,24 @@ export default function PrimaryFrameworkEditorClient() {
 
   const renderRow = (
     type: "Pillar" | "Theme" | "Subtheme",
-    id: string,
     ref_code: string,
     name: string,
     description: string,
     sort_order: number,
-    level: number,
+    id: string,
     children?: React.ReactNode
   ) => {
     const isExpanded = expanded[id] ?? false;
 
-    const indentClass = level === 1 ? "ml-3" : level === 2 ? "ml-6" : "";
-
     return (
       <>
         <tr key={id} className="border-b">
-          <td className={`px-4 py-2 flex items-center gap-2 ${indentClass}`}>
+          <td
+            className={`px-4 py-2 flex items-center gap-2 ${
+              type === "Theme" ? "pl-8" : type === "Subtheme" ? "pl-12" : ""
+            }`}
+          >
+            {/* Expand/Collapse */}
             {children ? (
               <button
                 onClick={() => toggleExpand(id)}
@@ -70,7 +73,7 @@ export default function PrimaryFrameworkEditorClient() {
             ) : (
               <span className="w-4" />
             )}
-
+            {/* Tag */}
             <span
               className={`px-2 py-1 rounded-full text-xs font-medium ${
                 type === "Pillar"
@@ -82,17 +85,13 @@ export default function PrimaryFrameworkEditorClient() {
             >
               {type}
             </span>
-
             <span className="text-xs text-gray-500">{ref_code}</span>
           </td>
-
           <td className="px-4 py-2">
-            <div className="text-sm font-medium">{name}</div>
-            <div className="text-xs text-gray-500">{description}</div>
+            <div className="font-medium text-gray-900">{name}</div>
+            <div className="text-sm text-gray-600">{description}</div>
           </td>
-
           <td className="px-4 py-2 text-sm text-gray-600">{sort_order}</td>
-
           <td className="px-4 py-2 flex gap-2">
             <button className="p-1 hover:text-blue-600">
               <Edit size={16} />
@@ -116,9 +115,8 @@ export default function PrimaryFrameworkEditorClient() {
 
   return (
     <div className="space-y-6">
-      {/* Tool title (shared header, replace with <ToolHeader /> later) */}
-      <h1 className="text-2xl font-bold">Primary Framework</h1>
-      <p className="text-gray-600">Configure pillars, themes, and sub-themes.</p>
+      {/* Global Tool Header */}
+      <ToolHeader />
 
       {/* Breadcrumbs */}
       <nav className="text-sm text-gray-500 mb-4">
@@ -175,30 +173,27 @@ export default function PrimaryFrameworkEditorClient() {
             {pillars.map((pillar) =>
               renderRow(
                 "Pillar",
-                pillar.id,
                 pillar.ref_code,
                 pillar.name,
                 pillar.description,
                 pillar.sort_order,
-                0,
+                pillar.id,
                 pillar.themes.map((theme) =>
                   renderRow(
                     "Theme",
-                    theme.id,
                     theme.ref_code,
                     theme.name,
                     theme.description,
                     theme.sort_order,
-                    1,
+                    theme.id,
                     theme.subthemes.map((sub) =>
                       renderRow(
                         "Subtheme",
-                        sub.id,
                         sub.ref_code,
                         sub.name,
                         sub.description,
                         sub.sort_order,
-                        2
+                        sub.id
                       )
                     )
                   )
