@@ -1,6 +1,6 @@
-import ToolHeader from "@/components/ui/ToolHeader"
+import ToolHeader from "@/components/ui/ToolHeader";
 
-export default function ComprehensiveFrameworkPage() {
+export default function ComprehensiveFrameworkEditorPage() {
   return (
     <div className="space-y-6">
       <ToolHeader
@@ -14,10 +14,10 @@ export default function ComprehensiveFrameworkPage() {
         group="configuration"
       />
 
-      {/* Placeholder until editor is implemented */}
-      <div className="border rounded-lg p-6 text-gray-500">
-        Comprehensive framework editor UI coming soon.
+      {/* Placeholder until functionality is built */}
+      <div className="p-6 border rounded-lg bg-gray-50 text-gray-600">
+        Comprehensive editor functionality coming soon.
       </div>
     </div>
-  )
+  );
 }
