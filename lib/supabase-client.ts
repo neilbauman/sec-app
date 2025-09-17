@@ -1,8 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
+// /lib/supabase-client.ts
+import { createBrowserClient } from "@supabase/ssr";
 
-// Use environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-// Create typed client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const createClient = () => {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+};
