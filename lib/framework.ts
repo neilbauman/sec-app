@@ -1,23 +1,6 @@
 // /lib/framework.ts
 import { createClient } from "@/lib/supabase-server";
 
-export type Pillar = {
-  id: string;
-  name: string;
-  description: string | null;
-  sort_order: number;
-  themes?: Theme[];
-};
-
-export type Theme = {
-  id: string;
-  pillar_id: string;
-  name: string;
-  description: string | null;
-  sort_order: number;
-  subthemes?: Subtheme[];
-};
-
 export type Subtheme = {
   id: string;
   theme_id: string;
@@ -26,15 +9,31 @@ export type Subtheme = {
   sort_order: number;
 };
 
+export type Theme = {
+  id: string;
+  pillar_id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  subthemes: Subtheme[];
+};
+
+export type Pillar = {
+  id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  themes: Theme[];
+};
+
 /**
- * Get the entire framework: pillars, themes, and subthemes.
- * Read-only for now.
+ * Get the full framework hierarchy (pillars → themes → subthemes).
  */
 export async function getFramework(): Promise<Pillar[]> {
   const supabase = createClient();
 
-  // Fetch pillars
-  const { data: pillars, error: pillarError } = await supabase
+  // --- Fetch pillars ---
+  const { data: rawPillars, error: pillarError } = await supabase
     .from("pillars")
     .select("id, name, description, sort_order")
     .order("sort_order", { ascending: true });
@@ -44,12 +43,17 @@ export async function getFramework(): Promise<Pillar[]> {
     return [];
   }
 
-  if (!pillars || pillars.length === 0) {
-    return [];
-  }
+  // Cast into Pillar objects with empty themes arrays
+  const pillars: Pillar[] =
+    rawPillars?.map((p) => ({
+      ...p,
+      themes: [],
+    })) ?? [];
 
-  // Fetch themes
-  const { data: themes, error: themeError } = await supabase
+  if (pillars.length === 0) return [];
+
+  // --- Fetch themes ---
+  const { data: rawThemes, error: themeError } = await supabase
     .from("themes")
     .select("id, pillar_id, name, description, sort_order")
     .order("sort_order", { ascending: true });
@@ -59,40 +63,44 @@ export async function getFramework(): Promise<Pillar[]> {
     return pillars;
   }
 
-  // Fetch subthemes
-  const { data: subthemes, error: subthemeError } = await supabase
+  const themes: Theme[] =
+    rawThemes?.map((t) => ({
+      ...t,
+      subthemes: [],
+    })) ?? [];
+
+  // --- Fetch subthemes ---
+  const { data: rawSubthemes, error: subthemeError } = await supabase
     .from("subthemes")
     .select("id, theme_id, name, description, sort_order")
     .order("sort_order", { ascending: true });
 
   if (subthemeError) {
     console.error("Error fetching subthemes:", subthemeError.message);
-    return pillars;
   }
 
-  // Nest themes into pillars
-  const themesByPillar: Record<string, Theme[]> = {};
-  for (const theme of themes ?? []) {
-    if (!themesByPillar[theme.pillar_id]) {
-      themesByPillar[theme.pillar_id] = [];
-    }
-    themesByPillar[theme.pillar_id].push({ ...theme, subthemes: [] });
-  }
+  const subthemes: Subtheme[] = rawSubthemes ?? [];
 
-  // Nest subthemes into themes
+  // --- Nest subthemes into themes ---
   const subthemesByTheme: Record<string, Subtheme[]> = {};
-  for (const subtheme of subthemes ?? []) {
-    if (!subthemesByTheme[subtheme.theme_id]) {
-      subthemesByTheme[subtheme.theme_id] = [];
-    }
-    subthemesByTheme[subtheme.theme_id].push(subtheme);
+  for (const st of subthemes) {
+    if (!subthemesByTheme[st.theme_id]) subthemesByTheme[st.theme_id] = [];
+    subthemesByTheme[st.theme_id].push(st);
+  }
+
+  for (const theme of themes) {
+    theme.subthemes = subthemesByTheme[theme.id] ?? [];
+  }
+
+  // --- Nest themes into pillars ---
+  const themesByPillar: Record<string, Theme[]> = {};
+  for (const th of themes) {
+    if (!themesByPillar[th.pillar_id]) themesByPillar[th.pillar_id] = [];
+    themesByPillar[th.pillar_id].push(th);
   }
 
   for (const pillar of pillars) {
     pillar.themes = themesByPillar[pillar.id] ?? [];
-    for (const theme of pillar.themes) {
-      theme.subthemes = subthemesByTheme[theme.id] ?? [];
-    }
   }
 
   return pillars;
