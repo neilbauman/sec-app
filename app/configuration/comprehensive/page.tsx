@@ -11,7 +11,7 @@ export default function ComprehensiveFrameworkPage() {
           { label: "SSC Configuration", href: "/configuration" },
           { label: "Comprehensive Framework Editor" },
         ]}
-        group="framework" // ✅ required group prop (green cog icon)
+        group="framework" // ✅ green cog, aligns with dashboard grouping
       />
 
       {/* Placeholder until functionality is built */}
