@@ -1,15 +1,13 @@
-// /app/configuration/page.tsx
-export const dynamic = "force-dynamic";
-
-import Link from "next/link";
 import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
-import { Cog } from "lucide-react";
+import { Cog, FileText } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 export default function ConfigurationPage() {
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
-    { label: "Configuration" }
+    { label: "Configuration" },
   ]);
 
   return (
@@ -22,24 +20,32 @@ export default function ConfigurationPage() {
         breadcrumbs={breadcrumbs}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-        <Link href="/configuration/primary" className="block">
-          <div className="p-4 border rounded-lg hover:shadow-md transition bg-white">
-            <h3 className="font-semibold text-lg">Primary Framework Editor</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a
+          href="/configuration/primary"
+          className="flex items-start p-4 border rounded-lg shadow-sm hover:shadow transition bg-white"
+        >
+          <FileText className="w-5 h-5 text-green-600 mr-2 mt-1" />
+          <div>
+            <h3 className="font-semibold">Primary Framework Editor</h3>
             <p className="text-sm text-gray-600">
               Define and manage the global SSC framework including pillars, themes, and subthemes.
             </p>
           </div>
-        </Link>
+        </a>
 
-        <Link href="/configuration/comprehensive" className="block">
-          <div className="p-4 border rounded-lg hover:shadow-md transition bg-white">
-            <h3 className="font-semibold text-lg">Comprehensive Framework Editor</h3>
+        <a
+          href="/configuration/comprehensive"
+          className="flex items-start p-4 border rounded-lg shadow-sm hover:shadow transition bg-white"
+        >
+          <FileText className="w-5 h-5 text-green-600 mr-2 mt-1" />
+          <div>
+            <h3 className="font-semibold">Comprehensive Framework Editor</h3>
             <p className="text-sm text-gray-600">
               Manage and edit detailed framework elements, indicators, and relationships.
             </p>
           </div>
-        </Link>
+        </a>
       </div>
     </main>
   );
