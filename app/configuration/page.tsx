@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { ToolsetHeader } from "@/components/ui/ToolsetHeader";
+import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 import { Cog } from "lucide-react";
 
