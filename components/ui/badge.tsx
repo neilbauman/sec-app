@@ -1,24 +1,29 @@
-// /components/ui/Badge.tsx
-import React from "react";
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
-interface BadgeProps {
-  children: React.ReactNode;
-  color?: "blue" | "green" | "red" | "gray";
+// Extendable Badge component
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "default" | "secondary" | "outline";
 }
 
-const colorClasses: Record<string, string> = {
-  blue: "bg-blue-100 text-blue-800",
-  green: "bg-green-100 text-green-800",
-  red: "bg-red-100 text-red-800",
-  gray: "bg-gray-100 text-gray-800",
-};
+const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
+  ({ className, variant = "default", ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+          variant === "default" && "bg-gray-100 text-gray-800",
+          variant === "secondary" && "bg-blue-100 text-blue-800",
+          variant === "outline" && "border border-gray-300 text-gray-700",
+          className // ✅ allows custom Tailwind overrides
+        )}
+        {...props}
+      />
+    );
+  }
+);
 
-export default function Badge({ children, color = "gray" }: BadgeProps) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorClasses[color]}`}
-    >
-      {children}
-    </span>
-  );
-}
+Badge.displayName = "Badge";
+
+export default Badge;
