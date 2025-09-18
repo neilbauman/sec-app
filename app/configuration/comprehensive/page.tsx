@@ -1,8 +1,9 @@
-import ToolsetHeader from "@/components/ui/ToolsetHeader";
-import { makeBreadcrumbs } from "@/lib/breadcrumbs";
-import { Cog } from "lucide-react";
-
+// /app/configuration/comprehensive/page.tsx
 export const dynamic = "force-dynamic";
+
+import ToolsetHeader from "@/components/ui/ToolsetHeader";
+import { groupIcons } from "@/lib/icons";
+import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
 export default function ComprehensiveFrameworkPage() {
   const breadcrumbs = makeBreadcrumbs([
@@ -10,20 +11,16 @@ export default function ComprehensiveFrameworkPage() {
     { label: "Configuration", href: "/configuration" },
     { label: "Comprehensive Framework Editor" },
   ]);
-
   return (
     <main className="p-6">
       <ToolsetHeader
         title="Comprehensive Framework Editor"
-        description="Manage and edit detailed framework elements, indicators, and relationships."
+        description="Detailed management of the SSC global framework."
         group="Configuration"
-        groupIcon={<Cog className="w-5 h-5 text-green-600" />}
+        groupIcon={groupIcons.configuration.icon}
         breadcrumbs={breadcrumbs}
       />
-
-      <p className="text-gray-600">
-        Placeholder for the comprehensive framework editor.
-      </p>
+      <p className="text-gray-600">Comprehensive framework editor placeholder.</p>
     </main>
   );
 }
