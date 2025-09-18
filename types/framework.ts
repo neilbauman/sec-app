@@ -1,22 +1,26 @@
-export interface Subtheme {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-}
+// /types/framework.ts
 
-export interface Theme {
+export type Subtheme = {
   id: string;
   name: string;
   description: string;
   sort_order: number;
-  subthemes: Subtheme[];
-}
+  theme_id: string; // FK → themes.id
+};
 
-export interface Pillar {
+export type Theme = {
   id: string;
   name: string;
   description: string;
   sort_order: number;
-  themes: Theme[];
-}
+  pillar_id: string; // FK → pillars.id
+  subthemes?: Subtheme[];
+};
+
+export type Pillar = {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  themes?: Theme[];
+};
