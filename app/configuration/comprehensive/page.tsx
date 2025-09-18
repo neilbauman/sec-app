@@ -1,15 +1,14 @@
-// /app/configuration/comprehensive/page.tsx
-export const dynamic = "force-dynamic";
-
 import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 import { Cog } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 export default function ComprehensiveFrameworkPage() {
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
     { label: "Configuration", href: "/configuration" },
-    { label: "Comprehensive Framework Editor" }
+    { label: "Comprehensive Framework Editor" },
   ]);
 
   return (
@@ -22,9 +21,9 @@ export default function ComprehensiveFrameworkPage() {
         breadcrumbs={breadcrumbs}
       />
 
-      <div className="mt-6 p-6 border rounded-lg bg-gray-50 text-gray-600">
-        <p>[Placeholder] This will host the comprehensive framework editor interface.</p>
-      </div>
+      <p className="text-gray-600">
+        Placeholder for the comprehensive framework editor.
+      </p>
     </main>
   );
 }
