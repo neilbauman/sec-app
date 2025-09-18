@@ -1,125 +1,90 @@
 // /components/ui/PrimaryFrameworkEditorClient.tsx
-"use client";
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Badge from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, Edit, Trash2 } from "lucide-react";
-import { ToolHeader } from "@/components/ui/ToolHeader";
 import type { Pillar } from "@/types/framework";
+import { ToolHeader } from "@/components/ui/ToolHeader";
 
 type Props = {
-  framework: Pillar[];
+  data: Pillar[]; // ✅ use `data` to match page.tsx
 };
 
-export default function PrimaryFrameworkEditorClient({ framework }: Props) {
+export default function PrimaryFrameworkEditorClient({ data }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const toggleExpand = (id: string) => {
+  const toggle = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
-    <div className="space-y-4">
+    <div>
       <ToolHeader
         title="Primary Framework Editor"
         breadcrumbs={[
+          { label: "Dashboard", href: "/" },
           { label: "Configuration", href: "/configuration" },
-          { label: "Primary Framework", href: "/configuration/primary" },
+          { label: "Primary Framework" },
         ]}
+        group="Configuration"
         actionButtons={[
-          {
-            label: "Import CSV",
-            onClick: () => alert("Import not ready yet"),
-          },
-          {
-            label: "Export CSV",
-            onClick: () => alert("Export not ready yet"),
-          },
+          { label: "Import CSV", onClick: () => alert("Import not ready yet") },
+          { label: "Export CSV", onClick: () => alert("Export not ready yet") },
         ]}
       />
 
       <Card>
-        <CardContent>
-          <div className="grid grid-cols-12 font-semibold border-b py-2">
+        <CardContent className="p-0">
+          <div className="grid grid-cols-12 font-semibold border-b bg-gray-50 p-2">
             <div className="col-span-2">Type / Ref Code</div>
             <div className="col-span-6">Name / Description</div>
-            <div className="col-span-2 text-right">Sort Order</div>
+            <div className="col-span-2">Sort Order</div>
             <div className="col-span-2 text-right">Actions</div>
           </div>
 
-          {framework.map((pillar) => (
-            <div key={pillar.id}>
-              <div className="grid grid-cols-12 items-center border-b py-2">
+          {data.map((pillar) => (
+            <div key={pillar.id} className="border-b">
+              <div className="grid grid-cols-12 items-center p-2">
                 <div className="col-span-2 flex items-center">
-                  <button
-                    onClick={() => toggleExpand(pillar.id)}
-                    className="mr-2"
-                  >
+                  <button onClick={() => toggle(pillar.id)} className="mr-2">
                     {expanded[pillar.id] ? (
-                      <ChevronDown size={16} />
+                      <ChevronDown className="w-4 h-4" />
                     ) : (
-                      <ChevronRight size={16} />
+                      <ChevronRight className="w-4 h-4" />
                     )}
                   </button>
                   <Badge className="bg-blue-100 text-blue-800">Pillar</Badge>
                 </div>
                 <div className="col-span-6">
                   <div className="font-medium">{pillar.name}</div>
-                  <div className="text-sm text-gray-500">
-                    {pillar.description}
-                  </div>
+                  <div className="text-sm text-gray-600">{pillar.description}</div>
                 </div>
-                <div className="col-span-2 text-right">{pillar.sort_order}</div>
+                <div className="col-span-2">{pillar.sort_order}</div>
                 <div className="col-span-2 flex justify-end space-x-2">
-                  <Edit className="cursor-pointer text-gray-600" size={16} />
-                  <Trash2 className="cursor-pointer text-red-600" size={16} />
+                  <Edit className="w-4 h-4 cursor-pointer text-gray-600 hover:text-blue-600" />
+                  <Trash2 className="w-4 h-4 cursor-pointer text-gray-600 hover:text-red-600" />
                 </div>
               </div>
 
-              {/* Themes */}
-              {expanded[pillar.id] &&
-                pillar.themes?.map((theme) => (
-                  <div
-                    key={theme.id}
-                    className="ml-6 grid grid-cols-12 items-center border-b py-2"
-                  >
-                    <div className="col-span-2 flex items-center">
-                      <button
-                        onClick={() => toggleExpand(theme.id)}
-                        className="mr-2"
-                      >
-                        {expanded[theme.id] ? (
-                          <ChevronDown size={16} />
-                        ) : (
-                          <ChevronRight size={16} />
-                        )}
-                      </button>
-                      <Badge className="bg-green-100 text-green-800">
-                        Theme
-                      </Badge>
-                    </div>
-                    <div className="col-span-6">
-                      <div className="font-medium">{theme.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {theme.description}
-                      </div>
-                    </div>
-                    <div className="col-span-2 text-right">
-                      {theme.sort_order}
-                    </div>
-                    <div className="col-span-2 flex justify-end space-x-2">
-                      <Edit
-                        className="cursor-pointer text-gray-600"
-                        size={16}
-                      />
-                      <Trash2
-                        className="cursor-pointer text-red-600"
-                        size={16}
-                      />
-                    </div>
+              {expanded[pillar.id] && pillar.themes?.map((theme) => (
+                <div
+                  key={theme.id}
+                  className="ml-6 grid grid-cols-12 items-center border-b py-2"
+                >
+                  <div className="col-span-2">
+                    <Badge className="bg-green-100 text-green-800">Theme</Badge>
                   </div>
-                ))}
+                  <div className="col-span-6">
+                    <div className="font-medium">{theme.name}</div>
+                    <div className="text-sm text-gray-600">{theme.description}</div>
+                  </div>
+                  <div className="col-span-2">{theme.sort_order}</div>
+                  <div className="col-span-2 flex justify-end space-x-2">
+                    <Edit className="w-4 h-4 cursor-pointer text-gray-600 hover:text-blue-600" />
+                    <Trash2 className="w-4 h-4 cursor-pointer text-gray-600 hover:text-red-600" />
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
         </CardContent>
