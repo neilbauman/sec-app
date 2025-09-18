@@ -1,25 +1,23 @@
 // /app/configuration/comprehensive/page.tsx
-export const dynamic = "force-dynamic";
-
 import { ToolsetHeader } from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
+export const dynamic = "force-dynamic";
+
 export default function ComprehensiveFrameworkPage() {
-  const breadcrumbs = makeBreadcrumbs([
-    { label: "Dashboard", href: "/" },
-    { label: "Configuration", href: "/configuration" },
-    { label: "Comprehensive Framework Editor" },
-  ]);
+  const breadcrumbs = makeBreadcrumbs(["dashboard", "configuration", "comprehensive"]);
 
   return (
     <main className="p-6">
       <ToolsetHeader
         title="Comprehensive Framework Editor"
-        description="Work with a more detailed view of SSC framework elements."
+        description="Manage all SSC framework details including indicators."
         group="Configuration"
         breadcrumbs={breadcrumbs}
       />
-      <p className="text-gray-600">Comprehensive framework editor coming soon.</p>
+      <div className="mt-6 p-6 border rounded-xl bg-gray-50 text-gray-500">
+        Placeholder for Comprehensive Framework Editor UI
+      </div>
     </main>
   );
 }
