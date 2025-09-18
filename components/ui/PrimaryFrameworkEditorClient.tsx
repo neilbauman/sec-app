@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Badge from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Edit, Trash2 } from "lucide-react";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+import type { Pillar } from "@/types/framework";
 import { ToolHeader } from "@/components/ui/ToolHeader";
 
 type Props = {
@@ -131,12 +131,14 @@ export default function PrimaryFrameworkEditorClient({ data }: Props) {
                   className="ml-12 grid grid-cols-12 items-center border-b py-2"
                 >
                   <div className="col-span-3 flex items-center gap-2">
-                    <Badge variant="destructive">Subtheme</Badge>
+                    <Badge variant="danger">Subtheme</Badge>
                     <span className="font-medium">{sub.id}</span>
                   </div>
                   <div className="col-span-6">
                     <div className="font-medium">{sub.name}</div>
-                    <div className="text-sm text-gray-500">{sub.description}</div>
+                    <div className="text-sm text-gray-500">
+                      {sub.description}
+                    </div>
                   </div>
                   <div className="col-span-2 text-center">{sub.sort_order}</div>
                   <div className="col-span-1 flex justify-end gap-2">
