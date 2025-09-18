@@ -2,6 +2,7 @@
 import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 import { Cog, FileText } from "lucide-react";
+import ComprehensiveFrameworkEditorClient from "@/components/ui/ComprehensiveFrameworkEditorClient";
 
 export const dynamic = "force-dynamic";
 
@@ -18,13 +19,11 @@ export default function ComprehensiveFrameworkPage() {
         title="Comprehensive Framework Editor"
         description="Explore and manage the full SSC framework including indicators."
         group="Configuration"
-        groupIcon={Cog}   // ✅ component type
-        icon={FileText}   // ✅ component type
+        groupIcon={<Cog className="w-5 h-5 text-green-600" />}   // ✅ JSX
+        icon={<FileText className="w-5 h-5 text-rust-600" />}    // ✅ JSX
         breadcrumbs={breadcrumbs}
       />
-      <p className="text-gray-500">
-        [Comprehensive framework editor UI goes here]
-      </p>
+      <ComprehensiveFrameworkEditorClient />
     </main>
   );
 }
