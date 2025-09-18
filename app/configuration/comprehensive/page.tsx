@@ -20,7 +20,7 @@ export default function ComprehensiveFrameworkPage() {
         title="Comprehensive Framework Editor"
         description="Explore and manage the full SSC framework including indicators."
         group="Configuration"
-        groupIcon={Cog}
+        groupIcon={<Cog className="w-5 h-5 text-green-600" />}  {/* ✅ FIXED */}
         icon={FileText}
         breadcrumbs={breadcrumbs}
       />
