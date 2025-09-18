@@ -20,12 +20,12 @@ export default function ComprehensiveFrameworkPage() {
         title="Comprehensive Framework Editor"
         description="Explore and manage the full SSC framework including indicators."
         group="Configuration"
-        groupIcon={<Cog className="w-5 h-5 text-green-600" />}  {/* ✅ FIXED */}
+        groupIcon={<Cog className="w-5 h-5 text-green-600" />}
         icon={FileText}
         breadcrumbs={breadcrumbs}
       />
 
-      {/* ✅ Pass placeholder data for now to avoid missing props */}
+      {/* Placeholder data until DB is wired */}
       <ComprehensiveFrameworkEditorClient data={[]} />
     </main>
   );
