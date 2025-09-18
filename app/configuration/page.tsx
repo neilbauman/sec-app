@@ -1,6 +1,7 @@
 // /app/configuration/page.tsx
 import { ToolHeader } from "@/components/ui/ToolHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
+import { Cog } from "lucide-react";
 
 export default function ConfigurationPage() {
   const breadcrumbs = makeBreadcrumbs([
@@ -9,17 +10,17 @@ export default function ConfigurationPage() {
   ]);
 
   return (
-    <main className="p-6 space-y-6">
+    <main className="p-6">
       <ToolHeader
         title="Configuration"
+        description="Manage SSC frameworks, baselines, and related settings."
         breadcrumbs={breadcrumbs}
         group="Configuration"
-        actions={[
-          { label: "Import CSV" },
-          { label: "Export CSV" },
-        ]}
+        groupIcon={<Cog className="w-5 h-5 text-teal-600" />}
       />
-      <p className="text-gray-600">Choose a framework to edit.</p>
+      <p className="text-gray-600">
+        Select a configuration tool from the menu or dashboard.
+      </p>
     </main>
   );
 }
