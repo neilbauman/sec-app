@@ -1,28 +1,26 @@
 // /app/configuration/primary/page.tsx
-export const dynamic = "force-dynamic";  // ✅ ensures SSR, no static export
-
+import { ToolHeader } from "@/components/ui/ToolHeader";
+import { Settings } from "lucide-react";
 import { getFramework } from "@/lib/framework";
 import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
-import { ToolHeader } from "@/components/ui/ToolHeader";
-import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
 export default async function PrimaryFrameworkPage() {
   const framework = await getFramework();
 
-  const breadcrumbs = makeBreadcrumbs([
-    { label: "Dashboard", href: "/" },
-    { label: "Configuration", href: "/configuration" },
-    { label: "Primary Framework" },
-  ]);
-
   return (
-    <main className="p-6 space-y-6">
+    <main className="p-6">
       <ToolHeader
+        group="SSC Configuration"
+        groupIcon={Settings}
         title="Primary Framework Editor"
-        breadcrumbs={breadcrumbs}
-        group="Configuration"
+        description="Manage the pillars, themes, and subthemes of the SSC primary framework."
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "Configuration", href: "/configuration" },
+          { label: "Primary Framework" },
+        ]}
       />
-      <PrimaryFrameworkEditorClient data={framework} />
+      <PrimaryFrameworkEditorClient framework={framework} />
     </main>
   );
 }
