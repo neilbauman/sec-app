@@ -26,7 +26,6 @@ export default async function PrimaryFrameworkPage() {
         title="Primary Framework Editor"
         breadcrumbs={breadcrumbs}
         group="Configuration"
-        // ❌ removed onClick functions
         actions={[
           { label: "Import CSV" },
           { label: "Export CSV" },
