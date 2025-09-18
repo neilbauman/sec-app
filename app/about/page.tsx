@@ -1,25 +1,41 @@
 // /app/about/page.tsx
+"use client";
 export const dynamic = "force-dynamic";
 
 import ToolsetHeader from "@/components/ui/ToolsetHeader";
-import { groupIcons } from "@/lib/icons";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
+import { Info } from "lucide-react";
 
 export default function AboutPage() {
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
     { label: "About" },
   ]);
+
   return (
     <main className="p-6">
       <ToolsetHeader
-        title="About"
+        title="SSC About"
         description="Overview of the Shelter and Settlement Severity Classification toolset."
         group="About"
-        groupIcon={groupIcons.about.icon}
+        groupIcon={Info}
         breadcrumbs={breadcrumbs}
       />
-      <p className="text-gray-600">Coming soon.</p>
+      <div className="mt-6 text-gray-700">
+        <p>
+          This toolset provides a structured framework for classifying and
+          analyzing shelter and settlement severity. It supports global and
+          country-level configurations, enabling consistent, evidence-based
+          assessments.
+        </p>
+        <div className="mt-6">
+          <img
+            src="/placeholder-diagram.png"
+            alt="SSC overview diagram"
+            className="rounded-md border border-gray-200 shadow-sm"
+          />
+        </div>
+      </div>
     </main>
   );
 }
