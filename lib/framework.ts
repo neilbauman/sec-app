@@ -7,21 +7,21 @@ export type Pillar = {
   name: string;
   description: string | null;
   sort_order: number;
+  // add themes later if needed
 };
 
-// ✅ Keep this as the canonical fetcher
-export async function getFramework(): Promise<Pillar[]> {
+export async function getPrimaryFramework(): Promise<Pillar[]> {
   const supabase = createClient();
 
   const { data, error } = await supabase
-    .from("pillars")
+    .from("pillars") // table name in your DB
     .select("id, ref_code, name, description, sort_order")
-    .order("sort_order", { ascending: true });
+    .order("sort_order");
 
   if (error) {
-    console.error("Error fetching framework:", error);
+    console.error("❌ Error fetching primary framework:", error);
     return [];
   }
 
-  return data ?? [];
+  return data as Pillar[];
 }
