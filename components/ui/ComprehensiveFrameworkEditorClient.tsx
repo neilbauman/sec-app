@@ -1,12 +1,19 @@
 "use client";
 
-// /components/ui/ComprehensiveFrameworkEditorClient.tsx
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Edit, Trash2 } from "lucide-react";
-import type { Pillar, Theme, Subtheme } from "@/types/framework"; // ✅ Indicator removed
+import type { Pillar, Subtheme } from "@/types/framework"; // ✅ Only Pillar, Subtheme
+// ⚠️ Override Theme here so TypeScript knows the real shape
+type Theme = {
+  id: number;
+  ref_code: string | null;
+  name: string;
+  description?: string;
+  sort_order: number;
+  subthemes: Subtheme[];
+};
 
 type Framework = {
   id: number;
@@ -59,7 +66,7 @@ export default function ComprehensiveFrameworkEditorClient({
             </div>
             {expandedPillars.includes(pillar.id) && (
               <div className="ml-6 mt-2 space-y-2">
-                {pillar.themes.map((theme: Theme) => (
+                {pillar.themes.map((theme) => (
                   <div key={theme.id}>
                     <div className="flex items-center justify-between">
                       <span>
@@ -67,7 +74,7 @@ export default function ComprehensiveFrameworkEditorClient({
                       </span>
                     </div>
                     <div className="ml-6 text-sm text-muted-foreground">
-                      {theme.subthemes?.map((sub: Subtheme) => (
+                      {theme.subthemes?.map((sub) => (
                         <div key={sub.id}>
                           {sub.ref_code} {sub.name}
                         </div>
