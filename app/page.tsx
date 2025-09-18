@@ -1,35 +1,22 @@
-// /app/page.tsx (Dashboard)
-export const dynamic = "force-dynamic";
+"use client";
 
-import DashboardCard from "@/components/ui/DashboardCard";
-import ToolsetHeader from "@/components/ui/ToolsetHeader";
-import { groupIcons } from "@/lib/icons";
-import { makeBreadcrumbs } from "@/lib/breadcrumbs";
+import ToolsetHeader, { Breadcrumb } from "@/components/ui/ToolsetHeader";
+import { Info, Cog, Globe, Database } from "lucide-react";
+
+const breadcrumbs: Breadcrumb[] = [{ label: "Dashboard" }];
 
 export default function DashboardPage() {
-  const breadcrumbs = makeBreadcrumbs([{ label: "Dashboard" }]);
   return (
     <main className="p-6">
       <ToolsetHeader
         title="Dashboard"
-        description="Overview of the SSC toolset."
+        description="Navigate through the SSC toolset."
         group="Dashboard"
-        groupIcon={groupIcons.about.icon}
+        groupIcon={<Info className="w-5 h-5 text-blue-600" />}
         breadcrumbs={breadcrumbs}
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-        <DashboardCard
-          title="About"
-          description="Learn about the SSC and this toolset."
-          href="/about"
-          {...groupIcons.about}
-        />
-        <DashboardCard
-          title="SSC Configuration"
-          description="Manage the SSC global framework and defaults."
-          href="/configuration"
-          {...groupIcons.configuration}
-        />
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Cards */}
       </div>
     </main>
   );
