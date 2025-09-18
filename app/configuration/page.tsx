@@ -1,49 +1,49 @@
 // /app/configuration/page.tsx
-export const dynamic = "force-dynamic";
-
 import Link from "next/link";
 import { ToolsetHeader } from "@/components/ui/ToolsetHeader";
+import { Cog } from "lucide-react";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
-import { Card, CardContent } from "@/components/ui/card";
 
-export default function ConfigurationLandingPage() {
+const tools = [
+  {
+    title: "Primary Framework Editor",
+    description: "Define and manage the global SSC framework including pillars, themes, and subthemes.",
+    href: "/configuration/primary",
+  },
+  {
+    title: "Comprehensive Framework Editor",
+    description: "Manage the detailed SSC framework with extended classifications.",
+    href: "/configuration/comprehensive",
+  },
+];
+
+export default function ConfigurationPage() {
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
-    { label: "Configuration", href: "/configuration" },
+    { label: "Configuration" },
   ]);
 
   return (
-    <main className="p-6">
+    <main className="p-6 space-y-6">
       <ToolsetHeader
         title="SSC Configuration"
+        description="Manage the SSC global framework and defaults."
         group="Configuration"
-        description="Manage and edit the Shelter and Settlement Severity Classification (SSC) framework."
+        icon={Cog}
         breadcrumbs={breadcrumbs}
       />
 
-      <div className="grid gap-6 md:grid-cols-2 mt-6">
-        <Link href="/configuration/primary">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold">Primary Framework Editor</h2>
-              <p className="text-sm text-muted-foreground">
-                Define and manage the global SSC framework including pillars,
-                themes, and subthemes.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/configuration/comprehensive">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <h2 className="text-lg font-semibold">Comprehensive Framework Editor</h2>
-              <p className="text-sm text-muted-foreground">
-                Configure the full SSC framework including indicators and scoring.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {tools.map((tool) => (
+          <Link
+            key={tool.title}
+            href={tool.href}
+            className="block rounded-lg border p-6 hover:shadow-md transition bg-white"
+          >
+            <h2 className="text-lg font-semibold">{tool.title}</h2>
+            <p className="text-sm text-gray-600">{tool.description}</p>
+          </Link>
+        ))}
       </div>
     </main>
   );
