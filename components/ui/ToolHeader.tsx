@@ -16,6 +16,7 @@ export type ToolHeaderProps = {
   title: string;
   description?: string;
   breadcrumbs: Breadcrumb[];
+  actions?: { label: string }[]; // ✅ allow static actions
 };
 
 export function ToolHeader({
@@ -24,6 +25,7 @@ export function ToolHeader({
   title,
   description,
   breadcrumbs,
+  actions,
 }: ToolHeaderProps) {
   return (
     <div className="mb-6">
@@ -43,11 +45,23 @@ export function ToolHeader({
         </div>
       )}
 
-      {/* Page title + description */}
-      <div className="mb-2">
-        <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-        {description && (
-          <p className="text-sm text-gray-600">{description}</p>
+      {/* Page title + description + static actions */}
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+          {description && <p className="text-sm text-gray-600">{description}</p>}
+        </div>
+        {actions && actions.length > 0 && (
+          <div className="flex gap-2">
+            {actions.map((a, i) => (
+              <span
+                key={i}
+                className="px-2 py-1 text-xs font-medium text-gray-700 border rounded bg-gray-100"
+              >
+                {a.label}
+              </span>
+            ))}
+          </div>
         )}
       </div>
 
