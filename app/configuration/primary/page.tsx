@@ -1,4 +1,6 @@
 // /app/configuration/primary/page.tsx
+export const dynamic = "force-dynamic";
+
 import { getFramework } from "@/lib/framework";
 import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
 import { ToolHeader } from "@/components/ui/ToolHeader";
