@@ -1,28 +1,16 @@
-// components/ui/ToolsetHeader.tsx
+// /components/ui/ToolsetHeader.tsx
 "use client";
 
-import { Layers, Info, Settings, Globe, Database } from "lucide-react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-
-export type Breadcrumb = {
-  label: string;
-  href?: string;
-};
+import { Layers } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { Breadcrumb } from "@/lib/breadcrumbs";
 
 export type ToolsetHeaderProps = {
   title: string;
   description?: string;
-  group: "About" | "Configuration" | "Country Configurations" | "Instances";
+  group: string;
   breadcrumbs: Breadcrumb[];
-  actions?: { label: string; onClick?: () => void }[];
-};
-
-const groupConfig = {
-  About: { icon: Info, color: "text-blue-600" },
-  Configuration: { icon: Settings, color: "text-emerald-600" },
-  "Country Configurations": { icon: Globe, color: "text-indigo-600" },
-  Instances: { icon: Database, color: "text-orange-600" },
+  icon?: LucideIcon; // ✅ allow an icon prop
 };
 
 export function ToolsetHeader({
@@ -30,58 +18,42 @@ export function ToolsetHeader({
   description,
   group,
   breadcrumbs,
-  actions,
+  icon: GroupIcon,
 }: ToolsetHeaderProps) {
-  const GroupIcon = groupConfig[group].icon;
-  const groupColor = groupConfig[group].color;
-
   return (
-    <header className="mb-6 border-b border-gray-200 pb-4">
-      {/* Top-level Toolset Title */}
-      <div className="flex items-center gap-2 mb-2">
-        <Layers className="h-5 w-5 text-orange-700" />
-        <h1 className="text-lg font-semibold text-gray-900">
+    <header className="space-y-4">
+      {/* Toolset title */}
+      <div className="flex items-center gap-2">
+        <Layers className="h-6 w-6 text-orange-600" />
+        <h1 className="text-2xl font-bold">
           Shelter and Settlement Severity Classification Toolset
         </h1>
       </div>
 
-      {/* Group title */}
-      <div className="flex items-center gap-2 mb-2">
-        <GroupIcon className={cn("h-4 w-4", groupColor)} />
-        <span className={cn("font-medium", groupColor)}>{group}</span>
+      {/* Group section */}
+      <div className="flex items-center gap-2">
+        {GroupIcon && <GroupIcon className="h-5 w-5 text-gray-600" />}
+        <h2 className="text-xl font-semibold">{group}</h2>
       </div>
 
-      {/* Page title + actions */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-          {description && (
-            <p className="mt-1 text-sm text-gray-600">{description}</p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {actions?.map((action, i) => (
-            <button
-              key={i}
-              onClick={action.onClick}
-              className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
+      {/* Page title */}
+      <div>
+        <h3 className="text-lg font-medium">{title}</h3>
+        {description && (
+          <p className="text-sm text-gray-600">{description}</p>
+        )}
       </div>
 
-      {/* Breadcrumbs */}
-      <nav className="mt-2 text-sm text-gray-500">
+      {/* Breadcrumb */}
+      <nav className="text-sm text-gray-500">
         {breadcrumbs.map((bc, i) => (
           <span key={i}>
             {bc.href ? (
-              <Link href={bc.href} className="hover:underline text-blue-600">
+              <a href={bc.href} className="hover:underline">
                 {bc.label}
-              </Link>
+              </a>
             ) : (
-              bc.label
+              <span>{bc.label}</span>
             )}
             {i < breadcrumbs.length - 1 && " / "}
           </span>
