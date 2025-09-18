@@ -2,25 +2,23 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
-/**
- * Create a Supabase client that works with Next.js 13+/15
- * on the server side. It passes the Next.js cookies store
- * into Supabase so auth/session works properly.
- */
 export function createClient() {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookies().get(name)?.value;
+        async get(name: string) {
+          const store = await cookies(); // ✅ Await it once
+          return store.get(name)?.value ?? null;
         },
-        set() {
-          // no-op during SSR
+        async set(name: string, value: string, options: any) {
+          // No-op on server; handled by middleware if needed
+          return;
         },
-        remove() {
-          // no-op during SSR
+        async remove(name: string, options: any) {
+          // No-op on server
+          return;
         },
       },
     }
