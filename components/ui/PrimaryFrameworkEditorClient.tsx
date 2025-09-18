@@ -1,7 +1,6 @@
-// /components/ui/PrimaryFrameworkEditorClient.tsx
-
 "use client";
 
+// /components/ui/PrimaryFrameworkEditorClient.tsx
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Badge from "@/components/ui/badge";
@@ -10,7 +9,7 @@ import type { Pillar } from "@/types/framework";
 import { ToolHeader } from "@/components/ui/ToolHeader";
 
 type Props = {
-  data: Pillar[]; // ✅ use `data` to match page.tsx
+  data: Pillar[];
 };
 
 export default function PrimaryFrameworkEditorClient({ data }: Props) {
