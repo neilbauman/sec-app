@@ -7,7 +7,8 @@ export default async function PrimaryFrameworkPage() {
 
   return (
     <main className="p-6 space-y-6">
-      <PrimaryFrameworkEditorClient data={framework} />
+      <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
+      <PrimaryFrameworkEditorClient framework={framework} />
     </main>
   );
 }
