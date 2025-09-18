@@ -26,9 +26,10 @@ export default async function PrimaryFrameworkPage() {
         title="Primary Framework Editor"
         breadcrumbs={breadcrumbs}
         group="Configuration"
+        // ❌ removed onClick functions
         actions={[
-          { label: "Import CSV", onClick: () => alert("Import not ready yet") },
-          { label: "Export CSV", onClick: () => alert("Export not ready yet") },
+          { label: "Import CSV" },
+          { label: "Export CSV" },
         ]}
       />
       {framework && framework.length > 0 ? (
