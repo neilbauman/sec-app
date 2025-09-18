@@ -1,66 +1,46 @@
-// components/ui/ToolsetHeader.tsx
-import { LucideIcon, Layers } from "lucide-react";
-import { toolsetGroups } from "@/lib/toolsetGroups";
-import { Breadcrumb } from "@/components/ui/Breadcrumbs";
+// /components/ui/ToolsetHeader.tsx
+"use client";
 
-export interface ToolsetHeaderProps {
+import { Layers } from "lucide-react";
+import type { Breadcrumb } from "@/lib/breadcrumbs";
+
+type ToolsetHeaderProps = {
   title: string;
   description?: string;
-  groupKey: keyof typeof toolsetGroups;
+  group: string;
+  icon?: React.ElementType;
   breadcrumbs: Breadcrumb[];
-  actions?: { label: string }[];
-}
+};
 
-export function ToolsetHeader({
-  title,
-  description,
-  groupKey,
-  breadcrumbs,
-  actions,
-}: ToolsetHeaderProps) {
-  const group = toolsetGroups[groupKey];
-  const GroupIcon: LucideIcon = group.icon;
-
+export function ToolsetHeader({ title, description, group, icon: GroupIcon, breadcrumbs }: ToolsetHeaderProps) {
   return (
     <header className="mb-6">
-      {/* Always Toolset title */}
-      <h1 className="flex items-center gap-2 text-xl font-semibold">
-        <Layers className="h-5 w-5 text-orange-600" />
-        Shelter and Settlement Severity Classification Toolset
-      </h1>
-
-      {/* Group title themed */}
-      <h2 className={`flex items-center gap-2 mt-1 font-semibold ${group.color}`}>
-        <GroupIcon className="h-4 w-4" />
-        {group.label}
-      </h2>
-
-      {/* Page title + description */}
-      <div className="mt-2">
-        <h3 className="text-lg font-bold">{title}</h3>
-        {description && (
-          <p className="text-sm text-gray-600">{description}</p>
-        )}
+      {/* Toolset Title */}
+      <div className="flex items-center space-x-2 text-rust-600 mb-2">
+        <Layers className="w-6 h-6" />
+        <h1 className="text-xl font-bold">Shelter and Settlement Severity Classification Toolset</h1>
       </div>
 
-      {/* Breadcrumbs */}
-      <div className="mt-2">
-        <Breadcrumb items={breadcrumbs} />
+      {/* Group Title */}
+      <div className="flex items-center space-x-2 mb-1">
+        {GroupIcon && <GroupIcon className="w-5 h-5 text-gray-600" />}
+        <span className="text-lg font-semibold">{group}</span>
       </div>
 
-      {/* Actions */}
-      {actions && (
-        <div className="mt-3 flex gap-2">
-          {actions.map((a) => (
-            <button
-              key={a.label}
-              className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Page Title + Description */}
+      <h2 className="text-2xl font-bold mb-1">{title}</h2>
+      {description && <p className="text-gray-600 mb-3">{description}</p>}
+
+      {/* Breadcrumb */}
+      <nav className="text-sm text-gray-500 flex space-x-1">
+        {breadcrumbs.map((crumb, i) => (
+          <span key={crumb.href} className="flex items-center space-x-1">
+            {crumb.icon && <crumb.icon className="w-4 h-4" />}
+            <a href={crumb.href} className="hover:underline">{crumb.label}</a>
+            {i < breadcrumbs.length - 1 && <span>/</span>}
+          </span>
+        ))}
+      </nav>
     </header>
   );
 }
