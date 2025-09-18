@@ -1,56 +1,61 @@
-// /app/page.tsx
-import Link from "next/link";
-import { ToolsetHeader } from "@/components/ui/ToolsetHeader";
 import { Layers, Info, Cog, Globe, Database } from "lucide-react";
-import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
 export default function DashboardPage() {
-  const breadcrumbs = makeBreadcrumbs(["dashboard"]);
-
   return (
-    <main className="p-6">
-      <ToolsetHeader
-        title="Dashboard"
-        description="Access different modules of the Shelter and Settlement Severity Classification Toolset."
-        group="Dashboard"
-        icon={Layers}
-        breadcrumbs={breadcrumbs}
-      />
+    <main className="p-6 space-y-6">
+      <div className="flex items-center gap-2 mb-6">
+        <Layers className="w-6 h-6 text-rust-600" />
+        <h1 className="text-xl font-bold">
+          Shelter and Settlement Severity Classification Toolset
+        </h1>
+      </div>
 
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* About */}
-        <Link href="/about" className="block">
-          <div className="bg-white shadow rounded-xl p-6 hover:shadow-md transition">
-            <Info className="w-8 h-8 text-blue-600 mb-2" />
-            <h3 className="font-semibold">About</h3>
-            <p className="text-sm text-gray-600">Learn about the SSC and this toolset.</p>
-          </div>
-        </Link>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <a
+          href="/about"
+          className="p-6 border rounded-lg shadow-sm bg-white hover:shadow-md"
+        >
+          <Info className="w-6 h-6 text-blue-600 mb-2" />
+          <h2 className="font-semibold">About</h2>
+          <p className="text-sm text-gray-600">
+            Overview of the SSC and toolset.
+          </p>
+        </a>
 
-        {/* Configuration */}
-        <Link href="/configuration" className="block">
-          <div className="bg-white shadow rounded-xl p-6 hover:shadow-md transition">
-            <Cog className="w-8 h-8 text-green-600 mb-2" />
-            <h3 className="font-semibold">SSC Configuration</h3>
-            <p className="text-sm text-gray-600">Manage the global SSC framework and defaults.</p>
-          </div>
-        </Link>
+        <a
+          href="/configuration"
+          className="p-6 border rounded-lg shadow-sm bg-white hover:shadow-md"
+        >
+          <Cog className="w-6 h-6 text-green-600 mb-2" />
+          <h2 className="font-semibold">SSC Configuration</h2>
+          <p className="text-sm text-gray-600">
+            Manage the SSC global framework and defaults.
+          </p>
+        </a>
 
-        {/* Country Configurations */}
-        <div className="bg-white shadow rounded-xl p-6 opacity-50">
-          <Globe className="w-8 h-8 text-orange-600 mb-2" />
-          <h3 className="font-semibold">Country Configurations</h3>
-          <p className="text-sm text-gray-600">Baseline information like place names and population.</p>
-        </div>
+        <a
+          href="/countries"
+          className="p-6 border rounded-lg shadow-sm bg-white hover:shadow-md"
+        >
+          <Globe className="w-6 h-6 text-purple-600 mb-2" />
+          <h2 className="font-semibold">Country Configurations</h2>
+          <p className="text-sm text-gray-600">
+            Configure baselines like places, shapes, and populations.
+          </p>
+        </a>
 
-        {/* SSC Instances */}
-        <div className="bg-white shadow rounded-xl p-6 opacity-50">
-          <Database className="w-8 h-8 text-purple-600 mb-2" />
-          <h3 className="font-semibold">SSC Instances</h3>
-          <p className="text-sm text-gray-600">Run calculations and edit severity classifications.</p>
-        </div>
+        <a
+          href="/instances"
+          className="p-6 border rounded-lg shadow-sm bg-white hover:shadow-md"
+        >
+          <Database className="w-6 h-6 text-orange-600 mb-2" />
+          <h2 className="font-semibold">SSC Instances</h2>
+          <p className="text-sm text-gray-600">
+            Use defaults to calculate and edit SSC instances.
+          </p>
+        </a>
       </div>
     </main>
   );
