@@ -4,11 +4,16 @@ import React from "react";
 
 export type Breadcrumb = { label: string; href?: string };
 
+type Action = {
+  label: string;
+  onClick?: () => void; // ✅ allow optional click
+};
+
 type ToolHeaderProps = {
   title: string;
   breadcrumbs: Breadcrumb[];
   group: string;
-  actions?: { label: string }[];
+  actions?: Action[];
 };
 
 export function ToolHeader({ title, breadcrumbs, group, actions }: ToolHeaderProps) {
@@ -29,7 +34,7 @@ export function ToolHeader({ title, breadcrumbs, group, actions }: ToolHeaderPro
           {actions.map((action, i) => (
             <button
               key={i}
-              onClick={() => alert(`${action.label} not ready yet`)}
+              onClick={action.onClick}
               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
             >
               {action.label}
