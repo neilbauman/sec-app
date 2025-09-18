@@ -15,16 +15,12 @@ export default async function PrimaryFrameworkPage() {
   ]);
 
   return (
-    <main className="p-6 space-y-6">
+    <main className="p-6">
       <ToolsetHeader
         title="Primary Framework Editor"
-        description="Define and manage the global SSC framework including pillars, themes, and subthemes."
+        description="Define and manage the SSC framework pillars, themes, and subthemes."
         group="Configuration"
         breadcrumbs={breadcrumbs}
-        actions={[
-          { label: "Import CSV" },
-          { label: "Export CSV" },
-        ]}
       />
       <PrimaryFrameworkEditorClient data={framework} />
     </main>
