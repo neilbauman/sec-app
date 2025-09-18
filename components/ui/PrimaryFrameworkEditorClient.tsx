@@ -1,21 +1,15 @@
-// /components/ui/PrimaryFrameworkEditorClient.tsx
 "use client";
 
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import Badge from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Badge from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, Edit, Trash2 } from "lucide-react";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
-interface Props {
+type Props = {
   framework: Pillar[];
-}
-
-// Safe accessor — fallback to sort_order if ref_code missing
-function getRefCode(node: { sort_order: number; [key: string]: any }) {
-  return node.ref_code ?? node.sort_order;
-}
+};
 
 export default function PrimaryFrameworkEditorClient({ framework }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -25,139 +19,132 @@ export default function PrimaryFrameworkEditorClient({ framework }: Props) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Bulk editing controls */}
-      <div className="flex justify-end">
-        <Card className="w-fit shadow-sm">
-          <CardContent className="flex items-center gap-3 p-3">
-            <span className="text-sm font-medium text-gray-700">
-              Bulk editing
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => alert("Import not ready yet")}
-              >
-                Import CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => alert("Export not ready yet")}
-              >
-                Export CSV
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Table headers */}
-      <div className="grid grid-cols-12 gap-4 px-2 text-sm font-medium text-gray-500 border-b pb-2">
-        <div className="col-span-3">Type / Ref Code</div>
-        <div className="col-span-6">Name / Description</div>
-        <div className="col-span-3 text-right">Actions</div>
-      </div>
-
-      {framework.map((pillar) => (
-        <div key={pillar.id} className="space-y-2">
-          {/* Pillar Row */}
-          <div className="grid grid-cols-12 gap-4 items-center">
-            <div className="col-span-3 flex items-center gap-2">
-              <button onClick={() => toggleExpand(pillar.id)}>
-                {expanded[pillar.id] ? (
-                  <ChevronDown className="w-4 h-4" />
-                ) : (
-                  <ChevronRight className="w-4 h-4" />
-                )}
-              </button>
-              <Badge variant="default">Pillar</Badge>
-              <span className="text-xs text-gray-500">
-                {getRefCode(pillar)}
-              </span>
-            </div>
-            <div className="col-span-6">
-              <div className="font-medium">{pillar.name}</div>
-              <div className="text-xs text-gray-500">{pillar.description}</div>
-            </div>
-            <div className="col-span-3 flex justify-end gap-2">
-              <Button variant="ghost" size="sm">
-                <Edit className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Themes */}
-          {expanded[pillar.id] &&
-            pillar.themes?.map((theme: Theme) => (
-              <div key={theme.id} className="ml-6 space-y-2">
-                <div className="grid grid-cols-12 gap-4 items-center">
-                  <div className="col-span-3 flex items-center gap-2">
-                    <button onClick={() => toggleExpand(theme.id)}>
-                      {expanded[theme.id] ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </button>
-                    <Badge variant="success">Theme</Badge>
-                    <span className="text-xs text-gray-500">
-                      {getRefCode(theme)}
-                    </span>
-                  </div>
-                  <div className="col-span-6">
-                    <div className="font-medium">{theme.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {theme.description}
-                    </div>
-                  </div>
-                  <div className="col-span-3 flex justify-end gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Subthemes */}
-                {expanded[theme.id] &&
-                  theme.subthemes?.map((sub: Subtheme) => (
-                    <div
-                      key={sub.id}
-                      className="ml-6 grid grid-cols-12 gap-4 items-center"
-                    >
-                      <div className="col-span-3 flex items-center gap-2">
-                        <Badge variant="danger">Subtheme</Badge>
-                        <span className="text-xs text-gray-500">
-                          {getRefCode(sub)}
-                        </span>
+    <Card>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse">
+            <thead>
+              <tr className="text-left border-b">
+                <th className="px-4 py-2 w-1/6">Type / Ref Code</th>
+                <th className="px-4 py-2 w-3/6">Name / Description</th>
+                <th className="px-4 py-2 text-center w-1/6">Sort Order</th>
+                <th className="px-4 py-2 w-1/6">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {framework.map((pillar) => (
+                <>
+                  <tr key={pillar.id} className="border-b">
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => toggleExpand(pillar.id)}
+                        className="mr-2"
+                      >
+                        {expanded[pillar.id] ? (
+                          <ChevronDown size={16} />
+                        ) : (
+                          <ChevronRight size={16} />
+                        )}
+                      </button>
+                      <Badge variant="default">Pillar</Badge>
+                      <span className="ml-1 text-xs text-gray-500">
+                        {/* ✅ Use sort_order as temporary ref code */}
+                        {pillar.sort_order}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="font-medium">{pillar.name}</div>
+                      <div className="text-sm text-gray-500">
+                        {pillar.description}
                       </div>
-                      <div className="col-span-6">
-                        <div className="font-medium">{sub.name}</div>
-                        <div className="text-xs text-gray-500">
-                          {sub.description}
-                        </div>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      {pillar.sort_order}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex gap-2">
+                        <Edit size={16} className="cursor-pointer" />
+                        <Trash2 size={16} className="cursor-pointer text-red-500" />
                       </div>
-                      <div className="col-span-3 flex justify-end gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            ))}
+                    </td>
+                  </tr>
+
+                  {/* Themes */}
+                  {expanded[pillar.id] &&
+                    pillar.themes?.map((theme) => (
+                      <>
+                        <tr key={theme.id} className="border-b bg-gray-50">
+                          <td className="px-8 py-2">
+                            <button
+                              onClick={() => toggleExpand(theme.id)}
+                              className="mr-2"
+                            >
+                              {expanded[theme.id] ? (
+                                <ChevronDown size={16} />
+                              ) : (
+                                <ChevronRight size={16} />
+                              )}
+                            </button>
+                            <Badge variant="success">Theme</Badge>
+                            <span className="ml-1 text-xs text-gray-500">
+                              {theme.sort_order}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2">
+                            <div className="font-medium">{theme.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {theme.description}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            {theme.sort_order}
+                          </td>
+                          <td className="px-4 py-2">
+                            <div className="flex gap-2">
+                              <Edit size={16} className="cursor-pointer" />
+                              <Trash2 size={16} className="cursor-pointer text-red-500" />
+                            </div>
+                          </td>
+                        </tr>
+
+                        {/* Subthemes */}
+                        {expanded[theme.id] &&
+                          theme.subthemes?.map((sub) => (
+                            <tr key={sub.id} className="border-b bg-gray-100">
+                              <td className="px-12 py-2">
+                                <Badge variant="danger">Subtheme</Badge>
+                                <span className="ml-1 text-xs text-gray-500">
+                                  {sub.sort_order}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2">
+                                <div className="font-medium">{sub.name}</div>
+                                <div className="text-sm text-gray-500">
+                                  {sub.description}
+                                </div>
+                              </td>
+                              <td className="px-4 py-2 text-center">
+                                {sub.sort_order}
+                              </td>
+                              <td className="px-4 py-2">
+                                <div className="flex gap-2">
+                                  <Edit size={16} className="cursor-pointer" />
+                                  <Trash2
+                                    size={16}
+                                    className="cursor-pointer text-red-500"
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </>
+                    ))}
+                </>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ))}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
