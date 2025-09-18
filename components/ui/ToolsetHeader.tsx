@@ -10,7 +10,8 @@ export type ToolsetHeaderProps = {
   description?: string;
   group: string;
   breadcrumbs: Breadcrumb[];
-  icon?: LucideIcon; // ✅ allow an icon prop
+  icon?: LucideIcon;
+  actions?: { label: string; onClick?: () => void }[]; // ✅ NEW
 };
 
 export function ToolsetHeader({
@@ -19,6 +20,7 @@ export function ToolsetHeader({
   group,
   breadcrumbs,
   icon: GroupIcon,
+  actions,
 }: ToolsetHeaderProps) {
   return (
     <header className="space-y-4">
@@ -36,11 +38,28 @@ export function ToolsetHeader({
         <h2 className="text-xl font-semibold">{group}</h2>
       </div>
 
-      {/* Page title */}
-      <div>
-        <h3 className="text-lg font-medium">{title}</h3>
-        {description && (
-          <p className="text-sm text-gray-600">{description}</p>
+      {/* Page title and description */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-medium">{title}</h3>
+          {description && (
+            <p className="text-sm text-gray-600">{description}</p>
+          )}
+        </div>
+
+        {/* Actions */}
+        {actions && (
+          <div className="flex gap-2">
+            {actions.map((action, i) => (
+              <button
+                key={i}
+                onClick={action.onClick}
+                className="px-3 py-1 text-sm border rounded-md hover:bg-gray-100"
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
