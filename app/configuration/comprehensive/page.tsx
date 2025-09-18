@@ -1,4 +1,6 @@
 // /app/configuration/comprehensive/page.tsx
+export const dynamic = "force-dynamic";
+
 import { ToolHeader } from "@/components/ui/ToolHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
@@ -6,7 +8,7 @@ export default function ComprehensiveFrameworkPage() {
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
     { label: "Configuration", href: "/configuration" },
-    { label: "Comprehensive Framework" },
+    { label: "Comprehensive Framework", href: "/configuration/comprehensive" },
   ]);
 
   return (
