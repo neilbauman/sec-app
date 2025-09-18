@@ -1,3 +1,4 @@
+// /components/ui/PrimaryFrameworkEditorClient.tsx
 "use client";
 
 import { useState } from "react";
@@ -7,135 +8,151 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Edit, Trash2 } from "lucide-react";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
-type Props = {
-  data: Pillar[];
-};
+interface Props {
+  framework: Pillar[];
+}
 
-export default function PrimaryFrameworkEditorClient({ data }: Props) {
+export default function PrimaryFrameworkEditorClient({ framework }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const toggle = (id: string) => {
+  const toggleExpand = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
     <div className="space-y-6">
-      {/* Bulk editing inline card */}
+      {/* Bulk editing controls */}
       <div className="flex justify-end">
         <Card className="w-fit shadow-sm">
           <CardContent className="flex items-center gap-3 p-3">
-            <span className="text-sm font-medium text-gray-600">Bulk editing</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => alert("Import not ready yet")}
-            >
-              Import CSV
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => alert("Export not ready yet")}
-            >
-              Export CSV
-            </Button>
+            <span className="text-sm font-medium text-gray-700">
+              Bulk editing
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => alert("Import not ready yet")}
+              >
+                Import CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => alert("Export not ready yet")}
+              >
+                Export CSV
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Framework table */}
-      <Card>
-        <CardContent>
-          <div className="grid grid-cols-12 font-semibold border-b pb-2 text-sm text-gray-700">
-            <div className="col-span-3">Type / Ref Code</div>
-            <div className="col-span-6">Name / Description</div>
-            <div className="col-span-2 text-center">Sort Order</div>
-            <div className="col-span-1 text-right">Actions</div>
+      {/* Table */}
+      <div className="grid grid-cols-12 gap-4 px-2 text-sm font-medium text-gray-500 border-b pb-2">
+        <div className="col-span-3">Type / Ref Code</div>
+        <div className="col-span-6">Name / Description</div>
+        <div className="col-span-3 text-right">Actions</div>
+      </div>
+
+      {framework.map((pillar) => (
+        <div key={pillar.id} className="space-y-2">
+          {/* Pillar Row */}
+          <div className="grid grid-cols-12 gap-4 items-center">
+            <div className="col-span-3 flex items-center gap-2">
+              <button onClick={() => toggleExpand(pillar.id)}>
+                {expanded[pillar.id] ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+              <Badge variant="default">Pillar</Badge>
+              <span className="text-xs text-gray-500">
+                {pillar.ref_code || pillar.sort_order}
+              </span>
+            </div>
+            <div className="col-span-6">
+              <div className="font-medium">{pillar.name}</div>
+              <div className="text-xs text-gray-500">{pillar.description}</div>
+            </div>
+            <div className="col-span-3 flex justify-end gap-2">
+              <Button variant="ghost" size="sm">
+                <Edit className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
 
-          {/* Pillars */}
-          {data.map((pillar) => (
-            <div key={pillar.id}>
-              <div className="grid grid-cols-12 items-center border-b py-2">
-                <div className="col-span-3 flex items-center gap-2">
-                  <button onClick={() => toggle(pillar.id)} className="focus:outline-none">
-                    {expanded[pillar.id] ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </button>
-                  <Badge variant="default">Pillar</Badge>
-                  <span className="text-xs text-gray-500">{pillar.sort_order}</span>
+          {/* Themes */}
+          {expanded[pillar.id] &&
+            pillar.themes?.map((theme: Theme) => (
+              <div key={theme.id} className="ml-6 space-y-2">
+                <div className="grid grid-cols-12 gap-4 items-center">
+                  <div className="col-span-3 flex items-center gap-2">
+                    <button onClick={() => toggleExpand(theme.id)}>
+                      {expanded[theme.id] ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
+                      )}
+                    </button>
+                    <Badge variant="success">Theme</Badge>
+                    <span className="text-xs text-gray-500">
+                      {theme.ref_code || theme.sort_order}
+                    </span>
+                  </div>
+                  <div className="col-span-6">
+                    <div className="font-medium">{theme.name}</div>
+                    <div className="text-xs text-gray-500">
+                      {theme.description}
+                    </div>
+                  </div>
+                  <div className="col-span-3 flex justify-end gap-2">
+                    <Button variant="ghost" size="sm">
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="col-span-6">
-                  <div className="font-medium">{pillar.name}</div>
-                  <div className="text-xs text-gray-500">{pillar.description}</div>
-                </div>
-                <div className="col-span-2 text-center">{pillar.sort_order}</div>
-                <div className="col-span-1 flex justify-end gap-2">
-                  <Edit className="h-4 w-4 cursor-pointer text-gray-600" />
-                  <Trash2 className="h-4 w-4 cursor-pointer text-gray-600" />
-                </div>
-              </div>
 
-              {/* Themes inside expanded Pillar */}
-              {expanded[pillar.id] &&
-                pillar.themes?.map((theme) => (
-                  <div key={theme.id} className="ml-6">
-                    <div className="grid grid-cols-12 items-center border-b py-2">
+                {/* Subthemes */}
+                {expanded[theme.id] &&
+                  theme.subthemes?.map((sub: Subtheme) => (
+                    <div
+                      key={sub.id}
+                      className="ml-6 grid grid-cols-12 gap-4 items-center"
+                    >
                       <div className="col-span-3 flex items-center gap-2">
-                        <button
-                          onClick={() => toggle(theme.id)}
-                          className="focus:outline-none"
-                        >
-                          {expanded[theme.id] ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </button>
-                        <Badge variant="success">Theme</Badge>
-                        <span className="text-xs text-gray-500">{theme.sort_order}</span>
+                        <Badge variant="danger">Subtheme</Badge>
+                        <span className="text-xs text-gray-500">
+                          {sub.ref_code || sub.sort_order}
+                        </span>
                       </div>
                       <div className="col-span-6">
-                        <div className="font-medium">{theme.name}</div>
-                        <div className="text-xs text-gray-500">{theme.description}</div>
+                        <div className="font-medium">{sub.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {sub.description}
+                        </div>
                       </div>
-                      <div className="col-span-2 text-center">{theme.sort_order}</div>
-                      <div className="col-span-1 flex justify-end gap-2">
-                        <Edit className="h-4 w-4 cursor-pointer text-gray-600" />
-                        <Trash2 className="h-4 w-4 cursor-pointer text-gray-600" />
+                      <div className="col-span-3 flex justify-end gap-2">
+                        <Button variant="ghost" size="sm">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-
-                    {/* Subthemes inside expanded Theme */}
-                    {expanded[theme.id] &&
-                      theme.subthemes?.map((sub) => (
-                        <div key={sub.id} className="ml-12">
-                          <div className="grid grid-cols-12 items-center border-b py-2">
-                            <div className="col-span-3 flex items-center gap-2">
-                              <Badge variant="danger">Subtheme</Badge>
-                              <span className="text-xs text-gray-500">{sub.sort_order}</span>
-                            </div>
-                            <div className="col-span-6">
-                              <div className="font-medium">{sub.name}</div>
-                              <div className="text-xs text-gray-500">{sub.description}</div>
-                            </div>
-                            <div className="col-span-2 text-center">{sub.sort_order}</div>
-                            <div className="col-span-1 flex justify-end gap-2">
-                              <Edit className="h-4 w-4 cursor-pointer text-gray-600" />
-                              <Trash2 className="h-4 w-4 cursor-pointer text-gray-600" />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                ))}
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+                  ))}
+              </div>
+            ))}
+        </div>
+      ))}
     </div>
   );
 }
