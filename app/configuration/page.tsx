@@ -21,9 +21,15 @@ export default function ConfigurationPage() {
         <Cog className="h-5 w-5 text-green-600" />
         <h2 className="text-xl font-semibold">SSC Configuration</h2>
       </div>
-      <p className="text-gray-600">
-        Manage and edit the frameworks that power the SSC calculations.
-      </p>
+
+      {/* Page Title + Description */}
+      <div>
+        <h3 className="text-lg font-semibold">Configuration Overview</h3>
+        <p className="text-gray-600 text-sm">
+          Access the editors for managing the SSC primary and comprehensive
+          frameworks.
+        </p>
+      </div>
 
       {/* Breadcrumbs */}
       <nav className="text-sm text-gray-500">
@@ -33,25 +39,25 @@ export default function ConfigurationPage() {
         / <span className="text-gray-900">Configuration</span>
       </nav>
 
-      {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+      {/* Quick Links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Link
           href="/configuration/primary"
-          className="rounded-xl border p-4 shadow hover:shadow-md transition bg-white"
+          className="block p-4 border rounded-lg hover:shadow bg-white"
         >
-          <h3 className="font-semibold text-lg">Primary Framework Editor</h3>
+          <h4 className="font-semibold">Primary Framework Editor</h4>
           <p className="text-sm text-gray-600">
-            Define and manage the core pillars, themes, and subthemes.
+            Configure the primary SSC framework.
           </p>
         </Link>
 
         <Link
           href="/configuration/comprehensive"
-          className="rounded-xl border p-4 shadow hover:shadow-md transition bg-white"
+          className="block p-4 border rounded-lg hover:shadow bg-white"
         >
-          <h3 className="font-semibold text-lg">Comprehensive Framework Editor</h3>
+          <h4 className="font-semibold">Comprehensive Framework Editor</h4>
           <p className="text-sm text-gray-600">
-            Advanced editor with more granular options (coming soon).
+            Configure advanced SSC framework details.
           </p>
         </Link>
       </div>
