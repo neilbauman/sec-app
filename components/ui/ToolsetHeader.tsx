@@ -1,9 +1,4 @@
 // /components/ui/ToolsetHeader.tsx
-"use client";
-
-import { Layers } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import type { Breadcrumb } from "@/lib/breadcrumbs";
 
 export type ToolsetHeaderProps = {
   title: string;
@@ -11,7 +6,7 @@ export type ToolsetHeaderProps = {
   group: string;
   breadcrumbs: Breadcrumb[];
   icon?: LucideIcon;
-  actions?: { label: string; onClick?: () => void }[]; // ✅ NEW
+  actions?: { label: string }[];   // ✅ only label
 };
 
 export function ToolsetHeader({
@@ -24,21 +19,9 @@ export function ToolsetHeader({
 }: ToolsetHeaderProps) {
   return (
     <header className="space-y-4">
-      {/* Toolset title */}
-      <div className="flex items-center gap-2">
-        <Layers className="h-6 w-6 text-orange-600" />
-        <h1 className="text-2xl font-bold">
-          Shelter and Settlement Severity Classification Toolset
-        </h1>
-      </div>
+      {/* ... same as before ... */}
 
-      {/* Group section */}
-      <div className="flex items-center gap-2">
-        {GroupIcon && <GroupIcon className="h-5 w-5 text-gray-600" />}
-        <h2 className="text-xl font-semibold">{group}</h2>
-      </div>
-
-      {/* Page title and description */}
+      {/* Page title + optional actions */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-medium">{title}</h3>
@@ -47,13 +30,12 @@ export function ToolsetHeader({
           )}
         </div>
 
-        {/* Actions */}
         {actions && (
           <div className="flex gap-2">
             {actions.map((action, i) => (
               <button
                 key={i}
-                onClick={action.onClick}
+                type="button"
                 className="px-3 py-1 text-sm border rounded-md hover:bg-gray-100"
               >
                 {action.label}
