@@ -1,67 +1,49 @@
 // /components/ui/ToolHeader.tsx
-"use client";
-
 import { Breadcrumb } from "@/lib/breadcrumbs";
 
 export interface ToolHeaderProps {
   title: string;
+  group: string;
   description?: string;
   breadcrumbs: Breadcrumb[];
-  group: string;
-  groupIcon?: React.ReactNode;
+  actions?: { label: string }[]; // 👈 Add this
 }
 
 export function ToolHeader({
   title,
+  group,
   description,
   breadcrumbs,
-  group,
-  groupIcon,
+  actions,
 }: ToolHeaderProps) {
   return (
-    <div className="mb-6">
-      {/* Toolset Title */}
-      <div className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
-        <span className="text-rust-600">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path d="M3 7l9-4 9 4-9 4-9-4z" />
-            <path d="M3 17l9 4 9-4" />
-            <path d="M3 12l9 4 9-4" />
-          </svg>
-        </span>
-        <span>Shelter and Settlement Severity Classification Toolset</span>
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h1 className="text-xl font-bold">{title}</h1>
+        <p className="text-sm text-gray-500">{description}</p>
+        <nav className="text-sm mt-1">
+          {breadcrumbs.map((bc, i) => (
+            <span key={i}>
+              <a href={bc.href} className="text-blue-600 hover:underline">
+                {bc.label}
+              </a>
+              {i < breadcrumbs.length - 1 && " / "}
+            </span>
+          ))}
+        </nav>
       </div>
-
-      {/* Group */}
-      <div className="flex items-center mt-2 space-x-2 text-gray-600">
-        {groupIcon && <span className="text-teal-600">{groupIcon}</span>}
-        <span className="font-medium">{group}</span>
-      </div>
-
-      {/* Page Title */}
-      <h1 className="text-2xl font-bold mt-2">{title}</h1>
-      {description && (
-        <p className="text-gray-600 text-sm mt-1">{description}</p>
+      {actions && actions.length > 0 && (
+        <div className="flex gap-2">
+          {actions.map((action, i) => (
+            <button
+              key={i}
+              className="px-3 py-1 border rounded text-sm hover:bg-gray-50"
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
       )}
-
-      {/* Breadcrumbs */}
-      <div className="text-sm text-blue-600 mt-2 space-x-1">
-        {breadcrumbs.map((crumb, idx) => (
-          <span key={idx}>
-            <a href={crumb.href} className="hover:underline">
-              {crumb.label}
-            </a>
-            {idx < breadcrumbs.length - 1 && " / "}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
