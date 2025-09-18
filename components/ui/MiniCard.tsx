@@ -1,25 +1,26 @@
 // /components/ui/MiniCard.tsx
 "use client";
 
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
 type MiniCardProps = {
   title: string;
   href: string;
-  icon: LucideIcon;
+  icon: LucideIcon;      // ✅ keep as a function
   iconColor: string;
 };
 
 export default function MiniCard({ title, href, icon: Icon, iconColor }: MiniCardProps) {
   return (
-    <a
+    <Link
       href={href}
-      className="flex items-center space-x-2 rounded-lg border p-2 hover:bg-gray-50"
+      className="flex items-center gap-3 rounded-lg border p-4 hover:bg-gray-50 transition"
     >
-      <div className={`p-1 rounded ${iconColor}`}>
-        <Icon className="w-4 h-4 text-white" />
+      <div className={`p-2 rounded-md ${iconColor}`}>
+        <Icon className="w-5 h-5 text-white" />   {/* ✅ render as component */}
       </div>
-      <span className="text-sm font-medium">{title}</span>
-    </a>
+      <span className="font-medium">{title}</span>
+    </Link>
   );
 }
