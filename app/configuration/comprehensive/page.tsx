@@ -1,6 +1,6 @@
-import { Layers } from "lucide-react";
-import { ToolsetHeader } from "@/components/ui/ToolsetHeader";
+// /app/configuration/comprehensive/page.tsx
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
+import ToolsetHeader from "@/components/ui/ToolsetHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -12,17 +12,15 @@ export default function ComprehensiveFrameworkPage() {
   ]);
 
   return (
-    <main className="p-6">
+    <main className="p-6 space-y-6">
       <ToolsetHeader
         title="Comprehensive Framework Editor"
-        description="Manage the full SSC framework including indicators and criteria levels."
+        description="Detailed configuration for SSC framework including indicators and criteria."
         group="Configuration"
         breadcrumbs={breadcrumbs}
-        icon={Layers}
       />
-
-      <p className="text-gray-600">
-        Placeholder for the Comprehensive Framework Editor UI.
+      <p className="text-gray-700">
+        Placeholder: Comprehensive editor functionality will go here.
       </p>
     </main>
   );
