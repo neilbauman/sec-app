@@ -1,27 +1,40 @@
 // /types/framework.ts
 
-export type Subtheme = {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-};
-
-export type Theme = {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  subthemes?: Subtheme[]; // ✅ add nested subthemes
-};
-
+// Pillar type
 export type Pillar = {
-  id: string;
+  id: number;
+  ref_code: string | null;
   name: string;
-  description: string;
+  description?: string;
   sort_order: number;
-  themes?: Theme[]; // ✅ add nested themes
+  themes: Theme[];
 };
 
-// General tree node (union)
-export type FrameworkNode = Pillar | Theme | Subtheme;
+// Theme type
+export type Theme = {
+  id: number;
+  ref_code: string | null;
+  name: string;
+  description?: string;
+  sort_order: number;
+  subthemes: Subtheme[];
+};
+
+// Subtheme type
+export type Subtheme = {
+  id: number;
+  ref_code: string | null;
+  name: string;
+  description?: string;
+  sort_order: number;
+  indicators?: Indicator[];
+};
+
+// Indicator type
+export type Indicator = {
+  id: number;
+  ref_code: string | null;
+  name: string;
+  description?: string;
+  sort_order: number;
+};
