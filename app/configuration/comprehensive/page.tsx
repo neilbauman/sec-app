@@ -25,7 +25,7 @@ export default function ComprehensiveFrameworkPage() {
         breadcrumbs={breadcrumbs}
       />
 
-      {/* ✅ Safe placeholder until DB integration */}
+      {/* ✅ Pass placeholder data for now to avoid missing props */}
       <ComprehensiveFrameworkEditorClient data={[]} />
     </main>
   );
