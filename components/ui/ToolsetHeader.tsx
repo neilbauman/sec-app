@@ -1,6 +1,9 @@
+// /components/ui/ToolsetHeader.tsx
 "use client";
 
 import { Layers } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import React from "react";
 
 export type Breadcrumb = {
   label: string;
@@ -11,53 +14,53 @@ export type ToolsetHeaderProps = {
   title: string;
   description?: string;
   group: string;
-  groupIcon?: React.ReactNode;   // ✅ new
   breadcrumbs: Breadcrumb[];
-  icon?: React.ReactNode;
-  actions?: { label: string }[];
+  icon?: LucideIcon;          // ✅ group-level icon (inherits group color)
+  actions?: { label: string }[]; // ✅ optional actions
 };
 
-function ToolsetHeader({
+export default function ToolsetHeader({
   title,
   description,
   group,
-  groupIcon,
   breadcrumbs,
-  icon,
+  icon: GroupIcon,
   actions,
 }: ToolsetHeaderProps) {
   return (
     <header className="mb-6">
-      {/* Toolset Title */}
-      <div className="flex items-center space-x-2">
-        {icon || <Layers className="w-6 h-6 text-orange-600" />}
+      {/* Toolset title */}
+      <div className="flex items-center space-x-2 mb-2">
+        <Layers className="w-6 h-6 text-rust-600" />
         <h1 className="text-xl font-bold">
           Shelter and Settlement Severity Classification Toolset
         </h1>
       </div>
 
-      {/* Group Title */}
-      <div className="flex items-center space-x-2 mt-2">
-        {groupIcon && <span className="text-orange-600">{groupIcon}</span>}
+      {/* Group title */}
+      <div className="flex items-center space-x-2 mb-2">
+        {GroupIcon && <GroupIcon className="w-5 h-5 text-gray-600" />}
         <h2 className="text-lg font-semibold">{group}</h2>
       </div>
 
-      {/* Page Title */}
-      <h3 className="text-2xl font-bold">{title}</h3>
-      {description && (
-        <p className="text-gray-600 mt-1">{description}</p>
-      )}
+      {/* Page title + description */}
+      <div className="mb-2">
+        <h3 className="text-xl font-semibold">{title}</h3>
+        {description && (
+          <p className="text-sm text-gray-600">{description}</p>
+        )}
+      </div>
 
       {/* Breadcrumbs */}
-      <nav className="text-sm mt-2">
+      <nav className="text-sm text-rust-600 mb-2">
         {breadcrumbs.map((bc, idx) => (
           <span key={idx}>
             {bc.href ? (
-              <a href={bc.href} className="text-orange-600 hover:underline">
+              <a href={bc.href} className="hover:underline">
                 {bc.label}
               </a>
             ) : (
-              <span className="text-orange-600">{bc.label}</span>
+              bc.label
             )}
             {idx < breadcrumbs.length - 1 && " / "}
           </span>
@@ -65,12 +68,12 @@ function ToolsetHeader({
       </nav>
 
       {/* Actions */}
-      {actions && actions.length > 0 && (
-        <div className="mt-2 flex space-x-2">
+      {actions && (
+        <div className="flex space-x-2 mt-2">
           {actions.map((action, idx) => (
             <button
               key={idx}
-              className="px-3 py-1 border rounded text-sm hover:bg-gray-50"
+              className="px-3 py-1 border rounded text-sm text-gray-700 hover:bg-gray-100"
             >
               {action.label}
             </button>
@@ -80,5 +83,3 @@ function ToolsetHeader({
     </header>
   );
 }
-
-export default ToolsetHeader;
