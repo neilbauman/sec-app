@@ -12,6 +12,11 @@ interface Props {
   framework: Pillar[];
 }
 
+// Safe accessor — fallback to sort_order if ref_code missing
+function getRefCode(node: { sort_order: number; [key: string]: any }) {
+  return node.ref_code ?? node.sort_order;
+}
+
 export default function PrimaryFrameworkEditorClient({ framework }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -48,7 +53,7 @@ export default function PrimaryFrameworkEditorClient({ framework }: Props) {
         </Card>
       </div>
 
-      {/* Table */}
+      {/* Table headers */}
       <div className="grid grid-cols-12 gap-4 px-2 text-sm font-medium text-gray-500 border-b pb-2">
         <div className="col-span-3">Type / Ref Code</div>
         <div className="col-span-6">Name / Description</div>
@@ -69,7 +74,7 @@ export default function PrimaryFrameworkEditorClient({ framework }: Props) {
               </button>
               <Badge variant="default">Pillar</Badge>
               <span className="text-xs text-gray-500">
-                {pillar.ref_code || pillar.sort_order}
+                {getRefCode(pillar)}
               </span>
             </div>
             <div className="col-span-6">
@@ -101,7 +106,7 @@ export default function PrimaryFrameworkEditorClient({ framework }: Props) {
                     </button>
                     <Badge variant="success">Theme</Badge>
                     <span className="text-xs text-gray-500">
-                      {theme.ref_code || theme.sort_order}
+                      {getRefCode(theme)}
                     </span>
                   </div>
                   <div className="col-span-6">
@@ -130,7 +135,7 @@ export default function PrimaryFrameworkEditorClient({ framework }: Props) {
                       <div className="col-span-3 flex items-center gap-2">
                         <Badge variant="danger">Subtheme</Badge>
                         <span className="text-xs text-gray-500">
-                          {sub.ref_code || sub.sort_order}
+                          {getRefCode(sub)}
                         </span>
                       </div>
                       <div className="col-span-6">
