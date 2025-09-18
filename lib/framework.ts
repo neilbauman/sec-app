@@ -6,69 +6,47 @@ import type { Pillar, Theme, Subtheme } from "@/types/framework";
 export async function getFramework(): Promise<Pillar[]> {
   const supabase = createClient();
 
-  // 1. Fetch pillars
+  // Pillars
   const { data: pillars, error: pillarError } = await supabase
     .from("pillars")
-    .select("id, name, description, sort_order")
-    .order("sort_order");
+    .select("id, name, description, sort_order");
 
-  if (pillarError) {
-    console.error("Error fetching pillars:", pillarError);
-    return [];
-  }
+  if (pillarError) throw pillarError;
 
-  // 2. Fetch themes
+  // Themes
   const { data: themes, error: themeError } = await supabase
     .from("themes")
-    .select("id, name, description, sort_order, pillar_id")
-    .order("sort_order");
+    .select("id, name, description, sort_order, pillar_id");
 
-  if (themeError) {
-    console.error("Error fetching themes:", themeError);
-    return [];
-  }
+  if (themeError) throw themeError;
 
-  // 3. Fetch subthemes
+  // Subthemes
   const { data: subthemes, error: subthemeError } = await supabase
     .from("subthemes")
-    .select("id, name, description, sort_order, theme_id")
-    .order("sort_order");
+    .select("id, name, description, sort_order, theme_id");
 
-  if (subthemeError) {
-    console.error("Error fetching subthemes:", subthemeError);
-    return [];
-  }
+  if (subthemeError) throw subthemeError;
 
-  // 4. Nest themes under pillars
+  // Map themes to pillars
   const themesByPillar: Record<string, Theme[]> = {};
-  for (const theme of themes ?? []) {
-    if (!themesByPillar[theme.pillar_id]) {
-      themesByPillar[theme.pillar_id] = [];
-    }
+  themes?.forEach((theme) => {
+    if (!themesByPillar[theme.pillar_id]) themesByPillar[theme.pillar_id] = [];
     themesByPillar[theme.pillar_id].push({ ...theme, subthemes: [] });
-  }
-
-  // 5. Nest subthemes under themes
-  const subthemesByTheme: Record<string, Subtheme[]> = {};
-  for (const st of subthemes ?? []) {
-    if (!subthemesByTheme[st.theme_id]) {
-      subthemesByTheme[st.theme_id] = [];
-    }
-    subthemesByTheme[st.theme_id].push(st);
-  }
-
-  // 6. Assemble final nested structure
-  const framework = (pillars ?? []).map((pillar) => {
-    const pillarThemes = (themesByPillar[pillar.id] ?? []).map((theme) => ({
-      ...theme,
-      subthemes: subthemesByTheme[theme.id] ?? [],
-    }));
-
-    return {
-      ...pillar,
-      themes: pillarThemes,
-    };
   });
 
-  return framework;
+  // Map subthemes to themes
+  const subthemesByTheme: Record<string, Subtheme[]> = {};
+  subthemes?.forEach((sub) => {
+    if (!subthemesByTheme[sub.theme_id]) subthemesByTheme[sub.theme_id] = [];
+    subthemesByTheme[sub.theme_id].push(sub);
+  });
+
+  // Nest them
+  return pillars?.map((pillar) => {
+    const pillarThemes = themesByPillar[pillar.id] || [];
+    pillarThemes.forEach((theme) => {
+      theme.subthemes = subthemesByTheme[theme.id] || [];
+    });
+    return { ...pillar, themes: pillarThemes };
+  }) ?? [];
 }
