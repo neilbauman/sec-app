@@ -18,8 +18,8 @@ export default function PrimaryFrameworkPage() {
         title="Primary Framework Editor"
         description="Define and manage the SSC framework pillars, themes, and subthemes."
         group="Configuration"
-        groupIcon={Cog}   // ✅ pass component type
-        icon={FileText}
+        groupIcon={Cog}   // ✅ component type
+        icon={FileText}   // ✅ component type
         breadcrumbs={breadcrumbs}
       />
       <p className="text-gray-500">[Primary framework editor UI goes here]</p>
