@@ -5,11 +5,7 @@ export type Breadcrumb = {
   href?: string; // optional for the current page
 };
 
-/**
- * Generate a breadcrumb trail.
- * - Each item is { label, href }.
- * - The last item (current page) may omit href.
- */
-export function buildBreadcrumbs(items: Breadcrumb[]): Breadcrumb[] {
+// Simple passthrough helper, allows consistent typing
+export function makeBreadcrumbs(items: Breadcrumb[]): Breadcrumb[] {
   return items;
 }
