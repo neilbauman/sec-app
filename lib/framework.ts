@@ -9,17 +9,17 @@ export type Pillar = {
   sort_order: number;
 };
 
-export async function getPrimaryFramework(): Promise<Pillar[]> {
+// ✅ Keep this as the canonical fetcher
+export async function getFramework(): Promise<Pillar[]> {
   const supabase = createClient();
 
-  // adjust table name/columns if your schema differs
   const { data, error } = await supabase
     .from("pillars")
     .select("id, ref_code, name, description, sort_order")
     .order("sort_order", { ascending: true });
 
   if (error) {
-    console.error("Error fetching primary framework:", error);
+    console.error("Error fetching framework:", error);
     return [];
   }
 
