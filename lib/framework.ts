@@ -1,10 +1,10 @@
 // /lib/framework.ts
-import { createServerClient } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase-server";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
 // Fetch all framework data (pillars → themes → subthemes)
 export async function getFramework(): Promise<Pillar[]> {
-  const supabase = createServerClient();
+  const supabase = createClient();
 
   // 1. Fetch pillars
   const { data: pillars, error: pillarError } = await supabase
