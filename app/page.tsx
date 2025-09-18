@@ -1,74 +1,58 @@
-// /app/page.tsx
-import Link from "next/link";
 import { Layers, Info, Cog, Globe, Database } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+
+const groups = [
+  {
+    title: "About",
+    description: "Overview of the SSC and this toolset.",
+    icon: Info,
+    color: "text-blue-500",
+    href: "/about",
+  },
+  {
+    title: "SSC Configuration",
+    description: "Manage global SSC framework and defaults.",
+    icon: Cog,
+    color: "text-green-600",
+    href: "/configuration",
+  },
+  {
+    title: "Country Configuration",
+    description: "Configure country-level baselines, mapping, and population data.",
+    icon: Globe,
+    color: "text-orange-500",
+    href: "/country",
+  },
+  {
+    title: "SSC Instances",
+    description: "Perform calculations and manage SSC instances.",
+    icon: Database,
+    color: "text-purple-600",
+    href: "/instances",
+  },
+];
 
 export default function DashboardPage() {
   return (
-    <main className="p-6 space-y-6">
-      <header className="flex items-center space-x-2">
-        <Layers className="w-6 h-6 text-orange-600" />
-        <h1 className="text-2xl font-bold">
-          Shelter and Settlement Severity Classification Toolset
-        </h1>
-      </header>
+    <main className="p-6">
+      <div className="flex items-center space-x-2 mb-6 text-rust-600 font-bold text-xl">
+        <Layers className="w-6 h-6" />
+        <h1>Shelter and Settlement Severity Classification Toolset</h1>
+      </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Link href="/about">
-          <Card className="hover:shadow-lg transition cursor-pointer">
-            <CardContent className="p-6 flex items-start space-x-4">
-              <Info className="w-6 h-6 text-blue-500" />
-              <div>
-                <h2 className="text-lg font-semibold">About</h2>
-                <p className="text-sm text-gray-600">
-                  Overview of the SSC and toolset.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/configuration">
-          <Card className="hover:shadow-lg transition cursor-pointer">
-            <CardContent className="p-6 flex items-start space-x-4">
-              <Cog className="w-6 h-6 text-green-600" />
-              <div>
-                <h2 className="text-lg font-semibold">SSC Configuration</h2>
-                <p className="text-sm text-gray-600">
-                  Manage the SSC global framework and defaults.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/countries">
-          <Card className="hover:shadow-lg transition cursor-pointer">
-            <CardContent className="p-6 flex items-start space-x-4">
-              <Globe className="w-6 h-6 text-purple-600" />
-              <div>
-                <h2 className="text-lg font-semibold">Country Configurations</h2>
-                <p className="text-sm text-gray-600">
-                  Configure baselines like places, shapes, and populations.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/instances">
-          <Card className="hover:shadow-lg transition cursor-pointer">
-            <CardContent className="p-6 flex items-start space-x-4">
-              <Database className="w-6 h-6 text-orange-600" />
-              <div>
-                <h2 className="text-lg font-semibold">SSC Instances</h2>
-                <p className="text-sm text-gray-600">
-                  Use defaults to calculate and edit SSC instances.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {groups.map((g, i) => (
+          <a
+            key={i}
+            href={g.href}
+            className="p-6 rounded-xl shadow bg-white hover:bg-gray-50 transition block"
+          >
+            <div className="flex items-center space-x-3">
+              <g.icon className={`w-6 h-6 ${g.color}`} />
+              <h2 className="text-lg font-semibold">{g.title}</h2>
+            </div>
+            <p className="text-sm text-gray-600 mt-2">{g.description}</p>
+          </a>
+        ))}
       </div>
     </main>
   );
