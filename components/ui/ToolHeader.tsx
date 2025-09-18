@@ -1,54 +1,59 @@
 // /components/ui/ToolHeader.tsx
-import Link from "next/link";
+"use client";
+
+import React from "react";
 
 export type Breadcrumb = {
   label: string;
-  href?: string; // optional for current page
+  href?: string;
+};
+
+export type ToolHeaderAction = {
+  label: string;
+  onClick: () => void;
 };
 
 export type ToolHeaderProps = {
   title: string;
   breadcrumbs: Breadcrumb[];
   group?: string;
-  actionButtons?: { label: string; onClick: () => void }[];
+  actions?: ToolHeaderAction[]; // ✅ now supported
 };
 
-export function ToolHeader({ title, breadcrumbs, group, actionButtons }: ToolHeaderProps) {
+export function ToolHeader({ title, breadcrumbs, group, actions }: ToolHeaderProps) {
   return (
-    <div className="border-b pb-4 mb-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">{title}</h1>
-          {group && <p className="text-sm text-gray-500">{group}</p>}
-          <nav className="mt-1 text-sm text-gray-600">
-            {breadcrumbs.map((crumb, idx) => (
-              <span key={idx}>
-                {crumb.href ? (
-                  <Link href={crumb.href} className="hover:underline text-blue-600">
-                    {crumb.label}
-                  </Link>
-                ) : (
-                  <span className="font-medium">{crumb.label}</span>
-                )}
-                {idx < breadcrumbs.length - 1 && " / "}
-              </span>
-            ))}
-          </nav>
+    <div className="mb-6 border-b pb-4">
+      <h1 className="text-xl font-semibold">{title}</h1>
+      {group && <div className="text-sm text-gray-500">{group}</div>}
+
+      <nav className="text-sm text-gray-500 mt-1">
+        {breadcrumbs.map((crumb, idx) => (
+          <span key={idx}>
+            {crumb.href ? (
+              <a href={crumb.href} className="text-blue-600 hover:underline">
+                {crumb.label}
+              </a>
+            ) : (
+              <span>{crumb.label}</span>
+            )}
+            {idx < breadcrumbs.length - 1 && " / "}
+          </span>
+        ))}
+      </nav>
+
+      {actions && actions.length > 0 && (
+        <div className="mt-3 flex gap-2">
+          {actions.map((action, idx) => (
+            <button
+              key={idx}
+              onClick={action.onClick}
+              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md border text-gray-700"
+            >
+              {action.label}
+            </button>
+          ))}
         </div>
-        {actionButtons && (
-          <div className="flex gap-2">
-            {actionButtons.map((btn, idx) => (
-              <button
-                key={idx}
-                onClick={btn.onClick}
-                className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
-              >
-                {btn.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
