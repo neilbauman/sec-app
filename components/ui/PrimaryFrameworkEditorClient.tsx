@@ -1,57 +1,44 @@
-// /components/ui/ComprehensiveFrameworkEditorClient.tsx
+// /components/ui/PrimaryFrameworkEditorClient.tsx
 "use client";
 
+import { Pillar } from "@/lib/framework";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Pillar, Theme, Subtheme, Indicator } from "@/types/framework";
 
-type Framework = {
-  id: number;
-  ref_code: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  themes: Theme[];
+type Props = {
+  data: Pillar[];
 };
 
-export default function ComprehensiveFrameworkEditorClient({
-  data,
-}: {
-  data: Framework[];
-}) {
+export default function PrimaryFrameworkEditorClient({ data }: Props) {
   return (
-    <div className="space-y-4">
-      {data.map((pillar) => (
-        <Card key={pillar.id}>
-          <CardContent className="p-4">
-            <h2 className="text-lg font-semibold">{pillar.name}</h2>
-            <p className="text-sm text-gray-600">{pillar.description}</p>
-            {/* Themes */}
-            {pillar.themes?.map((theme) => (
-              <div key={theme.id} className="ml-4 mt-2">
-                <h3 className="font-medium">{theme.name}</h3>
-                <p className="text-sm text-gray-600">{theme.description}</p>
-
-                {/* Subthemes */}
-                {theme.subthemes?.map((subtheme) => (
-                  <div key={subtheme.id} className="ml-4 mt-2">
-                    <h4 className="font-medium">{subtheme.name}</h4>
-                    <p className="text-sm text-gray-600">
-                      {subtheme.description}
-                    </p>
-
-                    {/* Indicators */}
-                    {subtheme.indicators?.map((indicator) => (
-                      <div key={indicator.id} className="ml-4 mt-1">
-                        <span className="text-sm">{indicator.name}</span>
-                      </div>
-                    ))}
+    <Card>
+      <CardContent>
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="text-left border-b">
+              <th className="p-2">Type / Ref Code</th>
+              <th className="p-2">Name / Description</th>
+              <th className="p-2">Sort Order</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((pillar) => (
+              <tr key={pillar.id} className="border-b">
+                <td className="p-2">
+                  <span className="text-sm text-muted-foreground">Pillar</span>{" "}
+                  {pillar.ref_code}
+                </td>
+                <td className="p-2">
+                  <div className="font-medium">{pillar.name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {pillar.description}
                   </div>
-                ))}
-              </div>
+                </td>
+                <td className="p-2">{pillar.sort_order}</td>
+              </tr>
             ))}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
   );
 }
