@@ -18,8 +18,8 @@ export default function ComprehensiveFrameworkPage() {
         title="Comprehensive Framework Editor"
         description="Explore and manage the full SSC framework including indicators."
         group="Configuration"
-        groupIcon={Cog}   // ✅ pass component type
-        icon={FileText}
+        groupIcon={Cog}   // ✅ component type
+        icon={FileText}   // ✅ component type
         breadcrumbs={breadcrumbs}
       />
       <p className="text-gray-500">
