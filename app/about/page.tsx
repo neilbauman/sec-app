@@ -1,14 +1,16 @@
+// app/about/page.tsx
 "use client";
 
-import ToolsetHeader, { Breadcrumb } from "@/components/ui/ToolsetHeader";
+import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { Info } from "lucide-react";
-
-const breadcrumbs: Breadcrumb[] = [
-  { label: "Dashboard", href: "/" },
-  { label: "About" },
-];
+import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
 export default function AboutPage() {
+  const breadcrumbs = makeBreadcrumbs([
+    { title: "Dashboard", href: "/" },
+    { title: "About", href: "/about" },
+  ]);
+
   return (
     <main className="p-6">
       <ToolsetHeader
@@ -16,10 +18,9 @@ export default function AboutPage() {
         description="Overview of the Shelter and Settlement Severity Classification toolset."
         group="About"
         groupIcon={<Info className="w-5 h-5 text-blue-600" />}
-        icon={<Info className="w-5 h-5 text-blue-600" />}
+        icon={<Info className="w-6 h-6 text-blue-600" />}
         breadcrumbs={breadcrumbs}
       />
-      <p className="mt-4">The SSC toolset provides a structured framework…</p>
     </main>
   );
 }
