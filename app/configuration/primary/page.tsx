@@ -1,6 +1,6 @@
 // /app/configuration/primary/page.tsx
 import { getFramework } from "@/lib/framework";
-import { PrimaryFrameworkEditorClient } from "@/components/ui/PrimaryFrameworkEditorClient";
+import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
 import { ToolHeader } from "@/components/ui/ToolHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
@@ -22,10 +22,6 @@ export default async function PrimaryFrameworkPage() {
         group="Configuration"
         description="Define and manage the global SSC framework including pillars, themes, and subthemes."
         breadcrumbs={breadcrumbs}
-        actions={[
-          { label: "Import CSV" },
-          { label: "Export CSV" },
-        ]}
       />
       <PrimaryFrameworkEditorClient framework={framework} />
     </main>
