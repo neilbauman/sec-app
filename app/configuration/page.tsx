@@ -1,20 +1,21 @@
 // /app/configuration/page.tsx
-import { ToolHeader } from "@/components/ui/ToolHeader";
+import ToolHeader from "@/components/ui/ToolHeader";
+import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
 export default function ConfigurationPage() {
+  const breadcrumbs = makeBreadcrumbs([
+    { label: "Dashboard", path: "" },
+    { label: "Configuration", path: "configuration" },
+  ]);
+
   return (
     <main className="p-6 space-y-6">
       <ToolHeader
-        title="SSC Configuration"
-        breadcrumbs={[
-          { label: "Dashboard", href: "/" },
-          { label: "Configuration" },
-        ]}
+        title="Configuration"
+        breadcrumbs={breadcrumbs}
         group="Configuration"
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* configuration cards go here */}
-      </div>
+      <h2 className="text-lg">Select a framework to edit</h2>
     </main>
   );
 }
