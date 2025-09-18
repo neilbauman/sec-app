@@ -1,58 +1,35 @@
-import { Layers, Info, Cog, Globe, Database } from "lucide-react";
+// /app/page.tsx (Dashboard)
+export const dynamic = "force-dynamic";
 
-const groups = [
-  {
-    title: "About",
-    description: "Overview of the SSC and this toolset.",
-    icon: Info,
-    color: "text-blue-500",
-    href: "/about",
-  },
-  {
-    title: "SSC Configuration",
-    description: "Manage global SSC framework and defaults.",
-    icon: Cog,
-    color: "text-green-600",
-    href: "/configuration",
-  },
-  {
-    title: "Country Configuration",
-    description: "Configure country-level baselines, mapping, and population data.",
-    icon: Globe,
-    color: "text-orange-500",
-    href: "/country",
-  },
-  {
-    title: "SSC Instances",
-    description: "Perform calculations and manage SSC instances.",
-    icon: Database,
-    color: "text-purple-600",
-    href: "/instances",
-  },
-];
+import DashboardCard from "@/components/ui/DashboardCard";
+import ToolsetHeader from "@/components/ui/ToolsetHeader";
+import { groupIcons } from "@/lib/icons";
+import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
 export default function DashboardPage() {
+  const breadcrumbs = makeBreadcrumbs([{ label: "Dashboard" }]);
   return (
     <main className="p-6">
-      <div className="flex items-center space-x-2 mb-6 text-rust-600 font-bold text-xl">
-        <Layers className="w-6 h-6" />
-        <h1>Shelter and Settlement Severity Classification Toolset</h1>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {groups.map((g, i) => (
-          <a
-            key={i}
-            href={g.href}
-            className="p-6 rounded-xl shadow bg-white hover:bg-gray-50 transition block"
-          >
-            <div className="flex items-center space-x-3">
-              <g.icon className={`w-6 h-6 ${g.color}`} />
-              <h2 className="text-lg font-semibold">{g.title}</h2>
-            </div>
-            <p className="text-sm text-gray-600 mt-2">{g.description}</p>
-          </a>
-        ))}
+      <ToolsetHeader
+        title="Dashboard"
+        description="Overview of the SSC toolset."
+        group="Dashboard"
+        groupIcon={groupIcons.about.icon}
+        breadcrumbs={breadcrumbs}
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <DashboardCard
+          title="About"
+          description="Learn about the SSC and this toolset."
+          href="/about"
+          {...groupIcons.about}
+        />
+        <DashboardCard
+          title="SSC Configuration"
+          description="Manage the SSC global framework and defaults."
+          href="/configuration"
+          {...groupIcons.configuration}
+        />
       </div>
     </main>
   );
