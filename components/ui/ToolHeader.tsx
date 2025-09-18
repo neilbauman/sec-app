@@ -3,51 +3,35 @@
 
 import React from "react";
 
-export type Breadcrumb = {
-  label: string;
-  href?: string;
-};
+export type Breadcrumb = { label: string; href?: string };
 
-export type ToolHeaderAction = {
-  label: string;
-  onClick: () => void;
-};
-
-export type ToolHeaderProps = {
+type ToolHeaderProps = {
   title: string;
   breadcrumbs: Breadcrumb[];
-  group?: string;
-  actions?: ToolHeaderAction[]; // ✅ now supported
+  group: string;
+  actions?: { label: string; onClick: () => void }[];
 };
 
 export function ToolHeader({ title, breadcrumbs, group, actions }: ToolHeaderProps) {
   return (
-    <div className="mb-6 border-b pb-4">
-      <h1 className="text-xl font-semibold">{title}</h1>
-      {group && <div className="text-sm text-gray-500">{group}</div>}
-
-      <nav className="text-sm text-gray-500 mt-1">
-        {breadcrumbs.map((crumb, idx) => (
-          <span key={idx}>
-            {crumb.href ? (
-              <a href={crumb.href} className="text-blue-600 hover:underline">
-                {crumb.label}
-              </a>
-            ) : (
-              <span>{crumb.label}</span>
-            )}
-            {idx < breadcrumbs.length - 1 && " / "}
+    <div className="flex flex-col gap-2 border-b pb-4">
+      <h1 className="text-xl font-bold">{title}</h1>
+      <p className="text-sm text-gray-500">{group}</p>
+      <nav className="text-sm text-blue-600 flex gap-1">
+        {breadcrumbs.map((b, i) => (
+          <span key={i}>
+            {b.href ? <a href={b.href}>{b.label}</a> : b.label}
+            {i < breadcrumbs.length - 1 && " / "}
           </span>
         ))}
       </nav>
-
-      {actions && actions.length > 0 && (
-        <div className="mt-3 flex gap-2">
-          {actions.map((action, idx) => (
+      {actions && (
+        <div className="flex gap-2 mt-2">
+          {actions.map((action, i) => (
             <button
-              key={idx}
+              key={i}
               onClick={action.onClick}
-              className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-md border text-gray-700"
+              className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
             >
               {action.label}
             </button>
