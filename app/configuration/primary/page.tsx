@@ -1,7 +1,7 @@
 // /app/configuration/primary/page.tsx
 import { getFramework } from "@/lib/framework";
 import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
-import ToolHeader from "@/components/ui/ToolHeader";
+import { ToolHeader } from "@/components/ui/ToolHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
 export default async function PrimaryFrameworkPage() {
