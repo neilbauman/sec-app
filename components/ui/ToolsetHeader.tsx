@@ -1,8 +1,7 @@
 // components/ui/ToolsetHeader.tsx
 "use client";
 
-import { Layers } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ReactNode } from "react";
 
 export type Breadcrumb = {
   label: string;
@@ -13,61 +12,38 @@ type ToolsetHeaderProps = {
   title: string;
   description?: string;
   group: string;
-  groupIcon?: LucideIcon; // ✅ accept component type
-  icon?: LucideIcon;
-  breadcrumbs?: Breadcrumb[];
+  groupIcon?: ReactNode;         // ✅ accept JSX directly
+  icon?: ReactNode;              // ✅ same for page/tool icons
+  breadcrumbs: Breadcrumb[];
 };
 
 export default function ToolsetHeader({
   title,
   description,
   group,
-  groupIcon: GroupIcon,
-  icon: Icon,
+  groupIcon,
+  icon,
   breadcrumbs,
 }: ToolsetHeaderProps) {
   return (
     <header className="mb-6">
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        {Icon ? <Icon className="w-6 h-6 text-rust-600" /> : <Layers />}
-        {title}
-      </h1>
-      <div className="flex items-center gap-2 mt-1 text-gray-600">
-        {GroupIcon && <GroupIcon className="w-5 h-5 text-rust-600" />}
-        <span className="font-semibold">{group}</span>
+      <div className="flex items-center space-x-2 text-rust-600 font-semibold">
+        {groupIcon}
+        <span>{group}</span>
       </div>
-      {description && (
-        <p className="text-gray-500 mt-1 text-sm">{description}</p>
-      )}
-      {breadcrumbs && (
-        <nav className="text-sm mt-2">
-          {breadcrumbs.map((bc, idx) => (
-            <span key={idx}>
-              {idx > 0 && " / "}
-              {bc.href ? (
-                <a
-                  href={bc.href}
-                  className={`${
-                    idx === breadcrumbs.length - 1
-                      ? "font-bold text-rust-600"
-                      : "text-rust-600"
-                  }`}
-                >
-                  {bc.label}
-                </a>
-              ) : (
-                <span
-                  className={
-                    idx === breadcrumbs.length - 1 ? "font-bold text-rust-600" : ""
-                  }
-                >
-                  {bc.label}
-                </span>
-              )}
-            </span>
-          ))}
-        </nav>
-      )}
+      <h1 className="text-2xl font-bold flex items-center space-x-2">
+        {icon}
+        <span>{title}</span>
+      </h1>
+      {description && <p className="text-gray-600">{description}</p>}
+      <nav className="text-sm mt-2">
+        {breadcrumbs.map((bc, i) => (
+          <span key={i} className={i === breadcrumbs.length - 1 ? "font-semibold text-rust-600" : "text-rust-600"}>
+            {bc.href ? <a href={bc.href}>{bc.label}</a> : bc.label}
+            {i < breadcrumbs.length - 1 && " / "}
+          </span>
+        ))}
+      </nav>
     </header>
   );
 }
