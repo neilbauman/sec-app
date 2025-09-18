@@ -1,19 +1,13 @@
+// /components/ui/PrimaryFrameworkEditorClient.tsx
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import Badge from "@/components/ui/Badge";
 
-type Props = {
+interface Props {
   framework: Pillar[];
-};
+}
 
 export default function PrimaryFrameworkEditorClient({ framework }: Props) {
   const [expandedPillars, setExpandedPillars] = useState<Record<string, boolean>>({});
@@ -29,83 +23,74 @@ export default function PrimaryFrameworkEditorClient({ framework }: Props) {
 
   return (
     <div className="space-y-6">
-      {framework
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((pillar) => (
-          <Card key={pillar.id} className="shadow-md">
-            <CardHeader
-              className="flex items-center justify-between cursor-pointer"
-              onClick={() => togglePillar(pillar.id)}
-            >
-              <div className="flex items-center space-x-3">
-                {expandedPillars[pillar.id] ? (
-                  <ChevronDown className="h-5 w-5 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-5 w-5 text-gray-500" />
-                )}
-                <CardTitle className="text-lg font-semibold">
-                  {pillar.sort_order}. {pillar.name}
-                </CardTitle>
+      <h1 className="text-2xl font-bold">Primary Framework Editor</h1>
+      <div className="border rounded-lg shadow bg-white">
+        {/* Table header */}
+        <div className="grid grid-cols-12 bg-gray-100 font-semibold text-sm px-4 py-2 border-b">
+          <div className="col-span-3">Name</div>
+          <div className="col-span-6">Description</div>
+          <div className="col-span-1 text-center">Order</div>
+          <div className="col-span-2 text-center">Type</div>
+        </div>
+
+        {/* Content */}
+        <div className="divide-y">
+          {framework.map((pillar) => (
+            <div key={pillar.id}>
+              {/* Pillar row */}
+              <div
+                className="grid grid-cols-12 items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                onClick={() => togglePillar(pillar.id)}
+              >
+                <div className="col-span-3 font-bold">
+                  {expandedPillars[pillar.id] ? "▼ " : "▶ "} {pillar.name}
+                </div>
+                <div className="col-span-6">{pillar.description}</div>
+                <div className="col-span-1 text-center">{pillar.sort_order}</div>
+                <div className="col-span-2 text-center">
+                  <Badge color="blue">Pillar</Badge>
+                </div>
               </div>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                Pillar
-              </Badge>
-            </CardHeader>
-            {expandedPillars[pillar.id] && (
-              <CardContent className="space-y-4 pl-8">
-                <p className="text-sm text-gray-600">{pillar.description}</p>
-                {pillar.themes
-                  .sort((a, b) => a.sort_order - b.sort_order)
-                  .map((theme) => (
-                    <div key={theme.id} className="border-l-2 border-gray-200 pl-4">
-                      <div
-                        className="flex items-center justify-between cursor-pointer"
-                        onClick={() => toggleTheme(theme.id)}
-                      >
-                        <div className="flex items-center space-x-2">
-                          {expandedThemes[theme.id] ? (
-                            <ChevronDown className="h-4 w-4 text-gray-500" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-500" />
-                          )}
-                          <span className="font-medium">
-                            {pillar.sort_order}.{theme.sort_order} {theme.name}
-                          </span>
-                        </div>
-                        <Badge variant="secondary" className="bg-green-100 text-green-700">
-                          Theme
-                        </Badge>
+
+              {/* Themes */}
+              {expandedPillars[pillar.id] &&
+                pillar.themes?.map((theme: Theme) => (
+                  <div key={theme.id}>
+                    <div
+                      className="grid grid-cols-12 items-center pl-8 pr-4 py-2 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => toggleTheme(theme.id)}
+                    >
+                      <div className="col-span-3">
+                        {expandedThemes[theme.id] ? "▼ " : "▶ "} {theme.name}
                       </div>
-                      {expandedThemes[theme.id] && (
-                        <div className="pl-6 mt-2 space-y-2">
-                          <p className="text-sm text-gray-600">{theme.description}</p>
-                          {theme.subthemes
-                            .sort((a, b) => a.sort_order - b.sort_order)
-                            .map((subtheme) => (
-                              <div
-                                key={subtheme.id}
-                                className="flex items-center justify-between pl-4 border-l border-gray-200"
-                              >
-                                <span className="text-sm">
-                                  {pillar.sort_order}.{theme.sort_order}.
-                                  {subtheme.sort_order} {subtheme.name}
-                                </span>
-                                <Badge
-                                  variant="secondary"
-                                  className="bg-yellow-100 text-yellow-700"
-                                >
-                                  Subtheme
-                                </Badge>
-                              </div>
-                            ))}
-                        </div>
-                      )}
+                      <div className="col-span-6">{theme.description}</div>
+                      <div className="col-span-1 text-center">{theme.sort_order}</div>
+                      <div className="col-span-2 text-center">
+                        <Badge color="green">Theme</Badge>
+                      </div>
                     </div>
-                  ))}
-              </CardContent>
-            )}
-          </Card>
-        ))}
+
+                    {/* Subthemes */}
+                    {expandedThemes[theme.id] &&
+                      theme.subthemes?.map((sub: Subtheme) => (
+                        <div
+                          key={sub.id}
+                          className="grid grid-cols-12 items-center pl-16 pr-4 py-2 hover:bg-gray-50"
+                        >
+                          <div className="col-span-3">{sub.name}</div>
+                          <div className="col-span-6">{sub.description}</div>
+                          <div className="col-span-1 text-center">{sub.sort_order}</div>
+                          <div className="col-span-2 text-center">
+                            <Badge color="red">Subtheme</Badge>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ))}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
