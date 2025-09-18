@@ -1,7 +1,8 @@
 // /app/about/page.tsx
 import Image from "next/image";
-import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 import { ToolsetHeader } from "@/components/ui/ToolsetHeader";
+import { Info } from "lucide-react";
+import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -12,27 +13,25 @@ export default function AboutPage() {
     <main className="p-6">
       <ToolsetHeader
         title="About"
+        description="Overview of the Shelter and Settlement Severity Classification toolset."
         group="About"
-        description="Overview of the Shelter and Settlement Severity Classification Toolset."
+        icon={Info}
         breadcrumbs={breadcrumbs}
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">What is the SSC?</h3>
-          <p className="text-gray-700 mb-4">
-            The Shelter and Settlement Severity Classification (SSC) Toolset helps analyze, configure, and manage
-            humanitarian shelter data. It provides a structured framework to manage global defaults, country-specific
-            baselines, and SSC instances for field use.
-          </p>
-        </div>
-        <div className="bg-gray-100 rounded flex items-center justify-center">
-          <Image
-            src="/placeholder-diagram.png"
-            alt="SSC Diagram Placeholder"
-            width={400}
-            height={300}
-          />
-        </div>
+
+      <div className="mt-6 space-y-4">
+        <p>
+          The Shelter and Settlement Severity Classification (SSC) toolset provides a structured
+          way to assess and classify severity across different dimensions of shelter and settlement
+          needs in humanitarian contexts.
+        </p>
+        <Image
+          src="/placeholder-diagram.png"
+          alt="SSC diagram placeholder"
+          width={800}
+          height={400}
+          className="rounded-xl border shadow"
+        />
       </div>
     </main>
   );
