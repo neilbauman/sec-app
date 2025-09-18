@@ -1,26 +1,32 @@
 // /app/configuration/primary/page.tsx
+"use client";
 export const dynamic = "force-dynamic";
 
 import ToolsetHeader from "@/components/ui/ToolsetHeader";
-import { groupIcons } from "@/lib/icons";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
+import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
+import { Cog } from "lucide-react";
+import { getFramework } from "@/lib/framework";
 
-export default function PrimaryFrameworkPage() {
+export default async function PrimaryFrameworkPage() {
+  const framework = await getFramework();
+
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
     { label: "Configuration", href: "/configuration" },
     { label: "Primary Framework Editor" },
   ]);
+
   return (
     <main className="p-6">
       <ToolsetHeader
         title="Primary Framework Editor"
-        description="Define and manage the global SSC framework including pillars, themes, and subthemes."
+        description="Define and manage the SSC framework pillars, themes, and subthemes."
         group="Configuration"
-        groupIcon={groupIcons.configuration.icon}
+        groupIcon={Cog}
         breadcrumbs={breadcrumbs}
       />
-      <p className="text-gray-600">Primary framework editor placeholder.</p>
+      <PrimaryFrameworkEditorClient data={framework} />
     </main>
   );
 }
