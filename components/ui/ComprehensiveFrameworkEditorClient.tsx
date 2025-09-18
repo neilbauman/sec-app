@@ -1,14 +1,18 @@
-// /components/ui/ComprehensiveFrameworkEditorClient.tsx
 "use client";
 
+// /components/ui/ComprehensiveFrameworkEditorClient.tsx
+
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Pillar, Theme, Subtheme, Indicator } from "@/types/framework";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight, Edit, Trash2 } from "lucide-react";
+import type { Pillar, Theme, Subtheme } from "@/types/framework"; // ✅ Indicator removed
 
 type Framework = {
   id: number;
-  ref_code: string;
+  ref_code: string | null;
   name: string;
-  description: string;
+  description?: string;
   sort_order: number;
   themes: Theme[];
 };
@@ -18,37 +22,61 @@ export default function ComprehensiveFrameworkEditorClient({
 }: {
   data: Framework[];
 }) {
+  const [expandedPillars, setExpandedPillars] = useState<number[]>([]);
+
+  const toggleExpand = (id: number) => {
+    setExpandedPillars((prev) =>
+      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
+    );
+  };
+
   return (
     <div className="space-y-4">
       {data.map((pillar) => (
-        <Card key={pillar.id}>
+        <Card key={pillar.id} className="border">
           <CardContent className="p-4">
-            <h2 className="text-lg font-semibold">{pillar.name}</h2>
-            <p className="text-sm text-gray-600">{pillar.description}</p>
-            {/* Themes */}
-            {pillar.themes?.map((theme) => (
-              <div key={theme.id} className="ml-4 mt-2">
-                <h3 className="font-medium">{theme.name}</h3>
-                <p className="text-sm text-gray-600">{theme.description}</p>
-
-                {/* Subthemes */}
-                {theme.subthemes?.map((subtheme) => (
-                  <div key={subtheme.id} className="ml-4 mt-2">
-                    <h4 className="font-medium">{subtheme.name}</h4>
-                    <p className="text-sm text-gray-600">
-                      {subtheme.description}
-                    </p>
-
-                    {/* Indicators */}
-                    {subtheme.indicators?.map((indicator) => (
-                      <div key={indicator.id} className="ml-4 mt-1">
-                        <span className="text-sm">{indicator.name}</span>
-                      </div>
-                    ))}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <button onClick={() => toggleExpand(pillar.id)}>
+                  {expandedPillars.includes(pillar.id) ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronRight size={16} />
+                  )}
+                </button>
+                <span className="font-semibold">
+                  {pillar.ref_code} {pillar.name}
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <Button size="sm" variant="outline">
+                  <Edit size={14} />
+                </Button>
+                <Button size="sm" variant="outline">
+                  <Trash2 size={14} />
+                </Button>
+              </div>
+            </div>
+            {expandedPillars.includes(pillar.id) && (
+              <div className="ml-6 mt-2 space-y-2">
+                {pillar.themes.map((theme: Theme) => (
+                  <div key={theme.id}>
+                    <div className="flex items-center justify-between">
+                      <span>
+                        {theme.ref_code} {theme.name}
+                      </span>
+                    </div>
+                    <div className="ml-6 text-sm text-muted-foreground">
+                      {theme.subthemes?.map((sub: Subtheme) => (
+                        <div key={sub.id}>
+                          {sub.ref_code} {sub.name}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
-            ))}
+            )}
           </CardContent>
         </Card>
       ))}
