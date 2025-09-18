@@ -1,4 +1,5 @@
-// app/configuration/comprehensive/page.tsx
+"use client";
+
 import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 import { Cog, FileText } from "lucide-react";
@@ -19,11 +20,13 @@ export default function ComprehensiveFrameworkPage() {
         title="Comprehensive Framework Editor"
         description="Explore and manage the full SSC framework including indicators."
         group="Configuration"
-        groupIcon={<Cog className="w-5 h-5 text-green-600" />}   // ✅ JSX
-        icon={<FileText className="w-5 h-5 text-rust-600" />}    // ✅ JSX
+        groupIcon={Cog}
+        icon={FileText}
         breadcrumbs={breadcrumbs}
       />
-      <ComprehensiveFrameworkEditorClient />
+
+      {/* ✅ Safe placeholder until DB integration */}
+      <ComprehensiveFrameworkEditorClient data={[]} />
     </main>
   );
 }
