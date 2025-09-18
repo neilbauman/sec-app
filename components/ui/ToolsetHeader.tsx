@@ -13,7 +13,7 @@ type ToolsetHeaderProps = {
   title: string;
   description?: string;
   group: string;
-  groupIcon?: LucideIcon; // accept component type, not element
+  groupIcon?: LucideIcon; // ✅ accept component type
   icon?: LucideIcon;
   breadcrumbs?: Breadcrumb[];
 };
@@ -33,7 +33,7 @@ export default function ToolsetHeader({
         {title}
       </h1>
       <div className="flex items-center gap-2 mt-1 text-gray-600">
-        {GroupIcon && <GroupIcon className="w-5 h-5" />}
+        {GroupIcon && <GroupIcon className="w-5 h-5 text-rust-600" />}
         <span className="font-semibold">{group}</span>
       </div>
       {description && (
