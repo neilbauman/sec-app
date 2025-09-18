@@ -1,6 +1,4 @@
 // /app/configuration/page.tsx
-export const dynamic = "force-dynamic";
-
 import { ToolHeader } from "@/components/ui/ToolHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
@@ -16,8 +14,12 @@ export default function ConfigurationPage() {
         title="Configuration"
         breadcrumbs={breadcrumbs}
         group="Configuration"
+        actions={[
+          { label: "Import CSV" },
+          { label: "Export CSV" },
+        ]}
       />
-      <p className="text-gray-600">Choose a framework to configure.</p>
+      <p className="text-gray-600">Choose a framework to edit.</p>
     </main>
   );
 }
