@@ -1,47 +1,71 @@
+// /components/ui/ToolHeader.tsx
 "use client";
 
-import React from "react";
+import { Layers } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 
-export type Breadcrumb = { label: string; href?: string };
-
-type Action = {
+export type Breadcrumb = {
   label: string;
-  onClick?: () => void; // ✅ allow optional click
+  href?: string;
 };
 
-type ToolHeaderProps = {
+export type ToolHeaderProps = {
+  group?: string;
+  groupIcon?: LucideIcon;
   title: string;
+  description?: string;
   breadcrumbs: Breadcrumb[];
-  group: string;
-  actions?: Action[];
 };
 
-export function ToolHeader({ title, breadcrumbs, group, actions }: ToolHeaderProps) {
+export function ToolHeader({
+  group,
+  groupIcon: GroupIcon,
+  title,
+  description,
+  breadcrumbs,
+}: ToolHeaderProps) {
   return (
-    <div className="flex flex-col gap-2 border-b pb-4">
-      <h1 className="text-xl font-bold">{title}</h1>
-      <p className="text-sm text-gray-500">{group}</p>
-      <nav className="text-sm text-blue-600 flex gap-1">
-        {breadcrumbs.map((b, i) => (
+    <div className="mb-6">
+      {/* Global toolset title */}
+      <div className="flex items-center space-x-2 mb-2">
+        <Layers className="w-5 h-5 text-orange-700" />
+        <h1 className="text-lg font-bold text-gray-900">
+          Shelter and Settlement Severity Classification Toolset
+        </h1>
+      </div>
+
+      {/* Group row (optional) */}
+      {group && (
+        <div className="flex items-center space-x-2 mb-2">
+          {GroupIcon && <GroupIcon className="w-4 h-4 text-gray-600" />}
+          <h2 className="text-md font-semibold text-gray-700">{group}</h2>
+        </div>
+      )}
+
+      {/* Page title + description */}
+      <div className="mb-2">
+        <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+        {description && (
+          <p className="text-sm text-gray-600">{description}</p>
+        )}
+      </div>
+
+      {/* Breadcrumbs */}
+      <div className="text-sm text-gray-500 space-x-1">
+        {breadcrumbs.map((crumb, i) => (
           <span key={i}>
-            {b.href ? <a href={b.href}>{b.label}</a> : b.label}
+            {crumb.href ? (
+              <Link href={crumb.href} className="text-blue-600 hover:underline">
+                {crumb.label}
+              </Link>
+            ) : (
+              <span>{crumb.label}</span>
+            )}
             {i < breadcrumbs.length - 1 && " / "}
           </span>
         ))}
-      </nav>
-      {actions && (
-        <div className="flex gap-2 mt-2">
-          {actions.map((action, i) => (
-            <button
-              key={i}
-              onClick={action.onClick}
-              className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
