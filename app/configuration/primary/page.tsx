@@ -1,6 +1,6 @@
 // /app/configuration/primary/page.tsx
 import { getFramework } from "@/lib/framework";
-import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
+import { PrimaryFrameworkEditorClient } from "@/components/ui/PrimaryFrameworkEditorClient";
 import { ToolHeader } from "@/components/ui/ToolHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
@@ -8,9 +8,9 @@ export const dynamic = "force-dynamic";
 
 export default async function PrimaryFrameworkPage() {
   const framework = await getFramework();
-  console.log("SSR fetched framework:", framework); // <-- Debug log
 
   const breadcrumbs = makeBreadcrumbs([
+    { label: "Dashboard", href: "/" },
     { label: "Configuration", href: "/configuration" },
     { label: "Primary Framework Editor", href: "/configuration/primary" },
   ]);
