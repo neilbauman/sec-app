@@ -1,5 +1,5 @@
 // /app/configuration/primary/page.tsx
-export const dynamic = "force-dynamic"; // ✅ Tell Next.js to always render on server
+export const dynamic = "force-dynamic";
 
 import { getFramework } from "@/lib/framework";
 import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
@@ -7,7 +7,13 @@ import { ToolHeader } from "@/components/ui/ToolHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
 export default async function PrimaryFrameworkPage() {
-  const framework = await getFramework();
+  let framework = [];
+  try {
+    framework = await getFramework();
+  } catch (err) {
+    console.error("❌ Error fetching framework:", err);
+  }
+
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
     { label: "Configuration", href: "/configuration" },
@@ -25,7 +31,11 @@ export default async function PrimaryFrameworkPage() {
           { label: "Export CSV", onClick: () => alert("Export not ready yet") },
         ]}
       />
-      <PrimaryFrameworkEditorClient data={framework} />
+      {framework && framework.length > 0 ? (
+        <PrimaryFrameworkEditorClient data={framework} />
+      ) : (
+        <p className="text-gray-500">⚠ No framework data available.</p>
+      )}
     </main>
   );
 }
