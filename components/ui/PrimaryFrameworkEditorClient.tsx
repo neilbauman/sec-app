@@ -1,126 +1,116 @@
-// /components/ui/PrimaryFrameworkEditorClient.tsx
 "use client";
 
 import React, { useState } from "react";
-import type { Pillar, Theme, Subtheme } from "@/types/framework";
+import { Card, CardContent } from "@/components/ui/card";
 import Badge from "@/components/ui/badge";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Edit3, Trash2, Upload, Download } from "lucide-react";
+import ToolHeader from "@/components/ui/ToolHeader";
 
-type Props = {
-  framework: Pillar[];
+type FrameworkNode = {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  type: "pillar" | "theme" | "subtheme";
+  refCode: string;
+  children?: FrameworkNode[];
 };
 
-export default function PrimaryFrameworkEditorClient({ framework }: Props) {
+type Props = {
+  data: FrameworkNode[];
+};
+
+export default function PrimaryFrameworkEditorClient({ data }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const toggleExpand = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const renderRows = (nodes: FrameworkNode[], depth = 0) => {
+    return nodes.map((node) => {
+      const isExpanded = expanded[node.id];
+      const hasChildren = node.children && node.children.length > 0;
+
+      return (
+        <React.Fragment key={node.id}>
+          <tr className="border-b">
+            {/* Expand / Collapse + Type + Ref Code */}
+            <td className="py-2 pl-4 pr-2">
+              <div className="flex items-center" style={{ marginLeft: depth * 16 }}>
+                {hasChildren && (
+                  <button onClick={() => toggleExpand(node.id)} className="mr-1">
+                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </button>
+                )}
+                <Badge variant={node.type}>{node.type}</Badge>
+                <span className="ml-2 text-xs text-gray-600">{node.refCode}</span>
+              </div>
+            </td>
+
+            {/* Name + Description */}
+            <td className="py-2 px-2">
+              <div className="font-medium">{node.name}</div>
+              <div className="text-xs text-gray-500">{node.description}</div>
+            </td>
+
+            {/* Sort Order */}
+            <td className="py-2 px-2 text-center">{node.sort_order}</td>
+
+            {/* Actions */}
+            <td className="py-2 px-2 text-center">
+              <button className="p-1 text-blue-600 hover:text-blue-800">
+                <Edit3 size={16} />
+              </button>
+              <button className="ml-2 p-1 text-red-600 hover:text-red-800">
+                <Trash2 size={16} />
+              </button>
+            </td>
+          </tr>
+
+          {/* Children */}
+          {hasChildren && isExpanded && renderRows(node.children!, depth + 1)}
+        </React.Fragment>
+      );
+    });
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Column Headings */}
-      <div className="grid grid-cols-12 font-semibold text-sm text-gray-600 border-b pb-2">
-        <div className="col-span-1">#</div>
-        <div className="col-span-3">Name</div>
-        <div className="col-span-6">Description</div>
-        <div className="col-span-2 text-right">Tags</div>
-      </div>
+    <div className="p-6">
+      {/* Breadcrumbs */}
+      <div className="text-sm text-gray-500 mb-2">Home / Configuration / Primary Framework</div>
 
-      {framework.map((pillar, pillarIndex) => (
-        <div key={pillar.id} className="border rounded-lg shadow-sm">
-          {/* Pillar row */}
-          <div
-            className="flex items-center p-3 cursor-pointer bg-gray-50 hover:bg-gray-100"
-            onClick={() => toggleExpand(pillar.id)}
-          >
-            <div className="w-6">
-              {expanded[pillar.id] ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </div>
-            <div className="grid grid-cols-12 w-full items-center">
-              <div className="col-span-1">{pillar.sort_order}</div>
-              <div className="col-span-3 font-bold text-blue-800">
-                {pillar.name}
-              </div>
-              <div className="col-span-6 text-gray-700">
-                {pillar.description}
-              </div>
-              <div className="col-span-2 text-right">
-                <Badge className="bg-blue-100 text-blue-800">Pillar</Badge>
-              </div>
-            </div>
+      {/* Tool Header with CSV import/export */}
+      <ToolHeader
+        title="Primary Framework Editor"
+        actions={
+          <div className="flex space-x-2">
+            <button className="flex items-center px-2 py-1 text-sm border rounded hover:bg-gray-50">
+              <Upload size={14} className="mr-1" /> Import CSV
+            </button>
+            <button className="flex items-center px-2 py-1 text-sm border rounded hover:bg-gray-50">
+              <Download size={14} className="mr-1" /> Export CSV
+            </button>
           </div>
+        }
+      />
 
-          {/* Themes under this Pillar */}
-          {expanded[pillar.id] &&
-            pillar.themes?.map((theme: Theme, themeIndex: number) => (
-              <div
-                key={theme.id}
-                className="ml-8 border-t border-gray-200"
-              >
-                <div
-                  className="flex items-center p-3 cursor-pointer hover:bg-gray-50"
-                  onClick={() => toggleExpand(theme.id)}
-                >
-                  <div className="w-6">
-                    {expanded[theme.id] ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className="grid grid-cols-12 w-full items-center">
-                    <div className="col-span-1">
-                      {pillar.sort_order}.{theme.sort_order}
-                    </div>
-                    <div className="col-span-3 font-medium text-green-700">
-                      {theme.name}
-                    </div>
-                    <div className="col-span-6 text-gray-700">
-                      {theme.description}
-                    </div>
-                    <div className="col-span-2 text-right">
-                      <Badge className="bg-green-100 text-green-800">
-                        Theme
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Subthemes under this Theme */}
-                {expanded[theme.id] &&
-                  theme.subthemes?.map(
-                    (subtheme: Subtheme, subthemeIndex: number) => (
-                      <div
-                        key={subtheme.id}
-                        className="ml-8 border-t border-gray-100 p-3 grid grid-cols-12 items-center"
-                      >
-                        <div className="col-span-1">
-                          {pillar.sort_order}.{theme.sort_order}.
-                          {subtheme.sort_order}
-                        </div>
-                        <div className="col-span-3 text-purple-700">
-                          {subtheme.name}
-                        </div>
-                        <div className="col-span-6 text-gray-700">
-                          {subtheme.description}
-                        </div>
-                        <div className="col-span-2 text-right">
-                          <Badge className="bg-purple-100 text-purple-800">
-                            Subtheme
-                          </Badge>
-                        </div>
-                      </div>
-                    )
-                  )}
-              </div>
-            ))}
-        </div>
-      ))}
+      {/* Table */}
+      <Card className="mt-4">
+        <CardContent>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="border-b bg-gray-50 text-left">
+                <th className="py-2 pl-4 pr-2">Type / Ref Code</th>
+                <th className="py-2 px-2">Name / Description</th>
+                <th className="py-2 px-2 text-center">Sort Order</th>
+                <th className="py-2 px-2 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>{renderRows(data)}</tbody>
+          </table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
