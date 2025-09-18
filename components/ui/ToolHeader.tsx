@@ -1,49 +1,60 @@
 // /components/ui/ToolHeader.tsx
-import Link from "next/link";
+import React from "react";
 
-export interface Breadcrumb {
-  label: string;
-  href?: string;
-}
-
-export interface ToolHeaderProps {
+export type ToolHeaderProps = {
   title: string;
-  description?: string;
-  breadcrumbs: Breadcrumb[];
-  group: "Configuration" | "Instances";
-}
+  breadcrumbs?: { label: string; href?: string }[];
+  group?: string;
+  actions?: { label: string; onClick: () => void }[]; // ✅ new
+};
 
-export function ToolHeader({ title, description, breadcrumbs, group }: ToolHeaderProps) {
+export function ToolHeader({
+  title,
+  breadcrumbs,
+  group,
+  actions,
+}: ToolHeaderProps) {
   return (
-    <header className="mb-6">
-      {/* Breadcrumbs */}
-      <nav className="text-sm text-gray-500 mb-2 flex items-center space-x-2">
-        {breadcrumbs.map((crumb, idx) => (
-          <span key={idx} className="flex items-center space-x-1">
-            {crumb.href ? (
-              <Link href={crumb.href} className="hover:text-gray-700 underline">
-                {crumb.label}
-              </Link>
-            ) : (
-              <span>{crumb.label}</span>
-            )}
-            {idx < breadcrumbs.length - 1 && <span>/</span>}
-          </span>
-        ))}
-      </nav>
-
-      {/* Title + Group */}
+    <div className="flex flex-col gap-2 border-b pb-4 mb-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
-        <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-          {group}
-        </span>
+        <div>
+          <h1 className="text-2xl font-bold">{title}</h1>
+          {breadcrumbs && (
+            <nav className="text-sm text-gray-500 mt-1">
+              {breadcrumbs.map((bc, i) => (
+                <span key={i}>
+                  {i > 0 && " / "}
+                  {bc.href ? (
+                    <a href={bc.href} className="hover:underline">
+                      {bc.label}
+                    </a>
+                  ) : (
+                    bc.label
+                  )}
+                </span>
+              ))}
+            </nav>
+          )}
+        </div>
+        {actions && (
+          <div className="flex gap-2">
+            {actions.map((a, i) => (
+              <button
+                key={i}
+                onClick={a.onClick}
+                className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm"
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-
-      {/* Optional description */}
-      {description && (
-        <p className="mt-2 text-gray-600 text-sm">{description}</p>
+      {group && (
+        <div className="text-sm text-gray-400 font-medium uppercase">
+          {group}
+        </div>
       )}
-    </header>
+    </div>
   );
 }
