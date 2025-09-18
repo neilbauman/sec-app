@@ -1,26 +1,29 @@
 // /types/framework.ts
 
-export type Subtheme = {
+export interface Subtheme {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   sort_order: number;
-  theme_id: string; // FK → themes.id
-};
+  theme_id: string;
+}
 
-export type Theme = {
+export interface Theme {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   sort_order: number;
-  pillar_id: string; // FK → pillars.id
+  pillar_id: string;
   subthemes?: Subtheme[];
-};
+}
 
-export type Pillar = {
+export interface Pillar {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   sort_order: number;
   themes?: Theme[];
-};
+}
+
+// ✅ Flexible type for the tree structure in the UI
+export type FrameworkNode = Pillar | Theme | Subtheme;
