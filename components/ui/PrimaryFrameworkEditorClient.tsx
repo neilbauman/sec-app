@@ -1,20 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import Badge from "@/components/ui/badge";
-import { ChevronDown, ChevronRight, Edit3, Trash2, Upload, Download } from "lucide-react";
-import ToolHeader from "@/components/ui/ToolHeader";
-
-type FrameworkNode = {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  type: "pillar" | "theme" | "subtheme";
-  refCode: string;
-  children?: FrameworkNode[];
-};
+import { Badge } from "@/components/ui/badge"; // ✅ Badge works now
+import { ChevronDown, ChevronRight, Edit, Trash2 } from "lucide-react";
+import type { FrameworkNode } from "@/types/framework";
+import { ToolHeader } from "@/components/ui/ToolHeader"; // ✅ fixed import
 
 type Props = {
   data: FrameworkNode[];
@@ -23,92 +14,140 @@ type Props = {
 export default function PrimaryFrameworkEditorClient({ data }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const toggleExpand = (id: string) => {
+  const toggle = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const renderRows = (nodes: FrameworkNode[], depth = 0) => {
-    return nodes.map((node) => {
-      const isExpanded = expanded[node.id];
-      const hasChildren = node.children && node.children.length > 0;
-
-      return (
-        <React.Fragment key={node.id}>
-          <tr className="border-b">
-            {/* Expand / Collapse + Type + Ref Code */}
-            <td className="py-2 pl-4 pr-2">
-              <div className="flex items-center" style={{ marginLeft: depth * 16 }}>
-                {hasChildren && (
-                  <button onClick={() => toggleExpand(node.id)} className="mr-1">
-                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                  </button>
-                )}
-                <Badge variant={node.type}>{node.type}</Badge>
-                <span className="ml-2 text-xs text-gray-600">{node.refCode}</span>
-              </div>
-            </td>
-
-            {/* Name + Description */}
-            <td className="py-2 px-2">
-              <div className="font-medium">{node.name}</div>
-              <div className="text-xs text-gray-500">{node.description}</div>
-            </td>
-
-            {/* Sort Order */}
-            <td className="py-2 px-2 text-center">{node.sort_order}</td>
-
-            {/* Actions */}
-            <td className="py-2 px-2 text-center">
-              <button className="p-1 text-blue-600 hover:text-blue-800">
-                <Edit3 size={16} />
-              </button>
-              <button className="ml-2 p-1 text-red-600 hover:text-red-800">
-                <Trash2 size={16} />
-              </button>
-            </td>
-          </tr>
-
-          {/* Children */}
-          {hasChildren && isExpanded && renderRows(node.children!, depth + 1)}
-        </React.Fragment>
-      );
-    });
+  // Compute ref codes dynamically from sort_order + hierarchy
+  const getRefCode = (
+    sortOrder: number,
+    parentCode: string | null = null
+  ): string => {
+    return parentCode ? `${parentCode}.${sortOrder}` : `P${sortOrder}`;
   };
 
   return (
-    <div className="p-6">
-      {/* Breadcrumbs */}
-      <div className="text-sm text-gray-500 mb-2">Home / Configuration / Primary Framework</div>
-
-      {/* Tool Header with CSV import/export */}
+    <div className="space-y-6">
+      {/* ✅ Tool header with breadcrumbs + actions */}
       <ToolHeader
         title="Primary Framework Editor"
-        actions={
-          <div className="flex space-x-2">
-            <button className="flex items-center px-2 py-1 text-sm border rounded hover:bg-gray-50">
-              <Upload size={14} className="mr-1" /> Import CSV
-            </button>
-            <button className="flex items-center px-2 py-1 text-sm border rounded hover:bg-gray-50">
-              <Download size={14} className="mr-1" /> Export CSV
-            </button>
-          </div>
-        }
+        breadcrumbs={[
+          { label: "Configuration", href: "/configuration" },
+          { label: "Primary Framework", href: "/configuration/primary" },
+        ]}
+        actions={[
+          { label: "Import CSV", onClick: () => alert("Import not ready yet") },
+          { label: "Export CSV", onClick: () => alert("Export not ready yet") },
+        ]}
       />
 
-      {/* Table */}
-      <Card className="mt-4">
-        <CardContent>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b bg-gray-50 text-left">
-                <th className="py-2 pl-4 pr-2">Type / Ref Code</th>
-                <th className="py-2 px-2">Name / Description</th>
-                <th className="py-2 px-2 text-center">Sort Order</th>
-                <th className="py-2 px-2 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>{renderRows(data)}</tbody>
-          </table>
+      <Card>
+        <CardContent className="p-4">
+          {/* ✅ Table headings */}
+          <div className="grid grid-cols-12 font-semibold border-b pb-2 mb-2">
+            <div className="col-span-2">Type / Ref Code</div>
+            <div className="col-span-6">Name / Description</div>
+            <div className="col-span-2 text-center">Sort Order</div>
+            <div className="col-span-2 text-right">Actions</div>
+          </div>
+
+          {/* ✅ Rows */}
+          {data.map((pillar) => (
+            <div key={pillar.id} className="space-y-2">
+              {/* Pillar row */}
+              <div className="grid grid-cols-12 items-center border-b py-2">
+                <div className="col-span-2 flex items-center space-x-2">
+                  <button onClick={() => toggle(pillar.id)}>
+                    {expanded[pillar.id] ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                  </button>
+                  <Badge>Pillar {getRefCode(pillar.sort_order)}</Badge>
+                </div>
+                <div className="col-span-6">
+                  <div className="font-medium">{pillar.name}</div>
+                  <div className="text-sm text-gray-600">
+                    {pillar.description}
+                  </div>
+                </div>
+                <div className="col-span-2 text-center">
+                  {pillar.sort_order}
+                </div>
+                <div className="col-span-2 flex justify-end space-x-2">
+                  <Edit className="w-4 h-4 cursor-pointer" />
+                  <Trash2 className="w-4 h-4 cursor-pointer" />
+                </div>
+              </div>
+
+              {/* Themes */}
+              {expanded[pillar.id] &&
+                pillar.themes?.map((theme) => (
+                  <div
+                    key={theme.id}
+                    className="ml-6 grid grid-cols-12 items-center border-b py-2"
+                  >
+                    <div className="col-span-2 flex items-center space-x-2">
+                      <button onClick={() => toggle(theme.id)}>
+                        {expanded[theme.id] ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </button>
+                      <Badge>Theme {getRefCode(theme.sort_order, `${pillar.sort_order}`)}</Badge>
+                    </div>
+                    <div className="col-span-6">
+                      <div className="font-medium">{theme.name}</div>
+                      <div className="text-sm text-gray-600">
+                        {theme.description}
+                      </div>
+                    </div>
+                    <div className="col-span-2 text-center">
+                      {theme.sort_order}
+                    </div>
+                    <div className="col-span-2 flex justify-end space-x-2">
+                      <Edit className="w-4 h-4 cursor-pointer" />
+                      <Trash2 className="w-4 h-4 cursor-pointer" />
+                    </div>
+                  </div>
+                ))}
+
+              {/* Subthemes */}
+              {expanded[pillar.id] &&
+                pillar.themes?.map(
+                  (theme) =>
+                    expanded[theme.id] &&
+                    theme.subthemes?.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="ml-12 grid grid-cols-12 items-center border-b py-2"
+                      >
+                        <div className="col-span-2 flex items-center space-x-2">
+                          <Badge>
+                            Subtheme{" "}
+                            {getRefCode(sub.sort_order, `${pillar.sort_order}.${theme.sort_order}`)}
+                          </Badge>
+                        </div>
+                        <div className="col-span-6">
+                          <div className="font-medium">{sub.name}</div>
+                          <div className="text-sm text-gray-600">
+                            {sub.description}
+                          </div>
+                        </div>
+                        <div className="col-span-2 text-center">
+                          {sub.sort_order}
+                        </div>
+                        <div className="col-span-2 flex justify-end space-x-2">
+                          <Edit className="w-4 h-4 cursor-pointer" />
+                          <Trash2 className="w-4 h-4 cursor-pointer" />
+                        </div>
+                      </div>
+                    ))
+                )}
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>
