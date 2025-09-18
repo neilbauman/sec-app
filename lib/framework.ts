@@ -12,25 +12,25 @@ export async function getFramework() {
       name,
       description,
       sort_order,
-      themes:themes!themes_pillar_id_fkey (
+      themes (
         id,
         ref_code,
         name,
         description,
         sort_order,
-        subthemes:subthemes!subthemes_theme_id_fkey (
+        subthemes (
           id,
           ref_code,
           name,
           description,
           sort_order,
-          indicators:indicators!indicators_subtheme_id_fkey (
+          indicators (
             id,
             ref_code,
             name,
             description,
             sort_order,
-            criteria_levels:criteria_levels!criteria_levels_indicator_id_fkey (
+            criteria_levels (
               id,
               label,
               default_score,
