@@ -1,13 +1,14 @@
 // /app/configuration/primary/page.tsx
+export const dynamic = "force-dynamic";
+
 import { getFramework } from "@/lib/framework";
 import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
-import { ToolHeader } from "@/components/ui/ToolHeader";
+import { ToolsetHeader } from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
-
-export const dynamic = "force-dynamic";
 
 export default async function PrimaryFrameworkPage() {
   const framework = await getFramework();
+
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
     { label: "Configuration", href: "/configuration" },
@@ -15,18 +16,15 @@ export default async function PrimaryFrameworkPage() {
   ]);
 
   return (
-    <main className="p-6 space-y-6">
-      <ToolHeader
+    <main className="p-6">
+      <ToolsetHeader
         title="Primary Framework Editor"
-        description="Define and manage the global SSC framework including pillars, themes, and subthemes."
         group="Configuration"
+        description="Define and manage the global SSC framework including pillars, themes, and subthemes."
         breadcrumbs={breadcrumbs}
-        actions={[
-          { label: "Import CSV" },
-          { label: "Export CSV" },
-        ]}
       />
-      <PrimaryFrameworkEditorClient framework={framework} />
+
+      <PrimaryFrameworkEditorClient data={framework} />
     </main>
   );
 }
