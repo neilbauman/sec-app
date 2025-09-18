@@ -1,82 +1,64 @@
 // /components/ui/ToolHeader.tsx
 "use client";
 
-import { Layers } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import Link from "next/link";
+import { Breadcrumb } from "@/lib/breadcrumbs";
 
-export type Breadcrumb = {
-  label: string;
-  href?: string;
-};
-
-export type ToolHeaderProps = {
-  group?: string;
-  groupIcon?: LucideIcon;
+export interface ToolHeaderProps {
   title: string;
   description?: string;
   breadcrumbs: Breadcrumb[];
-  actions?: { label: string }[]; // ✅ allow static actions
-};
+  group: string;
+  groupIcon?: React.ReactNode;
+}
 
 export function ToolHeader({
-  group,
-  groupIcon: GroupIcon,
   title,
   description,
   breadcrumbs,
-  actions,
+  group,
+  groupIcon,
 }: ToolHeaderProps) {
   return (
     <div className="mb-6">
-      {/* Global toolset title */}
-      <div className="flex items-center space-x-2 mb-2">
-        <Layers className="w-5 h-5 text-orange-700" />
-        <h1 className="text-lg font-bold text-gray-900">
-          Shelter and Settlement Severity Classification Toolset
-        </h1>
+      {/* Toolset Title */}
+      <div className="flex items-center space-x-2 text-xl font-semibold text-gray-800">
+        <span className="text-rust-600">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path d="M3 7l9-4 9 4-9 4-9-4z" />
+            <path d="M3 17l9 4 9-4" />
+            <path d="M3 12l9 4 9-4" />
+          </svg>
+        </span>
+        <span>Shelter and Settlement Severity Classification Toolset</span>
       </div>
 
-      {/* Group row (optional) */}
-      {group && (
-        <div className="flex items-center space-x-2 mb-2">
-          {GroupIcon && <GroupIcon className="w-4 h-4 text-gray-600" />}
-          <h2 className="text-md font-semibold text-gray-700">{group}</h2>
-        </div>
+      {/* Group */}
+      <div className="flex items-center mt-2 space-x-2 text-gray-600">
+        {groupIcon && <span className="text-teal-600">{groupIcon}</span>}
+        <span className="font-medium">{group}</span>
+      </div>
+
+      {/* Page Title */}
+      <h1 className="text-2xl font-bold mt-2">{title}</h1>
+      {description && (
+        <p className="text-gray-600 text-sm mt-1">{description}</p>
       )}
 
-      {/* Page title + description + static actions */}
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-          {description && <p className="text-sm text-gray-600">{description}</p>}
-        </div>
-        {actions && actions.length > 0 && (
-          <div className="flex gap-2">
-            {actions.map((a, i) => (
-              <span
-                key={i}
-                className="px-2 py-1 text-xs font-medium text-gray-700 border rounded bg-gray-100"
-              >
-                {a.label}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Breadcrumbs */}
-      <div className="text-sm text-gray-500 space-x-1">
-        {breadcrumbs.map((crumb, i) => (
-          <span key={i}>
-            {crumb.href ? (
-              <Link href={crumb.href} className="text-blue-600 hover:underline">
-                {crumb.label}
-              </Link>
-            ) : (
-              <span>{crumb.label}</span>
-            )}
-            {i < breadcrumbs.length - 1 && " / "}
+      <div className="text-sm text-blue-600 mt-2 space-x-1">
+        {breadcrumbs.map((crumb, idx) => (
+          <span key={idx}>
+            <a href={crumb.href} className="hover:underline">
+              {crumb.label}
+            </a>
+            {idx < breadcrumbs.length - 1 && " / "}
           </span>
         ))}
       </div>
