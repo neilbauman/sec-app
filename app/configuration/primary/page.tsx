@@ -1,4 +1,6 @@
 // /app/configuration/primary/page.tsx
+export const dynamic = "force-dynamic"; // ✅ Tell Next.js to always render on server
+
 import { getFramework } from "@/lib/framework";
 import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
 import { ToolHeader } from "@/components/ui/ToolHeader";
@@ -9,7 +11,7 @@ export default async function PrimaryFrameworkPage() {
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
     { label: "Configuration", href: "/configuration" },
-    { label: "Primary Framework" },
+    { label: "Primary Framework", href: "/configuration/primary" },
   ]);
 
   return (
