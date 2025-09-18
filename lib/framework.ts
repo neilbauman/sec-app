@@ -2,51 +2,73 @@
 import { createClient } from "@/lib/supabase-server";
 import type { Pillar, Theme, Subtheme } from "@/types/framework";
 
-// Fetch all framework data (pillars → themes → subthemes)
+/**
+ * Fetch the full framework hierarchy:
+ * Pillars → Themes → Subthemes
+ */
 export async function getFramework(): Promise<Pillar[]> {
   const supabase = createClient();
 
-  // Pillars
+  // 1. Get all pillars
   const { data: pillars, error: pillarError } = await supabase
     .from("pillars")
-    .select("id, name, description, sort_order");
+    .select("id, name, description, sort_order")
+    .order("sort_order");
 
-  if (pillarError) throw pillarError;
+  if (pillarError) {
+    console.error("Error fetching pillars:", pillarError);
+    return [];
+  }
 
-  // Themes
+  // 2. Get all themes
   const { data: themes, error: themeError } = await supabase
     .from("themes")
-    .select("id, name, description, sort_order, pillar_id");
+    .select("id, name, description, sort_order, pillar_id")
+    .order("sort_order");
 
-  if (themeError) throw themeError;
+  if (themeError) {
+    console.error("Error fetching themes:", themeError);
+    return [];
+  }
 
-  // Subthemes
+  // 3. Get all subthemes
   const { data: subthemes, error: subthemeError } = await supabase
     .from("subthemes")
-    .select("id, name, description, sort_order, theme_id");
+    .select("id, name, description, sort_order, theme_id")
+    .order("sort_order");
 
-  if (subthemeError) throw subthemeError;
+  if (subthemeError) {
+    console.error("Error fetching subthemes:", subthemeError);
+    return [];
+  }
 
-  // Map themes to pillars
-  const themesByPillar: Record<string, Theme[]> = {};
-  themes?.forEach((theme) => {
-    if (!themesByPillar[theme.pillar_id]) themesByPillar[theme.pillar_id] = [];
-    themesByPillar[theme.pillar_id].push({ ...theme, subthemes: [] });
-  });
-
-  // Map subthemes to themes
+  // 4. Organize subthemes by theme_id
   const subthemesByTheme: Record<string, Subtheme[]> = {};
-  subthemes?.forEach((sub) => {
-    if (!subthemesByTheme[sub.theme_id]) subthemesByTheme[sub.theme_id] = [];
-    subthemesByTheme[sub.theme_id].push(sub);
-  });
+  for (const st of subthemes || []) {
+    if (!subthemesByTheme[st.theme_id]) {
+      subthemesByTheme[st.theme_id] = [];
+    }
+    subthemesByTheme[st.theme_id].push(st);
+  }
 
-  // Nest them
-  return pillars?.map((pillar) => {
-    const pillarThemes = themesByPillar[pillar.id] || [];
-    pillarThemes.forEach((theme) => {
-      theme.subthemes = subthemesByTheme[theme.id] || [];
-    });
-    return { ...pillar, themes: pillarThemes };
-  }) ?? [];
+  // 5. Organize themes by pillar_id and attach subthemes
+  const themesByPillar: Record<string, Theme[]> = {};
+  for (const t of themes || []) {
+    const themeWithSubs: Theme = {
+      ...t,
+      subthemes: subthemesByTheme[t.id] || [],
+    };
+    if (!themesByPillar[t.pillar_id]) {
+      themesByPillar[t.pillar_id] = [];
+    }
+    themesByPillar[t.pillar_id].push(themeWithSubs);
+  }
+
+  // 6. Attach themes to their pillars
+  const framework: Pillar[] = (pillars || []).map((p) => ({
+    ...p,
+    themes: themesByPillar[p.id] || [],
+  }));
+
+  return framework;
 }
