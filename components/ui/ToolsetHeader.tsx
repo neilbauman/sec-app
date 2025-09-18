@@ -1,70 +1,66 @@
-// /components/ui/ToolsetHeader.tsx
-import { LucideIcon } from "lucide-react";
-import type { Breadcrumb } from "@/lib/breadcrumbs";
+// components/ui/ToolsetHeader.tsx
+import { LucideIcon, Layers } from "lucide-react";
+import { toolsetGroups } from "@/lib/toolsetGroups";
+import { Breadcrumb } from "@/components/ui/Breadcrumbs";
 
-export type ToolsetHeaderProps = {
+export interface ToolsetHeaderProps {
   title: string;
   description?: string;
-  group: string;
+  groupKey: keyof typeof toolsetGroups;
   breadcrumbs: Breadcrumb[];
-  icon?: LucideIcon;
-  actions?: { label: string }[]; // ✅ safe, just labels
-};
+  actions?: { label: string }[];
+}
 
 export function ToolsetHeader({
   title,
   description,
-  group,
+  groupKey,
   breadcrumbs,
-  icon: Icon,
   actions,
 }: ToolsetHeaderProps) {
+  const group = toolsetGroups[groupKey];
+  const GroupIcon: LucideIcon = group.icon;
+
   return (
     <header className="mb-6">
-      {/* Toolset title */}
-      <div className="flex items-center space-x-2 text-rust-600 mb-2">
-        {Icon && <Icon className="w-6 h-6" />}
-        <h1 className="text-xl font-bold">Shelter and Settlement Severity Classification Toolset</h1>
-      </div>
+      {/* Always Toolset title */}
+      <h1 className="flex items-center gap-2 text-xl font-semibold">
+        <Layers className="h-5 w-5 text-orange-600" />
+        Shelter and Settlement Severity Classification Toolset
+      </h1>
 
-      {/* Group & page title */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">{group}</h2>
-          <h3 className="text-2xl font-bold">{title}</h3>
-          {description && <p className="text-gray-600">{description}</p>}
-        </div>
+      {/* Group title themed */}
+      <h2 className={`flex items-center gap-2 mt-1 font-semibold ${group.color}`}>
+        <GroupIcon className="h-4 w-4" />
+        {group.label}
+      </h2>
 
-        {/* Optional action buttons */}
-        {actions && actions.length > 0 && (
-          <div className="flex space-x-2">
-            {actions.map((a, i) => (
-              <button
-                key={i}
-                className="px-3 py-1 text-sm border rounded-md hover:bg-gray-100"
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
+      {/* Page title + description */}
+      <div className="mt-2">
+        <h3 className="text-lg font-bold">{title}</h3>
+        {description && (
+          <p className="text-sm text-gray-600">{description}</p>
         )}
       </div>
 
-      {/* Breadcrumb */}
-      <nav className="mt-2 text-sm text-gray-500">
-        {breadcrumbs.map((crumb, i) => (
-          <span key={i}>
-            {i > 0 && " / "}
-            {crumb.href ? (
-              <a href={crumb.href} className="hover:underline">
-                {crumb.label}
-              </a>
-            ) : (
-              crumb.label
-            )}
-          </span>
-        ))}
-      </nav>
+      {/* Breadcrumbs */}
+      <div className="mt-2">
+        <Breadcrumb items={breadcrumbs} />
+      </div>
+
+      {/* Actions */}
+      {actions && (
+        <div className="mt-3 flex gap-2">
+          {actions.map((a) => (
+            <button
+              key={a.label}
+              className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+      )}
     </header>
   );
 }
