@@ -1,16 +1,18 @@
+// app/configuration/comprehensive/page.tsx
 "use client";
 
-import ToolsetHeader, { Breadcrumb } from "@/components/ui/ToolsetHeader";
+import ToolsetHeader from "@/components/ui/ToolsetHeader";
+import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 import { Cog, FileText } from "lucide-react";
 import ComprehensiveFrameworkEditorClient from "@/components/ui/ComprehensiveFrameworkEditorClient";
 
-const breadcrumbs: Breadcrumb[] = [
-  { label: "Dashboard", href: "/" },
-  { label: "Configuration", href: "/configuration" },
-  { label: "Comprehensive Framework Editor" },
-];
-
 export default function ComprehensiveFrameworkPage() {
+  const breadcrumbs = makeBreadcrumbs([
+    { label: "Dashboard", href: "/" },
+    { label: "Configuration", href: "/configuration" },
+    { label: "Comprehensive Framework Editor" },
+  ]);
+
   return (
     <main className="p-6">
       <ToolsetHeader
@@ -21,7 +23,7 @@ export default function ComprehensiveFrameworkPage() {
         icon={<FileText className="w-5 h-5 text-green-600" />}
         breadcrumbs={breadcrumbs}
       />
-      <ComprehensiveFrameworkEditorClient />
+      <ComprehensiveFrameworkEditorClient data={[]} />
     </main>
   );
 }
