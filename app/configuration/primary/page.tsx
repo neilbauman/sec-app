@@ -4,21 +4,28 @@ import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditor
 import { ToolHeader } from "@/components/ui/ToolHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
-export const dynamic = "force-dynamic"; // ✅ force server render
+export const dynamic = "force-dynamic";
 
 export default async function PrimaryFrameworkPage() {
   const framework = await getFramework();
+  console.log("SSR fetched framework:", framework); // <-- Debug log
+
   const breadcrumbs = makeBreadcrumbs([
     { label: "Configuration", href: "/configuration" },
-    { label: "Primary Framework Editor" },
+    { label: "Primary Framework Editor", href: "/configuration/primary" },
   ]);
 
   return (
-    <main className="p-6">
+    <main className="p-6 space-y-6">
       <ToolHeader
         title="Primary Framework Editor"
         group="Configuration"
+        description="Define and manage the global SSC framework including pillars, themes, and subthemes."
         breadcrumbs={breadcrumbs}
+        actions={[
+          { label: "Import CSV" },
+          { label: "Export CSV" },
+        ]}
       />
       <PrimaryFrameworkEditorClient framework={framework} />
     </main>
