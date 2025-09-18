@@ -1,4 +1,3 @@
-// /components/ui/ToolHeader.tsx
 "use client";
 
 import React from "react";
@@ -9,7 +8,7 @@ type ToolHeaderProps = {
   title: string;
   breadcrumbs: Breadcrumb[];
   group: string;
-  actions?: { label: string; onClick: () => void }[];
+  actions?: { label: string }[];
 };
 
 export function ToolHeader({ title, breadcrumbs, group, actions }: ToolHeaderProps) {
@@ -30,7 +29,7 @@ export function ToolHeader({ title, breadcrumbs, group, actions }: ToolHeaderPro
           {actions.map((action, i) => (
             <button
               key={i}
-              onClick={action.onClick}
+              onClick={() => alert(`${action.label} not ready yet`)}
               className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
             >
               {action.label}
