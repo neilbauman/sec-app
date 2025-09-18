@@ -1,37 +1,34 @@
 // /app/about/page.tsx
-import Image from "next/image";
-import { ToolsetHeader } from "@/components/ui/ToolsetHeader";
-import { Info } from "lucide-react";
+import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
-export const dynamic = "force-dynamic";
-
 export default function AboutPage() {
-  const breadcrumbs = makeBreadcrumbs(["dashboard", "about"]);
+  const breadcrumbs = makeBreadcrumbs([
+    { label: "Dashboard", href: "/" },
+    { label: "About" },
+  ]);
 
   return (
     <main className="p-6">
       <ToolsetHeader
         title="About"
-        description="Overview of the Shelter and Settlement Severity Classification toolset."
+        description="Overview of the SSC and toolset."
         group="About"
-        icon={Info}
         breadcrumbs={breadcrumbs}
       />
-
       <div className="mt-6 space-y-4">
         <p>
-          The Shelter and Settlement Severity Classification (SSC) toolset provides a structured
-          way to assess and classify severity across different dimensions of shelter and settlement
-          needs in humanitarian contexts.
+          The Shelter and Settlement Severity Classification (SSC) toolset
+          provides a structured way to assess, configure, and analyze
+          humanitarian shelter and settlement needs.
         </p>
-        <Image
-          src="/placeholder-diagram.png"
-          alt="SSC diagram placeholder"
-          width={800}
-          height={400}
-          className="rounded-xl border shadow"
-        />
+        <p>
+          This page will eventually include diagrams and further explanatory
+          content about the SSC methodology and the toolset’s structure.
+        </p>
+        <div className="bg-gray-100 h-48 flex items-center justify-center text-gray-400">
+          [Placeholder for diagram/image]
+        </div>
       </div>
     </main>
   );
