@@ -1,12 +1,15 @@
 // /app/configuration/comprehensive/page.tsx
-"use client";
-export const dynamic = "force-dynamic";
-
+import { getFramework } from "@/lib/framework";
+import ComprehensiveFrameworkEditorClient from "@/components/ui/ComprehensiveFrameworkEditorClient";
 import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
-import { Cog } from "lucide-react";
+import { FileText, Cog } from "lucide-react";
 
-export default function ComprehensiveFrameworkPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ComprehensiveFrameworkPage() {
+  const framework = await getFramework();
+
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
     { label: "Configuration", href: "/configuration" },
@@ -17,17 +20,13 @@ export default function ComprehensiveFrameworkPage() {
     <main className="p-6">
       <ToolsetHeader
         title="Comprehensive Framework Editor"
-        description="Edit the full SSC framework including all levels and indicators."
+        description="Explore and manage the full SSC framework including indicators."
         group="Configuration"
-        groupIcon={Cog}
+        groupIcon={<Cog className="w-5 h-5 text-green-600" />}
+        icon={FileText}
         breadcrumbs={breadcrumbs}
       />
-      <div className="mt-6 text-gray-700">
-        <p>
-          Comprehensive editor functionality will be developed here, allowing
-          deeper editing of all SSC framework elements and relationships.
-        </p>
-      </div>
+      <ComprehensiveFrameworkEditorClient data={framework} />
     </main>
   );
 }
