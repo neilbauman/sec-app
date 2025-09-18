@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { getFramework } from "@/lib/framework";
 import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
-import { ToolsetHeader } from "@/components/ui/ToolsetHeader";
+import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 import { Cog } from "lucide-react";
 
