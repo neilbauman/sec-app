@@ -1,14 +1,11 @@
-// /app/configuration/primary/page.tsx
-import { getFramework } from "@/lib/framework";
-import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
+// app/configuration/primary/page.tsx
 import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 import { Cog, FileText } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function PrimaryFrameworkPage() {
-  const framework = await getFramework();
+export default function PrimaryFrameworkPage() {
   const breadcrumbs = makeBreadcrumbs([
     { label: "Dashboard", href: "/" },
     { label: "Configuration", href: "/configuration" },
@@ -19,17 +16,13 @@ export default async function PrimaryFrameworkPage() {
     <main className="p-6">
       <ToolsetHeader
         title="Primary Framework Editor"
-        description="Define and manage the global SSC framework including pillars, themes, and subthemes."
+        description="Define and manage the SSC framework pillars, themes, and subthemes."
         group="Configuration"
-        groupIcon={Cog}           // ✅ pass component
-        icon={FileText}           // ✅ page icon
+        groupIcon={Cog}   // ✅ pass component type
+        icon={FileText}
         breadcrumbs={breadcrumbs}
-        actions={[
-          { label: "Import CSV" },
-          { label: "Export CSV" },
-        ]}
       />
-      <PrimaryFrameworkEditorClient data={framework} />
+      <p className="text-gray-500">[Primary framework editor UI goes here]</p>
     </main>
   );
 }
