@@ -2,21 +2,19 @@
 
 export type Breadcrumb = {
   label: string;
-  href: string;
+  href?: string;
 };
 
-export function makeBreadcrumbs(
-  items: { label: string; path: string }[],
-  base: string = ""
-): Breadcrumb[] {
-  return items.map((item, idx) => {
-    const href =
-      base +
-      "/" +
-      items
-        .slice(1, idx + 1)
-        .map((i) => i.path)
-        .join("/");
-    return { label: item.label, href: href || "/" };
-  });
+/**
+ * Utility to create a breadcrumb array.
+ *
+ * Example:
+ *   makeBreadcrumbs([
+ *     { label: "Dashboard", href: "/" },
+ *     { label: "Configuration", href: "/configuration" },
+ *     { label: "Primary Framework Editor" },
+ *   ]);
+ */
+export function makeBreadcrumbs(items: Breadcrumb[]): Breadcrumb[] {
+  return items;
 }
