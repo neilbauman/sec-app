@@ -1,6 +1,4 @@
 // /app/configuration/comprehensive/page.tsx
-export const dynamic = "force-dynamic";
-
 import { ToolHeader } from "@/components/ui/ToolHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 
@@ -17,6 +15,10 @@ export default function ComprehensiveFrameworkPage() {
         title="Comprehensive Framework Editor"
         breadcrumbs={breadcrumbs}
         group="Configuration"
+        actions={[
+          { label: "Import CSV" },
+          { label: "Export CSV" },
+        ]}
       />
       <p className="text-gray-600">Comprehensive editor not yet implemented.</p>
     </main>
