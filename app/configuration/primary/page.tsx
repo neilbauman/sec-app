@@ -2,6 +2,7 @@
 import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 import { Cog, FileText } from "lucide-react";
+import PrimaryFrameworkEditorClient from "@/components/ui/PrimaryFrameworkEditorClient";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +19,11 @@ export default function PrimaryFrameworkPage() {
         title="Primary Framework Editor"
         description="Define and manage the SSC framework pillars, themes, and subthemes."
         group="Configuration"
-        groupIcon={Cog}   // ✅ component type
-        icon={FileText}   // ✅ component type
+        groupIcon={<Cog className="w-5 h-5 text-green-600" />}   // ✅ JSX
+        icon={<FileText className="w-5 h-5 text-rust-600" />}    // ✅ JSX
         breadcrumbs={breadcrumbs}
       />
-      <p className="text-gray-500">[Primary framework editor UI goes here]</p>
+      <PrimaryFrameworkEditorClient />
     </main>
   );
 }
