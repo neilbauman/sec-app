@@ -1,7 +1,7 @@
 // /app/about/page.tsx
 export const dynamic = "force-dynamic";
 
-import { ToolsetHeader } from "@/components/ui/ToolsetHeader";
+import ToolsetHeader from "@/components/ui/ToolsetHeader";
 import { makeBreadcrumbs } from "@/lib/breadcrumbs";
 import { Info } from "lucide-react";
 
