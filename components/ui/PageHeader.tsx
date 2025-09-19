@@ -13,44 +13,41 @@ export default function PageHeader<G extends GroupKey>({
   breadcrumb = [],
 }: PageHeaderProps<G>) {
   const groupData = groups[group];
-  const pageData = groupData.pages[page];
+  const pageData = (groupData.pages as Record<
+    string,
+    { title: string; description: string }
+  >)[page];
+
   const ToolkitIcon = toolkit.icon;
   const GroupIcon = groupData.icon;
 
   return (
-    <div className="border-b border-gray-200 pb-6 mb-6">
-      {/* Toolkit title */}
-      <div className="flex items-center gap-2 mb-2">
-        <ToolkitIcon className="w-7 h-7 text-brand-rust" />
-        <h1 className="text-2xl font-bold text-brand-rust">{toolkit.title}</h1>
+    <div className="space-y-2">
+      <div className="flex items-center space-x-2">
+        <ToolkitIcon className={`w-6 h-6 ${toolkit.color}`} />
+        <h1 className="text-2xl font-bold">{toolkit.title}</h1>
       </div>
-
-      {/* Group */}
-      <div className="flex items-center gap-2 mb-1">
-        <GroupIcon className={`w-6 h-6 ${groupData.color}`} />
-        <h2 className={`text-xl font-semibold ${groupData.color}`}>
-          {groupData.name}
-        </h2>
+      <div className="flex items-center space-x-2">
+        <GroupIcon className={`w-5 h-5 ${groupData.color}`} />
+        <h2 className="text-xl font-semibold">{groupData.name}</h2>
       </div>
-
-      {/* Page */}
-      <h3 className="text-lg font-semibold">{pageData.title}</h3>
-      <p className="text-gray-600">{pageData.description}</p>
-
-      {/* Breadcrumb */}
-      <nav className="mt-3 text-sm flex flex-wrap gap-1">
-        <span className="text-brand-rust">Dashboard</span>
-        {breadcrumb.map((crumb, idx) => (
-          <span key={idx} className="flex items-center gap-1">
-            <span className="text-gray-400">/</span>
-            {idx === breadcrumb.length - 1 ? (
-              <span className="font-bold text-brand-rust">{crumb.label}</span>
+      <h3 className="text-lg font-medium">{pageData.title}</h3>
+      <nav className="text-sm text-brand-rust">
+        {[
+          { label: "Dashboard", href: "/" },
+          ...breadcrumb,
+          { label: pageData.title },
+        ].map((crumb, idx, arr) => (
+          <span key={idx}>
+            {idx > 0 && " / "}
+            {idx === arr.length - 1 ? (
+              <span className="font-bold">{crumb.label}</span>
             ) : crumb.href ? (
-              <a href={crumb.href} className="text-brand-rust hover:underline">
+              <Link href={crumb.href} className="hover:underline">
                 {crumb.label}
-              </a>
+              </Link>
             ) : (
-              <span className="text-brand-rust">{crumb.label}</span>
+              crumb.label
             )}
           </span>
         ))}
