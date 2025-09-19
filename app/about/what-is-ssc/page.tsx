@@ -16,17 +16,13 @@ export default function WhatIsSSCPage() {
 
       <div className="prose max-w-none">
         <p>
-          <strong>What is SSC?</strong> The Shelter and Settlement Severity
-          Classification (SSC) is a structured framework used to assess and
-          classify humanitarian shelter and settlement needs.
+          The Shelter and Settlement Severity Classification (SSC) is a standardized methodology to assess the
+          humanitarian needs of affected populations. It defines clear levels of severity, making analysis comparable
+          across regions and over time.
         </p>
         <p>
-          Placeholder content: Explain core concepts, methodology, and how SSC
-          relates to other humanitarian classification systems.
-        </p>
-        <p>
-          Visuals or diagrams may be added here to explain the framework in a
-          user-friendly way.
+          SSC builds on indicator frameworks and agreed benchmarks, supporting decision-makers in prioritizing
+          interventions and resources.
         </p>
       </div>
     </div>
