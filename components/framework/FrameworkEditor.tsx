@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react';
 import { getFrameworkTree, addPillar, addTheme, addSubtheme } from '@/lib/hooks/useFramework';
 import { withRefCodes } from '@/lib/refCodes';
 import type { FrameworkTree, Pillar, Theme, Subtheme } from '@/types/framework';
-import { Pencil, Trash2, Plus } from 'lucide-react';
+import { Pencil, Trash2, Plus, ChevronRight, ChevronDown } from 'lucide-react';
 
 export default function FrameworkEditor() {
   const [tree, setTree] = useState<FrameworkTree>({ pillars: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // expand state: reset on refresh/load
+  const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
 
   async function refresh() {
     setLoading(true);
@@ -17,6 +20,7 @@ export default function FrameworkEditor() {
     try {
       const raw = await getFrameworkTree();
       setTree(withRefCodes(raw));
+      setExpanded({}); // reset to collapsed
     } catch (e: any) {
       setError(e.message ?? 'Failed to load framework');
     } finally {
@@ -27,6 +31,10 @@ export default function FrameworkEditor() {
   useEffect(() => {
     refresh();
   }, []);
+
+  function toggleExpand(id: string) {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
 
   return (
     <div className="space-y-4">
@@ -42,13 +50,19 @@ export default function FrameworkEditor() {
           <tr className="border-b bg-gray-50 text-left text-sm font-semibold text-gray-700">
             <th className="p-2">Type / Ref Code</th>
             <th className="p-2">Name / Description</th>
-            <th className="p-2 w-24">Sort Order</th>
+            <th className="p-2 w-24 text-center">Sort Order</th>
             <th className="p-2 w-32 text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
           {tree.pillars.map((pillar) => (
-            <PillarRow key={pillar.id} pillar={pillar} onChanged={refresh} />
+            <PillarRow
+              key={pillar.id}
+              pillar={pillar}
+              expanded={expanded}
+              toggleExpand={toggleExpand}
+              onChanged={refresh}
+            />
           ))}
         </tbody>
       </table>
@@ -56,91 +70,160 @@ export default function FrameworkEditor() {
   );
 }
 
-function PillarRow({ pillar, onChanged }: { pillar: Pillar; onChanged: () => void }) {
+function PillarRow({
+  pillar,
+  expanded,
+  toggleExpand,
+  onChanged,
+}: {
+  pillar: Pillar;
+  expanded: { [key: string]: boolean };
+  toggleExpand: (id: string) => void;
+  onChanged: () => void;
+}) {
   return (
     <>
       <tr className="border-b">
         <td className="p-2 align-top">
+          <button onClick={() => toggleExpand(pillar.id)} className="mr-1">
+            {expanded[pillar.id] ? (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            )}
+          </button>
           <span className="inline-flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Pillar</span>
+            <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+              Pillar
+            </span>
             <span className="text-xs text-gray-500">{pillar.ref_code}</span>
           </span>
         </td>
         <td className="p-2 align-top">
           <div className="font-medium">{pillar.name}</div>
-          {pillar.description && <div className="text-sm text-gray-600 italic">{pillar.description}</div>}
+          {pillar.description && (
+            <div className="text-sm text-gray-600 italic">{pillar.description}</div>
+          )}
         </td>
-        <td className="p-2 align-top">{pillar.sort_order}</td>
+        <td className="p-2 text-center align-top">{pillar.sort_order}</td>
         <td className="p-2 align-top">
           <div className="flex justify-end gap-2">
-            <button className="p-1 hover:bg-gray-100 rounded" title="Edit"><Pencil className="w-4 h-4 text-gray-600" /></button>
-            <button className="p-1 hover:bg-gray-100 rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-600" /></button>
+            <button className="p-1 hover:bg-gray-100 rounded" title="Edit">
+              <Pencil className="w-4 h-4 text-gray-600" />
+            </button>
+            <button className="p-1 hover:bg-gray-100 rounded" title="Delete">
+              <Trash2 className="w-4 h-4 text-red-600" />
+            </button>
             <AddThemeForm pillarId={pillar.id} onAdded={onChanged} />
           </div>
         </td>
       </tr>
-      {(pillar.themes ?? []).map((theme) => (
-        <ThemeRow key={theme.id} theme={theme} pillar={pillar} onChanged={onChanged} />
-      ))}
+      {expanded[pillar.id] &&
+        (pillar.themes ?? []).map((theme) => (
+          <ThemeRow
+            key={theme.id}
+            theme={theme}
+            pillar={pillar}
+            expanded={expanded}
+            toggleExpand={toggleExpand}
+            onChanged={onChanged}
+          />
+        ))}
     </>
   );
 }
 
-function ThemeRow({ theme, pillar, onChanged }: { theme: Theme; pillar: Pillar; onChanged: () => void }) {
+function ThemeRow({
+  theme,
+  pillar,
+  expanded,
+  toggleExpand,
+  onChanged,
+}: {
+  theme: Theme;
+  pillar: Pillar;
+  expanded: { [key: string]: boolean };
+  toggleExpand: (id: string) => void;
+  onChanged: () => void;
+}) {
   return (
     <>
       <tr className="border-b">
-        <td className="p-2 pl-8 align-top">
+        <td className="p-2 pl-4 align-top">
+          <button onClick={() => toggleExpand(theme.id)} className="mr-1">
+            {expanded[theme.id] ? (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            )}
+          </button>
           <span className="inline-flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Theme</span>
+            <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+              Theme
+            </span>
             <span className="text-xs text-gray-500">{theme.ref_code}</span>
           </span>
         </td>
-        <td className="p-2 align-top">
+        <td className="p-2 pl-4 align-top">
           <div className="font-medium">{theme.name}</div>
-          {theme.description && <div className="text-sm text-gray-600 italic">{theme.description}</div>}
+          {theme.description && (
+            <div className="text-sm text-gray-600 italic">{theme.description}</div>
+          )}
         </td>
-        <td className="p-2 align-top">{theme.sort_order}</td>
+        <td className="p-2 text-center align-top">{theme.sort_order}</td>
         <td className="p-2 align-top">
           <div className="flex justify-end gap-2">
-            <button className="p-1 hover:bg-gray-100 rounded" title="Edit"><Pencil className="w-4 h-4 text-gray-600" /></button>
-            <button className="p-1 hover:bg-gray-100 rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-600" /></button>
+            <button className="p-1 hover:bg-gray-100 rounded" title="Edit">
+              <Pencil className="w-4 h-4 text-gray-600" />
+            </button>
+            <button className="p-1 hover:bg-gray-100 rounded" title="Delete">
+              <Trash2 className="w-4 h-4 text-red-600" />
+            </button>
             <AddSubthemeForm themeId={theme.id} onAdded={onChanged} />
           </div>
         </td>
       </tr>
-      {(theme.subthemes ?? []).map((sub) => (
-        <SubthemeRow key={sub.id} subtheme={sub} pillar={pillar} theme={theme} onChanged={onChanged} />
-      ))}
+      {expanded[theme.id] &&
+        (theme.subthemes ?? []).map((sub) => (
+          <SubthemeRow key={sub.id} subtheme={sub} onChanged={onChanged} />
+        ))}
     </>
   );
 }
 
-function SubthemeRow({ subtheme, pillar, theme, onChanged }: { subtheme: Subtheme; pillar: Pillar; theme: Theme; onChanged: () => void }) {
+function SubthemeRow({ subtheme, onChanged }: { subtheme: Subtheme; onChanged: () => void }) {
   return (
     <tr className="border-b">
-      <td className="p-2 pl-16 align-top">
+      <td className="p-2 pl-8 align-top">
         <span className="inline-flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Subtheme</span>
+          <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+            Subtheme
+          </span>
           <span className="text-xs text-gray-500">{subtheme.ref_code}</span>
         </span>
       </td>
-      <td className="p-2 align-top">
+      <td className="p-2 pl-8 align-top">
         <div className="font-medium">{subtheme.name}</div>
-        {subtheme.description && <div className="text-sm text-gray-600 italic">{subtheme.description}</div>}
+        {subtheme.description && (
+          <div className="text-sm text-gray-600 italic">{subtheme.description}</div>
+        )}
       </td>
-      <td className="p-2 align-top">{subtheme.sort_order}</td>
+      <td className="p-2 text-center align-top">{subtheme.sort_order}</td>
       <td className="p-2 align-top">
         <div className="flex justify-end gap-2">
-          <button className="p-1 hover:bg-gray-100 rounded" title="Edit"><Pencil className="w-4 h-4 text-gray-600" /></button>
-          <button className="p-1 hover:bg-gray-100 rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-600" /></button>
+          <button className="p-1 hover:bg-gray-100 rounded" title="Edit">
+            <Pencil className="w-4 h-4 text-gray-600" />
+          </button>
+          <button className="p-1 hover:bg-gray-100 rounded" title="Delete">
+            <Trash2 className="w-4 h-4 text-red-600" />
+          </button>
         </div>
       </td>
     </tr>
   );
 }
 
-/* --- Inline Add Forms --- */
+/* --- Inline Add Forms (same as before) --- */
 
 function AddPillarForm({ onAdded }: { onAdded: () => void }) {
   const [open, setOpen] = useState(false);
@@ -152,7 +235,9 @@ function AddPillarForm({ onAdded }: { onAdded: () => void }) {
     setBusy(true);
     try {
       await addPillar({ name, description });
-      setOpen(false); setName(''); setDescription('');
+      setOpen(false);
+      setName('');
+      setDescription('');
       onAdded();
     } catch (e: any) {
       alert(e.message ?? 'Failed to add pillar');
@@ -162,15 +247,40 @@ function AddPillarForm({ onAdded }: { onAdded: () => void }) {
   }
 
   if (!open) {
-    return <button className="px-3 py-1.5 rounded-md bg-black text-white" onClick={() => setOpen(true)}>+ Add Pillar</button>;
+    return (
+      <button
+        className="px-3 py-1.5 rounded-md bg-black text-white"
+        onClick={() => setOpen(true)}
+      >
+        + Add Pillar
+      </button>
+    );
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <input className="border rounded px-2 py-1" placeholder="Pillar name" value={name} onChange={e => setName(e.target.value)} />
-      <input className="border rounded px-2 py-1 min-w-[240px]" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
-      <button className="px-3 py-1.5 rounded-md bg-black text-white disabled:opacity-50" disabled={busy || !name.trim()} onClick={submit}>Save</button>
-      <button className="px-3 py-1.5 rounded-md border" onClick={() => setOpen(false)}>Cancel</button>
+      <input
+        className="border rounded px-2 py-1"
+        placeholder="Pillar name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <input
+        className="border rounded px-2 py-1 min-w-[240px]"
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      <button
+        className="px-3 py-1.5 rounded-md bg-black text-white disabled:opacity-50"
+        disabled={busy || !name.trim()}
+        onClick={submit}
+      >
+        Save
+      </button>
+      <button className="px-3 py-1.5 rounded-md border" onClick={() => setOpen(false)}>
+        Cancel
+      </button>
     </div>
   );
 }
@@ -185,7 +295,9 @@ function AddThemeForm({ pillarId, onAdded }: { pillarId: string; onAdded: () => 
     setBusy(true);
     try {
       await addTheme(pillarId, { name, description });
-      setAdding(false); setName(''); setDescription('');
+      setAdding(false);
+      setName('');
+      setDescription('');
       onAdded();
     } catch (e: any) {
       alert(e.message ?? 'Failed to add theme');
@@ -195,15 +307,41 @@ function AddThemeForm({ pillarId, onAdded }: { pillarId: string; onAdded: () => 
   }
 
   if (!adding) {
-    return <button className="p-1 hover:bg-gray-100 rounded" title="Add Theme" onClick={() => setAdding(true)}><Plus className="w-4 h-4 text-green-600" /></button>;
+    return (
+      <button
+        className="p-1 hover:bg-gray-100 rounded"
+        title="Add Theme"
+        onClick={() => setAdding(true)}
+      >
+        <Plus className="w-4 h-4 text-green-600" />
+      </button>
+    );
   }
 
   return (
     <div className="flex gap-2">
-      <input className="border rounded px-2 py-1" placeholder="Theme name" value={name} onChange={e => setName(e.target.value)} />
-      <input className="border rounded px-2 py-1" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
-      <button className="px-2 py-1 rounded bg-black text-white disabled:opacity-50" disabled={busy || !name.trim()} onClick={submit}>Save</button>
-      <button className="px-2 py-1 rounded border" onClick={() => setAdding(false)}>Cancel</button>
+      <input
+        className="border rounded px-2 py-1"
+        placeholder="Theme name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <input
+        className="border rounded px-2 py-1"
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      <button
+        className="px-2 py-1 rounded bg-black text-white disabled:opacity-50"
+        disabled={busy || !name.trim()}
+        onClick={submit}
+      >
+        Save
+      </button>
+      <button className="px-2 py-1 rounded border" onClick={() => setAdding(false)}>
+        Cancel
+      </button>
     </div>
   );
 }
@@ -218,7 +356,9 @@ function AddSubthemeForm({ themeId, onAdded }: { themeId: string; onAdded: () =>
     setBusy(true);
     try {
       await addSubtheme(themeId, { name, description });
-      setAdding(false); setName(''); setDescription('');
+      setAdding(false);
+      setName('');
+      setDescription('');
       onAdded();
     } catch (e: any) {
       alert(e.message ?? 'Failed to add subtheme');
@@ -228,15 +368,16 @@ function AddSubthemeForm({ themeId, onAdded }: { themeId: string; onAdded: () =>
   }
 
   if (!adding) {
-    return <button className="p-1 hover:bg-gray-100 rounded" title="Add Subtheme" onClick={() => setAdding(true)}><Plus className="w-4 h-4 text-green-600" /></button>;
+    return (
+      <button
+        className="p-1 hover:bg-gray-100 rounded"
+        title="Add Subtheme"
+        onClick={() => setAdding(true)}
+      >
+        <Plus className="w-4 h-4 text-green-600" />
+      </button>
+    );
   }
 
   return (
-    <div className="flex gap-2">
-      <input className="border rounded px-2 py-1" placeholder="Subtheme name" value={name} onChange={e => setName(e.target.value)} />
-      <input className="border rounded px-2 py-1" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
-      <button className="px-2 py-1 rounded bg-black text-white disabled:opacity-50" disabled={busy || !name.trim()} onClick={submit}>Save</button>
-      <button className="px-2 py-1 rounded border" onClick={() => setAdding(false)}>Cancel</button>
-    </div>
-  );
-}
+    <div className="flex gap-
