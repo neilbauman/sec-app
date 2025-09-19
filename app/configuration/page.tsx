@@ -1,6 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
+import { toolkit, groups } from "@/lib/headerConfig";
 import { FileText, Settings } from "lucide-react";
 
 export default function ConfigurationPage() {
