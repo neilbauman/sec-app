@@ -13,14 +13,17 @@ export default function PageHeader<G extends keyof typeof groups>({
   breadcrumb,
 }: PageHeaderProps<G>) {
   const groupData = groups[group];
-  const pageData = groupData.pages[page];
+  // Explicit cast to avoid the TS indexing complaint
+  const pageData = (groupData.pages as Record<string, (typeof groupData)["pages"][keyof typeof groupData["pages"]]>)[
+    page as string
+  ];
 
   const ToolkitIcon = toolkit.icon;
   const GroupIcon = groupData.icon;
 
   return (
     <div className="space-y-2">
-      {/* Toolkit title */}
+      {/* Toolkit */}
       <div className="flex items-center gap-2">
         <ToolkitIcon className={`w-6 h-6 ${toolkit.color}`} />
         <h1 className="text-xl font-semibold text-brand-rust">
