@@ -1,88 +1,59 @@
+// components/framework/FrameworkEditor.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import PageHeader from "@/components/ui/PageHeader";
-import { getFrameworkTree, addPillar } from "@/lib/framework-client";
-import { Plus } from "lucide-react";
 
-interface Subtheme {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-interface Theme {
-  id: string;
-  name: string;
-  description?: string;
-  subthemes: Subtheme[];
-}
-
-interface Pillar {
-  id: string;
-  name: string;
-  description?: string;
-  themes: Theme[];
-}
+// Mock framework data (replace with real SSC definitions later)
+const initialPillars = [
+  {
+    id: "pillar-1",
+    name: "Pillar 1: Shelter",
+    themes: [
+      { id: "theme-1", name: "Materials & Construction" },
+      { id: "theme-2", name: "Durability & Safety" },
+    ],
+  },
+  {
+    id: "pillar-2",
+    name: "Pillar 2: Settlement",
+    themes: [
+      { id: "theme-3", name: "Site Planning" },
+      { id: "theme-4", name: "Community Spaces" },
+    ],
+  },
+];
 
 export default function FrameworkEditor() {
-  const [pillars, setPillars] = useState<Pillar[]>([]);
-
-  const refresh = async () => {
-    const data = await getFrameworkTree();
-    setPillars(data);
-  };
-
-  useEffect(() => {
-    refresh();
-  }, []);
-
-  async function handleAddPillar() {
-    await addPillar({
-      name: "New Pillar",
-      description: "Description",
-    });
-    refresh();
-  }
+  const [pillars] = useState(initialPillars);
 
   return (
     <div className="space-y-6">
-      <PageHeader group="configuration" page="primary" />
+      {/* ✅ Header always first */}
+      <PageHeader
+        group="configuration"
+        page="primary"
+        breadcrumb={[
+          { label: "Dashboard", href: "/" },
+          { label: "Configuration", href: "/configuration" },
+          { label: "Primary Framework Editor" },
+        ]}
+      />
 
-      <div className="bg-white shadow rounded-lg p-6 space-y-4">
+      {/* ✅ Main content */}
+      <div className="bg-white shadow rounded-lg p-6 space-y-6">
         {pillars.map((pillar) => (
-          <div key={pillar.id} className="border-b last:border-0 pb-4 last:pb-0">
-            <h2 className="font-semibold text-lg">{pillar.name}</h2>
-            <p className="text-gray-600">{pillar.description}</p>
-
-            <div className="ml-4 mt-2 space-y-2">
+          <div key={pillar.id} className="border-b border-gray-200 pb-4">
+            <h2 className="text-lg font-semibold text-brand-green mb-2">
+              {pillar.name}
+            </h2>
+            <ul className="list-disc list-inside text-gray-700">
               {pillar.themes.map((theme) => (
-                <div key={theme.id}>
-                  <h3 className="font-medium">{theme.name}</h3>
-                  <p className="text-gray-500">{theme.description}</p>
-
-                  <ul className="ml-4 list-disc">
-                    {theme.subthemes.map((sub) => (
-                      <li key={sub.id}>
-                        <span className="font-medium">{sub.name}</span> —{" "}
-                        <span className="text-gray-500">{sub.description}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <li key={theme.id}>{theme.name}</li>
               ))}
-            </div>
+            </ul>
           </div>
         ))}
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          onClick={handleAddPillar}
-          className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          <Plus className="w-4 h-4" /> Add Pillar
-        </button>
       </div>
     </div>
   );
