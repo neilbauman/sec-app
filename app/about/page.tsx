@@ -26,7 +26,7 @@ export default function AboutPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <a
-          href="/about/using-toolset"
+          href="/about/using"
           className="p-4 border rounded-lg shadow-sm hover:shadow transition flex items-start gap-2"
         >
           <BookOpen className="w-6 h-6 text-blue-600" />
