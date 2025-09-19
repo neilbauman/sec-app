@@ -1,24 +1,18 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { toolkit, groups } from "@/lib/headerConfig";
 
 export default function UsingPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        toolkit={toolkit}
-        group={groups.about}
-        page={{
-          title: "Using this Toolset",
-          description: "Guidance for navigating and applying the SSC toolset in practice.",
-        }}
-        breadcrumb={[
-          { label: "Dashboard", href: "/" },
-          { label: "About", href: "/about" },
-          { label: "Using this Toolset" },
-        ]}
-      />
+      <PageHeader group="about" page="using" />
+      <div className="prose max-w-none">
+        <p>
+          This section provides practical guidance on how to navigate, configure, and apply the SSC
+          toolset effectively in different contexts. Step-by-step instructions and tips will help
+          users get started quickly.
+        </p>
+      </div>
     </div>
   );
 }
