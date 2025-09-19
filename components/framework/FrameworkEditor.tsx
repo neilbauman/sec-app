@@ -1,8 +1,7 @@
-// components/framework/FrameworkEditor.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase-browser";
+import { createClient } from "@/lib/supabase-browser";
 import PageHeader from "@/components/ui/PageHeader";
 
 interface Subtheme {
@@ -31,8 +30,9 @@ export default function FrameworkEditor() {
   useEffect(() => {
     async function fetchFramework() {
       setLoading(true);
+      const supabase = createClient();
 
-      // Step 1: fetch pillars
+      // Fetch pillars
       const { data: pillarsData, error: pillarsError } = await supabase
         .from("pillars")
         .select("*")
@@ -44,7 +44,7 @@ export default function FrameworkEditor() {
         return;
       }
 
-      // Step 2: fetch themes
+      // Fetch themes
       const { data: themesData, error: themesError } = await supabase
         .from("themes")
         .select("*")
@@ -56,7 +56,7 @@ export default function FrameworkEditor() {
         return;
       }
 
-      // Step 3: fetch subthemes
+      // Fetch subthemes
       const { data: subthemesData, error: subthemesError } = await supabase
         .from("subthemes")
         .select("*")
@@ -68,7 +68,7 @@ export default function FrameworkEditor() {
         return;
       }
 
-      // Step 4: nest the structure
+      // Nest data
       const structured = (pillarsData || []).map((pillar) => ({
         ...pillar,
         themes: (themesData || [])
@@ -116,9 +116,7 @@ export default function FrameworkEditor() {
 
                 {pillar.themes.map((theme) => (
                   <div key={theme.id} className="ml-4 mb-3">
-                    <h3 className="font-medium text-gray-800">
-                      {theme.name}
-                    </h3>
+                    <h3 className="font-medium text-gray-800">{theme.name}</h3>
                     <ul className="list-disc list-inside ml-4 text-gray-600">
                       {theme.subthemes.map((sub) => (
                         <li key={sub.id}>{sub.name}</li>
