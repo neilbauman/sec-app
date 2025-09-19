@@ -1,5 +1,4 @@
-"use client";
-
+// app/page.tsx
 import PageHeader from "@/components/ui/PageHeader";
 
 export default function DashboardPage() {
@@ -13,7 +12,10 @@ export default function DashboardPage() {
 
       <div className="prose max-w-none">
         <p>
-          Overview of all SSC tools and groups.
+          Welcome to the <strong>Shelter and Settlement Severity Classification Toolset</strong>.
+        </p>
+        <p>
+          Use the navigation to explore SSC groups and tools. More functionality will appear here as we restore the dashboard.
         </p>
       </div>
     </div>
