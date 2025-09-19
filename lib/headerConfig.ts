@@ -1,9 +1,10 @@
-import { Layers, Settings, Info } from "lucide-react";
+// lib/headerConfig.ts
+import { Info, Settings, Map, Layers } from "lucide-react";
 
 export const toolkit = {
   title: "Shelter and Settlement Severity Classification Toolset",
-  icon: Layers,
-  color: "text-orange-600",
+  icon: Layers, // icon component
+  color: "text-brand-rust", // ✅ new rust color
 };
 
 export const groups = {
@@ -21,11 +22,6 @@ export const groups = {
         title: "Using this Toolset",
         description:
           "Guidelines and instructions for using the SSC toolset effectively.",
-      },
-      "what-is-ssc": {
-        title: "What is the SSC?",
-        description:
-          "Background and context on the Shelter and Settlement Severity Classification.",
       },
     },
   },
@@ -46,7 +42,19 @@ export const groups = {
       },
     },
   },
+  dashboard: {
+    name: "Dashboard",
+    icon: Layers,
+    color: "text-brand-rust",
+    pages: {
+      index: {
+        title: "Dashboard",
+        description:
+          "Overview of all SSC tools and groups.",
+      },
+    },
+  },
 } as const;
 
 export type GroupKey = keyof typeof groups;
-export type PageKey<G extends GroupKey> = keyof typeof groups[G]["pages"];
+export type PageKey<G extends GroupKey> = keyof (typeof groups)[G]["pages"];
