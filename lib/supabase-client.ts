@@ -20,7 +20,10 @@ export interface Pillar {
   themes: Theme[];
 }
 
-// This is what FrameworkEditor expects
+/**
+ * Fetch the full SSC framework (pillars → themes → subthemes)
+ * from the Supabase database.
+ */
 export async function fetchFramework(): Promise<Pillar[]> {
   const { data, error } = await supabase
     .from("pillars")
@@ -29,8 +32,8 @@ export async function fetchFramework(): Promise<Pillar[]> {
 
   if (error) {
     console.error("Error fetching framework:", error);
-    throw error;
+    return [];
   }
 
-  return data || [];
+  return (data as Pillar[]) || [];
 }
