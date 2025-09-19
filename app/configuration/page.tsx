@@ -5,12 +5,15 @@ import PageHeader from "@/components/ui/PageHeader";
 export default function ConfigurationPage() {
   return (
     <div className="space-y-6">
-      <PageHeader group="configuration" />
+      <PageHeader
+        group="configuration"
+        page="index"
+        breadcrumb={[{ label: "Dashboard", href: "/" }, { label: "Configuration" }]}
+      />
+
       <div className="prose max-w-none">
         <p>
-          Manage the SSC Configuration group of tools. From here you can access the
-          <strong> Primary Framework Editor</strong>, the <strong>Comprehensive Framework Editor</strong>,
-          and future versioning tools.
+          Manage configuration settings and access framework editors.
         </p>
       </div>
     </div>
