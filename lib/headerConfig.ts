@@ -1,40 +1,36 @@
 // lib/headerConfig.ts
-import type { LucideIcon } from "lucide-react";
 import {
-  Layers,
+  LayoutDashboard,
   Info,
   Settings,
   Globe,
   BarChart3,
 } from "lucide-react";
 
-// Toolkit (title + icon color is the muddy rust)
 export const toolkit = {
-  title:
-    "Shelter and Settlement Severity Classification Toolset",
-  icon: Layers as LucideIcon,
-  color: "text-brand-rust", // from tailwind config
-} as const;
+  title: "Shelter and Settlement Severity Classification Toolset",
+  icon: LayoutDashboard,
+  color: "text-brand-rust",
+};
 
-// Groups + pages (icons are component refs, not JSX)
 export const groups = {
   dashboard: {
     name: "Dashboard",
-    icon: Layers as LucideIcon,
+    icon: LayoutDashboard,
     color: "text-brand-rust",
+    description: "Overview of all SSC tools and groups.",
     pages: {
       index: {
         title: "Dashboard",
-        description:
-          "Overview of all SSC tools and groups.",
+        description: "Overview of all SSC tools and groups.",
       },
     },
   },
-
   about: {
     name: "About",
-    icon: Info as LucideIcon,
-    color: "text-blue-600",
+    icon: Info,
+    color: "text-brand-blue",
+    description: "Background and usage guidance for SSC.",
     pages: {
       index: {
         title: "About the SSC Toolset",
@@ -47,16 +43,17 @@ export const groups = {
           "Guidelines and instructions for using the SSC toolset effectively.",
       },
       "what-is-ssc": {
-        title: "What is the SSC?",
-        description: "High-level overview and background.",
+        title: "What is SSC?",
+        description:
+          "Definition, objectives, and conceptual framework of the SSC toolset.",
       },
     },
   },
-
   configuration: {
-    name: "Configuration",
-    icon: Settings as LucideIcon,
-    color: "text-green-600",
+    name: "SSC Configuration",
+    icon: Settings,
+    color: "text-brand-green",
+    description: "Manage and adjust the global configuration of the SSC toolset.",
     pages: {
       index: {
         title: "SSC Configuration",
@@ -70,32 +67,32 @@ export const groups = {
       },
     },
   },
-
   country: {
     name: "Country Configuration",
-    icon: Globe as LucideIcon,
+    icon: Globe,
     color: "text-purple-600",
+    description: "Set up and manage country-level SSC configurations.",
     pages: {
       index: {
         title: "Country Configuration",
         description:
-          "Manage countries and related settings.",
+          "Set up and manage country-level SSC configurations.",
       },
     },
   },
-
   instances: {
     name: "SSC Instances",
-    icon: BarChart3 as LucideIcon,
+    icon: BarChart3,
     color: "text-orange-600",
+    description: "Manage and analyze SSC instances across contexts.",
     pages: {
       index: {
         title: "SSC Instances",
-        description:
-          "Create and manage SSC instances.",
+        description: "Manage and analyze SSC instances across contexts.",
       },
     },
   },
 } as const;
 
 export type GroupKey = keyof typeof groups;
+export type PageKey<G extends GroupKey> = keyof typeof groups[G]["pages"];
