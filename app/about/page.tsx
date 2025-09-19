@@ -1,65 +1,56 @@
 "use client";
 
-import Link from "next/link";
 import PageHeader from "@/components/ui/PageHeader";
 import { Info, BookOpen, HelpCircle } from "lucide-react";
 
-export default function AboutGroupPage() {
+export default function AboutPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        toolkitTitle="Shelter and Settlement Severity Classification Toolset"
         group={{
           name: "About",
-          icon: <Info className="w-6 h-6 text-blue-500" />,
-          color: "text-blue-500",
+          icon: <Info className="w-5 h-5" />,
+          color: "text-blue-600",
         }}
         page={{
-          title: (
-            <span className="flex items-center gap-2">
-              <Info className="w-6 h-6 text-blue-500" />
-              About the SSC Toolset
-            </span>
-          ),
+          title: "About the SSC Toolset",
           description:
             "Learn about the SSC, its purpose, and how to use this toolset effectively.",
+          icon: <Info className="w-6 h-6" />,
         }}
-        breadcrumb={[{ label: "Dashboard", href: "/" }, { label: "About" }]}
+        breadcrumb={[
+          { label: "Dashboard", href: "/" },
+          { label: "About" },
+        ]}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Using this toolset */}
-        <Link
-          href="/about/using"
-          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a
+          href="/about/using-toolset"
+          className="p-4 border rounded-lg shadow-sm hover:shadow transition flex items-start gap-2"
         >
-          <div className="flex items-center gap-3">
-            <BookOpen className="w-6 h-6 text-blue-500" />
-            <h3 className="font-semibold text-lg text-blue-500">
-              Using this Toolset
-            </h3>
+          <BookOpen className="w-6 h-6 text-blue-600" />
+          <div>
+            <h3 className="font-semibold text-blue-600">Using this Toolset</h3>
+            <p className="text-sm text-gray-600">
+              Guidance on how to navigate and apply the SSC toolset in practice.
+            </p>
           </div>
-          <p className="text-sm text-gray-600 mt-2">
-            Guidance on how to navigate and apply the SSC toolset in practice.
-          </p>
-        </Link>
+        </a>
 
-        {/* What is the SSC? */}
-        <Link
+        <a
           href="/about/what-is-ssc"
-          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
+          className="p-4 border rounded-lg shadow-sm hover:shadow transition flex items-start gap-2"
         >
-          <div className="flex items-center gap-3">
-            <HelpCircle className="w-6 h-6 text-blue-500" />
-            <h3 className="font-semibold text-lg text-blue-500">
-              What is the SSC?
-            </h3>
+          <HelpCircle className="w-6 h-6 text-blue-600" />
+          <div>
+            <h3 className="font-semibold text-blue-600">What is the SSC?</h3>
+            <p className="text-sm text-gray-600">
+              An introduction to the Shelter and Settlement Severity
+              Classification system and its purpose.
+            </p>
           </div>
-          <p className="text-sm text-gray-600 mt-2">
-            An introduction to the Shelter and Settlement Severity
-            Classification system and its purpose.
-          </p>
-        </Link>
+        </a>
       </div>
     </div>
   );
