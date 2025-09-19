@@ -19,9 +19,9 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
       try {
         const data = await fetchFramework();
         setPillars(data ?? []);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load framework data.");
+      } catch (err: any) {
+        console.error("Framework load error:", err);
+        setError(err.message || JSON.stringify(err));
       } finally {
         setLoading(false);
       }
@@ -43,7 +43,12 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
 
       <div className="bg-white shadow rounded-lg p-6 space-y-4">
         {loading && <p className="text-gray-500">Loading framework…</p>}
-        {error && <p className="text-red-600">{error}</p>}
+
+        {error && (
+          <div className="p-3 rounded bg-red-100 text-red-700 whitespace-pre-wrap">
+            {error}
+          </div>
+        )}
 
         {!loading &&
           !error &&
