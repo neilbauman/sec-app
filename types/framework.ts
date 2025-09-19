@@ -1,8 +1,10 @@
-export interface Pillar {
+export interface Subtheme {
   id: string;
+  theme_id: string;
   name: string;
   description?: string;
   sort_order: number;
+  ref_code?: string; // computed at runtime
 }
 
 export interface Theme {
@@ -11,12 +13,19 @@ export interface Theme {
   name: string;
   description?: string;
   sort_order: number;
+  subthemes?: Subtheme[];
+  ref_code?: string; // computed at runtime
 }
 
-export interface Subtheme {
+export interface Pillar {
   id: string;
-  theme_id: string;
   name: string;
   description?: string;
   sort_order: number;
+  themes?: Theme[];
+  ref_code?: string; // computed at runtime
+}
+
+export interface FrameworkTree {
+  pillars: Pillar[];
 }
