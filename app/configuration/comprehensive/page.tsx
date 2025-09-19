@@ -1,29 +1,30 @@
-import ToolsetHeader from "@/components/ui/ToolsetHeader";
-import { makeBreadcrumbs } from "@/lib/breadcrumbs";
-import { Cog } from "lucide-react";
+// app/configuration/comprehensive/page.tsx
+import PageHeader from "@/components/ui/PageHeader";
+import { groups } from "@/lib/headerConfig";
 
-export const dynamic = "force-dynamic";
-
-export default function ComprehensiveFrameworkPage() {
-  const breadcrumbs = makeBreadcrumbs([
-    { label: "Dashboard", href: "/" },
-    { label: "Configuration", href: "/configuration" },
-    { label: "Comprehensive Framework Editor" },
-  ]);
+export default function ComprehensiveFrameworkEditorPage() {
+  const cfg = groups.configuration;
 
   return (
-    <main className="p-6">
-      <ToolsetHeader
-        title="Comprehensive Framework Editor"
-        description="Manage and edit detailed framework elements, indicators, and relationships."
-        group="Configuration"
-        groupIcon={<Cog className="w-5 h-5 text-green-600" />}
-        breadcrumbs={breadcrumbs}
-      />
+    <div className="space-y-6">
+      <PageHeader group="configuration" page="comprehensive" />
 
-      <p className="text-gray-600">
-        Placeholder for the comprehensive framework editor.
-      </p>
-    </main>
+      <div className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
+        <p className="text-gray-700">
+          Placeholder: A comprehensive editor for defining pillars, themes,
+          subthemes, indicators and advanced relationships in the SSC framework.
+        </p>
+        <p className="text-gray-700">
+          When ready, this page can host a richer editor UI. For now, it serves
+          as a placeholder linked from the Configuration group.
+        </p>
+        <a
+          href="/configuration"
+          className={`${cfg.color} hover:underline font-medium`}
+        >
+          ← Back to SSC Configuration
+        </a>
+      </div>
+    </div>
   );
 }
