@@ -1,19 +1,25 @@
 // lib/headerConfig.ts
-import {
-  LayoutDashboard,
-  Info,
-  Settings,
-  Globe,
-  BarChart3,
-} from "lucide-react";
+import { Info, Settings, Globe, BarChart3, LayoutDashboard } from "lucide-react";
 
-export const toolkit = {
-  title: "Shelter and Settlement Severity Classification Toolset",
-  icon: LayoutDashboard,
-  color: "text-brand-rust",
+export type PageInfo = {
+  title: string;
+  description: string;
 };
 
-export const groups = {
+export type GroupInfo = {
+  name: string;
+  icon: any;
+  color: string;
+  description: string;
+  pages: Record<string, PageInfo>;
+};
+
+export const toolkit = {
+  name: "Shelter and Settlement Severity Classification Toolset",
+  icon: LayoutDashboard,
+};
+
+export const groups: Record<string, GroupInfo> = {
   dashboard: {
     name: "Dashboard",
     icon: LayoutDashboard,
@@ -29,41 +35,40 @@ export const groups = {
   about: {
     name: "About",
     icon: Info,
-    color: "text-brand-blue",
+    color: "text-blue-600",
     description: "Background and usage guidance for SSC.",
     pages: {
       index: {
         title: "About the SSC Toolset",
-        description:
-          "Learn about the SSC, its purpose, and how to use this toolset effectively.",
-      },
-      using: {
-        title: "Using this Toolset",
-        description:
-          "Guidelines and instructions for using the SSC toolset effectively.",
+        description: "Learn about the SSC, its purpose, and how to use this toolset effectively.",
       },
       "what-is-ssc": {
         title: "What is SSC?",
-        description:
-          "Definition, objectives, and conceptual framework of the SSC toolset.",
+        description: "Background on the SSC framework and its role in humanitarian response.",
+      },
+      using: {
+        title: "Using the Toolset",
+        description: "Guidelines and instructions for using the SSC toolset effectively.",
       },
     },
   },
   configuration: {
     name: "SSC Configuration",
     icon: Settings,
-    color: "text-brand-green",
+    color: "text-green-600",
     description: "Manage and adjust the global configuration of the SSC toolset.",
     pages: {
       index: {
         title: "SSC Configuration",
-        description:
-          "Manage and adjust the global configuration of the SSC toolset.",
+        description: "Manage SSC configuration and access framework editors.",
       },
       primary: {
         title: "Primary Framework Editor",
-        description:
-          "Define and manage pillars, themes, and subthemes of the SSC framework.",
+        description: "Define and manage pillars, themes, and subthemes of the SSC framework.",
+      },
+      comprehensive: {
+        title: "Comprehensive Framework Editor",
+        description: "Manage detailed framework elements, indicators, and relationships.",
       },
     },
   },
@@ -75,8 +80,7 @@ export const groups = {
     pages: {
       index: {
         title: "Country Configuration",
-        description:
-          "Set up and manage country-level SSC configurations.",
+        description: "Configure SSC for specific countries.",
       },
     },
   },
@@ -88,11 +92,11 @@ export const groups = {
     pages: {
       index: {
         title: "SSC Instances",
-        description: "Manage and analyze SSC instances across contexts.",
+        description: "Access and manage SSC instances across contexts.",
       },
     },
   },
-} as const;
+};
 
 export type GroupKey = keyof typeof groups;
 export type PageKey<G extends GroupKey> = keyof typeof groups[G]["pages"];
