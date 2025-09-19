@@ -1,6 +1,8 @@
-import { ReactNode } from "react";
-import Link from "next/link";
-import { Layers } from "lucide-react";
+'use client';
+
+import { ReactNode } from 'react';
+import Link from 'next/link';
+import { Layers, ChevronRight } from 'lucide-react';
 
 export interface PageHeaderProps {
   toolkitTitle: string;
@@ -16,39 +18,46 @@ export default function PageHeader({
   breadcrumb,
 }: PageHeaderProps) {
   return (
-    <div className="mb-6">
-      {/* Toolkit title */}
-      <div className="flex items-center gap-2 text-sm font-medium text-orange-700">
-        <Layers className="w-4 h-4 text-orange-700" />
-        {toolkitTitle}
-      </div>
-
-      {/* Group */}
-      <div className="mt-2 flex items-center gap-2 text-base font-semibold">
-        <span className={`${group.color}`}>{group.icon}</span>
-        <span className={group.color}>{group.name}</span>
+    <div className="mb-6 border-b pb-4">
+      {/* Context bar */}
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-2 text-orange-700 font-medium">
+          <Layers className="w-4 h-4" />
+          {toolkitTitle}
+        </div>
+        <div className={`flex items-center gap-2 font-semibold ${group.color}`}>
+          {group.icon}
+          <span>{group.name}</span>
+        </div>
       </div>
 
       {/* Page title + description */}
-      <h1 className="mt-1 text-2xl font-bold">{page.title}</h1>
-      {page.description && (
-        <p className="text-gray-600">{page.description}</p>
-      )}
+      <div className="mt-3">
+        <h1 className="text-3xl font-bold">{page.title}</h1>
+        {page.description && (
+          <p className="text-gray-600 mt-1">{page.description}</p>
+        )}
+      </div>
 
       {/* Breadcrumb */}
-      <div className="mt-2 text-sm text-orange-700">
-        {breadcrumb.map((bc, idx) => (
-          <span key={idx}>
-            {bc.href ? (
-              <Link href={bc.href} className="hover:underline">
-                {bc.label}
-              </Link>
-            ) : (
-              <span>{bc.label}</span>
-            )}
-            {idx < breadcrumb.length - 1 && " / "}
-          </span>
-        ))}
+      <div className="mt-3 flex items-center text-sm text-orange-700 space-x-1">
+        {breadcrumb.map((bc, idx) => {
+          const isLast = idx === breadcrumb.length - 1;
+          return (
+            <span key={idx} className="flex items-center gap-1">
+              {bc.href && !isLast ? (
+                <Link href={bc.href} className="hover:underline">
+                  {bc.label}
+                </Link>
+              ) : (
+                <span className={isLast ? 'font-bold' : ''}>{bc.label}</span>
+              )}
+              {!isLast && (
+                <ChevronRight className="w-4 h-4 inline text-orange-700" />
+              )}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
