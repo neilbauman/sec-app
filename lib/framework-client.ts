@@ -1,10 +1,6 @@
 // lib/framework-client.ts
 import { supabase } from "./supabase-client";
 
-/**
- * Fetch framework data (pillars with nested themes, subthemes, indicators).
- * Loosened return type for compatibility with Supabase nested selects.
- */
 export async function fetchFramework(): Promise<any[]> {
   const { data, error } = await supabase
     .from("pillars")
@@ -29,15 +25,7 @@ export async function fetchFramework(): Promise<any[]> {
           theme_code,
           name,
           description,
-          sort_order,
-          indicators (
-            id,
-            ref_code,
-            name,
-            description,
-            level,
-            sort_order
-          )
+          sort_order
         )
       )
     `)
