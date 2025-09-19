@@ -1,77 +1,38 @@
 "use client";
 
-import { ReactNode } from "react";
+import { toolkit, groups } from "@/lib/headerConfig";
 
-interface PageHeaderProps {
-  toolkit: {
-    title: string;
-    icon: ReactNode;
-  };
-  group?: {
-    name: string;
-    icon: ReactNode;
-    color: string;
-  };
-  page?: {
-    name: string;
-    description?: string;
-    icon?: ReactNode;
-  };
-  breadcrumb?: { label: string; href?: string }[];
-}
+type PageHeaderProps = {
+  group: keyof typeof groups;
+  page?: string;
+};
 
-export default function PageHeader({
-  toolkit,
-  group,
-  page,
-  breadcrumb = [],
-}: PageHeaderProps) {
+export default function PageHeader({ group, page }: PageHeaderProps) {
+  const groupData = groups[group];
+  const pageData = page ? groupData.pages?.[page] : null;
+
   return (
     <div className="space-y-3">
       {/* Toolkit */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 text-sm font-semibold text-orange-600">
         {toolkit.icon}
-        <h1 className="text-lg font-semibold text-rust">{toolkit.title}</h1>
+        {toolkit.title}
       </div>
 
       {/* Group */}
-      {group && (
-        <div className="flex items-center gap-2 ml-6">
-          {group.icon}
-          <span className={`font-semibold ${group.color}`}>{group.name}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-2 font-semibold text-lg">
+        {groupData.icon}
+        <span className={groupData.color}>{groupData.name}</span>
+      </div>
 
       {/* Page */}
-      {page && (
-        <div className="ml-6">
-          <div className="flex items-center gap-2">
-            {page.icon}
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              {page.name}
-            </h2>
+      {pageData && (
+        <div>
+          <div className="flex items-center gap-2 text-xl font-bold">
+            {pageData.icon}
+            {pageData.title}
           </div>
-          {page.description && (
-            <p className="text-gray-600">{page.description}</p>
-          )}
-        </div>
-      )}
-
-      {/* Breadcrumb */}
-      {breadcrumb.length > 0 && (
-        <div className="ml-6 flex items-center gap-2 text-sm text-rust font-medium">
-          {breadcrumb.map((item, idx) => (
-            <span key={idx} className="flex items-center gap-2">
-              {item.href ? (
-                <a href={item.href} className="hover:underline">
-                  {item.label}
-                </a>
-              ) : (
-                <span>{item.label}</span>
-              )}
-              {idx < breadcrumb.length - 1 && <span>›</span>}
-            </span>
-          ))}
+          <p className="text-gray-600">{pageData.description}</p>
         </div>
       )}
     </div>
