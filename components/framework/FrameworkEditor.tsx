@@ -67,7 +67,8 @@ export default function FrameworkEditor() {
       {loading && <div className="text-sm text-gray-500">Loading framework…</div>}
       {error && <div className="text-sm text-red-600">Error: {error}</div>}
 
-      <div className="flex items-center justify-between">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-2">
         <div className="flex gap-2">
           <button
             onClick={expandAll}
@@ -83,6 +84,7 @@ export default function FrameworkEditor() {
           </button>
         </div>
         <div className="flex gap-2">
+          <AddPillarForm onAdded={refresh} />
           <button
             className="p-1 hover:bg-gray-100 rounded"
             title="Upload CSV"
@@ -100,15 +102,12 @@ export default function FrameworkEditor() {
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <AddPillarForm onAdded={refresh} />
-      </div>
-
+      {/* Table */}
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b bg-gray-50 text-left text-sm font-semibold text-gray-700">
-            <th className="p-2 w-[20%]">Type / Ref Code</th>
-            <th className="p-2 w-[50%]">Name / Description</th>
+            <th className="p-2 w-[25%]">Type / Ref Code</th>
+            <th className="p-2 w-[45%]">Name / Description</th>
             <th className="p-2 w-[10%] text-center">Sort Order</th>
             <th className="p-2 w-[20%] text-right">Actions</th>
           </tr>
@@ -256,7 +255,7 @@ function SubthemeRow({
 }) {
   return (
     <tr className="border-b">
-      <td className="p-2 pl-8 align-top">
+      <td className="p-2 pl-12 align-top">
         <span className="inline-flex items-center gap-2">
           <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
             Subtheme
@@ -264,7 +263,7 @@ function SubthemeRow({
           <span className="text-xs text-gray-500">{subtheme.ref_code}</span>
         </span>
       </td>
-      <td className="p-2 pl-8 align-top">
+      <td className="p-2 pl-12 align-top">
         <div className="font-medium">{subtheme.name}</div>
         {subtheme.description && (
           <div className="text-sm text-gray-600 italic">{subtheme.description}</div>
@@ -285,7 +284,7 @@ function SubthemeRow({
   );
 }
 
-/* --- Inline Add Forms --- */
+/* --- Inline Add Forms (same as before but styled smaller) --- */
 
 function AddPillarForm({ onAdded }: { onAdded: () => void }) {
   const [open, setOpen] = useState(false);
