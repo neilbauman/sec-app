@@ -34,15 +34,10 @@ export default function FrameworkEditor() {
     setError(null);
     try {
       const raw = await getFrameworkTree();
-      console.log('Raw framework tree:', raw);
-
       const coded = withRefCodes(raw);
-      console.log('With ref codes:', coded);
       setTree(coded);
-
       setExpanded({});
     } catch (e: any) {
-      console.error('Error loading framework:', e);
       setError(e.message ?? 'Failed to load framework');
     } finally {
       setLoading(false);
@@ -97,7 +92,6 @@ export default function FrameworkEditor() {
       {loading && <div className="text-sm text-gray-500">Loading framework…</div>}
       {error && <div className="text-sm text-red-600">Error: {error}</div>}
 
-      {/* Toolbar */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex gap-2">
           <button
@@ -132,7 +126,6 @@ export default function FrameworkEditor() {
         </div>
       </div>
 
-      {/* Table */}
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b bg-gray-50 text-left text-sm font-semibold text-gray-700">
@@ -157,8 +150,6 @@ export default function FrameworkEditor() {
     </div>
   );
 }
-
-/* ---------------- Row + Form components ---------------- */
 
 function PillarRow({
   pillar,
@@ -228,7 +219,7 @@ function ThemeRow({
   return (
     <>
       <tr className="border-b bg-gray-50">
-        <td className="p-2 pl-8 align-top">
+        <td className="p-2 pl-4 align-top">
           <button onClick={() => toggleExpand(theme.id)} className="mr-1">
             {isExpanded ? (
               <ChevronDown className="w-4 h-4 inline" />
@@ -241,7 +232,7 @@ function ThemeRow({
           </span>
           <span className="ml-2 text-xs text-gray-500">{theme.ref_code}</span>
         </td>
-        <td className="p-2">
+        <td className="p-2 pl-4">
           <div className="font-medium">{theme.name}</div>
           <div className="text-sm text-gray-500 italic">{theme.description}</div>
         </td>
@@ -263,13 +254,13 @@ function ThemeRow({
 function SubthemeRow({ subtheme }: { subtheme: Subtheme }) {
   return (
     <tr className="border-b">
-      <td className="p-2 pl-16 align-top">
+      <td className="p-2 pl-8 align-top">
         <span className="inline-block px-2 py-0.5 rounded bg-red-100 text-red-700 text-xs font-medium">
           Subtheme
         </span>
         <span className="ml-2 text-xs text-gray-500">{subtheme.ref_code}</span>
       </td>
-      <td className="p-2">
+      <td className="p-2 pl-8">
         <div className="font-medium">{subtheme.name}</div>
         <div className="text-sm text-gray-500 italic">{subtheme.description}</div>
       </td>
@@ -281,8 +272,6 @@ function SubthemeRow({ subtheme }: { subtheme: Subtheme }) {
     </tr>
   );
 }
-
-/* ---------------- Add forms ---------------- */
 
 function AddPillarForm({ onAdded }: { onAdded: () => void }) {
   async function handleAdd() {
