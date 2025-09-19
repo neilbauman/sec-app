@@ -205,7 +205,7 @@ function ThemeRow({
   return (
     <>
       <tr className="border-b bg-gray-50">
-        <td className="py-2 pr-2 pl-6">
+        <td className="py-2 pr-2 pl-4">
           {theme.subthemes?.length > 0 && (
             <button onClick={() => toggle(id)} className="p-1">
               <ChevronRight
@@ -216,13 +216,13 @@ function ThemeRow({
             </button>
           )}
         </td>
-        <td className="py-2 pr-4 whitespace-nowrap pl-6">
+        <td className="py-2 pr-4 whitespace-nowrap pl-4">
           <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
             Theme
           </span>
           <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
         </td>
-        <td className="py-2 pr-4 pl-6">
+        <td className="py-2 pr-4 pl-4">
           <div className="font-medium">{theme.name}</div>
           {theme.description && (
             <div className="text-gray-500 text-xs mt-0.5">{theme.description}</div>
@@ -258,14 +258,14 @@ function SubthemeRow({
 
   return (
     <tr className="border-b bg-gray-100">
-      <td className="py-2 pr-2 pl-12"></td>
-      <td className="py-2 pr-4 whitespace-nowrap pl-12">
+      <td className="py-2 pr-2 pl-8"></td>
+      <td className="py-2 pr-4 whitespace-nowrap pl-8">
         <span className="inline-block bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full">
           Subtheme
         </span>
         <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
       </td>
-      <td className="py-2 pr-4 pl-12">
+      <td className="py-2 pr-4 pl-8">
         <div>{sub.name}</div>
         {sub.description && (
           <div className="text-gray-500 text-xs mt-0.5">{sub.description}</div>
