@@ -1,10 +1,10 @@
 // lib/headerConfig.ts
-import { Layers, Info, Settings, Globe, Server } from "lucide-react";
+import { Layers, Info, Settings, Globe, BarChart2 } from "lucide-react";
 
 export const toolkit = {
   title: "Shelter and Settlement Severity Classification Toolset",
   icon: Layers,
-  color: "text-brand-rust", // defined in tailwind.config.js
+  color: "text-brand-rust", // ✅ uses the muddy red defined in tailwind.config.js
 };
 
 export const groups = {
@@ -22,7 +22,7 @@ export const groups = {
   about: {
     name: "About",
     icon: Info,
-    color: "text-brand-blue",
+    color: "text-blue-600",
     pages: {
       index: {
         title: "About the SSC Toolset",
@@ -35,15 +35,16 @@ export const groups = {
           "Guidelines and instructions for using the SSC toolset effectively.",
       },
       "what-is-ssc": {
-        title: "What is the SSC?",
-        description: "Background and explanation of the SSC framework.",
+        title: "What is SSC?",
+        description:
+          "Background on the SSC framework and its role in humanitarian response.",
       },
     },
   },
   configuration: {
     name: "Configuration",
     icon: Settings,
-    color: "text-brand-green",
+    color: "text-green-600",
     pages: {
       index: {
         title: "SSC Configuration",
@@ -58,36 +59,35 @@ export const groups = {
       comprehensive: {
         title: "Comprehensive Framework Editor",
         description:
-          "Manage and edit detailed framework elements, indicators, and relationships.",
+          "Manage detailed framework elements, indicators, and relationships.",
       },
     },
   },
   country: {
     name: "Country Configuration",
     icon: Globe,
-    color: "text-brand-blue",
+    color: "text-purple-600",
     pages: {
       index: {
         title: "Country Configuration",
         description:
-          "Set up country-specific settings and adapt the SSC framework to local contexts.",
+          "Manage SSC settings and framework customization for specific countries.",
       },
     },
   },
   instances: {
     name: "SSC Instances",
-    icon: Server,
-    color: "text-brand-green",
+    icon: BarChart2,
+    color: "text-orange-500",
     pages: {
       index: {
         title: "SSC Instances",
         description:
-          "Create and manage individual SSC instances for different contexts.",
+          "Create, manage, and explore SSC instances across contexts.",
       },
     },
   },
 } as const;
 
-// ✅ Type exports
 export type GroupKey = keyof typeof groups;
 export type PageKey<G extends GroupKey> = keyof (typeof groups)[G]["pages"];
