@@ -1,30 +1,54 @@
-"use client";
+import { ReactNode } from "react";
+import Link from "next/link";
 
-import { FC, ReactNode } from "react";
-
-interface PageHeaderProps {
-  title: string;
-  description?: string;
-  subtitle?: string; // ✅ allow subtitle as alias
-  actions?: ReactNode;
+export interface PageHeaderProps {
+  toolkitTitle: string;
+  group: { name: string; icon: ReactNode; color: string };
+  page: { title: string; description?: string };
+  breadcrumb: { label: string; href?: string }[];
 }
 
-const PageHeader: FC<PageHeaderProps> = ({ title, description, subtitle, actions }) => {
-  const text = description ?? subtitle; // ✅ prefer description, fallback to subtitle
-
+export default function PageHeader({
+  toolkitTitle,
+  group,
+  page,
+  breadcrumb,
+}: PageHeaderProps) {
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          {title}
-        </h1>
-        {text && (
-          <p className="mt-1 text-sm text-gray-600">{text}</p>
-        )}
+    <div className="mb-6">
+      {/* Toolkit title */}
+      <div className="flex items-center gap-2 text-sm font-medium text-orange-700">
+        <span className="inline-block w-4 h-4 bg-orange-700 rounded-sm" />
+        {toolkitTitle}
       </div>
-      {actions && <div className="mt-4 md:mt-0">{actions}</div>}
+
+      {/* Group */}
+      <div className="mt-2 flex items-center gap-2 text-base font-semibold">
+        <span className={`${group.color}`}>{group.icon}</span>
+        <span className={group.color}>{group.name}</span>
+      </div>
+
+      {/* Page title + description */}
+      <h1 className="mt-1 text-2xl font-bold">{page.title}</h1>
+      {page.description && (
+        <p className="text-gray-600">{page.description}</p>
+      )}
+
+      {/* Breadcrumb */}
+      <div className="mt-2 text-sm text-orange-700">
+        {breadcrumb.map((bc, idx) => (
+          <span key={idx}>
+            {bc.href ? (
+              <Link href={bc.href} className="hover:underline">
+                {bc.label}
+              </Link>
+            ) : (
+              <span>{bc.label}</span>
+            )}
+            {idx < breadcrumb.length - 1 && " / "}
+          </span>
+        ))}
+      </div>
     </div>
   );
-};
-
-export default PageHeader;
+}
