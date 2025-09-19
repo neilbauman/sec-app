@@ -1,22 +1,15 @@
 // components/ui/PageHeader.tsx
 import { toolkit, groups } from "@/lib/headerConfig";
 
-type PageHeaderProps<G extends keyof typeof groups> = {
-  group: G;
-  page: keyof (typeof groups)[G]["pages"];
+type PageHeaderProps = {
+  group: keyof typeof groups;
+  page: string;
   breadcrumb?: { label: string; href?: string }[];
 };
 
-export default function PageHeader<G extends keyof typeof groups>({
-  group,
-  page,
-  breadcrumb,
-}: PageHeaderProps<G>) {
+export default function PageHeader({ group, page, breadcrumb }: PageHeaderProps) {
   const groupData = groups[group];
-  // Explicit cast to avoid the TS indexing complaint
-  const pageData = (groupData.pages as Record<string, (typeof groupData)["pages"][keyof typeof groupData["pages"]]>)[
-    page as string
-  ];
+  const pageData = (groupData.pages as Record<string, { title: string; description: string }>)[page];
 
   const ToolkitIcon = toolkit.icon;
   const GroupIcon = groupData.icon;
@@ -52,9 +45,9 @@ export default function PageHeader<G extends keyof typeof groups>({
       {/* Group + Page */}
       <div className="flex items-center gap-2">
         <GroupIcon className={`w-5 h-5 ${groupData.color}`} />
-        <h2 className="text-lg font-semibold">{pageData.title}</h2>
+        <h2 className="text-lg font-semibold">{pageData?.title}</h2>
       </div>
-      <p className="text-gray-600">{pageData.description}</p>
+      <p className="text-gray-600">{pageData?.description}</p>
     </div>
   );
 }
