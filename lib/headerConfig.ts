@@ -15,11 +15,13 @@ export const groups = {
     pages: {
       index: {
         title: "SSC Configuration",
-        description: "Manage configuration settings and access framework editors.",
+        description:
+          "Manage configuration settings and access framework editors.",
       },
       primary: {
         title: "Primary Framework Editor",
-        description: "Define and manage pillars, themes, and subthemes of the SSC framework.",
+        description:
+          "Define and manage pillars, themes, and subthemes of the SSC framework.",
         icon: FileText,
       },
       comprehensive: {
@@ -36,7 +38,8 @@ export const groups = {
     pages: {
       index: {
         title: "About the SSC Toolset",
-        description: "Learn about the SSC, its purpose, and how to use this toolset effectively.",
+        description:
+          "Learn about the SSC, its purpose, and how to use this toolset effectively.",
       },
       using: {
         title: "Using this Toolset",
