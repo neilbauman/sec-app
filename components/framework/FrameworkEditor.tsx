@@ -287,7 +287,11 @@ function SubthemeRow({ subtheme }: { subtheme: Subtheme }) {
 
 function AddPillarForm({ onAdded }: { onAdded: () => void }) {
   async function handleAdd() {
-    await addPillar('New Pillar', 'Description', 999);
+    await addPillar({
+      name: 'New Pillar',
+      description: 'Description',
+      sort_order: 999,
+    });
     onAdded();
   }
   return (
@@ -308,7 +312,11 @@ function AddThemeForm({
   onAdded: () => void;
 }) {
   async function handleAdd() {
-    await addTheme(pillarId, 'New Theme', 'Description', 999);
+    await addTheme(pillarId, {
+      name: 'New Theme',
+      description: 'Description',
+      sort_order: 999,
+    });
     onAdded();
   }
   return (
@@ -326,7 +334,11 @@ function AddSubthemeForm({
   onAdded: () => void;
 }) {
   async function handleAdd() {
-    await addSubtheme(themeId, 'New Subtheme', 'Description', 999);
+    await addSubtheme(themeId, {
+      name: 'New Subtheme',
+      description: 'Description',
+      sort_order: 999,
+    });
     onAdded();
   }
   return (
