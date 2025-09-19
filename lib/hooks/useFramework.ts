@@ -1,6 +1,4 @@
-import { createClient } from '@/lib/supabaseClient';
-
-const supabase = createClient();
+import { supabase } from '@/lib/supabase-browser';
 
 export async function getPillars() {
   const { data, error } = await supabase
