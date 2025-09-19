@@ -1,19 +1,19 @@
 "use client";
 
-import React from "react";
+import React, { ReactNode } from "react";
 import { Layers } from "lucide-react";
 
 export interface PageHeaderProps {
   toolkitTitle?: string;
   group: {
     name: string;
-    icon: React.ReactNode;
+    icon: ReactNode;
     color: string; // color class for group text
   };
   page: {
-    title: string;
+    title: ReactNode; // <-- FIXED (was string)
     description: string;
-    icon?: React.ReactNode;
+    icon?: ReactNode;
   };
   breadcrumb: { label: string; href?: string }[];
 }
