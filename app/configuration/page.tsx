@@ -8,14 +8,9 @@ const tools = [
     description: "Define and manage pillars, themes, and subthemes of the SSC framework.",
   },
   {
-    href: "/configuration/settings",
-    title: "Settings",
-    description: "Adjust global SSC settings and defaults for the toolset.",
-  },
-  {
-    href: "/configuration/advanced",
-    title: "Advanced Configuration",
-    description: "Access advanced and experimental configuration features.",
+    href: "/configuration/comprehensive",
+    title: "Comprehensive Framework Editor",
+    description: "Work with the full SSC framework including all pillars, themes, and subthemes.",
   },
 ];
 
@@ -36,7 +31,7 @@ export default function ConfigurationPage() {
           a tool below to continue.
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {tools.map((tool) => (
           <a
             key={tool.href}
