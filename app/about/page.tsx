@@ -17,6 +17,7 @@ export default function AboutPage() {
           title: 'About the SSC Toolset',
           description:
             'Overview of the Shelter and Settlement Severity Classification toolset.',
+          icon: <Info className="w-6 h-6 text-blue-600" />, // match group color
         }}
         breadcrumb={[
           { label: 'Dashboard', href: '/' },
@@ -24,7 +25,6 @@ export default function AboutPage() {
         ]}
       />
 
-      {/* Content */}
       <p className="text-gray-700">
         The Shelter and Settlement Severity Classification (SSC) Toolset provides a
         structured framework for analyzing humanitarian needs. It helps ensure
