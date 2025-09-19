@@ -11,18 +11,15 @@ const config = {
   theme: {
     extend: {
       fontFamily: {
-        // ✅ Explicitly set sans to Inter + fallback
         sans: ["Inter", ...fontFamily.sans],
       },
       colors: {
-        // ✅ Simple alias for primary usage
-        primary: "#dc2626", // red-600
-        // ✅ Brand palette for explicit references
+        primary: "#b22222", // muddy red (firebrick)
         brand: {
-          blue: "#2563eb", // Tailwind blue-600
-          green: "#16a34a", // Tailwind green-600
-          red: "#dc2626", // Tailwind red-600
-          rust: "#b7410e", // ✅ muddy red
+          blue: "#2563eb",   // Tailwind blue-600
+          green: "#16a34a",  // Tailwind green-600
+          red: "#dc2626",    // Tailwind red-600
+          rust: "#b22222",   // muddy red (firebrick)
         },
       },
     },
