@@ -1,7 +1,7 @@
 // app/page.tsx
-import Link from "next/link";
-import { Info, Settings, Map, Layers } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
+import Link from "next/link";
+import { Info, Settings, Globe, BarChart2 } from "lucide-react";
 
 export default function DashboardPage() {
   return (
@@ -13,77 +13,95 @@ export default function DashboardPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* About */}
-        <Link
-          href="/about"
-          className="block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <Info className="w-6 h-6 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">About</h3>
+        {/* About Group */}
+        <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center space-x-2 mb-2">
+            <Info className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-gray-900">About</h3>
           </div>
-          <p className="text-sm text-gray-600 mb-2">
-            Learn about the SSC, its purpose, and how to use this toolset effectively.
+          <p className="text-sm text-gray-600 mb-3">
+            Learn about the SSC, its purpose, and how to use this toolset
+            effectively.
           </p>
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Link href="/about/what-is-ssc" className="text-blue-600 hover:underline">What is SSC?</Link>
-            <Link href="/about/using" className="text-blue-600 hover:underline">Using the Toolset</Link>
-          </div>
-        </Link>
+          <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+            <li>
+              <Link href="/about/what-is-ssc" className="hover:underline">
+                What is SSC?
+              </Link>
+            </li>
+            <li>
+              <Link href="/about/using" className="hover:underline">
+                Using this Toolset
+              </Link>
+            </li>
+          </ul>
+        </div>
 
-        {/* Configuration */}
-        <Link
-          href="/configuration"
-          className="block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <Settings className="w-6 h-6 text-green-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Configuration</h3>
+        {/* Configuration Group */}
+        <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center space-x-2 mb-2">
+            <Settings className="w-5 h-5 text-green-600" />
+            <h3 className="font-semibold text-gray-900">Configuration</h3>
           </div>
-          <p className="text-sm text-gray-600 mb-2">
-            Manage and adjust the global configuration of the SSC toolset, including framework editors.
+          <p className="text-sm text-gray-600 mb-3">
+            Manage and adjust the global configuration of the SSC toolset,
+            including framework editors.
           </p>
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Link href="/configuration/primary" className="text-green-600 hover:underline">Framework</Link>
-            <Link href="/configuration/settings" className="text-green-600 hover:underline">Settings</Link>
-          </div>
-        </Link>
+          <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+            <li>
+              <Link href="/configuration/primary" className="hover:underline">
+                Primary Framework Editor
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/configuration/comprehensive"
+                className="hover:underline"
+              >
+                Comprehensive Framework Editor
+              </Link>
+            </li>
+          </ul>
+        </div>
 
-        {/* Country Configuration */}
-        <Link
-          href="/country"
-          className="block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <Map className="w-6 h-6 text-red-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Country Configuration</h3>
+        {/* Country Configuration Group */}
+        <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center space-x-2 mb-2">
+            <Globe className="w-5 h-5 text-purple-600" />
+            <h3 className="font-semibold text-gray-900">
+              Country Configuration
+            </h3>
           </div>
-          <p className="text-sm text-gray-600 mb-2">
-            Configure SSC toolsets for specific countries and contexts.
+          <p className="text-sm text-gray-600 mb-3">
+            Manage SSC settings and framework customization for specific
+            countries.
           </p>
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Link href="/country/list" className="text-red-600 hover:underline">Country List</Link>
-            <Link href="/country/new" className="text-red-600 hover:underline">Add Country</Link>
-          </div>
-        </Link>
+          <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+            <li>
+              <Link href="/country" className="hover:underline">
+                Country Configuration
+              </Link>
+            </li>
+          </ul>
+        </div>
 
-        {/* SSC Instances */}
-        <Link
-          href="/instances"
-          className="block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <Layers className="w-6 h-6 text-amber-600" />
-            <h3 className="text-lg font-semibold text-gray-900">SSC Instances</h3>
+        {/* SSC Instances Group */}
+        <div className="p-6 bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center space-x-2 mb-2">
+            <BarChart2 className="w-5 h-5 text-orange-500" />
+            <h3 className="font-semibold text-gray-900">SSC Instances</h3>
           </div>
-          <p className="text-sm text-gray-600 mb-2">
-            View and manage SSC instances for specific operations or organizations.
+          <p className="text-sm text-gray-600 mb-3">
+            Create, manage, and explore SSC instances across contexts.
           </p>
-          <div className="flex flex-wrap gap-2 text-sm">
-            <Link href="/instances/list" className="text-amber-600 hover:underline">All Instances</Link>
-            <Link href="/instances/new" className="text-amber-600 hover:underline">Create New</Link>
-          </div>
-        </Link>
+          <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+            <li>
+              <Link href="/instances" className="hover:underline">
+                Manage SSC Instances
+              </Link>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );
