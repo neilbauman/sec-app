@@ -15,7 +15,6 @@ export default function PageHeader<G extends GroupKey>({
   const groupData = groups[group];
   const pageData = groupData.pages[page];
 
-  // ✅ Default breadcrumb always starts at Dashboard
   const defaultBreadcrumb = [
     { label: "Dashboard", href: "/" },
     { label: groupData.name, href: `/${group}` },
@@ -31,10 +30,8 @@ export default function PageHeader<G extends GroupKey>({
     <div className="space-y-4">
       {/* Toolkit Title */}
       <div className="flex items-center space-x-2">
-        <ToolkitIcon className={`w-6 h-6 text-brand-rust`} />
-        <h1 className="text-xl font-bold text-brand-rust">
-          {toolkit.name}
-        </h1>
+        <ToolkitIcon className="w-6 h-6 text-brand-rust" />
+        <h1 className="text-xl font-bold text-brand-rust">{toolkit.name}</h1>
       </div>
 
       {/* Group Title */}
@@ -51,7 +48,7 @@ export default function PageHeader<G extends GroupKey>({
         <p className="text-gray-600">{pageData.description}</p>
       </div>
 
-      {/* Breadcrumb with borders for visual separation */}
+      {/* Breadcrumb */}
       <nav className="text-sm text-brand-rust border-t border-b border-gray-200 py-2">
         {trail.map((crumb, idx) => (
           <span key={idx}>
