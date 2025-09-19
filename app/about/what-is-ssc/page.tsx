@@ -1,22 +1,22 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { HelpCircle, Info } from "lucide-react";
+import { Info, HelpCircle } from "lucide-react";
 
 export default function WhatIsSSCPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        toolkitTitle="Shelter and Settlement Severity Classification Toolset"
         group={{
           name: "About",
-          icon: <Info className="w-6 h-6 text-blue-500" />,
-          color: "text-blue-500",
+          icon: <Info className="w-5 h-5" />,
+          color: "text-blue-600",
         }}
         page={{
           title: "What is the SSC?",
           description:
             "An introduction to the Shelter and Settlement Severity Classification system and its purpose.",
+          icon: <HelpCircle className="w-6 h-6" />,
         }}
         breadcrumb={[
           { label: "Dashboard", href: "/" },
@@ -25,23 +25,12 @@ export default function WhatIsSSCPage() {
         ]}
       />
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <HelpCircle className="w-5 h-5 text-blue-500" />
-          Overview
-        </h2>
-        <p className="text-gray-700 leading-relaxed">
-          The Shelter and Settlement Severity Classification (SSC) provides a
-          structured framework for analyzing humanitarian needs related to
-          shelter and settlement conditions. It ensures that assessments are
-          consistent and comparable across countries and contexts.
+      <div className="p-4 border rounded-lg shadow-sm bg-white">
+        <p className="text-gray-700">
+          The Shelter and Settlement Severity Classification (SSC) is designed
+          to provide structured, comparable insights into humanitarian shelter
+          needs across countries and contexts. Content to be added here…
         </p>
-
-        <div className="mt-6 h-48 flex items-center justify-center bg-gray-100 rounded">
-          <span className="text-gray-400 text-sm">
-            [Placeholder for conceptual diagram or explanatory infographic]
-          </span>
-        </div>
       </div>
     </div>
   );
