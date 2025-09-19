@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase-browser";
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 
 interface Subtheme {
   id: string;
   name: string;
-  theme_id: string;
 }
 
 interface Theme {
   id: string;
   name: string;
-  pillar_id: string;
   subthemes: Subtheme[];
 }
 
@@ -23,70 +21,15 @@ interface Pillar {
   themes: Theme[];
 }
 
-export default function FrameworkEditor() {
-  const [pillars, setPillars] = useState<Pillar[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function FrameworkEditor({ pillars }: { pillars: Pillar[] }) {
+  const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
+  const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    async function fetchFramework() {
-      setLoading(true);
-      const supabase = createClient();
+  const togglePillar = (id: string) =>
+    setOpenPillars((prev) => ({ ...prev, [id]: !prev[id] }));
 
-      // Fetch pillars
-      const { data: pillarsData, error: pillarsError } = await supabase
-        .from("pillars")
-        .select("*")
-        .order("id");
-
-      if (pillarsError) {
-        console.error("Error fetching pillars:", pillarsError);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch themes
-      const { data: themesData, error: themesError } = await supabase
-        .from("themes")
-        .select("*")
-        .order("id");
-
-      if (themesError) {
-        console.error("Error fetching themes:", themesError);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch subthemes
-      const { data: subthemesData, error: subthemesError } = await supabase
-        .from("subthemes")
-        .select("*")
-        .order("id");
-
-      if (subthemesError) {
-        console.error("Error fetching subthemes:", subthemesError);
-        setLoading(false);
-        return;
-      }
-
-      // Nest data
-      const structured = (pillarsData || []).map((pillar) => ({
-        ...pillar,
-        themes: (themesData || [])
-          .filter((theme) => theme.pillar_id === pillar.id)
-          .map((theme) => ({
-            ...theme,
-            subthemes: (subthemesData || []).filter(
-              (sub) => sub.theme_id === theme.id
-            ),
-          })),
-      }));
-
-      setPillars(structured);
-      setLoading(false);
-    }
-
-    fetchFramework();
-  }, []);
+  const toggleTheme = (id: string) =>
+    setOpenThemes((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
     <div className="space-y-6">
@@ -100,34 +43,63 @@ export default function FrameworkEditor() {
         ]}
       />
 
-      <div className="bg-white shadow rounded-lg p-6 space-y-4">
-        {loading ? (
-          <p className="text-gray-500">Loading framework data…</p>
-        ) : (
-          <div className="space-y-6">
-            {pillars.map((pillar, idx) => (
-              <div
-                key={pillar.id}
-                className="border rounded-lg p-4 bg-gray-50"
-              >
-                <h2 className="text-lg font-semibold text-green-700 mb-2">
-                  Pillar {idx + 1}: {pillar.name}
-                </h2>
+      <div className="space-y-4">
+        {pillars.map((pillar, pIndex) => {
+          const isOpen = openPillars[pillar.id] ?? true;
 
-                {pillar.themes.map((theme) => (
-                  <div key={theme.id} className="ml-4 mb-3">
-                    <h3 className="font-medium text-gray-800">{theme.name}</h3>
-                    <ul className="list-disc list-inside ml-4 text-gray-600">
-                      {theme.subthemes.map((sub) => (
-                        <li key={sub.id}>{sub.name}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
+          return (
+            <div
+              key={pillar.id}
+              className="border rounded-lg bg-white shadow-sm"
+            >
+              <button
+                onClick={() => togglePillar(pillar.id)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left font-semibold text-green-700 border-b"
+              >
+                <span>
+                  Pillar {pIndex + 1}: {pillar.name}
+                </span>
+                {isOpen ? (
+                  <ChevronDown className="w-5 h-5" />
+                ) : (
+                  <ChevronRight className="w-5 h-5" />
+                )}
+              </button>
+
+              {isOpen && (
+                <div className="p-4 space-y-3">
+                  {pillar.themes.map((theme) => {
+                    const themeOpen = openThemes[theme.id] ?? true;
+
+                    return (
+                      <div key={theme.id}>
+                        <button
+                          onClick={() => toggleTheme(theme.id)}
+                          className="flex items-center justify-between w-full text-left font-medium text-gray-800"
+                        >
+                          {theme.name}
+                          {themeOpen ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
+                        </button>
+
+                        {themeOpen && (
+                          <ul className="ml-6 mt-2 list-disc text-gray-700 space-y-1">
+                            {theme.subthemes.map((sub) => (
+                              <li key={sub.id}>{sub.name}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
