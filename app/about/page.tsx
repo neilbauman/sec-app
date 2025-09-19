@@ -15,7 +15,12 @@ export default function AboutGroupPage() {
           color: "text-blue-500",
         }}
         page={{
-          title: "About the SSC Toolset",
+          title: (
+            <span className="flex items-center gap-2">
+              <Info className="w-6 h-6 text-blue-500" />
+              About the SSC Toolset
+            </span>
+          ),
           description:
             "Learn about the SSC, its purpose, and how to use this toolset effectively.",
         }}
