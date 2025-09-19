@@ -106,10 +106,10 @@ export default function FrameworkEditor() {
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b bg-gray-50 text-left text-sm font-semibold text-gray-700">
-            <th className="p-2 w-[25%]">Type / Ref Code</th>
-            <th className="p-2 w-[45%]">Name / Description</th>
+            <th className="p-2 w-[15%]">Type / Ref Code</th>
+            <th className="p-2 w-[55%]">Name / Description</th>
             <th className="p-2 w-[10%] text-center">Sort Order</th>
-            <th className="p-2 w-[20%] text-right">Actions</th>
+            <th className="p-2 w-[15%] text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -284,7 +284,7 @@ function SubthemeRow({
   );
 }
 
-/* --- Inline Add Forms (same as before but styled smaller) --- */
+/* --- Inline Add Forms (smaller styled) --- */
 
 function AddPillarForm({ onAdded }: { onAdded: () => void }) {
   const [open, setOpen] = useState(false);
