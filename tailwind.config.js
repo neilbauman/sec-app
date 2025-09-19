@@ -22,6 +22,7 @@ const config = {
           blue: "#2563eb", // Tailwind blue-600
           green: "#16a34a", // Tailwind green-600
           red: "#dc2626", // Tailwind red-600
+          rust: "#b7410e", // ✅ muddy red
         },
       },
     },
