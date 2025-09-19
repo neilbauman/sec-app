@@ -1,20 +1,31 @@
 // app/configuration/primary/page.tsx
-import PageHeader from "@/components/ui/PageHeader";
+import { createClient } from "@/lib/supabase-server";
 import FrameworkEditor from "@/components/framework/FrameworkEditor";
 
-export default function PrimaryFrameworkEditorPage() {
+export default async function PrimaryFrameworkEditorPage() {
+  const supabase = createClient();
+
+  // Fetch pillars, themes, subthemes
+  const { data: pillarsData, error } = await supabase
+    .from("pillars")
+    .select(
+      `
+      id,
+      name,
+      themes:themes(
+        id,
+        name,
+        subthemes:subthemes(id, name)
+      )
+    `
+    )
+    .order("id");
+
+  if (error) {
+    console.error("Error loading pillars:", error);
+  }
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        group="configuration"
-        page="primary"
-        breadcrumb={[
-          { label: "Dashboard", href: "/" },
-          { label: "Configuration", href: "/configuration" },
-          { label: "Primary Framework Editor" },
-        ]}
-      />
-      <FrameworkEditor />
-    </div>
+    <FrameworkEditor pillars={pillarsData || []} />
   );
 }
