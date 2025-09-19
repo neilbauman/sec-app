@@ -26,8 +26,8 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className="space-y-4">
-      {/* Toolkit title */}
-      <div className="flex items-center gap-2 text-rust font-semibold">
+      {/* Toolkit title (always rust) */}
+      <div className="flex items-center gap-2 font-semibold text-rust">
         <Layers className="w-6 h-6 text-rust" />
         <span>
           {toolkitTitle ??
@@ -56,17 +56,17 @@ export default function PageHeader({
         </div>
       )}
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb (always rust) */}
       {breadcrumb.length > 0 && (
         <nav className="text-sm flex gap-2 text-rust">
           {breadcrumb.map((crumb, idx) => (
             <span key={idx} className="flex items-center gap-2">
               {crumb.href ? (
-                <a href={crumb.href} className="hover:underline">
+                <a href={crumb.href} className="hover:underline text-rust">
                   {crumb.label}
                 </a>
               ) : (
-                <span className="font-semibold">{crumb.label}</span>
+                <span className="font-semibold text-rust">{crumb.label}</span>
               )}
               {idx < breadcrumb.length - 1 && <span>&gt;</span>}
             </span>
