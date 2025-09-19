@@ -1,6 +1,24 @@
 // app/configuration/page.tsx
 import PageHeader from "@/components/ui/PageHeader";
 
+const tools = [
+  {
+    href: "/configuration/primary",
+    title: "Primary Framework Editor",
+    description: "Define and manage pillars, themes, and subthemes of the SSC framework.",
+  },
+  {
+    href: "/configuration/settings",
+    title: "Settings",
+    description: "Adjust global SSC settings and defaults for the toolset.",
+  },
+  {
+    href: "/configuration/advanced",
+    title: "Advanced Configuration",
+    description: "Access advanced and experimental configuration features.",
+  },
+];
+
 export default function ConfigurationPage() {
   return (
     <div className="space-y-6">
@@ -17,23 +35,20 @@ export default function ConfigurationPage() {
           Manage and adjust the global configuration of the SSC toolset. Choose
           a tool below to continue.
         </p>
-        <ul className="list-disc list-inside mt-4">
-          <li>
-            <a href="/configuration/primary" className="text-brand-green font-medium">
-              Primary Framework Editor
-            </a>
-          </li>
-          <li>
-            <a href="/configuration/settings" className="text-brand-green font-medium">
-              Settings
-            </a>
-          </li>
-          <li>
-            <a href="/configuration/advanced" className="text-brand-green font-medium">
-              Advanced Configuration
-            </a>
-          </li>
-        </ul>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {tools.map((tool) => (
+          <a
+            key={tool.href}
+            href={tool.href}
+            className="block rounded-lg border border-gray-200 bg-white p-6 shadow hover:shadow-md transition"
+          >
+            <h3 className="text-lg font-semibold text-brand-green">
+              {tool.title}
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">{tool.description}</p>
+          </a>
+        ))}
       </div>
     </div>
   );
