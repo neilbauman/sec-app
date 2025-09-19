@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { getFrameworkTree, addPillar, addTheme, addSubtheme } from '@/lib/hooks/useFramework';
 import { withRefCodes } from '@/lib/refCodes';
-import type { FrameworkTree, Pillar, Theme } from '@/types/framework';
+import type { FrameworkTree, Pillar, Theme, Subtheme } from '@/types/framework';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 
 export default function FrameworkEditor() {
   const [tree, setTree] = useState<FrameworkTree>({ pillars: [] });
@@ -23,63 +24,123 @@ export default function FrameworkEditor() {
     }
   }
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+  }, []);
 
   return (
     <div className="space-y-4">
       {loading && <div className="text-sm text-gray-500">Loading framework…</div>}
       {error && <div className="text-sm text-red-600">Error: {error}</div>}
 
-      <div className="flex items-center gap-2">
+      <div className="flex justify-end">
         <AddPillarForm onAdded={refresh} />
       </div>
 
-      <div className="space-y-3">
-        {tree.pillars.map((pillar) => (
-          <PillarCard key={pillar.id} pillar={pillar} onChanged={refresh} />
-        ))}
-      </div>
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="border-b bg-gray-50 text-left text-sm font-semibold text-gray-700">
+            <th className="p-2">Type / Ref Code</th>
+            <th className="p-2">Name / Description</th>
+            <th className="p-2 w-24">Sort Order</th>
+            <th className="p-2 w-32 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tree.pillars.map((pillar) => (
+            <PillarRow key={pillar.id} pillar={pillar} onChanged={refresh} />
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function PillarCard({ pillar, onChanged }: { pillar: Pillar; onChanged: () => void }) {
+function PillarRow({ pillar, onChanged }: { pillar: Pillar; onChanged: () => void }) {
   return (
-    <div className="rounded-xl border p-4 bg-white shadow-sm">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="font-semibold">{pillar.ref_code} — {pillar.name}</div>
-          {pillar.description && <div className="text-sm text-gray-600">{pillar.description}</div>}
-        </div>
-        <AddThemeForm pillarId={pillar.id} onAdded={onChanged} />
-      </div>
-      <div className="mt-3 space-y-2">
-        {(pillar.themes ?? []).map((theme) => (
-          <ThemeRow key={theme.id} theme={theme} pillarCode={pillar.ref_code ?? ''} onChanged={onChanged} />
-        ))}
-      </div>
-    </div>
+    <>
+      <tr className="border-b">
+        <td className="p-2 align-top">
+          <span className="inline-flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Pillar</span>
+            <span className="text-xs text-gray-500">{pillar.ref_code}</span>
+          </span>
+        </td>
+        <td className="p-2 align-top">
+          <div className="font-medium">{pillar.name}</div>
+          {pillar.description && <div className="text-sm text-gray-600 italic">{pillar.description}</div>}
+        </td>
+        <td className="p-2 align-top">{pillar.sort_order}</td>
+        <td className="p-2 align-top">
+          <div className="flex justify-end gap-2">
+            <button className="p-1 hover:bg-gray-100 rounded" title="Edit"><Pencil className="w-4 h-4 text-gray-600" /></button>
+            <button className="p-1 hover:bg-gray-100 rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-600" /></button>
+            <AddThemeForm pillarId={pillar.id} onAdded={onChanged} />
+          </div>
+        </td>
+      </tr>
+      {(pillar.themes ?? []).map((theme) => (
+        <ThemeRow key={theme.id} theme={theme} pillar={pillar} onChanged={onChanged} />
+      ))}
+    </>
   );
 }
 
-function ThemeRow({ theme, pillarCode, onChanged }: { theme: Theme; pillarCode: string; onChanged: () => void }) {
+function ThemeRow({ theme, pillar, onChanged }: { theme: Theme; pillar: Pillar; onChanged: () => void }) {
   return (
-    <div className="rounded-lg border p-3 bg-gray-50">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="font-medium">{theme.ref_code} — {theme.name}</div>
-          {theme.description && <div className="text-sm text-gray-600">{theme.description}</div>}
-        </div>
-        <AddSubthemeForm themeId={theme.id} onAdded={onChanged} />
-      </div>
-      <ul className="mt-2 list-disc pl-6 text-sm">
-        {(theme.subthemes ?? []).map((s) => (
-          <li key={s.id}><span className="font-medium">{s.ref_code}</span> — {s.name}</li>
-        ))}
-      </ul>
-    </div>
+    <>
+      <tr className="border-b">
+        <td className="p-2 pl-8 align-top">
+          <span className="inline-flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Theme</span>
+            <span className="text-xs text-gray-500">{theme.ref_code}</span>
+          </span>
+        </td>
+        <td className="p-2 align-top">
+          <div className="font-medium">{theme.name}</div>
+          {theme.description && <div className="text-sm text-gray-600 italic">{theme.description}</div>}
+        </td>
+        <td className="p-2 align-top">{theme.sort_order}</td>
+        <td className="p-2 align-top">
+          <div className="flex justify-end gap-2">
+            <button className="p-1 hover:bg-gray-100 rounded" title="Edit"><Pencil className="w-4 h-4 text-gray-600" /></button>
+            <button className="p-1 hover:bg-gray-100 rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-600" /></button>
+            <AddSubthemeForm themeId={theme.id} onAdded={onChanged} />
+          </div>
+        </td>
+      </tr>
+      {(theme.subthemes ?? []).map((sub) => (
+        <SubthemeRow key={sub.id} subtheme={sub} pillar={pillar} theme={theme} onChanged={onChanged} />
+      ))}
+    </>
   );
 }
+
+function SubthemeRow({ subtheme, pillar, theme, onChanged }: { subtheme: Subtheme; pillar: Pillar; theme: Theme; onChanged: () => void }) {
+  return (
+    <tr className="border-b">
+      <td className="p-2 pl-16 align-top">
+        <span className="inline-flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">Subtheme</span>
+          <span className="text-xs text-gray-500">{subtheme.ref_code}</span>
+        </span>
+      </td>
+      <td className="p-2 align-top">
+        <div className="font-medium">{subtheme.name}</div>
+        {subtheme.description && <div className="text-sm text-gray-600 italic">{subtheme.description}</div>}
+      </td>
+      <td className="p-2 align-top">{subtheme.sort_order}</td>
+      <td className="p-2 align-top">
+        <div className="flex justify-end gap-2">
+          <button className="p-1 hover:bg-gray-100 rounded" title="Edit"><Pencil className="w-4 h-4 text-gray-600" /></button>
+          <button className="p-1 hover:bg-gray-100 rounded" title="Delete"><Trash2 className="w-4 h-4 text-red-600" /></button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/* --- Inline Add Forms --- */
 
 function AddPillarForm({ onAdded }: { onAdded: () => void }) {
   const [open, setOpen] = useState(false);
@@ -100,28 +161,22 @@ function AddPillarForm({ onAdded }: { onAdded: () => void }) {
     }
   }
 
+  if (!open) {
+    return <button className="px-3 py-1.5 rounded-md bg-black text-white" onClick={() => setOpen(true)}>+ Add Pillar</button>;
+  }
+
   return (
-    <div>
-      {!open ? (
-        <button className="px-3 py-1.5 rounded-md bg-black text-white" onClick={() => setOpen(true)}>
-          + Add Pillar
-        </button>
-      ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <input className="border rounded px-2 py-1" placeholder="Pillar name" value={name} onChange={e => setName(e.target.value)} />
-          <input className="border rounded px-2 py-1 min-w-[240px]" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
-          <button className="px-3 py-1.5 rounded-md bg-black text-white disabled:opacity-50" disabled={busy || !name.trim()} onClick={submit}>
-            Save
-          </button>
-          <button className="px-3 py-1.5 rounded-md border" onClick={() => setOpen(false)}>Cancel</button>
-        </div>
-      )}
+    <div className="flex flex-wrap items-center gap-2">
+      <input className="border rounded px-2 py-1" placeholder="Pillar name" value={name} onChange={e => setName(e.target.value)} />
+      <input className="border rounded px-2 py-1 min-w-[240px]" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
+      <button className="px-3 py-1.5 rounded-md bg-black text-white disabled:opacity-50" disabled={busy || !name.trim()} onClick={submit}>Save</button>
+      <button className="px-3 py-1.5 rounded-md border" onClick={() => setOpen(false)}>Cancel</button>
     </div>
   );
 }
 
 function AddThemeForm({ pillarId, onAdded }: { pillarId: string; onAdded: () => void }) {
-  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
@@ -130,7 +185,7 @@ function AddThemeForm({ pillarId, onAdded }: { pillarId: string; onAdded: () => 
     setBusy(true);
     try {
       await addTheme(pillarId, { name, description });
-      setOpen(false); setName(''); setDescription('');
+      setAdding(false); setName(''); setDescription('');
       onAdded();
     } catch (e: any) {
       alert(e.message ?? 'Failed to add theme');
@@ -139,29 +194,22 @@ function AddThemeForm({ pillarId, onAdded }: { pillarId: string; onAdded: () => 
     }
   }
 
+  if (!adding) {
+    return <button className="p-1 hover:bg-gray-100 rounded" title="Add Theme" onClick={() => setAdding(true)}><Plus className="w-4 h-4 text-green-600" /></button>;
+  }
+
   return (
-    <div>
-      {!open ? (
-        <button className="px-2 py-1 rounded border">+ Theme</button>
-      ) : null}
-      <div className="inline-flex items-center gap-2">
-        <button className="px-2 py-1 rounded border" onClick={() => setOpen((v) => !v)}>{open ? 'Close' : '+ Theme'}</button>
-        {open && (
-          <>
-            <input className="border rounded px-2 py-1" placeholder="Theme name" value={name} onChange={e => setName(e.target.value)} />
-            <input className="border rounded px-2 py-1 min-w-[200px]" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
-            <button className="px-2 py-1 rounded bg-black text-white disabled:opacity-50" disabled={busy || !name.trim()} onClick={submit}>
-              Save
-            </button>
-          </>
-        )}
-      </div>
+    <div className="flex gap-2">
+      <input className="border rounded px-2 py-1" placeholder="Theme name" value={name} onChange={e => setName(e.target.value)} />
+      <input className="border rounded px-2 py-1" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
+      <button className="px-2 py-1 rounded bg-black text-white disabled:opacity-50" disabled={busy || !name.trim()} onClick={submit}>Save</button>
+      <button className="px-2 py-1 rounded border" onClick={() => setAdding(false)}>Cancel</button>
     </div>
   );
 }
 
 function AddSubthemeForm({ themeId, onAdded }: { themeId: string; onAdded: () => void }) {
-  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
@@ -170,7 +218,7 @@ function AddSubthemeForm({ themeId, onAdded }: { themeId: string; onAdded: () =>
     setBusy(true);
     try {
       await addSubtheme(themeId, { name, description });
-      setOpen(false); setName(''); setDescription('');
+      setAdding(false); setName(''); setDescription('');
       onAdded();
     } catch (e: any) {
       alert(e.message ?? 'Failed to add subtheme');
@@ -179,18 +227,16 @@ function AddSubthemeForm({ themeId, onAdded }: { themeId: string; onAdded: () =>
     }
   }
 
+  if (!adding) {
+    return <button className="p-1 hover:bg-gray-100 rounded" title="Add Subtheme" onClick={() => setAdding(true)}><Plus className="w-4 h-4 text-green-600" /></button>;
+  }
+
   return (
-    <div className="inline-flex items-center gap-2">
-      <button className="px-2 py-1 rounded border" onClick={() => setOpen((v) => !v)}>{open ? 'Close' : '+ Subtheme'}</button>
-      {open && (
-        <>
-          <input className="border rounded px-2 py-1" placeholder="Subtheme name" value={name} onChange={e => setName(e.target.value)} />
-          <input className="border rounded px-2 py-1 min-w-[200px]" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
-          <button className="px-2 py-1 rounded bg-black text-white disabled:opacity-50" disabled={busy || !name.trim()} onClick={submit}>
-            Save
-          </button>
-        </>
-      )}
+    <div className="flex gap-2">
+      <input className="border rounded px-2 py-1" placeholder="Subtheme name" value={name} onChange={e => setName(e.target.value)} />
+      <input className="border rounded px-2 py-1" placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} />
+      <button className="px-2 py-1 rounded bg-black text-white disabled:opacity-50" disabled={busy || !name.trim()} onClick={submit}>Save</button>
+      <button className="px-2 py-1 rounded border" onClick={() => setAdding(false)}>Cancel</button>
     </div>
   );
 }
