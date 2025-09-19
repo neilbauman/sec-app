@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import Link from "next/link";
+import { Layers } from "lucide-react";
 
 export interface PageHeaderProps {
   toolkitTitle: string;
@@ -18,7 +19,7 @@ export default function PageHeader({
     <div className="mb-6">
       {/* Toolkit title */}
       <div className="flex items-center gap-2 text-sm font-medium text-orange-700">
-        <span className="inline-block w-4 h-4 bg-orange-700 rounded-sm" />
+        <Layers className="w-4 h-4 text-orange-700" />
         {toolkitTitle}
       </div>
 
