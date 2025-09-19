@@ -39,15 +39,11 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
     const ids = new Set<string>();
     pillars.forEach((p: any) => {
       ids.add(`pillar-${p.id}`);
-      p.themes?.forEach((t: any) => {
-        ids.add(`theme-${t.id}`);
-      });
+      p.themes?.forEach((t: any) => ids.add(`theme-${t.id}`));
     });
     setExpanded(ids);
   };
-
   const collapseAll = () => setExpanded(new Set());
-
   const toggle = (id: string) => {
     const next = new Set(expanded);
     if (next.has(id)) next.delete(id);
@@ -164,7 +160,12 @@ function PillarRow({
           </span>
           <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
         </td>
-        <td className="py-2 pr-4 font-semibold">{pillar.name}</td>
+        <td className="py-2 pr-4">
+          <div className="font-semibold">{pillar.name}</div>
+          {pillar.description && (
+            <div className="text-gray-500 text-xs mt-0.5">{pillar.description}</div>
+          )}
+        </td>
         <td className="py-2 pr-4 text-center">{pillar.sort_order}</td>
         <td className="py-2 text-right">—</td>
       </tr>
@@ -221,7 +222,12 @@ function ThemeRow({
           </span>
           <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
         </td>
-        <td className="py-2 pr-4">{theme.name}</td>
+        <td className="py-2 pr-4 pl-6">
+          <div className="font-medium">{theme.name}</div>
+          {theme.description && (
+            <div className="text-gray-500 text-xs mt-0.5">{theme.description}</div>
+          )}
+        </td>
         <td className="py-2 pr-4 text-center">{theme.sort_order}</td>
         <td className="py-2 text-right">—</td>
       </tr>
@@ -259,7 +265,12 @@ function SubthemeRow({
         </span>
         <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
       </td>
-      <td className="py-2 pr-4">{sub.name}</td>
+      <td className="py-2 pr-4 pl-12">
+        <div>{sub.name}</div>
+        {sub.description && (
+          <div className="text-gray-500 text-xs mt-0.5">{sub.description}</div>
+        )}
+      </td>
       <td className="py-2 pr-4 text-center">{sub.sort_order}</td>
       <td className="py-2 text-right">—</td>
     </tr>
