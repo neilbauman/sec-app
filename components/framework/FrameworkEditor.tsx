@@ -7,7 +7,7 @@ import {
   addTheme,
   addSubtheme,
 } from '@/lib/hooks/useFramework';
-// import { withRefCodes } from '@/lib/refCodes'; // temporarily skip
+// import { withRefCodes } from '@/lib/refCodes'; // temporarily skipped for debugging
 import type { FrameworkTree, Pillar, Theme, Subtheme } from '@/types/framework';
 import {
   Pencil,
@@ -36,10 +36,10 @@ export default function FrameworkEditor() {
       const raw = await getFrameworkTree();
       console.log('Raw framework tree:', raw);
 
-      // 🚨 TEMP: skip withRefCodes, just use raw
+      // 🚨 TEMP: skip withRefCodes for now
       setTree(raw);
 
-      // If you want to test with refCodes after confirming raw has data:
+      // Uncomment once we confirm raw has data:
       // const coded = withRefCodes(raw);
       // console.log('With ref codes:', coded);
       // setTree(coded);
@@ -140,10 +140,10 @@ export default function FrameworkEditor() {
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b bg-gray-50 text-left text-sm font-semibold text-gray-700">
-            <th className="p-2 w-[15%]">Type / Ref Code</th>
-            <th className="p-2 w-[55%]">Name / Description</th>
+            <th className="p-2 w-[12%]">Type / Ref Code</th>
+            <th className="p-2 w-[58%]">Name / Description</th>
             <th className="p-2 w-[10%] text-center">Sort Order</th>
-            <th className="p-2 w-[15%] text-right">Actions</th>
+            <th className="p-2 w-[12%] text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -162,5 +162,176 @@ export default function FrameworkEditor() {
   );
 }
 
-/* ---------------- Row + Form components (unchanged) ---------------- */
-// Keep your existing PillarRow, ThemeRow, SubthemeRow, AddPillarForm, AddThemeForm, AddSubthemeForm here
+/* ---------------- Row + Form components ---------------- */
+
+function PillarRow({
+  pillar,
+  expanded,
+  toggleExpand,
+  onChanged,
+}: {
+  pillar: Pillar;
+  expanded: { [key: string]: boolean };
+  toggleExpand: (id: string) => void;
+  onChanged: () => void;
+}) {
+  const isExpanded = expanded[pillar.id];
+  return (
+    <>
+      <tr className="border-b">
+        <td className="p-2 align-top">
+          <button onClick={() => toggleExpand(pillar.id)} className="mr-1">
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 inline" />
+            ) : (
+              <ChevronRight className="w-4 h-4 inline" />
+            )}
+          </button>
+          <span className="inline-block px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-medium">
+            Pillar
+          </span>
+        </td>
+        <td className="p-2">
+          <div className="font-medium">{pillar.name}</div>
+          <div className="text-sm text-gray-500 italic">{pillar.description}</div>
+        </td>
+        <td className="p-2 text-center">{pillar.sort_order}</td>
+        <td className="p-2 text-right flex gap-2 justify-end">
+          <Pencil className="w-4 h-4 cursor-pointer" />
+          <Trash2 className="w-4 h-4 cursor-pointer text-red-600" />
+          <AddThemeForm pillarId={pillar.id} onAdded={onChanged} />
+        </td>
+      </tr>
+      {isExpanded &&
+        (pillar.themes ?? []).map((theme) => (
+          <ThemeRow
+            key={theme.id}
+            theme={theme}
+            expanded={expanded}
+            toggleExpand={toggleExpand}
+            onChanged={onChanged}
+          />
+        ))}
+    </>
+  );
+}
+
+function ThemeRow({
+  theme,
+  expanded,
+  toggleExpand,
+  onChanged,
+}: {
+  theme: Theme;
+  expanded: { [key: string]: boolean };
+  toggleExpand: (id: string) => void;
+  onChanged: () => void;
+}) {
+  const isExpanded = expanded[theme.id];
+  return (
+    <>
+      <tr className="border-b bg-gray-50">
+        <td className="p-2 pl-8 align-top">
+          <button onClick={() => toggleExpand(theme.id)} className="mr-1">
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 inline" />
+            ) : (
+              <ChevronRight className="w-4 h-4 inline" />
+            )}
+          </button>
+          <span className="inline-block px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-medium">
+            Theme
+          </span>
+        </td>
+        <td className="p-2">
+          <div className="font-medium">{theme.name}</div>
+          <div className="text-sm text-gray-500 italic">{theme.description}</div>
+        </td>
+        <td className="p-2 text-center">{theme.sort_order}</td>
+        <td className="p-2 text-right flex gap-2 justify-end">
+          <Pencil className="w-4 h-4 cursor-pointer" />
+          <Trash2 className="w-4 h-4 cursor-pointer text-red-600" />
+          <AddSubthemeForm themeId={theme.id} onAdded={onChanged} />
+        </td>
+      </tr>
+      {isExpanded &&
+        (theme.subthemes ?? []).map((subtheme) => (
+          <SubthemeRow key={subtheme.id} subtheme={subtheme} />
+        ))}
+    </>
+  );
+}
+
+function SubthemeRow({ subtheme }: { subtheme: Subtheme }) {
+  return (
+    <tr className="border-b">
+      <td className="p-2 pl-16 align-top">
+        <span className="inline-block px-2 py-0.5 rounded bg-red-100 text-red-700 text-xs font-medium">
+          Subtheme
+        </span>
+      </td>
+      <td className="p-2">
+        <div className="font-medium">{subtheme.name}</div>
+        <div className="text-sm text-gray-500 italic">{subtheme.description}</div>
+      </td>
+      <td className="p-2 text-center">{subtheme.sort_order}</td>
+      <td className="p-2 text-right flex gap-2 justify-end">
+        <Pencil className="w-4 h-4 cursor-pointer" />
+        <Trash2 className="w-4 h-4 cursor-pointer text-red-600" />
+      </td>
+    </tr>
+  );
+}
+
+/* ---------------- Add forms ---------------- */
+
+function AddPillarForm({ onAdded }: { onAdded: () => void }) {
+  async function handleAdd() {
+    await addPillar('New Pillar', 'Description', 999);
+    onAdded();
+  }
+  return (
+    <button
+      onClick={handleAdd}
+      className="px-2 py-1 text-sm border rounded bg-white hover:bg-gray-50"
+    >
+      + Add Pillar
+    </button>
+  );
+}
+
+function AddThemeForm({
+  pillarId,
+  onAdded,
+}: {
+  pillarId: string;
+  onAdded: () => void;
+}) {
+  async function handleAdd() {
+    await addTheme(pillarId, 'New Theme', 'Description', 999);
+    onAdded();
+  }
+  return (
+    <button onClick={handleAdd}>
+      <Plus className="w-4 h-4 text-green-600" />
+    </button>
+  );
+}
+
+function AddSubthemeForm({
+  themeId,
+  onAdded,
+}: {
+  themeId: string;
+  onAdded: () => void;
+}) {
+  async function handleAdd() {
+    await addSubtheme(themeId, 'New Subtheme', 'Description', 999);
+    onAdded();
+  }
+  return (
+    <button onClick={handleAdd}>
+      <Plus className="w-4 h-4 text-red-600" />
+    </button>
+  );
+}
