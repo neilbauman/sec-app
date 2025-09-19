@@ -1,3 +1,4 @@
+// lib/headerConfig.ts
 import { Layers, Settings, Info, FileText } from "lucide-react";
 
 export const toolkit = {
