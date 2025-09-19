@@ -1,4 +1,4 @@
-import { Layers, Info, Settings } from "lucide-react";
+import { Layers, Settings, Info } from "lucide-react";
 
 export const toolkit = {
   title: "Shelter and Settlement Severity Classification Toolset",
