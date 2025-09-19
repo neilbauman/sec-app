@@ -69,4 +69,29 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
                     <summary className="font-medium text-gray-800">
                       {theme.name}
                     </summary>
-                   
+                    {theme.description && (
+                      <p className="ml-4 mt-1 text-gray-500 text-sm">
+                        {theme.description}
+                      </p>
+                    )}
+                    <ul className="ml-6 mt-2 list-disc text-gray-700">
+                      {(theme.subthemes ?? []).map((sub: any) => (
+                        <li key={sub.id}>
+                          {sub.name}
+                          {sub.description && (
+                            <span className="ml-2 text-gray-500 text-sm">
+                              {sub.description}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ))}
+              </div>
+            </details>
+          ))}
+      </div>
+    </div>
+  );
+}
