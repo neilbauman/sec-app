@@ -19,6 +19,8 @@ import {
   Download,
   Settings,
 } from 'lucide-react';
+
+// ✅ Correct import for your repo structure
 import PageHeader from '@/components/PageHeader';
 
 export default function FrameworkEditor() {
