@@ -1,17 +1,19 @@
 "use client";
 
-import { Layers } from "lucide-react";
 import { ReactNode } from "react";
 
 interface PageHeaderProps {
-  toolkitTitle?: string; // backward compatibility
+  toolkit: {
+    title: string;
+    icon: ReactNode;
+  };
   group?: {
-    name: ReactNode;
+    name: string;
     icon: ReactNode;
     color: string;
   };
   page?: {
-    title: ReactNode;
+    name: string;
     description?: string;
     icon?: ReactNode;
   };
@@ -19,59 +21,58 @@ interface PageHeaderProps {
 }
 
 export default function PageHeader({
-  toolkitTitle,
+  toolkit,
   group,
   page,
   breadcrumb = [],
 }: PageHeaderProps) {
   return (
-    <div className="space-y-4">
-      {/* Toolkit title (always rust) */}
-      <div className="flex items-center gap-2 font-semibold text-rust">
-        <Layers className="w-6 h-6 text-rust" />
-        <span>
-          {toolkitTitle ??
-            "Shelter and Settlement Severity Classification Toolset"}
-        </span>
+    <div className="space-y-3">
+      {/* Toolkit */}
+      <div className="flex items-center gap-2">
+        {toolkit.icon}
+        <h1 className="text-lg font-semibold text-rust">{toolkit.title}</h1>
       </div>
 
-      {/* Group title */}
+      {/* Group */}
       {group && (
-        <div className="flex items-center gap-2 ml-2">
-          <span className={group.color}>{group.icon}</span>
+        <div className="flex items-center gap-2 ml-6">
+          {group.icon}
           <span className={`font-semibold ${group.color}`}>{group.name}</span>
         </div>
       )}
 
-      {/* Page title & description */}
+      {/* Page */}
       {page && (
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            {page.icon && <span className={group?.color}>{page.icon}</span>}
-            {page.title}
-          </h1>
+        <div className="ml-6">
+          <div className="flex items-center gap-2">
+            {page.icon}
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              {page.name}
+            </h2>
+          </div>
           {page.description && (
             <p className="text-gray-600">{page.description}</p>
           )}
         </div>
       )}
 
-      {/* Breadcrumb (always rust) */}
+      {/* Breadcrumb */}
       {breadcrumb.length > 0 && (
-        <nav className="text-sm flex gap-2 text-rust">
-          {breadcrumb.map((crumb, idx) => (
+        <div className="ml-6 flex items-center gap-2 text-sm text-rust font-medium">
+          {breadcrumb.map((item, idx) => (
             <span key={idx} className="flex items-center gap-2">
-              {crumb.href ? (
-                <a href={crumb.href} className="hover:underline text-rust">
-                  {crumb.label}
+              {item.href ? (
+                <a href={item.href} className="hover:underline">
+                  {item.label}
                 </a>
               ) : (
-                <span className="font-semibold text-rust">{crumb.label}</span>
+                <span>{item.label}</span>
               )}
-              {idx < breadcrumb.length - 1 && <span>&gt;</span>}
+              {idx < breadcrumb.length - 1 && <span>›</span>}
             </span>
           ))}
-        </nav>
+        </div>
       )}
     </div>
   );
