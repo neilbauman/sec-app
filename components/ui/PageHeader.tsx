@@ -20,21 +20,23 @@ export default function PageHeader({
   return (
     <div className="mb-6 border-b pb-4">
       {/* Toolkit */}
-      <div className="flex items-center gap-2 text-sm font-medium text-orange-700">
-        <Layers className="w-4 h-4" />
+      <div className="flex items-center gap-2 text-base font-medium text-orange-700">
+        <Layers className="w-5 h-5" />
         {toolkitTitle}
       </div>
 
       {/* Group */}
-      <div className="mt-2 flex items-center gap-2 text-base font-semibold">
+      <div className="mt-2 ml-2 flex items-center gap-2 text-lg font-semibold">
         <span className={`${group.color}`}>{group.icon}</span>
         <span className={group.color}>{group.name}</span>
       </div>
 
       {/* Page title + description */}
-      <div className="mt-2">
-        <h1 className="text-4xl font-bold flex items-center gap-2">
-          {page.icon && <span className="text-gray-700">{page.icon}</span>}
+      <div className="mt-2 ml-4">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          {page.icon && (
+            <span className={`${group.color}`}>{page.icon}</span>
+          )}
           {page.title}
         </h1>
         {page.description && (
