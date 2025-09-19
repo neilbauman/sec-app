@@ -1,12 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
+// lib/framework-client.ts
+import { supabase } from "./supabase-client";
 import { Database } from "@/types/supabase";
 
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-// Type alias for convenience
+/**
+ * Pillar type with nested themes → subthemes → indicators
+ */
 export type Pillar = Database["public"]["Tables"]["pillars"]["Row"] & {
   themes: (Database["public"]["Tables"]["themes"]["Row"] & {
     subthemes: (Database["public"]["Tables"]["subthemes"]["Row"] & {
@@ -15,11 +13,15 @@ export type Pillar = Database["public"]["Tables"]["pillars"]["Row"] & {
   })[];
 };
 
+/**
+ * Fetches the current (latest) framework version with its full hierarchy.
+ * Returns an array of pillars, each with nested themes, subthemes, and indicators.
+ */
 export async function fetchFramework(): Promise<Pillar[]> {
-  // Get latest framework version
+  // Step 1: find the latest framework version
   const { data: version, error: versionError } = await supabase
     .from("primary_framework_versions")
-    .select("id")
+    .select("id, version_number")
     .order("version_number", { ascending: false })
     .limit(1)
     .single();
@@ -28,7 +30,7 @@ export async function fetchFramework(): Promise<Pillar[]> {
     throw new Error(versionError?.message || "No framework version found");
   }
 
-  // Fetch pillars with nested themes → subthemes → indicators
+  // Step 2: fetch the pillars for that version
   const { data, error } = await supabase
     .from("pillars")
     .select(`
@@ -66,5 +68,5 @@ export async function fetchFramework(): Promise<Pillar[]> {
     throw new Error(error.message);
   }
 
-  return data as Pillar[];
+  return (data ?? []) as Pillar[];
 }
