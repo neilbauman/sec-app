@@ -1,5 +1,3 @@
-// app/about/page.tsx (About Group Page)
-
 "use client";
 
 import Link from "next/link";
@@ -17,12 +15,7 @@ export default function AboutGroupPage() {
           color: "text-blue-500",
         }}
         page={{
-          title: (
-            <span className="flex items-center gap-2">
-              <Info className="w-6 h-6 text-blue-500" />
-              About the SSC Toolset
-            </span>
-          ),
+          title: "About the SSC Toolset",
           description:
             "Learn about the SSC, its purpose, and how to use this toolset effectively.",
         }}
