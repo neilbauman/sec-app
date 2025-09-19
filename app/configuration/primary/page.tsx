@@ -1,6 +1,4 @@
 // app/configuration/primary/page.tsx
-"use client";
-
 import PageHeader from "@/components/ui/PageHeader";
 import FrameworkEditor from "@/components/framework/FrameworkEditor";
 
