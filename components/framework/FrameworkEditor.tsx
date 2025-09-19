@@ -1,52 +1,81 @@
-// lib/framework-client.ts
-import { createClient } from "./supabase-client";
+"use client";
 
-export interface Subtheme {
-  id: string;
-  name: string;
+import { useEffect, useState } from "react";
+import { fetchFramework, Pillar } from "@/lib/framework-client";
+import PageHeader from "@/components/ui/PageHeader";
+
+interface FrameworkEditorProps {
+  group: "configuration";
+  page: "primary";
 }
 
-export interface Theme {
-  id: string;
-  name: string;
-  subthemes: Subtheme[];
-}
+export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
+  const [pillars, setPillars] = useState<Pillar[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export interface Pillar {
-  id: string;
-  name: string;
-  themes: Theme[];
-}
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await fetchFramework();
+        setPillars(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load framework data.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
 
-/**
- * Fetches pillars with their nested themes and subthemes
- * in a stable, ordered structure for the Framework Editor.
- */
-export async function fetchFramework(): Promise<Pillar[]> {
-  const supabase = createClient();
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        group={group}
+        page={page}
+        breadcrumb={[
+          { label: "Dashboard", href: "/" },
+          { label: "Configuration", href: "/configuration" },
+          { label: "Primary Framework Editor" },
+        ]}
+      />
 
-  const { data, error } = await supabase
-    .from("pillars")
-    .select(
-      `
-      id,
-      name,
-      themes:themes(
-        id,
-        name,
-        subthemes:subthemes(
-          id,
-          name
-        )
-      )
-    `
-    )
-    .order("id");
+      <div className="bg-white shadow rounded-lg p-6 space-y-4">
+        {loading && <p className="text-gray-500">Loading framework…</p>}
+        {error && <p className="text-red-600">{error}</p>}
 
-  if (error) {
-    console.error("Error fetching framework:", error);
-    return [];
-  }
-
-  return data as Pillar[];
+        {!loading &&
+          !error &&
+          pillars.map((pillar, pIndex) => (
+            <details
+              key={pillar.id}
+              open={pIndex === 0}
+              className="border rounded-lg p-4"
+            >
+              <summary className="font-semibold text-brand-green">
+                {`Pillar ${pIndex + 1}: ${pillar.name}`}
+              </summary>
+              <div className="mt-2 space-y-3">
+                {pillar.themes.map((theme) => (
+                  <details
+                    key={theme.id}
+                    className="ml-4 border-l pl-4 py-1"
+                  >
+                    <summary className="font-medium text-gray-800">
+                      {theme.name}
+                    </summary>
+                    <ul className="ml-4 mt-1 list-disc text-gray-700">
+                      {theme.subthemes.map((sub) => (
+                        <li key={sub.id}>{sub.name}</li>
+                      ))}
+                    </ul>
+                  </details>
+                ))}
+              </div>
+            </details>
+          ))}
+      </div>
+    </div>
+  );
 }
