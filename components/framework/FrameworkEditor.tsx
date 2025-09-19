@@ -10,9 +10,7 @@ export default function FrameworkEditor() {
   const [tree, setTree] = useState<FrameworkTree>({ pillars: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // expand state: reset on refresh/load
-  const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
+  const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({}); // collapsed default
 
   async function refresh() {
     setLoading(true);
@@ -20,7 +18,7 @@ export default function FrameworkEditor() {
     try {
       const raw = await getFrameworkTree();
       setTree(withRefCodes(raw));
-      setExpanded({}); // reset to collapsed
+      setExpanded({}); // reset collapse state
     } catch (e: any) {
       setError(e.message ?? 'Failed to load framework');
     } finally {
@@ -123,7 +121,6 @@ function PillarRow({
           <ThemeRow
             key={theme.id}
             theme={theme}
-            pillar={pillar}
             expanded={expanded}
             toggleExpand={toggleExpand}
             onChanged={onChanged}
@@ -135,13 +132,11 @@ function PillarRow({
 
 function ThemeRow({
   theme,
-  pillar,
   expanded,
   toggleExpand,
   onChanged,
 }: {
   theme: Theme;
-  pillar: Pillar;
   expanded: { [key: string]: boolean };
   toggleExpand: (id: string) => void;
   onChanged: () => void;
@@ -223,7 +218,7 @@ function SubthemeRow({ subtheme, onChanged }: { subtheme: Subtheme; onChanged: (
   );
 }
 
-/* --- Inline Add Forms (same as before) --- */
+/* --- Inline Add Forms --- */
 
 function AddPillarForm({ onAdded }: { onAdded: () => void }) {
   const [open, setOpen] = useState(false);
@@ -380,4 +375,29 @@ function AddSubthemeForm({ themeId, onAdded }: { themeId: string; onAdded: () =>
   }
 
   return (
-    <div className="flex gap-
+    <div className="flex gap-2">
+      <input
+        className="border rounded px-2 py-1"
+        placeholder="Subtheme name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <input
+        className="border rounded px-2 py-1"
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
+      <button
+        className="px-2 py-1 rounded bg-black text-white disabled:opacity-50"
+        disabled={busy || !name.trim()}
+        onClick={submit}
+      >
+        Save
+      </button>
+      <button className="px-2 py-1 rounded border" onClick={() => setAdding(false)}>
+        Cancel
+      </button>
+    </div>
+  );
+}
