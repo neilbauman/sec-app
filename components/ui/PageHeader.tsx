@@ -7,7 +7,7 @@ import { Layers, ChevronRight } from 'lucide-react';
 export interface PageHeaderProps {
   toolkitTitle: string;
   group: { name: string; icon: ReactNode; color: string };
-  page: { title: string; description?: string };
+  page: { title: string; description?: string; icon?: ReactNode };
   breadcrumb: { label: string; href?: string }[];
 }
 
@@ -19,28 +19,31 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className="mb-6 border-b pb-4">
-      {/* Context bar */}
-      <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2 text-orange-700 font-medium">
-          <Layers className="w-4 h-4" />
-          {toolkitTitle}
-        </div>
-        <div className={`flex items-center gap-2 font-semibold ${group.color}`}>
-          {group.icon}
-          <span>{group.name}</span>
-        </div>
+      {/* Toolkit */}
+      <div className="flex items-center gap-2 text-sm font-medium text-orange-700">
+        <Layers className="w-4 h-4" />
+        {toolkitTitle}
+      </div>
+
+      {/* Group */}
+      <div className="mt-2 flex items-center gap-2 text-base font-semibold">
+        <span className={`${group.color}`}>{group.icon}</span>
+        <span className={group.color}>{group.name}</span>
       </div>
 
       {/* Page title + description */}
-      <div className="mt-3">
-        <h1 className="text-3xl font-bold">{page.title}</h1>
+      <div className="mt-2">
+        <h1 className="text-4xl font-bold flex items-center gap-2">
+          {page.icon && <span className="text-gray-700">{page.icon}</span>}
+          {page.title}
+        </h1>
         {page.description && (
           <p className="text-gray-600 mt-1">{page.description}</p>
         )}
       </div>
 
       {/* Breadcrumb */}
-      <div className="mt-3 flex items-center text-sm text-orange-700 space-x-1">
+      <div className="mt-4 pt-2 border-t text-sm text-orange-700 flex items-center space-x-1">
         {breadcrumb.map((bc, idx) => {
           const isLast = idx === breadcrumb.length - 1;
           return (
