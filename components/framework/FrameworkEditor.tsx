@@ -7,7 +7,7 @@ import {
   addTheme,
   addSubtheme,
 } from '@/lib/hooks/useFramework';
-// import { withRefCodes } from '@/lib/refCodes'; // temporarily skipped for debugging
+import { withRefCodes } from '@/lib/refCodes';
 import type { FrameworkTree, Pillar, Theme, Subtheme } from '@/types/framework';
 import {
   Pencil,
@@ -36,13 +36,9 @@ export default function FrameworkEditor() {
       const raw = await getFrameworkTree();
       console.log('Raw framework tree:', raw);
 
-      // 🚨 TEMP: skip withRefCodes for now
-      setTree(raw);
-
-      // Uncomment once we confirm raw has data:
-      // const coded = withRefCodes(raw);
-      // console.log('With ref codes:', coded);
-      // setTree(coded);
+      const coded = withRefCodes(raw);
+      console.log('With ref codes:', coded);
+      setTree(coded);
 
       setExpanded({});
     } catch (e: any) {
@@ -140,10 +136,10 @@ export default function FrameworkEditor() {
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b bg-gray-50 text-left text-sm font-semibold text-gray-700">
-            <th className="p-2 w-[12%]">Type / Ref Code</th>
-            <th className="p-2 w-[58%]">Name / Description</th>
+            <th className="p-2 w-[15%]">Type / Ref Code</th>
+            <th className="p-2 w-[55%]">Name / Description</th>
             <th className="p-2 w-[10%] text-center">Sort Order</th>
-            <th className="p-2 w-[12%] text-right">Actions</th>
+            <th className="p-2 w-[15%] text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -190,6 +186,7 @@ function PillarRow({
           <span className="inline-block px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-medium">
             Pillar
           </span>
+          <span className="ml-2 text-xs text-gray-500">{pillar.ref_code}</span>
         </td>
         <td className="p-2">
           <div className="font-medium">{pillar.name}</div>
@@ -242,6 +239,7 @@ function ThemeRow({
           <span className="inline-block px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs font-medium">
             Theme
           </span>
+          <span className="ml-2 text-xs text-gray-500">{theme.ref_code}</span>
         </td>
         <td className="p-2">
           <div className="font-medium">{theme.name}</div>
@@ -269,6 +267,7 @@ function SubthemeRow({ subtheme }: { subtheme: Subtheme }) {
         <span className="inline-block px-2 py-0.5 rounded bg-red-100 text-red-700 text-xs font-medium">
           Subtheme
         </span>
+        <span className="ml-2 text-xs text-gray-500">{subtheme.ref_code}</span>
       </td>
       <td className="p-2">
         <div className="font-medium">{subtheme.name}</div>
