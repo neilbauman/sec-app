@@ -1,23 +1,11 @@
 // lib/framework-client.ts
 import { supabase } from "./supabase-client";
-import { Database } from "@/types/supabase";
-
-/**
- * Pillar type with nested themes → subthemes → indicators
- */
-export type Pillar = Database["public"]["Tables"]["pillars"]["Row"] & {
-  themes: (Database["public"]["Tables"]["themes"]["Row"] & {
-    subthemes: (Database["public"]["Tables"]["subthemes"]["Row"] & {
-      indicators: Database["public"]["Tables"]["indicators"]["Row"][];
-    })[];
-  })[];
-};
 
 /**
  * Fetch framework data (pillars with nested themes, subthemes, indicators).
- * This simplified version ignores framework versions and returns everything.
+ * Loosened return type for compatibility with Supabase nested selects.
  */
-export async function fetchFramework(): Promise<Pillar[]> {
+export async function fetchFramework(): Promise<any[]> {
   const { data, error } = await supabase
     .from("pillars")
     .select(`
@@ -29,12 +17,16 @@ export async function fetchFramework(): Promise<Pillar[]> {
       themes (
         id,
         ref_code,
+        pillar_id,
+        pillar_code,
         name,
         description,
         sort_order,
         subthemes (
           id,
           ref_code,
+          theme_id,
+          theme_code,
           name,
           description,
           sort_order,
