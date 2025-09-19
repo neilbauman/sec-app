@@ -1,9 +1,11 @@
-// /lib/supabase-browser.ts
-import { createBrowserClient } from "@supabase/ssr";
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+export async function getPillars() {
+  const supabase = supabaseBrowser();
+  const { data, error } = await supabase
+    .from('pillars')
+    .select('*')
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return data;
 }
