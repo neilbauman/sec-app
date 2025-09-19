@@ -14,7 +14,13 @@ export default function PageHeader<G extends GroupKey>({
   breadcrumb = [],
 }: PageHeaderProps<G>) {
   const groupData = groups[group];
-  const pageData = groupData.pages[page];
+
+  // ✅ Relaxed typing: cast to "any" map for safe indexing
+  const pageData =
+    (groupData.pages as Record<string, { title: string; description?: string }>)[
+      page as string
+    ];
+
   const ToolkitIcon = toolkit.icon;
   const GroupIcon = groupData.icon;
 
@@ -32,14 +38,14 @@ export default function PageHeader<G extends GroupKey>({
       <div className="mt-4 flex items-center space-x-2">
         <GroupIcon className={`w-5 h-5 ${groupData.color}`} />
         <h2 className="text-lg font-semibold text-gray-900">
-          {pageData.title}
+          {pageData?.title}
         </h2>
       </div>
-      {pageData.description && (
+      {pageData?.description && (
         <p className="mt-1 text-gray-600">{pageData.description}</p>
       )}
 
-      {/* Breadcrumb - BELOW title */}
+      {/* Breadcrumb - BELOW */}
       <nav className="mt-4 text-sm">
         <ol className="flex space-x-2 text-gray-600">
           {breadcrumb.map((crumb, idx) => {
