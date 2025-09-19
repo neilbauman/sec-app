@@ -1,4 +1,3 @@
-// lib/headerConfig.ts
 import { Layers, Settings, Info, FileText } from "lucide-react";
 
 export const toolkit = {
@@ -15,18 +14,17 @@ export const groups = {
     pages: {
       index: {
         title: "SSC Configuration",
-        description:
-          "Manage configuration tools, including editors and versioning for the SSC framework.",
+        description: "Manage configuration settings and access framework editors.",
       },
       primary: {
         title: "Primary Framework Editor",
-        description:
-          "Define and manage pillars, themes, and subthemes of the SSC framework.",
+        description: "Define and manage pillars, themes, and subthemes of the SSC framework.",
+        icon: FileText,
       },
       comprehensive: {
         title: "Comprehensive Framework Editor",
-        description:
-          "Advanced editing and versioning of the SSC framework (future).",
+        description: "Work with the complete SSC framework in detail.",
+        icon: FileText,
       },
     },
   },
@@ -37,8 +35,7 @@ export const groups = {
     pages: {
       index: {
         title: "About the SSC Toolset",
-        description:
-          "Learn about the SSC, its purpose, and how to use this toolset effectively.",
+        description: "Learn about the SSC, its purpose, and how to use this toolset effectively.",
       },
       using: {
         title: "Using this Toolset",
@@ -46,8 +43,11 @@ export const groups = {
       },
       "what-is-ssc": {
         title: "What is the SSC?",
-        description: "Background and explanation of the SSC framework.",
+        description: "Information on what the SSC is, its purpose, and context.",
       },
     },
   },
 };
+
+export type GroupKey = keyof typeof groups;
+export type PageKey<G extends GroupKey> = keyof typeof groups[G]["pages"];
