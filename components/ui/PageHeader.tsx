@@ -1,67 +1,60 @@
 // components/ui/PageHeader.tsx
-import Link from "next/link";
-import { groups, toolkit } from "@/lib/headerConfig";
+import { groups, toolkit, GroupKey, PageKey } from "@/lib/headerConfig";
 
-type GroupKey = keyof typeof groups;
-
-type PageHeaderProps = {
-  group: GroupKey;
-  page: string; // we’ll do a safe lookup at runtime
+export interface PageHeaderProps<G extends GroupKey> {
+  group: G;
+  page: PageKey<G>;
   breadcrumb?: { label: string; href?: string }[];
-};
+}
 
-export default function PageHeader({ group, page, breadcrumb = [] }: PageHeaderProps) {
+export default function PageHeader<G extends GroupKey>({
+  group,
+  page,
+  breadcrumb = [],
+}: PageHeaderProps<G>) {
   const groupData = groups[group];
-  const pageData = (groupData.pages as Record<string, { title: string; description?: string }>)[page];
-
+  const pageData = groupData.pages[page];
   const ToolkitIcon = toolkit.icon;
   const GroupIcon = groupData.icon;
 
   return (
-    <header className="space-y-2">
-      {/* Group row (theme color) */}
-      <div className="flex items-center gap-2">
-        <GroupIcon className={`w-5 h-5 ${groupData.color}`} />
-        <span className={`text-base font-semibold ${groupData.color}`}>{groupData.name}</span>
+    <div className="border-b border-gray-200 pb-6 mb-6">
+      {/* Toolkit title */}
+      <div className="flex items-center gap-2 mb-2">
+        <ToolkitIcon className="w-7 h-7 text-brand-rust" />
+        <h1 className="text-2xl font-bold text-brand-rust">{toolkit.title}</h1>
       </div>
 
-      {/* Page title + description */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{pageData?.title ?? ""}</h1>
-        {pageData?.description && (
-          <p className="mt-1 text-gray-600">{pageData.description}</p>
-        )}
+      {/* Group */}
+      <div className="flex items-center gap-2 mb-1">
+        <GroupIcon className={`w-6 h-6 ${groupData.color}`} />
+        <h2 className={`text-xl font-semibold ${groupData.color}`}>
+          {groupData.name}
+        </h2>
       </div>
 
-      {/* Breadcrumb at the bottom */}
-      <nav className="pt-1 text-sm">
-        <div className="flex items-center gap-1 text-brand-rust">
-          {/* Toolkit / home */}
-          <ToolkitIcon className="w-4 h-4 text-brand-rust" />
-          <Link href="/" className="hover:underline">
-            {toolkit.title}
-          </Link>
-          <span className="px-1">/</span>
+      {/* Page */}
+      <h3 className="text-lg font-semibold">{pageData.title}</h3>
+      <p className="text-gray-600">{pageData.description}</p>
 
-          {/* Provided crumbs */}
-          {breadcrumb.map((b, idx) => {
-            const isLast = idx === breadcrumb.length - 1;
-            const baseCls = "hover:underline";
-            return b.href && !isLast ? (
-              <span key={`${b.label}-${idx}`} className="flex items-center gap-1">
-                <Link href={b.href} className={baseCls}>
-                  {b.label}
-                </Link>
-                <span className="px-1">/</span>
-              </span>
+      {/* Breadcrumb */}
+      <nav className="mt-3 text-sm flex flex-wrap gap-1">
+        <span className="text-brand-rust">Dashboard</span>
+        {breadcrumb.map((crumb, idx) => (
+          <span key={idx} className="flex items-center gap-1">
+            <span className="text-gray-400">/</span>
+            {idx === breadcrumb.length - 1 ? (
+              <span className="font-bold text-brand-rust">{crumb.label}</span>
+            ) : crumb.href ? (
+              <a href={crumb.href} className="text-brand-rust hover:underline">
+                {crumb.label}
+              </a>
             ) : (
-              <span key={`${b.label}-${idx}`} className={`font-semibold`}>
-                {b.label}
-              </span>
-            );
-          })}
-        </div>
+              <span className="text-brand-rust">{crumb.label}</span>
+            )}
+          </span>
+        ))}
       </nav>
-    </header>
+    </div>
   );
 }
