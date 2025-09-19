@@ -2,15 +2,22 @@
 
 import PageHeader from "@/components/ui/PageHeader";
 
-export default function UsingPage() {
+export default function UsingToolsetPage() {
   return (
     <div className="space-y-6">
-      <PageHeader group="about" page="using" />
+      <PageHeader
+        group="about"
+        page="using"
+        breadcrumb={[
+          { label: "Dashboard", href: "/" },
+          { label: "About", href: "/about" },
+          { label: "Using this toolset" },
+        ]}
+      />
+
       <div className="prose max-w-none">
         <p>
-          This section provides practical guidance on how to navigate, configure, and apply the SSC
-          toolset effectively in different contexts. Step-by-step instructions and tips will help
-          users get started quickly.
+          Guidance on how to use the SSC toolset effectively.
         </p>
       </div>
     </div>
