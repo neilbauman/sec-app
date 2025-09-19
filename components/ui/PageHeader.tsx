@@ -1,67 +1,64 @@
 // components/ui/PageHeader.tsx
-import Link from "next/link";
-import { groups, toolkit, GroupKey, PageKey } from "@/lib/headerConfig";
+import { groups, toolkit } from "@/lib/headerConfig";
 
-export interface PageHeaderProps<G extends GroupKey> {
-  group: G;
-  page: PageKey<G>;
-  breadcrumb?: { label: string; href?: string }[];
+interface PageHeaderProps {
+  group: keyof typeof groups;
+  page: string;
+  breadcrumb: { label: string; href?: string }[];
 }
 
-export default function PageHeader<G extends GroupKey>({
-  group,
-  page,
-  breadcrumb = [],
-}: PageHeaderProps<G>) {
+export default function PageHeader({ group, page, breadcrumb }: PageHeaderProps) {
   const groupData = groups[group];
-
-  // ✅ Explicit cast fixes the TS error
-  const pageData = (groupData.pages as Record<
-    string,
-    { title: string; description: string }
-  >)[page as string];
-
+  const pageData = groupData.pages[page];
   const ToolkitIcon = toolkit.icon;
   const GroupIcon = groupData.icon;
 
   return (
-    <div className="space-y-2">
+    <div className="mb-6 border-b pb-4">
       {/* Toolkit Title */}
-      <div className="flex items-center space-x-2">
-        <ToolkitIcon className={`w-6 h-6 ${toolkit.color}`} />
-        <h1 className="text-2xl font-bold">{toolkit.title}</h1>
+      <div className="flex items-center space-x-2 mb-2">
+        <ToolkitIcon className={`w-6 h-6 text-brand-rust`} />
+        <h1 className="text-xl font-bold text-brand-rust">
+          Shelter and Settlement Severity Classification Toolset
+        </h1>
       </div>
 
       {/* Group Title */}
       <div className="flex items-center space-x-2">
         <GroupIcon className={`w-5 h-5 ${groupData.color}`} />
-        <h2 className="text-xl font-semibold">{groupData.name}</h2>
+        <h2 className={`text-lg font-semibold ${groupData.color}`}>
+          {groupData.name}
+        </h2>
       </div>
 
       {/* Page Title */}
-      <h3 className="text-lg font-medium">{pageData.title}</h3>
+      <h3 className="text-2xl font-bold mt-1">{pageData.title}</h3>
 
-      {/* Breadcrumb */}
-      <nav className="text-sm text-brand-rust">
-        {[
-          { label: "Dashboard", href: "/" },
-          ...breadcrumb,
-          { label: pageData.title },
-        ].map((crumb, idx, arr) => (
-          <span key={idx}>
-            {idx > 0 && " / "}
-            {idx === arr.length - 1 ? (
-              <span className="font-bold">{crumb.label}</span>
-            ) : crumb.href ? (
-              <Link href={crumb.href} className="hover:underline">
-                {crumb.label}
-              </Link>
-            ) : (
-              crumb.label
-            )}
-          </span>
-        ))}
-      </nav>
+      {/* Breadcrumb with framing */}
+      <div className="mt-2 border-t border-b py-2 text-sm">
+        <nav className="flex space-x-1">
+          {breadcrumb.map((item, idx) => {
+            const isLast = idx === breadcrumb.length - 1;
+            return (
+              <span
+                key={idx}
+                className={`${
+                  isLast ? "font-bold text-brand-rust" : "text-brand-rust"
+                }`}
+              >
+                {item.href ? (
+                  <a href={item.href} className="hover:underline">
+                    {item.label}
+                  </a>
+                ) : (
+                  item.label
+                )}
+                {!isLast && " / "}
+              </span>
+            );
+          })}
+        </nav>
+      </div>
     </div>
   );
 }
