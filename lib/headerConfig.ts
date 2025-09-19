@@ -1,5 +1,4 @@
-// lib/headerConfig.ts
-import { Layers, Settings, Info, FileText } from "lucide-react";
+import { Layers, Info, Settings } from "lucide-react";
 
 export const toolkit = {
   title: "Shelter and Settlement Severity Classification Toolset",
@@ -8,29 +7,6 @@ export const toolkit = {
 };
 
 export const groups = {
-  configuration: {
-    name: "SSC Configuration",
-    icon: Settings,
-    color: "text-green-600",
-    pages: {
-      index: {
-        title: "SSC Configuration",
-        description:
-          "Manage configuration settings and access framework editors.",
-      },
-      primary: {
-        title: "Primary Framework Editor",
-        description:
-          "Define and manage pillars, themes, and subthemes of the SSC framework.",
-        icon: FileText,
-      },
-      comprehensive: {
-        title: "Comprehensive Framework Editor",
-        description: "Work with the complete SSC framework in detail.",
-        icon: FileText,
-      },
-    },
-  },
   about: {
     name: "About",
     icon: Info,
@@ -43,22 +19,34 @@ export const groups = {
       },
       using: {
         title: "Using this Toolset",
-        description: "Guidance on how to use the SSC toolset effectively.",
+        description:
+          "Guidelines and instructions for using the SSC toolset effectively.",
       },
       "what-is-ssc": {
         title: "What is the SSC?",
-        description: "Information on what the SSC is, its purpose, and context.",
+        description:
+          "Background and context on the Shelter and Settlement Severity Classification.",
       },
     },
   },
-};
+  configuration: {
+    name: "Configuration",
+    icon: Settings,
+    color: "text-green-600",
+    pages: {
+      index: {
+        title: "SSC Configuration",
+        description:
+          "Manage and adjust the global configuration of the SSC toolset.",
+      },
+      primary: {
+        title: "Primary Framework Editor",
+        description:
+          "Define and manage pillars, themes, and subthemes of the SSC framework.",
+      },
+    },
+  },
+} as const;
 
 export type GroupKey = keyof typeof groups;
 export type PageKey<G extends GroupKey> = keyof typeof groups[G]["pages"];
-
-// Combined props type for PageHeader
-export interface PageHeaderProps<G extends GroupKey = GroupKey> {
-  group: G;
-  page: PageKey<G>;
-  breadcrumb?: { label: string; href?: string }[];
-}
