@@ -15,7 +15,12 @@ export default function ConfigurationGroupPage() {
           color: "text-green-600",
         }}
         page={{
-          title: "SSC Configuration",
+          title: (
+            <span className="flex items-center gap-2">
+              <Settings className="w-6 h-6 text-green-600" />
+              SSC Configuration
+            </span>
+          ),
           description: "Manage the SSC global framework and defaults.",
         }}
         breadcrumb={[{ label: "Dashboard", href: "/" }, { label: "Configuration" }]}
@@ -29,7 +34,9 @@ export default function ConfigurationGroupPage() {
         >
           <div className="flex items-center gap-3">
             <FileText className="w-6 h-6 text-green-600" />
-            <h3 className="font-semibold text-lg">Primary Framework Editor</h3>
+            <h3 className="font-semibold text-lg text-green-600">
+              Primary Framework Editor
+            </h3>
           </div>
           <p className="text-sm text-gray-600 mt-2">
             Define and manage the global SSC framework including pillars, themes,
@@ -44,7 +51,9 @@ export default function ConfigurationGroupPage() {
         >
           <div className="flex items-center gap-3">
             <FileText className="w-6 h-6 text-green-600" />
-            <h3 className="font-semibold text-lg">Comprehensive Framework Editor</h3>
+            <h3 className="font-semibold text-lg text-green-600">
+              Comprehensive Framework Editor
+            </h3>
           </div>
           <p className="text-sm text-gray-600 mt-2">
             Manage and edit detailed framework elements, indicators, and
