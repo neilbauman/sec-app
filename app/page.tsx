@@ -1,3 +1,5 @@
+// app/page.tsx (Dashboard)
+
 "use client";
 
 import Link from "next/link";
@@ -27,7 +29,7 @@ export default function DashboardPage() {
         <div className="p-6 bg-white rounded-lg shadow hover:shadow-md transition">
           <Link href="/about" className="flex items-center gap-3">
             <Info className="w-6 h-6 text-blue-500" />
-            <h3 className="font-semibold text-lg text-blue-600 hover:underline">
+            <h3 className="font-semibold text-lg text-blue-500 hover:underline">
               About
             </h3>
           </Link>
@@ -38,7 +40,7 @@ export default function DashboardPage() {
             <li>
               <Link
                 href="/about/using"
-                className="text-blue-600 hover:underline"
+                className="text-blue-500 hover:underline"
               >
                 Using this Toolset
               </Link>
@@ -46,7 +48,7 @@ export default function DashboardPage() {
             <li>
               <Link
                 href="/about/what-is-ssc"
-                className="text-blue-600 hover:underline"
+                className="text-blue-500 hover:underline"
               >
                 What is the SSC?
               </Link>
@@ -69,7 +71,7 @@ export default function DashboardPage() {
             <li>
               <Link
                 href="/configuration/primary"
-                className="text-blue-600 hover:underline"
+                className="text-green-600 hover:underline"
               >
                 Primary Framework Editor
               </Link>
@@ -77,7 +79,7 @@ export default function DashboardPage() {
             <li>
               <Link
                 href="/configuration/comprehensive"
-                className="text-blue-600 hover:underline"
+                className="text-green-600 hover:underline"
               >
                 Comprehensive Framework Editor
               </Link>
@@ -118,7 +120,7 @@ export default function DashboardPage() {
             <li>
               <Link
                 href="/instances"
-                className="text-blue-600 hover:underline"
+                className="text-purple-600 hover:underline"
               >
                 Instance Manager
               </Link>
