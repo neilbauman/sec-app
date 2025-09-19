@@ -1,56 +1,44 @@
 "use client";
 
-import Link from "next/link";
 import PageHeader from "@/components/ui/PageHeader";
-import { toolkit, groups } from "@/lib/headerConfig";
+import Link from "next/link";
 
 export default function DashboardPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        toolkit={toolkit}
-        group={groups.configuration}
-        page={{
-          title: "Dashboard",
-          description: "Overview of all SSC tools and groups.",
-        }}
-        breadcrumb={[{ label: "Dashboard" }]}
-      />
-
+      <PageHeader group="configuration" page="dashboard" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Configuration Card */}
-        <div className="border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-          <Link href="/configuration">
-            <h2 className="flex items-center gap-2 font-bold text-lg text-green-600">
-              {groups.configuration.icon}
-              {groups.configuration.name}
-            </h2>
-          </Link>
-          <ul className="mt-2 list-disc list-inside text-sm space-y-1">
+        <div className="border rounded-lg p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-green-600">SSC Configuration</h2>
+          <ul className="list-disc list-inside text-sm mt-2 space-y-1">
             <li>
               <Link href="/configuration/primary" className="text-green-600 hover:underline">
                 Primary Framework Editor
               </Link>
             </li>
-            <li className="text-gray-400">Comprehensive Framework Editor (coming soon)</li>
+            <li>
+              <Link href="/configuration/comprehensive" className="text-green-600 hover:underline">
+                Comprehensive Framework Editor
+              </Link>
+            </li>
           </ul>
         </div>
 
         {/* About Card */}
-        <div className="border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-          <Link href="/about">
-            <h2 className="flex items-center gap-2 font-bold text-lg text-blue-500">
-              {groups.about.icon}
-              {groups.about.name}
-            </h2>
-          </Link>
-          <ul className="mt-2 list-disc list-inside text-sm space-y-1">
+        <div className="border rounded-lg p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-blue-600">About</h2>
+          <ul className="list-disc list-inside text-sm mt-2 space-y-1">
             <li>
-              <Link href="/about/using" className="text-blue-500 hover:underline">
+              <Link href="/about/using" className="text-blue-600 hover:underline">
                 Using this Toolset
               </Link>
             </li>
-            <li className="text-gray-400">What is the SSC? (coming soon)</li>
+            <li>
+              <Link href="/about/what-is-ssc" className="text-blue-600 hover:underline">
+                What is the SSC?
+              </Link>
+            </li>
           </ul>
         </div>
       </div>
