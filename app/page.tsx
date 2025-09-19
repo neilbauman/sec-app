@@ -1,59 +1,97 @@
-import { Layers, Info, Cog, Globe, Database } from "lucide-react";
+"use client";
 
-const groups = [
-  {
-    title: "About",
-    description: "Overview of the SSC and this toolset.",
-    icon: Info,
-    color: "text-blue-500",
-    href: "/about",
-  },
-  {
-    title: "SSC Configuration",
-    description: "Manage global SSC framework and defaults.",
-    icon: Cog,
-    color: "text-green-600",
-    href: "/configuration",
-  },
-  {
-    title: "Country Configuration",
-    description: "Configure country-level baselines, mapping, and population data.",
-    icon: Globe,
-    color: "text-orange-500",
-    href: "/country",
-  },
-  {
-    title: "SSC Instances",
-    description: "Perform calculations and manage SSC instances.",
-    icon: Database,
-    color: "text-purple-600",
-    href: "/instances",
-  },
-];
+import Link from "next/link";
+import { Layers, Info, Settings, Globe, Database } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
 
 export default function DashboardPage() {
   return (
-    <main className="p-6">
-      <div className="flex items-center space-x-2 mb-6 text-rust-600 font-bold text-xl">
-        <Layers className="w-6 h-6" />
-        <h1>Shelter and Settlement Severity Classification Toolset</h1>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        toolkitTitle="Shelter and Settlement Severity Classification Toolset"
+        group={{
+          name: "Dashboard",
+          icon: <Layers className="w-6 h-6 text-orange-600" />,
+          color: "text-orange-600",
+        }}
+        page={{
+          title: "Dashboard",
+          description:
+            "Overview of the SSC toolset groups and their tools. Start here to explore.",
+        }}
+        breadcrumb={[{ label: "Dashboard" }]}
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {groups.map((g, i) => (
-          <a
-            key={i}
-            href={g.href}
-            className="p-6 rounded-xl shadow bg-white hover:bg-gray-50 transition block"
-          >
-            <div className="flex items-center space-x-3">
-              <g.icon className={`w-6 h-6 ${g.color}`} />
-              <h2 className="text-lg font-semibold">{g.title}</h2>
-            </div>
-            <p className="text-sm text-gray-600 mt-2">{g.description}</p>
-          </a>
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* About */}
+        <Link
+          href="/about"
+          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
+        >
+          <div className="flex items-center gap-3">
+            <Info className="w-6 h-6 text-blue-500" />
+            <h3 className="font-semibold text-lg">About</h3>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            Overview of the SSC and this toolset.
+          </p>
+        </Link>
+
+        {/* SSC Configuration */}
+        <Link
+          href="/configuration"
+          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
+        >
+          <div className="flex items-center gap-3">
+            <Settings className="w-6 h-6 text-green-600" />
+            <h3 className="font-semibold text-lg">SSC Configuration</h3>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            Manage global SSC framework and defaults.
+          </p>
+          <ul className="mt-3 text-sm text-gray-500 list-disc list-inside">
+            <li>Primary Framework Editor</li>
+            <li>Comprehensive Framework Editor</li>
+            <li className="italic text-gray-400">Versioning (coming soon)</li>
+          </ul>
+        </Link>
+
+        {/* Country Configuration */}
+        <Link
+          href="/country"
+          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
+        >
+          <div className="flex items-center gap-3">
+            <Globe className="w-6 h-6 text-orange-500" />
+            <h3 className="font-semibold text-lg">Country Configuration</h3>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            Configure country-level baselines, mapping, and population data.
+          </p>
+          <ul className="mt-3 text-sm text-gray-500 list-disc list-inside">
+            <li>Country Data Manager</li>
+            <li className="italic text-gray-400">More tools coming soon</li>
+          </ul>
+        </Link>
+
+        {/* SSC Instances */}
+        <Link
+          href="/instances"
+          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
+        >
+          <div className="flex items-center gap-3">
+            <Database className="w-6 h-6 text-purple-600" />
+            <h3 className="font-semibold text-lg">SSC Instances</h3>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            Perform calculations and manage SSC instances.
+          </p>
+          <ul className="mt-3 text-sm text-gray-500 list-disc list-inside">
+            <li>Instance Manager</li>
+            <li className="italic text-gray-400">Reports (coming soon)</li>
+          </ul>
+        </Link>
       </div>
-    </main>
+    </div>
   );
 }
