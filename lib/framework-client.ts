@@ -1,96 +1,70 @@
-"use client";
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/types/supabase";
 
-import { createClient } from "@/lib/supabase-browser";
+const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-const supabase = createClient();
+// Type alias for convenience
+export type Pillar = Database["public"]["Tables"]["pillars"]["Row"] & {
+  themes: (Database["public"]["Tables"]["themes"]["Row"] & {
+    subthemes: (Database["public"]["Tables"]["subthemes"]["Row"] & {
+      indicators: Database["public"]["Tables"]["indicators"]["Row"][];
+    })[];
+  })[];
+};
 
-/**
- * Fetches the full framework tree (pillars → themes → subthemes).
- * For now this just fetches pillars. Expand with joins later.
- */
-export async function getFrameworkTree() {
-  const { data: pillars, error } = await supabase
+export async function fetchFramework(): Promise<Pillar[]> {
+  // Get latest framework version
+  const { data: version, error: versionError } = await supabase
+    .from("primary_framework_versions")
+    .select("id")
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (versionError || !version) {
+    throw new Error(versionError?.message || "No framework version found");
+  }
+
+  // Fetch pillars with nested themes → subthemes → indicators
+  const { data, error } = await supabase
     .from("pillars")
-    .select("*")
+    .select(`
+      id,
+      ref_code,
+      name,
+      description,
+      sort_order,
+      themes (
+        id,
+        ref_code,
+        name,
+        description,
+        sort_order,
+        subthemes (
+          id,
+          ref_code,
+          name,
+          description,
+          sort_order,
+          indicators (
+            id,
+            ref_code,
+            name,
+            description,
+            level,
+            sort_order
+          )
+        )
+      )
+    `)
     .order("sort_order", { ascending: true });
 
-  if (error) throw error;
-  return pillars ?? [];
-}
+  if (error) {
+    throw new Error(error.message);
+  }
 
-/**
- * Adds a new pillar (stub implementation).
- */
-export async function addPillar({
-  name,
-  description,
-}: {
-  name: string;
-  description?: string;
-}) {
-  const { data, error } = await supabase.from("pillars").insert([
-    {
-      name,
-      description,
-      sort_order: 999, // placeholder
-      ref_code: "", // can be generated later
-    },
-  ]);
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Adds a new theme (stub).
- */
-export async function addTheme({
-  pillar_id,
-  name,
-  description,
-}: {
-  pillar_id: string;
-  name: string;
-  description?: string;
-}) {
-  const { data, error } = await supabase.from("themes").insert([
-    {
-      pillar_id,
-      name,
-      description,
-      sort_order: 999,
-      ref_code: "",
-      pillar_code: "",
-    },
-  ]);
-
-  if (error) throw error;
-  return data;
-}
-
-/**
- * Adds a new subtheme (stub).
- */
-export async function addSubtheme({
-  theme_id,
-  name,
-  description,
-}: {
-  theme_id: string;
-  name: string;
-  description?: string;
-}) {
-  const { data, error } = await supabase.from("subthemes").insert([
-    {
-      theme_id,
-      name,
-      description,
-      sort_order: 999,
-      ref_code: "",
-      theme_code: "",
-    },
-  ]);
-
-  if (error) throw error;
-  return data;
+  return data as Pillar[];
 }
