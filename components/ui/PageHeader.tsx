@@ -1,56 +1,69 @@
-import React from "react";
-import { cn } from "@/lib/utils";
-import { toolkit, groups, GroupKey, PageKey } from "@/lib/headerConfig";
+"use client";
 
-export interface PageHeaderProps<G extends GroupKey> {
+import { ReactNode } from "react";
+import { toolkit, groups } from "@/lib/headerConfig";
+
+interface PageHeaderProps<G extends keyof typeof groups> {
   group: G;
-  page: PageKey<G>;
+  page: keyof (typeof groups)[G]["pages"];
   breadcrumb?: { label: string; href?: string }[];
 }
 
-export default function PageHeader<G extends GroupKey>({
+export default function PageHeader<G extends keyof typeof groups>({
   group,
   page,
-  breadcrumb,
+  breadcrumb = [],
 }: PageHeaderProps<G>) {
   const groupData = groups[group];
-  const pageData = groupData.pages[page as keyof typeof groupData.pages]; // 👈 fix
+  const pageData = groupData.pages[page];
 
   const ToolkitIcon = toolkit.icon;
   const GroupIcon = groupData.icon;
 
   return (
-    <div className="space-y-2">
-      {/* Toolkit */}
-      <div className="flex items-center gap-2 text-lg font-semibold text-orange-600">
+    <div className="space-y-4">
+      {/* Toolkit title */}
+      <div className="flex items-center gap-2 font-semibold text-rust">
         <ToolkitIcon className="w-6 h-6" />
         {toolkit.title}
       </div>
 
+      {/* Group title */}
+      <div className="flex items-center gap-2 text-lg font-semibold">
+        <GroupIcon className={`w-6 h-6 ${groupData.color}`} />
+        <span className={groupData.color}>{groupData.name}</span>
+      </div>
+
       {/* Breadcrumb */}
-      {breadcrumb && breadcrumb.length > 0 && (
-        <div className="flex gap-2 text-sm font-medium text-orange-600">
-          {breadcrumb.map((crumb, i) => (
-            <span key={i} className="flex items-center gap-1">
-              {crumb.href ? (
-                <a href={crumb.href} className="hover:underline">
-                  {crumb.label}
+      {breadcrumb.length > 0 && (
+        <div className="text-sm text-rust">
+          {breadcrumb.map((item, idx) => (
+            <span key={idx}>
+              {item.href ? (
+                <a href={item.href} className="hover:underline">
+                  {item.label}
                 </a>
               ) : (
-                crumb.label
+                <span>{item.label}</span>
               )}
-              {i < breadcrumb.length - 1 && <span>/</span>}
+              {idx < breadcrumb.length - 1 && " / "}
             </span>
           ))}
         </div>
       )}
 
-      {/* Group + Page */}
-      <div className="flex items-center gap-2 text-2xl font-bold">
-        <GroupIcon className={cn("w-6 h-6", groupData.color)} />
-        {pageData.title}
+      {/* Page title + description */}
+      <div>
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+          {pageData.icon && (
+            <pageData.icon className={`w-6 h-6 ${groupData.color}`} />
+          )}
+          {pageData.title}
+        </h1>
+        {pageData.description && (
+          <p className="mt-1 text-gray-600">{pageData.description}</p>
+        )}
       </div>
-      <p className="text-gray-600">{pageData.description}</p>
     </div>
   );
 }
