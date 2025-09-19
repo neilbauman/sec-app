@@ -1,72 +1,67 @@
 // components/ui/PageHeader.tsx
-import { groups, toolkit, GroupKey, PageKey } from "@/lib/headerConfig";
 import Link from "next/link";
+import { groups, toolkit } from "@/lib/headerConfig";
 
-export interface PageHeaderProps<G extends GroupKey> {
-  group: G;
-  page: PageKey<G>;
+type GroupKey = keyof typeof groups;
+
+type PageHeaderProps = {
+  group: GroupKey;
+  page: string; // we’ll do a safe lookup at runtime
   breadcrumb?: { label: string; href?: string }[];
-}
+};
 
-export default function PageHeader<G extends GroupKey>({
-  group,
-  page,
-  breadcrumb = [],
-}: PageHeaderProps<G>) {
+export default function PageHeader({ group, page, breadcrumb = [] }: PageHeaderProps) {
   const groupData = groups[group];
-
-  // ✅ Relaxed typing: cast to "any" map for safe indexing
-  const pageData =
-    (groupData.pages as Record<string, { title: string; description?: string }>)[
-      page as string
-    ];
+  const pageData = (groupData.pages as Record<string, { title: string; description?: string }>)[page];
 
   const ToolkitIcon = toolkit.icon;
   const GroupIcon = groupData.icon;
 
   return (
-    <div className="mb-8">
-      {/* Toolkit Title */}
-      <div className="flex items-center space-x-2">
-        <ToolkitIcon className={`w-6 h-6 ${toolkit.color}`} />
-        <h1 className={`text-xl font-bold ${toolkit.color}`}>
-          {toolkit.title}
-        </h1>
-      </div>
-
-      {/* Group + Page Title */}
-      <div className="mt-4 flex items-center space-x-2">
+    <header className="space-y-2">
+      {/* Group row (theme color) */}
+      <div className="flex items-center gap-2">
         <GroupIcon className={`w-5 h-5 ${groupData.color}`} />
-        <h2 className="text-lg font-semibold text-gray-900">
-          {pageData?.title}
-        </h2>
+        <span className={`text-base font-semibold ${groupData.color}`}>{groupData.name}</span>
       </div>
-      {pageData?.description && (
-        <p className="mt-1 text-gray-600">{pageData.description}</p>
-      )}
 
-      {/* Breadcrumb - BELOW */}
-      <nav className="mt-4 text-sm">
-        <ol className="flex space-x-2 text-gray-600">
-          {breadcrumb.map((crumb, idx) => {
+      {/* Page title + description */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">{pageData?.title ?? ""}</h1>
+        {pageData?.description && (
+          <p className="mt-1 text-gray-600">{pageData.description}</p>
+        )}
+      </div>
+
+      {/* Breadcrumb at the bottom */}
+      <nav className="pt-1 text-sm">
+        <div className="flex items-center gap-1 text-brand-rust">
+          {/* Toolkit / home */}
+          <ToolkitIcon className="w-4 h-4 text-brand-rust" />
+          <Link href="/" className="hover:underline">
+            {toolkit.title}
+          </Link>
+          <span className="px-1">/</span>
+
+          {/* Provided crumbs */}
+          {breadcrumb.map((b, idx) => {
             const isLast = idx === breadcrumb.length - 1;
-            return (
-              <li key={idx} className="flex items-center space-x-2">
-                {crumb.href && !isLast ? (
-                  <Link href={crumb.href} className="hover:underline">
-                    {crumb.label}
-                  </Link>
-                ) : (
-                  <span className="font-semibold text-brand-rust">
-                    {crumb.label}
-                  </span>
-                )}
-                {!isLast && <span>/</span>}
-              </li>
+            const baseCls = "hover:underline";
+            return b.href && !isLast ? (
+              <span key={`${b.label}-${idx}`} className="flex items-center gap-1">
+                <Link href={b.href} className={baseCls}>
+                  {b.label}
+                </Link>
+                <span className="px-1">/</span>
+              </span>
+            ) : (
+              <span key={`${b.label}-${idx}`} className={`font-semibold`}>
+                {b.label}
+              </span>
             );
           })}
-        </ol>
+        </div>
       </nav>
-    </div>
+    </header>
   );
 }
