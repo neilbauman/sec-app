@@ -1,65 +1,60 @@
 "use client";
 
-import Link from "next/link";
 import PageHeader from "@/components/ui/PageHeader";
-import { Settings, FileText } from "lucide-react";
+import { FileText, Settings } from "lucide-react";
 
-export default function ConfigurationGroupPage() {
+export default function ConfigurationPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        toolkitTitle="Shelter and Settlement Severity Classification Toolset"
         group={{
           name: "Configuration",
-          icon: <Settings className="w-6 h-6 text-green-600" />,
+          icon: <Settings className="w-5 h-5" />,
           color: "text-green-600",
         }}
         page={{
-          title: (
-            <span className="flex items-center gap-2">
-              <Settings className="w-6 h-6 text-green-600" />
-              SSC Configuration
-            </span>
-          ),
+          title: "SSC Configuration",
           description: "Manage the SSC global framework and defaults.",
+          icon: <FileText className="w-6 h-6" />,
         }}
-        breadcrumb={[{ label: "Dashboard", href: "/" }, { label: "Configuration" }]}
+        breadcrumb={[
+          { label: "Dashboard", href: "/" },
+          { label: "Configuration" },
+        ]}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Primary Framework Editor */}
-        <Link
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a
           href="/configuration/primary"
-          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
+          className="p-4 border rounded-lg shadow-sm hover:shadow transition flex items-start gap-2"
         >
-          <div className="flex items-center gap-3">
-            <FileText className="w-6 h-6 text-green-600" />
-            <h3 className="font-semibold text-lg text-green-600">
+          <FileText className="w-6 h-6 text-green-600" />
+          <div>
+            <h3 className="font-semibold text-green-600">
               Primary Framework Editor
             </h3>
+            <p className="text-sm text-gray-600">
+              Define and manage the global SSC framework including pillars,
+              themes, and subthemes.
+            </p>
           </div>
-          <p className="text-sm text-gray-600 mt-2">
-            Define and manage the global SSC framework including pillars, themes,
-            and subthemes.
-          </p>
-        </Link>
+        </a>
 
-        {/* Comprehensive Framework Editor */}
-        <Link
+        <a
           href="/configuration/comprehensive"
-          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
+          className="p-4 border rounded-lg shadow-sm hover:shadow transition flex items-start gap-2"
         >
-          <div className="flex items-center gap-3">
-            <FileText className="w-6 h-6 text-green-600" />
-            <h3 className="font-semibold text-lg text-green-600">
+          <FileText className="w-6 h-6 text-green-600" />
+          <div>
+            <h3 className="font-semibold text-green-600">
               Comprehensive Framework Editor
             </h3>
+            <p className="text-sm text-gray-600">
+              Manage and edit detailed framework elements, indicators, and
+              relationships.
+            </p>
           </div>
-          <p className="text-sm text-gray-600 mt-2">
-            Manage and edit detailed framework elements, indicators, and
-            relationships.
-          </p>
-        </Link>
+        </a>
       </div>
     </div>
   );
