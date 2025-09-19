@@ -1,23 +1,17 @@
 "use client";
 
 import PageHeader from "@/components/ui/PageHeader";
-import { toolkit, groups } from "@/lib/headerConfig";
 
-export default function AboutPage() {
+export default function AboutIndexPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        toolkit={toolkit}
-        group={groups.about}
-        page={{
-          title: "About the SSC Toolset",
-          description: "Learn about the SSC, its purpose, and how to use this toolset effectively.",
-        }}
-        breadcrumb={[
-          { label: "Dashboard", href: "/" },
-          { label: "About the SSC Toolset" },
-        ]}
-      />
+      <PageHeader group="about" />
+      <div className="prose max-w-none">
+        <p>
+          Welcome to the <strong>Shelter and Settlement Severity Classification Toolset</strong>.
+          Use the links in this section to learn about the SSC framework and how to apply it.
+        </p>
+      </div>
     </div>
   );
 }
