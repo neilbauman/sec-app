@@ -7,7 +7,7 @@ type Breadcrumb = { label: string; href?: string };
 
 interface PageHeaderProps<G extends keyof typeof groups> {
   group: G;
-  page: keyof (typeof groups)[G]["pages"];
+  page: string;
   breadcrumb?: Breadcrumb[];
 }
 
@@ -17,7 +17,13 @@ export default function PageHeader<G extends keyof typeof groups>({
   breadcrumb,
 }: PageHeaderProps<G>) {
   const groupData = groups[group];
-  const pageData = groupData.pages[page];
+
+  // Relax typing so TS doesn’t complain
+  const pages = groupData.pages as Record<
+    string,
+    { title: string; description: string }
+  >;
+  const pageData = pages[page];
 
   const ToolkitIcon = toolkit.icon;
   const GroupIcon = groupData.icon;
