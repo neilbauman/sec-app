@@ -1,8 +1,12 @@
-// /lib/framework.ts
+// lib/framework.ts
 import { createClient } from "./supabase-server";
 
+/**
+ * Example server-side query for fetching the framework pillars.
+ * Adjust the select() to match your needs.
+ */
 export async function getFramework() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("pillars")
@@ -29,13 +33,8 @@ export async function getFramework() {
             ref_code,
             name,
             description,
-            sort_order,
-            criteria_levels (
-              id,
-              label,
-              default_score,
-              sort_order
-            )
+            level,
+            sort_order
           )
         )
       )
@@ -43,9 +42,8 @@ export async function getFramework() {
     .order("sort_order", { ascending: true });
 
   if (error) {
-    console.error("Error fetching pillars:", error);
-    throw new Error(`Error fetching pillars: ${error.message}`);
+    throw new Error(error.message);
   }
 
-  return data || [];
+  return data ?? [];
 }
