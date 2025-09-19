@@ -41,9 +41,9 @@ export default function FrameworkEditor() {
     const all: Record<string, boolean> = {};
     tree.forEach((pillar) => {
       all[pillar.id] = true;
-      pillar.themes.forEach((theme: any) => {
+      pillar.themes?.forEach((theme: any) => {
         all[theme.id] = true;
-        theme.subthemes.forEach((st: any) => {
+        theme.subthemes?.forEach((st: any) => {
           all[st.id] = true;
         });
       });
@@ -127,6 +127,7 @@ export default function FrameworkEditor() {
                 pillar={pillar}
                 expanded={expanded}
                 toggleExpand={toggleExpand}
+                onRefresh={refresh}
               />
             ))}
           </tbody>
@@ -137,7 +138,7 @@ export default function FrameworkEditor() {
 }
 
 /* -------------------- Rows -------------------- */
-function PillarRow({ pillar, expanded, toggleExpand }: any) {
+function PillarRow({ pillar, expanded, toggleExpand, onRefresh }: any) {
   const isOpen = expanded[pillar.id];
   const pillarCode = `P${pillar.sort_order}`;
   return (
@@ -173,27 +174,26 @@ function PillarRow({ pillar, expanded, toggleExpand }: any) {
             <button className="p-1 hover:bg-gray-100 rounded" title="Delete">
               <Trash2 className="w-4 h-4 text-red-600" />
             </button>
-            <button className="p-1 hover:bg-gray-100 rounded" title="Add Theme">
-              <Plus className="w-4 h-4 text-green-600" />
-            </button>
+            <AddThemeForm pillarId={pillar.id} onAdded={onRefresh} />
           </div>
         </td>
       </tr>
       {isOpen &&
-        pillar.themes.map((theme: any) => (
+        pillar.themes?.map((theme: any) => (
           <ThemeRow
             key={theme.id}
             theme={theme}
             pillarCode={pillarCode}
             expanded={expanded}
             toggleExpand={toggleExpand}
+            onRefresh={onRefresh}
           />
         ))}
     </>
   );
 }
 
-function ThemeRow({ theme, pillarCode, expanded, toggleExpand }: any) {
+function ThemeRow({ theme, pillarCode, expanded, toggleExpand, onRefresh }: any) {
   const isOpen = expanded[theme.id];
   const themeCode = `${pillarCode}.${theme.sort_order}`;
   return (
@@ -229,22 +229,13 @@ function ThemeRow({ theme, pillarCode, expanded, toggleExpand }: any) {
             <button className="p-1 hover:bg-gray-100 rounded" title="Delete">
               <Trash2 className="w-4 h-4 text-red-600" />
             </button>
-            <button
-              className="p-1 hover:bg-gray-100 rounded"
-              title="Add Subtheme"
-            >
-              <Plus className="w-4 h-4 text-green-600" />
-            </button>
+            <AddSubthemeForm themeId={theme.id} onAdded={onRefresh} />
           </div>
         </td>
       </tr>
       {isOpen &&
-        theme.subthemes.map((st: any) => (
-          <SubthemeRow
-            key={st.id}
-            subtheme={st}
-            themeCode={themeCode}
-          />
+        theme.subthemes?.map((st: any) => (
+          <SubthemeRow key={st.id} subtheme={st} themeCode={themeCode} />
         ))}
     </>
   );
@@ -295,6 +286,54 @@ function AddPillarForm({ onAdded }: { onAdded: () => void }) {
       className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
     >
       Add Pillar
+    </button>
+  );
+}
+
+function AddThemeForm({
+  pillarId,
+  onAdded,
+}: {
+  pillarId: string;
+  onAdded: () => void;
+}) {
+  async function handleAdd() {
+    await addTheme({ pillar_id: pillarId, name: "New Theme", description: "" });
+    onAdded();
+  }
+  return (
+    <button
+      onClick={handleAdd}
+      className="p-1 hover:bg-gray-100 rounded"
+      title="Add Theme"
+    >
+      <Plus className="w-4 h-4 text-green-600" />
+    </button>
+  );
+}
+
+function AddSubthemeForm({
+  themeId,
+  onAdded,
+}: {
+  themeId: string;
+  onAdded: () => void;
+}) {
+  async function handleAdd() {
+    await addSubtheme({
+      theme_id: themeId,
+      name: "New Subtheme",
+      description: "",
+    });
+    onAdded();
+  }
+  return (
+    <button
+      onClick={handleAdd}
+      className="p-1 hover:bg-gray-100 rounded"
+      title="Add Subtheme"
+    >
+      <Plus className="w-4 h-4 text-green-600" />
     </button>
   );
 }
