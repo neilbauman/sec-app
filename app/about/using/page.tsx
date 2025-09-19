@@ -1,8 +1,7 @@
-"use client";
-
+// app/about/using/page.tsx
 import PageHeader from "@/components/ui/PageHeader";
 
-export default function UsingToolsetPage() {
+export default function UsingSSCPage() {
   return (
     <div className="space-y-6">
       <PageHeader
@@ -11,13 +10,23 @@ export default function UsingToolsetPage() {
         breadcrumb={[
           { label: "Dashboard", href: "/" },
           { label: "About", href: "/about" },
-          { label: "Using this toolset" },
+          { label: "Using" },
         ]}
       />
 
       <div className="prose max-w-none">
         <p>
-          Guidance on how to use the SSC toolset effectively.
+          <strong>Using the SSC Toolset:</strong> This page offers guidelines
+          on how to effectively use the SSC framework and its digital tools.
+        </p>
+        <ul>
+          <li>Step-by-step instructions for new users.</li>
+          <li>Links to training materials or help resources.</li>
+          <li>Best practices for applying SSC in different contexts.</li>
+        </ul>
+        <p>
+          Placeholder content: Insert detailed user instructions and examples
+          of SSC workflows here.
         </p>
       </div>
     </div>
