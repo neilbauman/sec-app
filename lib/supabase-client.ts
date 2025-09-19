@@ -21,17 +21,22 @@ export interface Pillar {
 }
 
 /**
- * Fetch the full SSC framework (pillars → themes → subthemes)
- * from the Supabase database.
+ * Fetch the SSC framework hierarchy (pillars → themes → subthemes).
  */
 export async function fetchFramework(): Promise<Pillar[]> {
   const { data, error } = await supabase
     .from("pillars")
-    .select("id, name, themes ( id, name, subthemes ( id, name ) )")
+    .select(`
+      id, name,
+      themes (
+        id, name,
+        subthemes ( id, name )
+      )
+    `)
     .order("id");
 
   if (error) {
-    console.error("Error fetching framework:", error);
+    console.error("Error fetching framework:", error.message);
     return [];
   }
 
