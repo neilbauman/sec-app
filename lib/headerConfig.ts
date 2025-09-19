@@ -55,3 +55,10 @@ export const groups = {
 
 export type GroupKey = keyof typeof groups;
 export type PageKey<G extends GroupKey> = keyof typeof groups[G]["pages"];
+
+// Combined props type for PageHeader
+export interface PageHeaderProps<G extends GroupKey = GroupKey> {
+  group: G;
+  page: PageKey<G>;
+  breadcrumb?: { label: string; href?: string }[];
+}
