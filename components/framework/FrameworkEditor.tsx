@@ -1,10 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getFrameworkTree, addPillar, addTheme, addSubtheme } from '@/lib/hooks/useFramework';
+import {
+  getFrameworkTree,
+  addPillar,
+  addTheme,
+  addSubtheme,
+} from '@/lib/hooks/useFramework';
 import { withRefCodes } from '@/lib/refCodes';
 import type { FrameworkTree, Pillar, Theme, Subtheme } from '@/types/framework';
-import { Pencil, Trash2, Plus, ChevronRight, ChevronDown } from 'lucide-react';
+import {
+  Pencil,
+  Trash2,
+  Plus,
+  ChevronRight,
+  ChevronDown,
+  Upload,
+  Download,
+} from 'lucide-react';
 
 export default function FrameworkEditor() {
   const [tree, setTree] = useState<FrameworkTree>({ pillars: [] });
@@ -34,10 +47,58 @@ export default function FrameworkEditor() {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   }
 
+  function expandAll() {
+    const all: { [key: string]: boolean } = {};
+    tree.pillars.forEach((p) => {
+      all[p.id] = true;
+      (p.themes ?? []).forEach((t) => {
+        all[t.id] = true;
+      });
+    });
+    setExpanded(all);
+  }
+
+  function collapseAll() {
+    setExpanded({});
+  }
+
   return (
     <div className="space-y-4">
       {loading && <div className="text-sm text-gray-500">Loading framework…</div>}
       {error && <div className="text-sm text-red-600">Error: {error}</div>}
+
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          <button
+            onClick={expandAll}
+            className="px-2 py-1 text-sm border rounded hover:bg-gray-50"
+          >
+            Expand All
+          </button>
+          <button
+            onClick={collapseAll}
+            className="px-2 py-1 text-sm border rounded hover:bg-gray-50"
+          >
+            Collapse All
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <button
+            className="p-1 hover:bg-gray-100 rounded"
+            title="Upload CSV"
+            onClick={() => alert('TODO: Upload CSV')}
+          >
+            <Upload className="w-4 h-4 text-gray-600" />
+          </button>
+          <button
+            className="p-1 hover:bg-gray-100 rounded"
+            title="Download CSV"
+            onClick={() => alert('TODO: Download CSV')}
+          >
+            <Download className="w-4 h-4 text-gray-600" />
+          </button>
+        </div>
+      </div>
 
       <div className="flex justify-end">
         <AddPillarForm onAdded={refresh} />
@@ -46,10 +107,10 @@ export default function FrameworkEditor() {
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b bg-gray-50 text-left text-sm font-semibold text-gray-700">
-            <th className="p-2">Type / Ref Code</th>
-            <th className="p-2">Name / Description</th>
-            <th className="p-2 w-24 text-center">Sort Order</th>
-            <th className="p-2 w-32 text-right">Actions</th>
+            <th className="p-2 w-[20%]">Type / Ref Code</th>
+            <th className="p-2 w-[50%]">Name / Description</th>
+            <th className="p-2 w-[10%] text-center">Sort Order</th>
+            <th className="p-2 w-[20%] text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -186,7 +247,13 @@ function ThemeRow({
   );
 }
 
-function SubthemeRow({ subtheme, onChanged }: { subtheme: Subtheme; onChanged: () => void }) {
+function SubthemeRow({
+  subtheme,
+  onChanged,
+}: {
+  subtheme: Subtheme;
+  onChanged: () => void;
+}) {
   return (
     <tr className="border-b">
       <td className="p-2 pl-8 align-top">
@@ -244,7 +311,7 @@ function AddPillarForm({ onAdded }: { onAdded: () => void }) {
   if (!open) {
     return (
       <button
-        className="px-3 py-1.5 rounded-md bg-black text-white"
+        className="px-2 py-1 text-sm rounded-md bg-black text-white"
         onClick={() => setOpen(true)}
       >
         + Add Pillar
@@ -255,32 +322,41 @@ function AddPillarForm({ onAdded }: { onAdded: () => void }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <input
-        className="border rounded px-2 py-1"
+        className="border rounded px-2 py-1 text-sm"
         placeholder="Pillar name"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
       <input
-        className="border rounded px-2 py-1 min-w-[240px]"
+        className="border rounded px-2 py-1 text-sm min-w-[240px]"
         placeholder="Description (optional)"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
       <button
-        className="px-3 py-1.5 rounded-md bg-black text-white disabled:opacity-50"
+        className="px-2 py-1 text-sm rounded-md bg-black text-white disabled:opacity-50"
         disabled={busy || !name.trim()}
         onClick={submit}
       >
         Save
       </button>
-      <button className="px-3 py-1.5 rounded-md border" onClick={() => setOpen(false)}>
+      <button
+        className="px-2 py-1 text-sm rounded-md border"
+        onClick={() => setOpen(false)}
+      >
         Cancel
       </button>
     </div>
   );
 }
 
-function AddThemeForm({ pillarId, onAdded }: { pillarId: string; onAdded: () => void }) {
+function AddThemeForm({
+  pillarId,
+  onAdded,
+}: {
+  pillarId: string;
+  onAdded: () => void;
+}) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -316,32 +392,41 @@ function AddThemeForm({ pillarId, onAdded }: { pillarId: string; onAdded: () => 
   return (
     <div className="flex gap-2">
       <input
-        className="border rounded px-2 py-1"
+        className="border rounded px-2 py-1 text-sm"
         placeholder="Theme name"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
       <input
-        className="border rounded px-2 py-1"
+        className="border rounded px-2 py-1 text-sm"
         placeholder="Description (optional)"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
       <button
-        className="px-2 py-1 rounded bg-black text-white disabled:opacity-50"
+        className="px-2 py-1 text-sm rounded bg-black text-white disabled:opacity-50"
         disabled={busy || !name.trim()}
         onClick={submit}
       >
         Save
       </button>
-      <button className="px-2 py-1 rounded border" onClick={() => setAdding(false)}>
+      <button
+        className="px-2 py-1 text-sm rounded border"
+        onClick={() => setAdding(false)}
+      >
         Cancel
       </button>
     </div>
   );
 }
 
-function AddSubthemeForm({ themeId, onAdded }: { themeId: string; onAdded: () => void }) {
+function AddSubthemeForm({
+  themeId,
+  onAdded,
+}: {
+  themeId: string;
+  onAdded: () => void;
+}) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -377,25 +462,28 @@ function AddSubthemeForm({ themeId, onAdded }: { themeId: string; onAdded: () =>
   return (
     <div className="flex gap-2">
       <input
-        className="border rounded px-2 py-1"
+        className="border rounded px-2 py-1 text-sm"
         placeholder="Subtheme name"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
       <input
-        className="border rounded px-2 py-1"
+        className="border rounded px-2 py-1 text-sm"
         placeholder="Description (optional)"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       />
       <button
-        className="px-2 py-1 rounded bg-black text-white disabled:opacity-50"
+        className="px-2 py-1 text-sm rounded bg-black text-white disabled:opacity-50"
         disabled={busy || !name.trim()}
         onClick={submit}
       >
         Save
       </button>
-      <button className="px-2 py-1 rounded border" onClick={() => setAdding(false)}>
+      <button
+        className="px-2 py-1 text-sm rounded border"
+        onClick={() => setAdding(false)}
+      >
         Cancel
       </button>
     </div>
