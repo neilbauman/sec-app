@@ -2,59 +2,79 @@
 "use client";
 
 import { useState } from "react";
-import PageHeader from "@/components/ui/PageHeader";
 
-// Mock framework data (replace with real SSC definitions later)
-const initialPillars = [
+interface Subtheme {
+  id: string;
+  name: string;
+}
+interface Theme {
+  id: string;
+  name: string;
+  subthemes?: Subtheme[];
+}
+interface Pillar {
+  id: string;
+  name: string;
+  themes: Theme[];
+}
+
+const initialFramework: Pillar[] = [
   {
-    id: "pillar-1",
-    name: "Pillar 1: Shelter",
+    id: "1",
+    name: "Shelter",
     themes: [
-      { id: "theme-1", name: "Materials & Construction" },
-      { id: "theme-2", name: "Durability & Safety" },
+      {
+        id: "1-1",
+        name: "Materials & Construction",
+        subthemes: [
+          { id: "1-1-1", name: "Durability" },
+          { id: "1-1-2", name: "Safety" },
+        ],
+      },
     ],
   },
   {
-    id: "pillar-2",
-    name: "Pillar 2: Settlement",
+    id: "2",
+    name: "Settlement",
     themes: [
-      { id: "theme-3", name: "Site Planning" },
-      { id: "theme-4", name: "Community Spaces" },
+      {
+        id: "2-1",
+        name: "Site Planning",
+        subthemes: [{ id: "2-1-1", name: "Community Spaces" }],
+      },
     ],
   },
 ];
 
 export default function FrameworkEditor() {
-  const [pillars] = useState(initialPillars);
+  const [framework, setFramework] = useState<Pillar[]>(initialFramework);
 
   return (
     <div className="space-y-6">
-      {/* ✅ Header always first */}
-      <PageHeader
-        group="configuration"
-        page="primary"
-        breadcrumb={[
-          { label: "Dashboard", href: "/" },
-          { label: "Configuration", href: "/configuration" },
-          { label: "Primary Framework Editor" },
-        ]}
-      />
-
-      {/* ✅ Main content */}
-      <div className="bg-white shadow rounded-lg p-6 space-y-6">
-        {pillars.map((pillar) => (
-          <div key={pillar.id} className="border-b border-gray-200 pb-4">
-            <h2 className="text-lg font-semibold text-brand-green mb-2">
-              {pillar.name}
-            </h2>
-            <ul className="list-disc list-inside text-gray-700">
-              {pillar.themes.map((theme) => (
-                <li key={theme.id}>{theme.name}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
+      {framework.map((pillar, idx) => (
+        <div
+          key={pillar.id}
+          className="border rounded-lg p-4 shadow-sm bg-white"
+        >
+          <h2 className="text-lg font-semibold text-green-700">
+            Pillar {idx + 1}: {pillar.name}
+          </h2>
+          <ul className="ml-4 mt-2 space-y-2">
+            {pillar.themes.map((theme) => (
+              <li key={theme.id}>
+                <p className="font-medium">{theme.name}</p>
+                {theme.subthemes && (
+                  <ul className="ml-6 list-disc">
+                    {theme.subthemes.map((sub) => (
+                      <li key={sub.id}>{sub.name}</li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }
