@@ -14,23 +14,10 @@ export type Pillar = Database["public"]["Tables"]["pillars"]["Row"] & {
 };
 
 /**
- * Fetches the current (latest) framework version with its full hierarchy.
- * Returns an array of pillars, each with nested themes, subthemes, and indicators.
+ * Fetch framework data (pillars with nested themes, subthemes, indicators).
+ * This simplified version ignores framework versions and returns everything.
  */
 export async function fetchFramework(): Promise<Pillar[]> {
-  // Step 1: find the latest framework version
-  const { data: version, error: versionError } = await supabase
-    .from("primary_framework_versions")
-    .select("id, version_number")
-    .order("version_number", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (versionError || !version) {
-    throw new Error(versionError?.message || "No framework version found");
-  }
-
-  // Step 2: fetch the pillars for that version
   const { data, error } = await supabase
     .from("pillars")
     .select(`
@@ -65,8 +52,9 @@ export async function fetchFramework(): Promise<Pillar[]> {
     .order("sort_order", { ascending: true });
 
   if (error) {
+    console.error("Supabase fetchFramework error:", error);
     throw new Error(error.message);
   }
 
-  return (data ?? []) as Pillar[];
+  return data ?? [];
 }
