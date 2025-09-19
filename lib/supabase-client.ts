@@ -1,44 +1,10 @@
-// lib/framework-client.ts
+// lib/supabase-client.ts
 "use client";
 
-import { supabase } from "./supabase-browser";
-
-export interface Subtheme {
-  id: string;
-  name: string;
-}
-
-export interface Theme {
-  id: string;
-  name: string;
-  subthemes: Subtheme[];
-}
-
-export interface Pillar {
-  id: string;
-  name: string;
-  themes: Theme[];
-}
+import { createClient } from "./supabase-browser";
 
 /**
- * Fetch the SSC framework hierarchy (pillars → themes → subthemes).
+ * Singleton Supabase client instance for client-side usage.
+ * Import this in React components/hooks when you need Supabase.
  */
-export async function fetchFramework(): Promise<Pillar[]> {
-  const { data, error } = await supabase
-    .from("pillars")
-    .select(`
-      id, name,
-      themes (
-        id, name,
-        subthemes ( id, name )
-      )
-    `)
-    .order("id");
-
-  if (error) {
-    console.error("Error fetching framework:", error.message);
-    return [];
-  }
-
-  return (data as Pillar[]) || [];
-}
+export const supabase = createClient();
