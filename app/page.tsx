@@ -24,10 +24,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* About */}
-        <Link
-          href="/about"
-          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
-        >
+        <div className="p-6 bg-white rounded-lg shadow hover:shadow-md transition">
           <div className="flex items-center gap-3">
             <Info className="w-6 h-6 text-blue-500" />
             <h3 className="font-semibold text-lg">About</h3>
@@ -35,13 +32,20 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-600 mt-2">
             Overview of the SSC and this toolset.
           </p>
-        </Link>
+          <ul className="mt-3 text-sm text-gray-500 list-disc list-inside">
+            <li>
+              <Link
+                href="/about"
+                className="text-blue-600 hover:underline"
+              >
+                About the SSC Toolset
+              </Link>
+            </li>
+          </ul>
+        </div>
 
         {/* SSC Configuration */}
-        <Link
-          href="/configuration"
-          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
-        >
+        <div className="p-6 bg-white rounded-lg shadow hover:shadow-md transition">
           <div className="flex items-center gap-3">
             <Settings className="w-6 h-6 text-green-600" />
             <h3 className="font-semibold text-lg">SSC Configuration</h3>
@@ -50,17 +54,28 @@ export default function DashboardPage() {
             Manage global SSC framework and defaults.
           </p>
           <ul className="mt-3 text-sm text-gray-500 list-disc list-inside">
-            <li>Primary Framework Editor</li>
-            <li>Comprehensive Framework Editor</li>
+            <li>
+              <Link
+                href="/configuration/primary"
+                className="text-blue-600 hover:underline"
+              >
+                Primary Framework Editor
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/configuration/comprehensive"
+                className="text-blue-600 hover:underline"
+              >
+                Comprehensive Framework Editor
+              </Link>
+            </li>
             <li className="italic text-gray-400">Versioning (coming soon)</li>
           </ul>
-        </Link>
+        </div>
 
         {/* Country Configuration */}
-        <Link
-          href="/country"
-          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
-        >
+        <div className="p-6 bg-white rounded-lg shadow hover:shadow-md transition">
           <div className="flex items-center gap-3">
             <Globe className="w-6 h-6 text-orange-500" />
             <h3 className="font-semibold text-lg">Country Configuration</h3>
@@ -69,16 +84,13 @@ export default function DashboardPage() {
             Configure country-level baselines, mapping, and population data.
           </p>
           <ul className="mt-3 text-sm text-gray-500 list-disc list-inside">
-            <li>Country Data Manager</li>
+            <li className="italic text-gray-400">Country Data Manager</li>
             <li className="italic text-gray-400">More tools coming soon</li>
           </ul>
-        </Link>
+        </div>
 
         {/* SSC Instances */}
-        <Link
-          href="/instances"
-          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
-        >
+        <div className="p-6 bg-white rounded-lg shadow hover:shadow-md transition">
           <div className="flex items-center gap-3">
             <Database className="w-6 h-6 text-purple-600" />
             <h3 className="font-semibold text-lg">SSC Instances</h3>
@@ -87,10 +99,17 @@ export default function DashboardPage() {
             Perform calculations and manage SSC instances.
           </p>
           <ul className="mt-3 text-sm text-gray-500 list-disc list-inside">
-            <li>Instance Manager</li>
+            <li>
+              <Link
+                href="/instances"
+                className="text-blue-600 hover:underline"
+              >
+                Instance Manager
+              </Link>
+            </li>
             <li className="italic text-gray-400">Reports (coming soon)</li>
           </ul>
-        </Link>
+        </div>
       </div>
     </div>
   );
