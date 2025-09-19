@@ -25,20 +25,30 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* About */}
         <div className="p-6 bg-white rounded-lg shadow hover:shadow-md transition">
-          <div className="flex items-center gap-3">
+          <Link href="/about" className="flex items-center gap-3">
             <Info className="w-6 h-6 text-blue-500" />
-            <h3 className="font-semibold text-lg">About</h3>
-          </div>
+            <h3 className="font-semibold text-lg text-blue-600 hover:underline">
+              About
+            </h3>
+          </Link>
           <p className="text-sm text-gray-600 mt-2">
             Overview of the SSC and this toolset.
           </p>
           <ul className="mt-3 text-sm text-gray-500 list-disc list-inside">
             <li>
               <Link
-                href="/about"
+                href="/about/using"
                 className="text-blue-600 hover:underline"
               >
-                About the SSC Toolset
+                Using this Toolset
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/about/what-is-ssc"
+                className="text-blue-600 hover:underline"
+              >
+                What is the SSC?
               </Link>
             </li>
           </ul>
@@ -46,10 +56,12 @@ export default function DashboardPage() {
 
         {/* SSC Configuration */}
         <div className="p-6 bg-white rounded-lg shadow hover:shadow-md transition">
-          <div className="flex items-center gap-3">
+          <Link href="/configuration" className="flex items-center gap-3">
             <Settings className="w-6 h-6 text-green-600" />
-            <h3 className="font-semibold text-lg">SSC Configuration</h3>
-          </div>
+            <h3 className="font-semibold text-lg text-green-600 hover:underline">
+              SSC Configuration
+            </h3>
+          </Link>
           <p className="text-sm text-gray-600 mt-2">
             Manage global SSC framework and defaults.
           </p>
@@ -76,10 +88,12 @@ export default function DashboardPage() {
 
         {/* Country Configuration */}
         <div className="p-6 bg-white rounded-lg shadow hover:shadow-md transition">
-          <div className="flex items-center gap-3">
+          <Link href="/country" className="flex items-center gap-3">
             <Globe className="w-6 h-6 text-orange-500" />
-            <h3 className="font-semibold text-lg">Country Configuration</h3>
-          </div>
+            <h3 className="font-semibold text-lg text-orange-500 hover:underline">
+              Country Configuration
+            </h3>
+          </Link>
           <p className="text-sm text-gray-600 mt-2">
             Configure country-level baselines, mapping, and population data.
           </p>
@@ -91,10 +105,12 @@ export default function DashboardPage() {
 
         {/* SSC Instances */}
         <div className="p-6 bg-white rounded-lg shadow hover:shadow-md transition">
-          <div className="flex items-center gap-3">
+          <Link href="/instances" className="flex items-center gap-3">
             <Database className="w-6 h-6 text-purple-600" />
-            <h3 className="font-semibold text-lg">SSC Instances</h3>
-          </div>
+            <h3 className="font-semibold text-lg text-purple-600 hover:underline">
+              SSC Instances
+            </h3>
+          </Link>
           <p className="text-sm text-gray-600 mt-2">
             Perform calculations and manage SSC instances.
           </p>
