@@ -1,64 +1,61 @@
-"use client";
+import React from "react";
+import { toolkit, groups, GroupKey, PageKey } from "@/lib/headerConfig";
 
-import { ReactNode } from "react";
-import { toolkit, groups } from "@/lib/headerConfig";
+interface PageHeaderProps<G extends GroupKey> {
+  group: G;
+  page: PageKey<G>;
+  breadcrumb?: { label: string; href?: string }[];
+}
 
-export default function PageHeader({
+export default function PageHeader<G extends GroupKey>({
   group,
   page,
-  breadcrumb = [],
-}: {
-  group: keyof typeof groups;
-  page: keyof (typeof groups)[typeof group]["pages"];
-  breadcrumb?: { label: string; href?: string }[];
-}) {
-  const ToolkitIcon = toolkit.icon;
+  breadcrumb,
+}: PageHeaderProps<G>) {
   const groupData = groups[group];
-  const GroupIcon = groupData.icon;
-
   const pageData = groupData.pages[page];
 
+  const ToolkitIcon = toolkit.icon;
+  const GroupIcon = groupData.icon;
+
   return (
-    <div className="space-y-4">
-      {/* Toolkit title */}
+    <div className="border-b border-gray-200 pb-4">
+      {/* Toolkit title row */}
       <div className="flex items-center gap-2">
         <ToolkitIcon className={`w-7 h-7 ${toolkit.color}`} />
         <h1 className="text-2xl font-bold text-gray-900">{toolkit.title}</h1>
       </div>
 
-      {/* Group */}
-      <div className="flex items-center gap-2 ml-6">
-        <GroupIcon className={`w-5 h-5 ${groupData.color}`} />
-        <h2 className="text-lg font-semibold text-gray-800">{groupData.name}</h2>
-      </div>
-
-      {/* Page */}
-      <div className="flex items-center gap-2 ml-10">
-        <h3 className="text-md font-medium text-gray-700">
-          {pageData.title}
-        </h3>
-      </div>
-      <p className="ml-10 text-gray-500">{pageData.description}</p>
-
       {/* Breadcrumb */}
-      <nav className="text-sm">
-        <ol className="flex items-center space-x-2 text-orange-600">
+      {breadcrumb && breadcrumb.length > 0 && (
+        <nav className="mt-2 text-sm flex gap-2">
           {breadcrumb.map((item, idx) => (
-            <li key={idx} className="flex items-center">
+            <span key={idx} className={`${toolkit.color}`}>
               {item.href ? (
                 <a href={item.href} className="hover:underline">
                   {item.label}
                 </a>
               ) : (
-                <span className="font-semibold">{item.label}</span>
+                item.label
               )}
-              {idx < breadcrumb.length - 1 && (
-                <span className="mx-2 text-gray-400">/</span>
-              )}
-            </li>
+              {idx < breadcrumb.length - 1 && " / "}
+            </span>
           ))}
-        </ol>
-      </nav>
+        </nav>
+      )}
+
+      {/* Group + Page */}
+      <div className="mt-4">
+        <div className="flex items-center gap-2">
+          <GroupIcon className={`w-6 h-6 ${groupData.color}`} />
+          <h2 className="text-xl font-semibold text-gray-900">
+            {pageData.title}
+          </h2>
+        </div>
+        {pageData.description && (
+          <p className="mt-1 text-gray-600">{pageData.description}</p>
+        )}
+      </div>
     </div>
   );
 }
