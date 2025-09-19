@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import PageHeader from "@/components/ui/PageHeader";
-import { Info } from "lucide-react";
+import { Info, BookOpen, HelpCircle } from "lucide-react";
 
-export default function AboutPage() {
+export default function AboutGroupPage() {
   return (
     <div className="space-y-6">
       <PageHeader
@@ -16,24 +17,40 @@ export default function AboutPage() {
         page={{
           title: "About the SSC Toolset",
           description:
-            "Overview of the Shelter and Settlement Severity Classification toolset.",
+            "Learn about the SSC, its purpose, and how to use this toolset effectively.",
         }}
         breadcrumb={[{ label: "Dashboard", href: "/" }, { label: "About" }]}
       />
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <p className="text-gray-700 leading-relaxed">
-          The Shelter and Settlement Severity Classification (SSC) Toolset
-          provides a structured framework for analyzing humanitarian needs. It
-          helps ensure consistent and comparable results across countries and
-          contexts.
-        </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Using this toolset */}
+        <Link
+          href="/about/using"
+          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
+        >
+          <div className="flex items-center gap-3">
+            <BookOpen className="w-6 h-6 text-blue-500" />
+            <h3 className="font-semibold text-lg">Using this Toolset</h3>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            Guidance on how to navigate and apply the SSC toolset in practice.
+          </p>
+        </Link>
 
-        <div className="mt-6 h-48 flex items-center justify-center bg-gray-100 rounded">
-          <span className="text-gray-400 text-sm">
-            [Placeholder diagram/image]
-          </span>
-        </div>
+        {/* What is the SSC? */}
+        <Link
+          href="/about/what-is-ssc"
+          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition"
+        >
+          <div className="flex items-center gap-3">
+            <HelpCircle className="w-6 h-6 text-blue-500" />
+            <h3 className="font-semibold text-lg">What is the SSC?</h3>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            An introduction to the Shelter and Settlement Severity
+            Classification system and its purpose.
+          </p>
+        </Link>
       </div>
     </div>
   );
