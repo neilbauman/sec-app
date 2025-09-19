@@ -14,7 +14,7 @@ export default function PageHeader<G extends GroupKey>({
   breadcrumb,
 }: PageHeaderProps<G>) {
   const groupData = groups[group];
-  const pageData = groupData.pages[page];
+  const pageData = groupData.pages[page as keyof typeof groupData.pages]; // 👈 fix
 
   const ToolkitIcon = toolkit.icon;
   const GroupIcon = groupData.icon;
