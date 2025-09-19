@@ -1,60 +1,41 @@
 // app/about/page.tsx
-import Link from "next/link";
-import { Info } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 
-export default function AboutIndex() {
+export default function AboutPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        group="about"
-        page="index"
-        breadcrumb={[
-          { label: "Dashboard", href: "/" },
-          { label: "About" },
-        ]}
-      />
+      <PageHeader group="about" page="index" breadcrumb={[{ label: "Dashboard", href: "/" }, { label: "About" }]} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* What is SSC? */}
-        <Link
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a
           href="/about/what-is-ssc"
-          className="group block rounded-xl border border-gray-200 bg-white p-5 hover:shadow-sm transition"
+          className="block rounded-xl border border-blue-200 bg-white p-6 shadow hover:shadow-md transition"
         >
-          <div className="flex items-start gap-3">
-            <div className="rounded-lg bg-blue-50 p-2">
-              <Info className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 group-hover:underline">
-                What is SSC?
-              </h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Background on the SSC framework and its role in humanitarian response.
-              </p>
-            </div>
-          </div>
-        </Link>
+          <h3 className="text-lg font-semibold text-blue-600">What is SSC?</h3>
+          <p className="mt-2 text-sm text-gray-600">
+            Learn about the Shelter and Settlement Severity Classification (SSC) system and its purpose.
+          </p>
+        </a>
 
-        {/* Using the Toolset */}
-        <Link
+        <a
           href="/about/using"
-          className="group block rounded-xl border border-gray-2 00 bg-white p-5 hover:shadow-sm transition"
+          className="block rounded-xl border border-blue-200 bg-white p-6 shadow hover:shadow-md transition"
         >
-          <div className="flex items-start gap-3">
-            <div className="rounded-lg bg-blue-50 p-2">
-              <Info className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 group-hover:underline">
-                Using the Toolset
-              </h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Guidelines and instructions for using the SSC toolset effectively.
-              </p>
-            </div>
-          </div>
-        </Link>
+          <h3 className="text-lg font-semibold text-blue-600">Using the Toolset</h3>
+          <p className="mt-2 text-sm text-gray-600">
+            Practical guidelines and instructions for applying the SSC toolset in assessments.
+          </p>
+        </a>
+
+        <a
+          href="/about/guidelines"
+          className="block rounded-xl border border-blue-200 bg-white p-6 shadow hover:shadow-md transition"
+        >
+          <h3 className="text-lg font-semibold text-blue-600">Implementation Guidelines</h3>
+          <p className="mt-2 text-sm text-gray-600">
+            Key steps, process recommendations, and methodology for SSC implementation.
+          </p>
+        </a>
       </div>
     </div>
   );
