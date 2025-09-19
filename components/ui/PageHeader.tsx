@@ -1,4 +1,5 @@
-// components/ui/PageHeader.tsx
+"use client";
+
 import { toolkit, groups } from "@/lib/headerConfig";
 
 type PageHeaderProps = {
@@ -18,7 +19,7 @@ export default function PageHeader({ group, page, breadcrumb }: PageHeaderProps)
     <div className="space-y-2">
       {/* Toolkit */}
       <div className="flex items-center gap-2">
-        <ToolkitIcon className={`w-6 h-6 ${toolkit.color}`} />
+        <ToolkitIcon className={`w-7 h-7 ${toolkit.color}`} />
         <h1 className="text-xl font-semibold text-brand-rust">
           {toolkit.title}
         </h1>
@@ -42,12 +43,19 @@ export default function PageHeader({ group, page, breadcrumb }: PageHeaderProps)
         </div>
       )}
 
-      {/* Group + Page */}
+      {/* Group */}
       <div className="flex items-center gap-2">
-        <GroupIcon className={`w-5 h-5 ${groupData.color}`} />
-        <h2 className="text-lg font-semibold">{pageData?.title}</h2>
+        <GroupIcon className={`w-6 h-6 ${groupData.color}`} />
+        <h2 className="text-lg font-semibold">{groupData.name}</h2>
       </div>
-      <p className="text-gray-600">{pageData?.description}</p>
+
+      {/* Page */}
+      {pageData && (
+        <>
+          <h3 className="text-md font-semibold text-brand-rust">{pageData.title}</h3>
+          <p className="text-gray-600">{pageData.description}</p>
+        </>
+      )}
     </div>
   );
 }
