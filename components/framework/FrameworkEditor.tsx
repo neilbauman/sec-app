@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchFramework } from "@/lib/framework-client";
 import PageHeader from "@/components/ui/PageHeader";
+import { ChevronRight } from "lucide-react";
 
 interface FrameworkEditorProps {
   group: "configuration";
@@ -55,9 +56,10 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
             <details
               key={pillar.id}
               open={pIndex === 0}
-              className="border rounded-lg p-4"
+              className="group border rounded-lg p-4"
             >
-              <summary className="font-semibold text-brand-green cursor-pointer">
+              <summary className="flex items-center cursor-pointer font-semibold text-brand-green">
+                <ChevronRight className="h-4 w-4 mr-2 transition-transform group-open:rotate-90" />
                 {`Pillar ${pIndex + 1}: ${pillar.name}`}
               </summary>
               {pillar.description && (
@@ -68,17 +70,18 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
                 {sortByOrder(pillar.themes).map((theme: any) => (
                   <details
                     key={theme.id}
-                    className="ml-4 border-l pl-4 py-1"
+                    className="group ml-4 border-l pl-4 py-1"
                   >
-                    <summary className="font-medium text-gray-800 cursor-pointer">
+                    <summary className="flex items-center cursor-pointer font-medium text-gray-800">
+                      <ChevronRight className="h-3 w-3 mr-2 transition-transform group-open:rotate-90" />
                       {theme.name}
                     </summary>
                     {theme.description && (
-                      <p className="ml-4 mt-1 text-gray-500 text-sm">
+                      <p className="ml-5 mt-1 text-gray-500 text-sm">
                         {theme.description}
                       </p>
                     )}
-                    <ul className="ml-6 mt-2 list-disc text-gray-700">
+                    <ul className="ml-7 mt-2 list-disc text-gray-700">
                       {sortByOrder(theme.subthemes).map((sub: any) => (
                         <li key={sub.id}>
                           {sub.name}
