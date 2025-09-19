@@ -8,10 +8,10 @@ export interface PageHeaderProps {
   group: {
     name: string;
     icon: ReactNode;
-    color: string; // Tailwind color class for group (ex: text-green-600)
+    color: string; // Tailwind class, e.g. text-green-600
   };
   page: {
-    title: ReactNode; // JSX allowed
+    title: string; // force string here
     description: string;
     icon?: ReactNode;
   };
@@ -53,7 +53,7 @@ export default function PageHeader({
 
       {/* Breadcrumb */}
       <div className="ml-10">
-        <nav className="text-sm text-rust-600 flex items-center gap-2">
+        <nav className="text-sm flex items-center gap-2">
           {breadcrumb.map((item, idx) => (
             <span key={idx} className="flex items-center gap-2">
               {item.href ? (
