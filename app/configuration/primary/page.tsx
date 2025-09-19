@@ -1,13 +1,27 @@
 // app/configuration/primary/page.tsx
-import dynamic from "next/dynamic";
+"use client";
 
-// Load the editor only on the client if it relies on browser APIs.
-const FrameworkEditor = dynamic(
-  () => import("@/components/framework/FrameworkEditor"),
-  { ssr: false }
-);
+import dynamic from "next/dynamic";
+import PageHeader from "@/components/ui/PageHeader";
+
+// Load the FrameworkEditor client-side
+const FrameworkEditor = dynamic(() => import("@/components/framework/FrameworkEditor"), {
+  ssr: false,
+});
 
 export default function PrimaryFrameworkEditorPage() {
-  // The FrameworkEditor component renders its own PageHeader (group=configuration, page=primary).
-  return <FrameworkEditor />;
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        group="configuration"
+        page="primary"
+        breadcrumb={[
+          { label: "Dashboard", href: "/" },
+          { label: "Configuration", href: "/configuration" },
+          { label: "Primary Framework Editor" },
+        ]}
+      />
+      <FrameworkEditor />
+    </div>
+  );
 }
