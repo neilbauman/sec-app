@@ -1,3 +1,5 @@
+// app/about/page.tsx (About Group Page)
+
 "use client";
 
 import Link from "next/link";
@@ -15,7 +17,12 @@ export default function AboutGroupPage() {
           color: "text-blue-500",
         }}
         page={{
-          title: "About the SSC Toolset",
+          title: (
+            <span className="flex items-center gap-2">
+              <Info className="w-6 h-6 text-blue-500" />
+              About the SSC Toolset
+            </span>
+          ),
           description:
             "Learn about the SSC, its purpose, and how to use this toolset effectively.",
         }}
@@ -30,7 +37,9 @@ export default function AboutGroupPage() {
         >
           <div className="flex items-center gap-3">
             <BookOpen className="w-6 h-6 text-blue-500" />
-            <h3 className="font-semibold text-lg">Using this Toolset</h3>
+            <h3 className="font-semibold text-lg text-blue-500">
+              Using this Toolset
+            </h3>
           </div>
           <p className="text-sm text-gray-600 mt-2">
             Guidance on how to navigate and apply the SSC toolset in practice.
@@ -44,7 +53,9 @@ export default function AboutGroupPage() {
         >
           <div className="flex items-center gap-3">
             <HelpCircle className="w-6 h-6 text-blue-500" />
-            <h3 className="font-semibold text-lg">What is the SSC?</h3>
+            <h3 className="font-semibold text-lg text-blue-500">
+              What is the SSC?
+            </h3>
           </div>
           <p className="text-sm text-gray-600 mt-2">
             An introduction to the Shelter and Settlement Severity
