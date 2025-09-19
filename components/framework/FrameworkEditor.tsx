@@ -18,7 +18,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
     async function load() {
       try {
         const data = await fetchFramework();
-        setPillars(data);
+        setPillars(data ?? []);
       } catch (err) {
         console.error(err);
         setError("Failed to load framework data.");
@@ -45,6 +45,10 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
         {loading && <p className="text-gray-500">Loading framework…</p>}
         {error && <p className="text-red-600">{error}</p>}
 
+        {!loading && !error && pillars.length === 0 && (
+          <p className="text-gray-500">No framework data available.</p>
+        )}
+
         {!loading &&
           !error &&
           pillars.map((pillar, pIndex) => (
@@ -56,8 +60,13 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
               <summary className="font-semibold text-brand-green">
                 {`Pillar ${pIndex + 1}: ${pillar.name}`}
               </summary>
+
+              {pillar.description && (
+                <p className="mt-1 text-gray-600">{pillar.description}</p>
+              )}
+
               <div className="mt-2 space-y-3">
-                {pillar.themes.map((theme) => (
+                {(pillar.themes ?? []).map((theme) => (
                   <details
                     key={theme.id}
                     className="ml-4 border-l pl-4 py-1"
@@ -65,9 +74,23 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
                     <summary className="font-medium text-gray-800">
                       {theme.name}
                     </summary>
-                    <ul className="ml-4 mt-1 list-disc text-gray-700">
-                      {theme.subthemes.map((sub) => (
-                        <li key={sub.id}>{sub.name}</li>
+
+                    {theme.description && (
+                      <p className="ml-4 mt-1 text-gray-500 text-sm">
+                        {theme.description}
+                      </p>
+                    )}
+
+                    <ul className="ml-6 mt-2 list-disc text-gray-700">
+                      {(theme.subthemes ?? []).map((sub) => (
+                        <li key={sub.id}>
+                          {sub.name}
+                          {sub.description && (
+                            <span className="ml-2 text-gray-500 text-sm">
+                              {sub.description}
+                            </span>
+                          )}
+                        </li>
                       ))}
                     </ul>
                   </details>
