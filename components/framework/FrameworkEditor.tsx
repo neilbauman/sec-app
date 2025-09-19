@@ -65,7 +65,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
                 <PillarRow
                   key={pillar.id}
                   pillar={pillar}
-                  index={pIndex}
+                  index={pillar.sort_order ?? pIndex + 1}
                   sortByOrder={sortByOrder}
                 />
               ))}
@@ -87,6 +87,7 @@ function PillarRow({
   sortByOrder: (arr: any[]) => any[];
 }) {
   const [open, setOpen] = useState(false);
+  const refCode = `P${index}`;
 
   return (
     <>
@@ -101,16 +102,16 @@ function PillarRow({
           </button>
         </td>
         <td className="py-2 pr-4 font-semibold text-brand-green">
-          Pillar ({pillar.ref_code})
+          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+            Pillar
+          </span>
+          <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
         </td>
         <td className="py-2 pr-4">
           <div>{pillar.name}</div>
           {pillar.description && (
             <div className="text-gray-500 text-xs">{pillar.description}</div>
           )}
-          <span className="ml-2 inline-block bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
-            {pillar.themes?.length ?? 0} themes
-          </span>
         </td>
         <td className="py-2 pr-4">{pillar.sort_order}</td>
         <td className="py-2">—</td>
@@ -121,6 +122,7 @@ function PillarRow({
           <ThemeRow
             key={theme.id}
             theme={theme}
+            pillarIndex={index}
             sortByOrder={sortByOrder}
           />
         ))}
@@ -130,12 +132,15 @@ function PillarRow({
 
 function ThemeRow({
   theme,
+  pillarIndex,
   sortByOrder,
 }: {
   theme: any;
+  pillarIndex: number;
   sortByOrder: (arr: any[]) => any[];
 }) {
   const [open, setOpen] = useState(false);
+  const refCode = `T${pillarIndex}.${theme.sort_order}`;
 
   return (
     <>
@@ -150,16 +155,16 @@ function ThemeRow({
           </button>
         </td>
         <td className="py-2 pr-4 font-medium text-gray-800">
-          Theme ({theme.ref_code})
+          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
+            Theme
+          </span>
+          <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
         </td>
         <td className="py-2 pr-4">
           <div>{theme.name}</div>
           {theme.description && (
             <div className="text-gray-500 text-xs">{theme.description}</div>
           )}
-          <span className="ml-2 inline-block bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
-            {theme.subthemes?.length ?? 0} subthemes
-          </span>
         </td>
         <td className="py-2 pr-4">{theme.sort_order}</td>
         <td className="py-2">—</td>
@@ -167,27 +172,42 @@ function ThemeRow({
 
       {open &&
         sortByOrder(theme.subthemes).map((sub: any) => (
-          <SubthemeRow key={sub.id} sub={sub} />
+          <SubthemeRow
+            key={sub.id}
+            sub={sub}
+            pillarIndex={pillarIndex}
+            themeIndex={theme.sort_order}
+          />
         ))}
     </>
   );
 }
 
-function SubthemeRow({ sub }: { sub: any }) {
+function SubthemeRow({
+  sub,
+  pillarIndex,
+  themeIndex,
+}: {
+  sub: any;
+  pillarIndex: number;
+  themeIndex: number;
+}) {
+  const refCode = `ST${pillarIndex}.${themeIndex}.${sub.sort_order}`;
+
   return (
     <tr className="border-b bg-gray-100">
       <td className="py-2 pr-2 pl-12"></td>
       <td className="py-2 pr-4 text-gray-700">
-        Subtheme ({sub.ref_code})
+        <span className="inline-block bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full">
+          Subtheme
+        </span>
+        <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
       </td>
       <td className="py-2 pr-4">
         <div>{sub.name}</div>
         {sub.description && (
           <div className="text-gray-500 text-xs">{sub.description}</div>
         )}
-        <span className="ml-2 inline-block bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full">
-          leaf
-        </span>
       </td>
       <td className="py-2 pr-4">{sub.sort_order}</td>
       <td className="py-2">—</td>
