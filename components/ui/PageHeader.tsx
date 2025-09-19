@@ -4,25 +4,28 @@ import { ReactNode } from "react";
 import Link from "next/link";
 
 interface PageHeaderProps {
-  toolkit: { title: string; icon: ReactNode; color: string };
-  group: { name: string; icon: ReactNode; color: string };
+  toolkit: { title: string; icon: React.ComponentType<{ className?: string }>; color: string };
+  group: { name: string; icon: React.ComponentType<{ className?: string }>; color: string };
   page: { title: string; description: string };
   breadcrumb: { label: string; href?: string }[];
 }
 
 export default function PageHeader({ toolkit, group, page, breadcrumb }: PageHeaderProps) {
+  const ToolkitIcon = toolkit.icon;
+  const GroupIcon = group.icon;
+
   return (
     <div className="space-y-4 border-b border-gray-200 pb-4">
       {/* Toolkit Title */}
       <div className="flex items-center gap-2">
-        {toolkit.icon}
+        <ToolkitIcon className={`w-7 h-7 ${toolkit.color}`} />
         <h1 className={`text-2xl font-bold ${toolkit.color}`}>{toolkit.title}</h1>
       </div>
 
       {/* Group and Page */}
       <div className="ml-2 space-y-1">
         <div className="flex items-center gap-2">
-          {group.icon}
+          <GroupIcon className={`w-6 h-6 ${group.color}`} />
           <span className={`font-semibold ${group.color}`}>{group.name}</span>
         </div>
         <div className="flex items-center gap-2">
