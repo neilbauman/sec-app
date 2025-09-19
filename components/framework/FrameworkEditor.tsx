@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 // ✅ Correct import for your repo structure
-import PageHeader from '@/components/PageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 
 export default function FrameworkEditor() {
   const [tree, setTree] = useState<FrameworkTree>({ pillars: [] });
