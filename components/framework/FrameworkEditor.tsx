@@ -2,338 +2,88 @@
 
 import { useEffect, useState } from "react";
 import PageHeader from "@/components/ui/PageHeader";
-import {
-  FileText,
-  Settings,
-  Pencil,
-  Trash2,
-  Plus,
-  ChevronRight,
-  ChevronDown,
-  Upload,
-  Download,
-} from "lucide-react";
-import {
-  getFrameworkTree,
-  addPillar,
-  addTheme,
-  addSubtheme,
-} from "@/lib/framework-client";
+import { getFrameworkTree, addPillar } from "@/lib/framework-client";
+import { Plus } from "lucide-react";
+
+interface Subtheme {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+interface Theme {
+  id: string;
+  name: string;
+  description?: string;
+  subthemes: Subtheme[];
+}
+
+interface Pillar {
+  id: string;
+  name: string;
+  description?: string;
+  themes: Theme[];
+}
 
 export default function FrameworkEditor() {
-  const [tree, setTree] = useState<any[]>([]);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [pillars, setPillars] = useState<Pillar[]>([]);
+
+  const refresh = async () => {
+    const data = await getFrameworkTree();
+    setPillars(data);
+  };
 
   useEffect(() => {
     refresh();
   }, []);
 
-  async function refresh() {
-    const raw = await getFrameworkTree();
-    setTree(raw);
-  }
-
-  const toggleExpand = (id: string) => {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const expandAll = () => {
-    const all: Record<string, boolean> = {};
-    tree.forEach((pillar) => {
-      all[pillar.id] = true;
-      pillar.themes?.forEach((theme: any) => {
-        all[theme.id] = true;
-        theme.subthemes?.forEach((st: any) => {
-          all[st.id] = true;
-        });
-      });
+  async function handleAddPillar() {
+    await addPillar({
+      name: "New Pillar",
+      description: "Description",
     });
-    setExpanded(all);
-  };
-
-  const collapseAll = () => {
-    setExpanded({});
-  };
+    refresh();
+  }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        group={{
-          name: "Configuration",
-          icon: <Settings className="w-5 h-5" />,
-          color: "text-green-600",
-        }}
-        page={{
-          title: "Primary Framework Editor",
-          description:
-            "Define and manage the global SSC framework including pillars, themes, and subthemes.",
-          icon: <FileText className="w-6 h-6" />,
-        }}
-        breadcrumb={[
-          { label: "Dashboard", href: "/" },
-          { label: "Configuration", href: "/configuration" },
-          { label: "Primary Framework Editor" },
-        ]}
-      />
+      <PageHeader group="configuration" page="primary" />
 
-      {/* Toolbar */}
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2">
-          <button
-            onClick={expandAll}
-            className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
-          >
-            Expand All
-          </button>
-          <button
-            onClick={collapseAll}
-            className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
-          >
-            Collapse All
-          </button>
-        </div>
-        <div className="flex gap-2">
-          <button
-            className="p-1 hover:bg-gray-100 rounded"
-            title="Upload CSV"
-          >
-            <Upload className="w-4 h-4 text-gray-600" />
-          </button>
-          <button
-            className="p-1 hover:bg-gray-100 rounded"
-            title="Download CSV"
-          >
-            <Download className="w-4 h-4 text-gray-600" />
-          </button>
-          <AddPillarForm onAdded={refresh} />
-        </div>
+      <div className="bg-white shadow rounded-lg p-6 space-y-4">
+        {pillars.map((pillar) => (
+          <div key={pillar.id} className="border-b last:border-0 pb-4 last:pb-0">
+            <h2 className="font-semibold text-lg">{pillar.name}</h2>
+            <p className="text-gray-600">{pillar.description}</p>
+
+            <div className="ml-4 mt-2 space-y-2">
+              {pillar.themes.map((theme) => (
+                <div key={theme.id}>
+                  <h3 className="font-medium">{theme.name}</h3>
+                  <p className="text-gray-500">{theme.description}</p>
+
+                  <ul className="ml-4 list-disc">
+                    {theme.subthemes.map((sub) => (
+                      <li key={sub.id}>
+                        <span className="font-medium">{sub.name}</span> —{" "}
+                        <span className="text-gray-500">{sub.description}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full border-collapse">
-          <thead className="bg-gray-100 text-sm text-left">
-            <tr>
-              <th className="w-[15%] px-2 py-2">Type / Ref Code</th>
-              <th className="w-[55%] px-2 py-2">Name / Description</th>
-              <th className="w-[10%] px-2 py-2 text-center">Sort Order</th>
-              <th className="w-[20%] px-2 py-2 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tree.map((pillar, pIdx) => (
-              <PillarRow
-                key={pillar.id}
-                pillar={pillar}
-                expanded={expanded}
-                toggleExpand={toggleExpand}
-                onRefresh={refresh}
-              />
-            ))}
-          </tbody>
-        </table>
+      <div className="flex gap-2">
+        <button
+          onClick={handleAddPillar}
+          className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          <Plus className="w-4 h-4" /> Add Pillar
+        </button>
       </div>
     </div>
-  );
-}
-
-/* -------------------- Rows -------------------- */
-function PillarRow({ pillar, expanded, toggleExpand, onRefresh }: any) {
-  const isOpen = expanded[pillar.id];
-  const pillarCode = `P${pillar.sort_order}`;
-  return (
-    <>
-      <tr className="border-t">
-        <td className="px-2 py-2 align-top">
-          <div className="flex items-center gap-1">
-            <button onClick={() => toggleExpand(pillar.id)}>
-              {isOpen ? (
-                <ChevronDown className="w-4 h-4 text-gray-500" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-gray-500" />
-              )}
-            </button>
-            <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">
-              Pillar
-            </span>
-            <span className="text-xs text-gray-500">{pillarCode}</span>
-          </div>
-        </td>
-        <td className="px-2 py-2 align-top">
-          <div>
-            <div className="font-medium">{pillar.name}</div>
-            <div className="text-sm text-gray-600">{pillar.description}</div>
-          </div>
-        </td>
-        <td className="px-2 py-2 text-center align-top">{pillar.sort_order}</td>
-        <td className="px-2 py-2 text-right align-top">
-          <div className="flex justify-end gap-2">
-            <button className="p-1 hover:bg-gray-100 rounded" title="Edit">
-              <Pencil className="w-4 h-4 text-gray-600" />
-            </button>
-            <button className="p-1 hover:bg-gray-100 rounded" title="Delete">
-              <Trash2 className="w-4 h-4 text-red-600" />
-            </button>
-            <AddThemeForm pillarId={pillar.id} onAdded={onRefresh} />
-          </div>
-        </td>
-      </tr>
-      {isOpen &&
-        pillar.themes?.map((theme: any) => (
-          <ThemeRow
-            key={theme.id}
-            theme={theme}
-            pillarCode={pillarCode}
-            expanded={expanded}
-            toggleExpand={toggleExpand}
-            onRefresh={onRefresh}
-          />
-        ))}
-    </>
-  );
-}
-
-function ThemeRow({ theme, pillarCode, expanded, toggleExpand, onRefresh }: any) {
-  const isOpen = expanded[theme.id];
-  const themeCode = `${pillarCode}.${theme.sort_order}`;
-  return (
-    <>
-      <tr className="border-t bg-gray-50">
-        <td className="px-2 py-2 pl-6 align-top">
-          <div className="flex items-center gap-1">
-            <button onClick={() => toggleExpand(theme.id)}>
-              {isOpen ? (
-                <ChevronDown className="w-4 h-4 text-gray-500" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-gray-500" />
-              )}
-            </button>
-            <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
-              Theme
-            </span>
-            <span className="text-xs text-gray-500">{themeCode}</span>
-          </div>
-        </td>
-        <td className="px-2 py-2 align-top">
-          <div>
-            <div className="font-medium">{theme.name}</div>
-            <div className="text-sm text-gray-600">{theme.description}</div>
-          </div>
-        </td>
-        <td className="px-2 py-2 text-center align-top">{theme.sort_order}</td>
-        <td className="px-2 py-2 text-right align-top">
-          <div className="flex justify-end gap-2">
-            <button className="p-1 hover:bg-gray-100 rounded" title="Edit">
-              <Pencil className="w-4 h-4 text-gray-600" />
-            </button>
-            <button className="p-1 hover:bg-gray-100 rounded" title="Delete">
-              <Trash2 className="w-4 h-4 text-red-600" />
-            </button>
-            <AddSubthemeForm themeId={theme.id} onAdded={onRefresh} />
-          </div>
-        </td>
-      </tr>
-      {isOpen &&
-        theme.subthemes?.map((st: any) => (
-          <SubthemeRow key={st.id} subtheme={st} themeCode={themeCode} />
-        ))}
-    </>
-  );
-}
-
-function SubthemeRow({ subtheme, themeCode }: any) {
-  const subthemeCode = `${themeCode}.${subtheme.sort_order}`;
-  return (
-    <tr className="border-t">
-      <td className="px-2 py-2 pl-12 align-top">
-        <div className="flex items-center gap-1">
-          <span className="px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded">
-            Subtheme
-          </span>
-          <span className="text-xs text-gray-500">{subthemeCode}</span>
-        </div>
-      </td>
-      <td className="px-2 py-2 align-top">
-        <div>
-          <div className="font-medium">{subtheme.name}</div>
-          <div className="text-sm text-gray-600">{subtheme.description}</div>
-        </div>
-      </td>
-      <td className="px-2 py-2 text-center align-top">{subtheme.sort_order}</td>
-      <td className="px-2 py-2 text-right align-top">
-        <div className="flex justify-end gap-2">
-          <button className="p-1 hover:bg-gray-100 rounded" title="Edit">
-            <Pencil className="w-4 h-4 text-gray-600" />
-          </button>
-          <button className="p-1 hover:bg-gray-100 rounded" title="Delete">
-            <Trash2 className="w-4 h-4 text-red-600" />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-/* -------------------- Add Forms -------------------- */
-function AddPillarForm({ onAdded }: { onAdded: () => void }) {
-  async function handleAdd() {
-    await addPillar({ name: "New Pillar", description: "Description" });
-    onAdded();
-  }
-  return (
-    <button
-      onClick={handleAdd}
-      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-    >
-      Add Pillar
-    </button>
-  );
-}
-
-function AddThemeForm({
-  pillarId,
-  onAdded,
-}: {
-  pillarId: string;
-  onAdded: () => void;
-}) {
-  async function handleAdd() {
-    await addTheme({ pillar_id: pillarId, name: "New Theme", description: "" });
-    onAdded();
-  }
-  return (
-    <button
-      onClick={handleAdd}
-      className="p-1 hover:bg-gray-100 rounded"
-      title="Add Theme"
-    >
-      <Plus className="w-4 h-4 text-green-600" />
-    </button>
-  );
-}
-
-function AddSubthemeForm({
-  themeId,
-  onAdded,
-}: {
-  themeId: string;
-  onAdded: () => void;
-}) {
-  async function handleAdd() {
-    await addSubtheme({
-      theme_id: themeId,
-      name: "New Subtheme",
-      description: "",
-    });
-    onAdded();
-  }
-  return (
-    <button
-      onClick={handleAdd}
-      className="p-1 hover:bg-gray-100 rounded"
-      title="Add Subtheme"
-    >
-      <Plus className="w-4 h-4 text-green-600" />
-    </button>
   );
 }
