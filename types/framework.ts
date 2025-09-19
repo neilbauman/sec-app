@@ -1,27 +1,22 @@
-// /types/framework.ts
-
-export type Subtheme = {
+export interface Pillar {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   sort_order: number;
-};
+}
 
-export type Theme = {
+export interface Theme {
   id: string;
+  pillar_id: string;
   name: string;
-  description: string;
+  description?: string;
   sort_order: number;
-  subthemes?: Subtheme[]; // ✅ add nested subthemes
-};
+}
 
-export type Pillar = {
+export interface Subtheme {
   id: string;
+  theme_id: string;
   name: string;
-  description: string;
+  description?: string;
   sort_order: number;
-  themes?: Theme[]; // ✅ add nested themes
-};
-
-// General tree node (union)
-export type FrameworkNode = Pillar | Theme | Subtheme;
+}
