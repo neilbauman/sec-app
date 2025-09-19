@@ -17,7 +17,9 @@ import {
   ChevronDown,
   Upload,
   Download,
+  Settings,
 } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 
 export default function FrameworkEditor() {
   const [tree, setTree] = useState<FrameworkTree>({ pillars: [] });
@@ -64,6 +66,25 @@ export default function FrameworkEditor() {
 
   return (
     <div className="space-y-4">
+      <PageHeader
+        toolkitTitle="Shelter and Settlement Severity Classification Toolset"
+        group={{
+          name: 'SSC Configuration',
+          icon: <Settings className="w-5 h-5 text-green-600" />,
+          color: 'text-green-600',
+        }}
+        page={{
+          title: 'Primary Framework Editor',
+          description:
+            'Define and manage the global SSC framework including pillars, themes, and subthemes.',
+        }}
+        breadcrumb={[
+          { label: 'Dashboard', href: '/' },
+          { label: 'Configuration', href: '/configuration' },
+          { label: 'Primary Framework Editor' },
+        ]}
+      />
+
       {loading && <div className="text-sm text-gray-500">Loading framework…</div>}
       {error && <div className="text-sm text-red-600">Error: {error}</div>}
 
