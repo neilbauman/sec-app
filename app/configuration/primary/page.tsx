@@ -3,7 +3,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import FrameworkEditor from "@/components/framework/FrameworkEditor";
 import { fetchFramework } from "@/lib/framework-client";
 
-export default async function PrimaryFrameworkPage() {
+export default async function PrimaryFrameworkEditorPage() {
   const data = await fetchFramework();
 
   return (
