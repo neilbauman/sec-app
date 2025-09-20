@@ -7,6 +7,10 @@ import {
   Theme,
   Subtheme,
 } from "@/lib/framework-client";
+import {
+  addPillar,
+  // addTheme, addSubtheme will be wired later
+} from "@/lib/framework-actions";
 import PageHeader from "@/components/ui/PageHeader";
 import {
   ChevronRight,
@@ -16,6 +20,7 @@ import {
   Trash,
   Upload,
   Download,
+  X,
 } from "lucide-react";
 
 interface FrameworkEditorProps {
@@ -30,29 +35,36 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editMode, setEditMode] = useState(false);
 
+  // Modal state
+  const [showAddPillarModal, setShowAddPillarModal] = useState(false);
+  const [pillarName, setPillarName] = useState("");
+  const [pillarDesc, setPillarDesc] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+
   useEffect(() => {
-    async function load() {
-      try {
-        const data = await fetchFramework();
-        setPillars(data);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load framework data.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    loadFramework();
   }, []);
+
+  async function loadFramework() {
+    try {
+      setLoading(true);
+      const data = await fetchFramework();
+      setPillars(data);
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load framework data.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const toggleExpand = (id: string) => {
     setExpanded((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
       return newSet;
     });
   };
@@ -70,6 +82,27 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   };
 
   const collapseAll = () => setExpanded(new Set());
+
+  // Handle pillar creation
+  const handleSavePillar = async () => {
+    setSaving(true);
+    setModalError(null);
+    try {
+      await addPillar({
+        name: pillarName.trim(),
+        description: pillarDesc.trim(),
+      });
+      setShowAddPillarModal(false);
+      setPillarName("");
+      setPillarDesc("");
+      await loadFramework(); // reload to see new pillar
+    } catch (err: any) {
+      console.error("Error adding pillar:", err);
+      setModalError(err.message || "Failed to add pillar.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -99,7 +132,10 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
               Collapse All
             </button>
             {editMode && (
-              <button className="px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700">
+              <button
+                className="px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => setShowAddPillarModal(true)}
+              >
                 + Add Pillar
               </button>
             )}
@@ -149,10 +185,67 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
           </table>
         )}
       </div>
+
+      {/* Add Pillar Modal */}
+      {showAddPillarModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowAddPillarModal(false)}
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h2 className="text-lg font-semibold mb-4">Add Pillar</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Name</label>
+                <input
+                  type="text"
+                  className="w-full border rounded px-3 py-2 text-sm"
+                  value={pillarName}
+                  onChange={(e) => setPillarName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Description
+                </label>
+                <textarea
+                  className="w-full border rounded px-3 py-2 text-sm"
+                  value={pillarDesc}
+                  onChange={(e) => setPillarDesc(e.target.value)}
+                />
+              </div>
+              {modalError && (
+                <p className="text-red-600 text-sm">{modalError}</p>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  className="px-3 py-1 text-sm border rounded bg-gray-100 hover:bg-gray-200"
+                  onClick={() => setShowAddPillarModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                  onClick={handleSavePillar}
+                  disabled={!pillarName.trim() || saving}
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
+//
+// ─── CHILD ROW COMPONENTS ─────────────────────────────────
+//
 function PillarRow({
   pillar,
   expanded,
@@ -275,23 +368,13 @@ function ThemeRow({
       </tr>
       {isOpen &&
         theme.subthemes.map((sub) => (
-          <SubthemeRow
-            key={sub.id}
-            sub={sub}
-            editMode={editMode}
-          />
+          <SubthemeRow key={sub.id} sub={sub} editMode={editMode} />
         ))}
     </>
   );
 }
 
-function SubthemeRow({
-  sub,
-  editMode,
-}: {
-  sub: Subtheme;
-  editMode: boolean;
-}) {
+function SubthemeRow({ sub, editMode }: { sub: Subtheme; editMode: boolean }) {
   return (
     <tr className="border-b">
       <td className="py-2 pl-12 pr-2">
