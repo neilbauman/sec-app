@@ -3,11 +3,7 @@
 
 import { useState } from "react";
 import PageHeader from "../ui/PageHeader";
-import type {
-  NestedPillar,
-  NestedTheme,
-  Subtheme,
-} from "@/lib/framework-client";
+import type { NestedPillar, NestedTheme, Subtheme } from "@/lib/framework-client";
 import {
   addPillar,
   addTheme,
@@ -16,10 +12,8 @@ import {
   deleteTheme,
   deleteSubtheme,
 } from "@/lib/framework-actions";
-import { Plus, Trash } from "lucide-react";
-import {
-  Button,
-} from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +31,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Plus, Trash2 } from "lucide-react";
 
 type FrameworkEditorProps = {
   data: NestedPillar[];
@@ -46,72 +40,57 @@ type FrameworkEditorProps = {
 export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [pillars, setPillars] = useState<NestedPillar[]>(data);
 
-  // --- Dialog State ---
-  const [openAdd, setOpenAdd] = useState<{
-    type: "pillar" | "theme" | "subtheme" | null;
-    parentId?: string;
-  }>({ type: null });
-
-  const [deleteTarget, setDeleteTarget] = useState<{
+  // State for dialogs
+  const [openDialog, setOpenDialog] = useState<null | {
     type: "pillar" | "theme" | "subtheme";
-    id: string;
-    name: string;
-  } | null>(null);
+    parentId?: string;
+  }>(null);
 
-  const [newName, setNewName] = useState("");
+  const [formValues, setFormValues] = useState({ name: "", description: "", sort_order: 1 });
 
-  // --- Handlers ---
-  async function handleAdd() {
-    if (!newName.trim() || !openAdd.type) return;
-    if (openAdd.type === "pillar") {
-      await addPillar({
-        name: newName,
-        description: "",
-        sort_order: pillars.length + 1,
-      });
-    }
-    if (openAdd.type === "theme" && openAdd.parentId) {
-      const pillar = pillars.find((p) => p.id === openAdd.parentId);
-      const count = pillar?.themes?.length ?? 0;
-      await addTheme({
-        pillar_id: openAdd.parentId,
-        name: newName,
-        description: "",
-        sort_order: count + 1,
-      });
-    }
-    if (openAdd.type === "subtheme" && openAdd.parentId) {
-      let count = 0;
-      pillars.forEach((p) =>
-        p.themes.forEach((t) => {
-          if (t.id === openAdd.parentId) count = t.subthemes.length;
-        })
-      );
-      await addSubtheme({
-        theme_id: openAdd.parentId,
-        name: newName,
-        description: "",
-        sort_order: count + 1,
-      });
-    }
-    window.location.reload(); // TODO: later: update local state instead of reload
+  function resetForm() {
+    setFormValues({ name: "", description: "", sort_order: 1 });
   }
 
-  async function handleDelete() {
-    if (!deleteTarget) return;
-    if (deleteTarget.type === "pillar") {
-      await deletePillar(deleteTarget.id);
+  async function handleAdd() {
+    if (!formValues.name) return;
+
+    if (openDialog?.type === "pillar") {
+      const newPillar = {
+        name: formValues.name,
+        description: formValues.description,
+        sort_order: formValues.sort_order,
+      };
+      await addPillar(newPillar);
+    } else if (openDialog?.type === "theme" && openDialog.parentId) {
+      const newTheme = {
+        pillar_id: openDialog.parentId,
+        name: formValues.name,
+        description: formValues.description,
+        sort_order: formValues.sort_order,
+      };
+      await addTheme(newTheme);
+    } else if (openDialog?.type === "subtheme" && openDialog.parentId) {
+      const newSubtheme = {
+        theme_id: openDialog.parentId,
+        name: formValues.name,
+        description: formValues.description,
+        sort_order: formValues.sort_order,
+      };
+      await addSubtheme(newSubtheme);
     }
-    if (deleteTarget.type === "theme") {
-      await deleteTheme(deleteTarget.id);
-    }
-    if (deleteTarget.type === "subtheme") {
-      await deleteSubtheme(deleteTarget.id);
-    }
+
+    // Refresh page state (TODO: replace with real re-fetch later)
     window.location.reload();
   }
 
-  // --- UI ---
+  async function handleDelete(type: "pillar" | "theme" | "subtheme", id: string) {
+    if (type === "pillar") await deletePillar(id);
+    if (type === "theme") await deleteTheme(id);
+    if (type === "subtheme") await deleteSubtheme(id);
+    window.location.reload();
+  }
+
   return (
     <div className="p-4">
       <PageHeader
@@ -123,154 +102,146 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
         ]}
       />
 
+      {/* Add Pillar button */}
       <div className="mb-4">
-        <Button onClick={() => setOpenAdd({ type: "pillar" })}>
-          <Plus className="mr-2 h-4 w-4" /> Add Pillar
+        <Button onClick={() => { resetForm(); setOpenDialog({ type: "pillar" }); }}>
+          <Plus className="h-4 w-4 mr-2" /> Add Pillar
         </Button>
       </div>
 
+      {/* Pillar list */}
       <div className="space-y-4">
         {pillars.map((pillar) => (
-          <Card key={pillar.id} className="p-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">{pillar.name}</h2>
-              <div className="space-x-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setOpenAdd({ type: "theme", parentId: pillar.id })}
-                >
-                  <Plus className="mr-1 h-3 w-3" /> Theme
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() =>
-                    setDeleteTarget({
-                      type: "pillar",
-                      id: pillar.id,
-                      name: pillar.name,
-                    })
-                  }
-                >
-                  <Trash className="mr-1 h-3 w-3" /> Delete
-                </Button>
+          <Card key={pillar.id}>
+            <CardHeader className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold">{pillar.name}</div>
+                <div className="text-sm text-gray-600">{pillar.description}</div>
+                <div className="text-xs text-gray-400">Sort: {pillar.sort_order}</div>
               </div>
-            </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { resetForm(); setOpenDialog({ type: "theme", parentId: pillar.id }); }}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Theme
+                </Button>
+                <AlertDialog
+                  open={false}
+                  onOpenChange={() => handleDelete("pillar", pillar.id)}
+                >
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Delete pillar "{pillar.name}"?
+                      </AlertDialogTitle>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardHeader>
 
             {/* Themes */}
-            <div className="mt-2 space-y-2 pl-4">
-              {pillar.themes.map((theme: NestedTheme) => (
-                <Card key={theme.id} className="p-2">
-                  <div className="flex items-center justify-between">
-                    <span>{theme.name}</span>
-                    <div className="space-x-2">
+            <CardContent>
+              {pillar.themes.map((theme) => (
+                <Card key={theme.id} className="ml-4 my-2">
+                  <CardHeader className="flex items-center justify-between">
+                    <div>
+                      <div>{theme.name}</div>
+                      <div className="text-sm text-gray-600">{theme.description}</div>
+                      <div className="text-xs text-gray-400">Sort: {theme.sort_order}</div>
+                    </div>
+                    <div className="flex gap-2">
                       <Button
-                        size="sm"
                         variant="outline"
-                        onClick={() =>
-                          setOpenAdd({ type: "subtheme", parentId: theme.id })
-                        }
+                        size="sm"
+                        onClick={() => { resetForm(); setOpenDialog({ type: "subtheme", parentId: theme.id }); }}
                       >
-                        <Plus className="mr-1 h-3 w-3" /> Subtheme
+                        <Plus className="h-4 w-4 mr-1" /> Subtheme
                       </Button>
                       <Button
-                        size="sm"
                         variant="destructive"
-                        onClick={() =>
-                          setDeleteTarget({
-                            type: "theme",
-                            id: theme.id,
-                            name: theme.name,
-                          })
-                        }
+                        size="sm"
+                        onClick={() => handleDelete("theme", theme.id)}
                       >
-                        <Trash className="mr-1 h-3 w-3" /> Delete
+                        <Trash2 className="h-4 w-4 mr-1" /> Delete
                       </Button>
                     </div>
-                  </div>
+                  </CardHeader>
 
                   {/* Subthemes */}
-                  <div className="mt-2 space-y-1 pl-4">
-                    {theme.subthemes.map((s: Subtheme) => (
-                      <Card
-                        key={s.id}
-                        className="flex items-center justify-between p-2"
-                      >
-                        <span>{s.name}</span>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() =>
-                            setDeleteTarget({
-                              type: "subtheme",
-                              id: s.id,
-                              name: s.name,
-                            })
-                          }
-                        >
-                          <Trash className="mr-1 h-3 w-3" /> Delete
-                        </Button>
+                  <CardContent>
+                    {theme.subthemes.map((s) => (
+                      <Card key={s.id} className="ml-4 my-1">
+                        <CardHeader className="flex items-center justify-between">
+                          <div>
+                            <div>{s.name}</div>
+                            <div className="text-sm text-gray-600">{s.description}</div>
+                            <div className="text-xs text-gray-400">Sort: {s.sort_order}</div>
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete("subtheme", s.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" /> Delete
+                          </Button>
+                        </CardHeader>
                       </Card>
                     ))}
-                  </div>
+                  </CardContent>
                 </Card>
               ))}
-            </div>
+            </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* --- Add Dialog --- */}
-      <Dialog
-        open={!!openAdd.type}
-        onOpenChange={() => {
-          setOpenAdd({ type: null });
-          setNewName("");
-        }}
-      >
+      {/* Add Dialog */}
+      <Dialog open={!!openDialog} onOpenChange={() => setOpenDialog(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Add {openAdd.type ? openAdd.type.charAt(0).toUpperCase() + openAdd.type.slice(1) : ""}
+              Add {openDialog?.type === "pillar"
+                ? "Pillar"
+                : openDialog?.type === "theme"
+                ? "Theme"
+                : "Subtheme"}
             </DialogTitle>
           </DialogHeader>
-          <Input
-            placeholder={`Enter ${openAdd.type} name`}
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-          />
+          <div className="space-y-3">
+            <Input
+              placeholder="Name"
+              value={formValues.name}
+              onChange={(e) => setFormValues({ ...formValues, name: e.target.value })}
+            />
+            <Input
+              placeholder="Description"
+              value={formValues.description}
+              onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
+            />
+            <Input
+              type="number"
+              placeholder="Sort order"
+              value={formValues.sort_order}
+              onChange={(e) =>
+                setFormValues({ ...formValues, sort_order: parseInt(e.target.value, 10) })
+              }
+            />
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenAdd({ type: null })}>
+            <Button variant="outline" onClick={() => setOpenDialog(null)}>
               Cancel
             </Button>
-            <Button onClick={handleAdd}>Add</Button>
+            <Button onClick={handleAdd}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* --- Delete Confirm --- */}
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={() => setDeleteTarget(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete {deleteTarget?.type}: {deleteTarget?.name}?
-            </AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 text-white"
-              onClick={handleDelete}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
