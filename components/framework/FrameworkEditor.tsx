@@ -117,7 +117,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
             {editMode && (
               <button
                 onClick={() => openModal("add-pillar")}
-                className="px-3 py-1 text-sm bg-green-100 hover:bg-green-200 rounded"
+                className="px-3 py-1 text-sm bg-blue-100 text-blue-800 hover:bg-blue-200 rounded"
               >
                 + Add Pillar
               </button>
@@ -126,7 +126,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setEditMode(!editMode)}
-              className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 rounded"
+              className="px-3 py-1 text-sm bg-orange-100 text-orange-800 hover:bg-orange-200 rounded"
             >
               {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
             </button>
