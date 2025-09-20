@@ -3,7 +3,9 @@
 
 import { createClient } from "@/lib/supabase-server";
 
-// Types (basic shape for now, matches your DB columns)
+// -----------------------------
+// Types
+// -----------------------------
 export interface PillarInput {
   name: string;
   description: string;
@@ -28,7 +30,7 @@ export interface SubthemeInput {
 // Pillars
 // -----------------------------
 export async function addPillar(data: PillarInput) {
-  const supabase = createClient();
+  const supabase = createClient(); // ✅ no await here
 
   const { error } = await supabase
     .from("pillars")
@@ -42,6 +44,28 @@ export async function addPillar(data: PillarInput) {
 
   if (error) {
     console.error("Error inserting pillar:", error);
+    throw new Error(error.message);
+  }
+}
+
+export async function updatePillar(id: string, updates: Partial<PillarInput>) {
+  const supabase = createClient();
+
+  const { error } = await supabase.from("pillars").update(updates).eq("id", id);
+
+  if (error) {
+    console.error("Error updating pillar:", error);
+    throw new Error(error.message);
+  }
+}
+
+export async function deletePillar(id: string) {
+  const supabase = createClient();
+
+  const { error } = await supabase.from("pillars").delete().eq("id", id);
+
+  if (error) {
+    console.error("Error deleting pillar:", error);
     throw new Error(error.message);
   }
 }
@@ -88,34 +112,6 @@ export async function addSubtheme(data: SubthemeInput) {
 
   if (error) {
     console.error("Error inserting subtheme:", error);
-    throw new Error(error.message);
-  }
-}
-
-// -----------------------------
-// Update / Delete stubs (safe placeholders)
-// -----------------------------
-export async function updatePillar(id: string, updates: Partial<PillarInput>) {
-  const supabase = createClient();
-
-  const { error } = await supabase
-    .from("pillars")
-    .update(updates)
-    .eq("id", id);
-
-  if (error) {
-    console.error("Error updating pillar:", error);
-    throw new Error(error.message);
-  }
-}
-
-export async function deletePillar(id: string) {
-  const supabase = createClient();
-
-  const { error } = await supabase.from("pillars").delete().eq("id", id);
-
-  if (error) {
-    console.error("Error deleting pillar:", error);
     throw new Error(error.message);
   }
 }
