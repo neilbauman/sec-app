@@ -76,9 +76,11 @@ function FrameworkEditor({ data }: FrameworkEditorProps) {
     const pillar = pillars.find((p) => p.id === pillarId);
     const count = pillar?.themes?.length ?? 0;
 
+    // ⚡ Temporary patch: add pillar_code to satisfy NestedTheme
     const newTheme: NestedTheme = {
       id: crypto.randomUUID(),
       pillar_id: pillarId,
+      pillar_code: pillar?.ref_code ?? "", // temporary patch
       name,
       description: "",
       sort_order: count + 1,
@@ -243,6 +245,7 @@ function FrameworkEditor({ data }: FrameworkEditorProps) {
           </tr>
         </thead>
         <tbody className="text-sm">
+          {/* Rendering rows... unchanged */}
           {pillars.map((pillar) => (
             <>
               {/* Pillar row */}
