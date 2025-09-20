@@ -13,7 +13,22 @@ import {
   deleteSubtheme,
 } from "@/lib/framework-actions";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronDown, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 // Badge component
 function TypeBadge({ type }: { type: "pillar" | "theme" | "subtheme" }) {
@@ -53,39 +68,50 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
 
+  // Dialog state
+  const [openDialog, setOpenDialog] = useState<null | {
+    type: "pillar" | "theme" | "subtheme";
+    parentId?: string;
+    count?: number;
+  }>(null);
+  const [formValues, setFormValues] = useState({
+    name: "",
+    description: "",
+    sort_order: 1,
+  });
+
   const toggleExpand = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Handlers
-  async function handleAddPillar() {
-    const name = prompt("Enter pillar name:");
-    if (!name) return;
-    await addPillar({ name, description: "", sort_order: pillars.length + 1 });
-    window.location.reload();
+  const expandAll = () => {
+    const all: Record<string, boolean> = {};
+    pillars.forEach((p) => {
+      all[p.id] = true;
+      p.themes.forEach((t) => {
+        all[t.id] = true;
+      });
+    });
+    setExpanded(all);
+  };
+
+  const collapseAll = () => {
+    setExpanded({});
+  };
+
+  function resetForm() {
+    setFormValues({ name: "", description: "", sort_order: 1 });
   }
 
-  async function handleAddTheme(pillarId: string, count: number) {
-    const name = prompt("Enter theme name:");
-    if (!name) return;
-    await addTheme({
-      pillar_id: pillarId,
-      name,
-      description: "",
-      sort_order: count + 1,
-    });
-    window.location.reload();
-  }
-
-  async function handleAddSubtheme(themeId: string, count: number) {
-    const name = prompt("Enter subtheme name:");
-    if (!name) return;
-    await addSubtheme({
-      theme_id: themeId,
-      name,
-      description: "",
-      sort_order: count + 1,
-    });
+  async function handleAdd() {
+    if (!formValues.name) return;
+    if (openDialog?.type === "pillar") {
+      await addPillar(formValues);
+    } else if (openDialog?.type === "theme" && openDialog.parentId) {
+      await addTheme({ pillar_id: openDialog.parentId, ...formValues });
+    } else if (openDialog?.type === "subtheme" && openDialog.parentId) {
+      await addSubtheme({ theme_id: openDialog.parentId, ...formValues });
+    }
     window.location.reload();
   }
 
@@ -107,34 +133,51 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
         ]}
       />
 
-      {/* Edit Mode Toggle */}
+      {/* Controls */}
       <div className="mb-4 flex justify-between items-center">
-        <Button
-          variant={editMode ? "destructive" : "default"}
-          onClick={() => setEditMode(!editMode)}
-        >
-          {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
-        </Button>
-        {editMode && (
-          <Button onClick={handleAddPillar}>
-            <Plus className="h-4 w-4 mr-1" /> Add Pillar
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={expandAll}>
+            <ChevronsDown className="h-4 w-4 mr-1" /> Expand All
           </Button>
-        )}
+          <Button variant="outline" size="sm" onClick={collapseAll}>
+            <ChevronsUp className="h-4 w-4 mr-1" /> Collapse All
+          </Button>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant={editMode ? "destructive" : "default"}
+            onClick={() => setEditMode(!editMode)}
+          >
+            {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
+          </Button>
+          {editMode && (
+            <Button
+              onClick={() => {
+                resetForm();
+                setOpenDialog({ type: "pillar" });
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add Pillar
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
       <table className="w-full border-collapse bg-white shadow rounded text-sm">
         <thead className="bg-gray-100 text-left">
           <tr>
-            <th className="px-3 py-2 w-1/5">Type / Ref Code</th>
-            <th className="px-3 py-2 w-2/5">Name / Description</th>
-            <th className="px-3 py-2 w-1/5">Sort Order</th>
-            <th className="px-3 py-2 w-1/5">Actions</th>
+            <th className="px-3 py-2 w-[15%]">Type / Ref Code</th>
+            <th className="px-3 py-2 w-[50%]">Name / Description</th>
+            <th className="px-3 py-2 w-[10%] text-center">Sort Order</th>
+            <th className="px-3 py-2 w-[25%]">Actions</th>
           </tr>
         </thead>
         <tbody>
           {pillars.map((pillar, pIdx) => {
-            const ref = generateRefCode("pillar", [pillar.sort_order || pIdx + 1]);
+            const pref = generateRefCode("pillar", [
+              pillar.sort_order || pIdx + 1,
+            ]);
             return (
               <>
                 {/* Pillar Row */}
@@ -149,32 +192,41 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                         )}
                       </button>
                       <TypeBadge type="pillar" />
-                      <span className="text-xs text-gray-500">{ref}</span>
+                      <span className="text-xs text-gray-500">{pref}</span>
                     </div>
                   </td>
                   <td className="px-3 py-2">
                     <div className="font-medium">{pillar.name}</div>
-                    <div className="text-xs text-gray-600">{pillar.description}</div>
+                    <div className="text-xs text-gray-600">
+                      {pillar.description}
+                    </div>
                   </td>
-                  <td className="px-3 py-2">{pillar.sort_order}</td>
+                  <td className="px-3 py-2 text-center">
+                    {pillar.sort_order}
+                  </td>
                   <td className="px-3 py-2">
                     {editMode && (
                       <div className="flex gap-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() =>
-                            handleAddTheme(pillar.id, pillar.themes.length)
-                          }
+                          onClick={() => {
+                            resetForm();
+                            setOpenDialog({
+                              type: "theme",
+                              parentId: pillar.id,
+                              count: pillar.themes.length,
+                            });
+                          }}
                         >
-                          + Theme
+                          <Plus className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="destructive"
                           onClick={() => handleDelete("pillar", pillar.id)}
                         >
-                          <Trash2 className="h-4 w-4 mr-1" /> Delete
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     )}
@@ -190,11 +242,8 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                     ]);
                     return (
                       <>
-                        <tr
-                          key={theme.id}
-                          className="border-t bg-gray-50"
-                        >
-                          <td className="px-3 py-2 pl-10 align-top">
+                        <tr key={theme.id} className="border-t bg-gray-50">
+                          <td className="px-3 py-2 pl-8 align-top">
                             <div className="flex items-center gap-2">
                               <button onClick={() => toggleExpand(theme.id)}>
                                 {expanded[theme.id] ? (
@@ -204,32 +253,43 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                 )}
                               </button>
                               <TypeBadge type="theme" />
-                              <span className="text-xs text-gray-500">{tref}</span>
+                              <span className="text-xs text-gray-500">
+                                {tref}
+                              </span>
                             </div>
                           </td>
                           <td className="px-3 py-2">
                             <div className="font-medium">{theme.name}</div>
-                            <div className="text-xs text-gray-600">{theme.description}</div>
+                            <div className="text-xs text-gray-600">
+                              {theme.description}
+                            </div>
                           </td>
-                          <td className="px-3 py-2">{theme.sort_order}</td>
+                          <td className="px-3 py-2 text-center">
+                            {theme.sort_order}
+                          </td>
                           <td className="px-3 py-2">
                             {editMode && (
                               <div className="flex gap-2">
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() =>
-                                    handleAddSubtheme(theme.id, theme.subthemes.length)
-                                  }
+                                  onClick={() => {
+                                    resetForm();
+                                    setOpenDialog({
+                                      type: "subtheme",
+                                      parentId: theme.id,
+                                      count: theme.subthemes.length,
+                                    });
+                                  }}
                                 >
-                                  + Subtheme
+                                  <Plus className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="destructive"
                                   onClick={() => handleDelete("theme", theme.id)}
                                 >
-                                  <Trash2 className="h-4 w-4 mr-1" /> Delete
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             )}
@@ -245,21 +305,24 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                               s.sort_order || sIdx + 1,
                             ]);
                             return (
-                              <tr
-                                key={s.id}
-                                className="border-t"
-                              >
-                                <td className="px-3 py-2 pl-20 align-top">
+                              <tr key={s.id} className="border-t">
+                                <td className="px-3 py-2 pl-16 align-top">
                                   <div className="flex items-center gap-2">
                                     <TypeBadge type="subtheme" />
-                                    <span className="text-xs text-gray-500">{sref}</span>
+                                    <span className="text-xs text-gray-500">
+                                      {sref}
+                                    </span>
                                   </div>
                                 </td>
                                 <td className="px-3 py-2">
                                   <div className="font-medium">{s.name}</div>
-                                  <div className="text-xs text-gray-600">{s.description}</div>
+                                  <div className="text-xs text-gray-600">
+                                    {s.description}
+                                  </div>
                                 </td>
-                                <td className="px-3 py-2">{s.sort_order}</td>
+                                <td className="px-3 py-2 text-center">
+                                  {s.sort_order}
+                                </td>
                                 <td className="px-3 py-2">
                                   {editMode && (
                                     <Button
@@ -267,7 +330,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                       variant="destructive"
                                       onClick={() => handleDelete("subtheme", s.id)}
                                     >
-                                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                                      <Trash2 className="h-4 w-4" />
                                     </Button>
                                   )}
                                 </td>
@@ -282,6 +345,55 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
           })}
         </tbody>
       </table>
+
+      {/* Add Dialog */}
+      <Dialog open={!!openDialog} onOpenChange={() => setOpenDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Add{" "}
+              {openDialog?.type === "pillar"
+                ? "Pillar"
+                : openDialog?.type === "theme"
+                ? "Theme"
+                : "Subtheme"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Name"
+              value={formValues.name}
+              onChange={(e) =>
+                setFormValues({ ...formValues, name: e.target.value })
+              }
+            />
+            <Input
+              placeholder="Description"
+              value={formValues.description}
+              onChange={(e) =>
+                setFormValues({ ...formValues, description: e.target.value })
+              }
+            />
+            <Input
+              type="number"
+              placeholder="Sort order"
+              value={formValues.sort_order}
+              onChange={(e) =>
+                setFormValues({
+                  ...formValues,
+                  sort_order: parseInt(e.target.value, 10),
+                })
+              }
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDialog(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAdd}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
