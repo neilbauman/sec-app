@@ -1,9 +1,9 @@
 // /lib/framework-actions.ts
-// addPillar + editPillar are real, others stubs. Now addPillar creates a default theme and subtheme.
+// addPillar + editPillar are real. Rules: each Pillar gets a General theme + General subtheme;
+// each Theme gets a General subtheme. Ref codes are not stored, only computed client-side.
 
 import { createClient } from "@supabase/supabase-js";
 
-// Untyped client (avoids TS schema conflicts)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -17,7 +17,9 @@ export async function addPillar(data: {
   description: string;
   sort_order: number;
 }) {
-  // Step 1: Insert the pillar
+  console.log("addPillar called with:", data);
+
+  // Insert pillar
   const { data: pillarData, error: pillarError } = await supabase
     .from("pillars")
     .insert([
@@ -37,15 +39,15 @@ export async function addPillar(data: {
 
   const pillarId = pillarData.id;
 
-  // Step 2: Insert a default theme
+  // Insert default "General" theme
   const { data: themeData, error: themeError } = await supabase
     .from("themes")
     .insert([
       {
         pillar_id: pillarId,
-        name: "Default Theme",
-        description: "This is a default theme placeholder.",
-        sort_order: 1,
+        name: "General",
+        description: "General theme",
+        sort_order: 0,
       },
     ])
     .select("id")
@@ -58,13 +60,13 @@ export async function addPillar(data: {
 
   const themeId = themeData.id;
 
-  // Step 3: Insert a default subtheme
+  // Insert default "General" subtheme
   const { error: subthemeError } = await supabase.from("subthemes").insert([
     {
       theme_id: themeId,
-      name: "Default Subtheme",
-      description: "This is a default subtheme placeholder.",
-      sort_order: 1,
+      name: "General",
+      description: "General subtheme",
+      sort_order: 0,
     },
   ]);
 
@@ -73,7 +75,7 @@ export async function addPillar(data: {
     throw subthemeError;
   }
 
-  console.log("Pillar with defaults added successfully:", data.name);
+  console.log("Pillar + defaults added successfully:", data.name);
   return Promise.resolve();
 }
 
@@ -111,7 +113,43 @@ export async function addTheme(
   pillarId: string,
   data: { name: string; description: string; sort_order: number }
 ) {
-  console.log("Stub: add theme under pillar", pillarId, data);
+  // Insert theme
+  const { data: themeData, error: themeError } = await supabase
+    .from("themes")
+    .insert([
+      {
+        pillar_id: pillarId,
+        name: data.name,
+        description: data.description,
+        sort_order: data.sort_order,
+      },
+    ])
+    .select("id")
+    .single();
+
+  if (themeError) {
+    console.error("addTheme error:", themeError);
+    throw themeError;
+  }
+
+  const themeId = themeData.id;
+
+  // Insert default "General" subtheme
+  const { error: subthemeError } = await supabase.from("subthemes").insert([
+    {
+      theme_id: themeId,
+      name: "General",
+      description: "General subtheme",
+      sort_order: 0,
+    },
+  ]);
+
+  if (subthemeError) {
+    console.error("addTheme default subtheme error:", subthemeError);
+    throw subthemeError;
+  }
+
+  console.log("Theme + default subtheme added successfully:", data.name);
   return Promise.resolve();
 }
 
