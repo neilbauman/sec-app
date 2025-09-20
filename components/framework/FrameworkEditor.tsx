@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import DeleteConfirm from "@/components/modals/DeleteConfirm";
+import AddEditModal from "@/components/modals/AddEditModal";
 import {
   deletePillar,
   deleteTheme,
@@ -31,6 +32,15 @@ type DeleteTarget = {
   childrenCount?: number;
 };
 
+type ModalType =
+  | null
+  | "add-pillar"
+  | "add-theme"
+  | "add-subtheme"
+  | "edit-pillar"
+  | "edit-theme"
+  | "edit-subtheme";
+
 export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   const [pillars, setPillars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +51,11 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   // Delete modal state
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+
+  // Add/Edit modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<ModalType>(null);
+  const [modalTarget, setModalTarget] = useState<any>(null);
 
   useEffect(() => {
     async function load() {
@@ -101,6 +116,26 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
     closeDelete();
   }
 
+  // Add/Edit handlers
+  function openModal(type: ModalType, target: any = null) {
+    setModalType(type);
+    setModalTarget(target);
+    setModalOpen(true);
+  }
+  function closeModal() {
+    setModalOpen(false);
+    setModalType(null);
+    setModalTarget(null);
+  }
+  function handleModalSubmit(data: {
+    name: string;
+    description: string;
+    sort_order: number;
+  }) {
+    console.log("Submit modal", modalType, modalTarget, data);
+    closeModal();
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -131,7 +166,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
             </button>
             {editMode && (
               <button
-                onClick={() => console.log("Add Pillar clicked")}
+                onClick={() => openModal("add-pillar")}
                 className="px-3 py-1 text-sm bg-blue-100 text-blue-800 hover:bg-blue-200 rounded"
               >
                 + Add Pillar
@@ -179,6 +214,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
                   sortByOrder={sortByOrder}
                   editMode={editMode}
                   onDelete={openDelete}
+                  onEdit={openModal}
                 />
               ))}
             </tbody>
@@ -186,12 +222,20 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
         )}
       </div>
 
-      {/* Delete Modal */}
+      {/* Modals */}
       <DeleteConfirm
         open={deleteOpen}
         target={deleteTarget}
         onCancel={closeDelete}
         onConfirm={confirmDelete}
+      />
+
+      <AddEditModal
+        open={modalOpen}
+        type={modalType}
+        target={modalTarget}
+        onCancel={closeModal}
+        onSubmit={handleModalSubmit}
       />
     </div>
   );
@@ -205,6 +249,7 @@ function PillarRow({
   sortByOrder,
   editMode,
   onDelete,
+  onEdit,
 }: {
   pillar: any;
   index: number;
@@ -213,6 +258,7 @@ function PillarRow({
   sortByOrder: (arr: any[]) => any[];
   editMode: boolean;
   onDelete: (target: DeleteTarget) => void;
+  onEdit: (type: ModalType, target?: any) => void;
 }) {
   const id = `pillar-${pillar.id}`;
   const refCode = `P${index}`;
@@ -262,13 +308,13 @@ function PillarRow({
             <>
               <button
                 className="text-blue-600 hover:text-blue-800"
-                onClick={() => console.log("Edit pillar", pillar.id)}
+                onClick={() => onEdit("edit-pillar", pillar)}
               >
                 <Edit className="h-4 w-4 inline" />
               </button>
               <button
                 className="text-green-600 hover:text-green-800"
-                onClick={() => console.log("Add theme under pillar", pillar.id)}
+                onClick={() => onEdit("add-theme", pillar)}
               >
                 <Plus className="h-4 w-4 inline" />
               </button>
@@ -301,6 +347,7 @@ function PillarRow({
             sortByOrder={sortByOrder}
             editMode={editMode}
             onDelete={onDelete}
+            onEdit={onEdit}
           />
         ))}
     </>
@@ -315,6 +362,7 @@ function ThemeRow({
   sortByOrder,
   editMode,
   onDelete,
+  onEdit,
 }: {
   theme: any;
   pillarIndex: number;
@@ -323,6 +371,7 @@ function ThemeRow({
   sortByOrder: (arr: any[]) => any[];
   editMode: boolean;
   onDelete: (target: DeleteTarget) => void;
+  onEdit: (type: ModalType, target?: any) => void;
 }) {
   const id = `theme-${theme.id}`;
   const refCode = `T${pillarIndex}.${theme.sort_order}`;
@@ -370,13 +419,13 @@ function ThemeRow({
             <>
               <button
                 className="text-blue-600 hover:text-blue-800"
-                onClick={() => console.log("Edit theme", theme.id)}
+                onClick={() => onEdit("edit-theme", theme)}
               >
                 <Edit className="h-4 w-4 inline" />
               </button>
               <button
                 className="text-green-600 hover:text-green-800"
-                onClick={() => console.log("Add subtheme under theme", theme.id)}
+                onClick={() => onEdit("add-subtheme", theme)}
               >
                 <Plus className="h-4 w-4 inline" />
               </button>
@@ -407,6 +456,7 @@ function ThemeRow({
             themeIndex={theme.sort_order}
             editMode={editMode}
             onDelete={onDelete}
+            onEdit={onEdit}
           />
         ))}
     </>
@@ -419,12 +469,14 @@ function SubthemeRow({
   themeIndex,
   editMode,
   onDelete,
+  onEdit,
 }: {
   sub: any;
   pillarIndex: number;
   themeIndex: number;
   editMode: boolean;
   onDelete: (target: DeleteTarget) => void;
+  onEdit: (type: ModalType, target?: any) => void;
 }) {
   const refCode = `ST${pillarIndex}.${themeIndex}.${sub.sort_order}`;
 
@@ -459,7 +511,7 @@ function SubthemeRow({
           <>
             <button
               className="text-blue-600 hover:text-blue-800"
-              onClick={() => console.log("Edit subtheme", sub.id)}
+              onClick={() => onEdit("edit-subtheme", sub)}
             >
               <Edit className="h-4 w-4 inline" />
             </button>
