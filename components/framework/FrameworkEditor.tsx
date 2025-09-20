@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { fetchFramework } from "@/lib/framework-client";
 import PageHeader from "@/components/ui/PageHeader";
-import { ChevronRight, Upload, Download } from "lucide-react";
+import {
+  ChevronRight,
+  Upload,
+  Download,
+  Edit,
+  Plus,
+  Trash,
+} from "lucide-react";
 
 interface FrameworkEditorProps {
   group: "configuration";
@@ -15,6 +22,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -81,6 +89,12 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
             </button>
           </div>
           <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setEditMode(!editMode)}
+              className="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 rounded"
+            >
+              {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
+            </button>
             <button className="p-2 text-gray-600 hover:text-gray-800">
               <Upload className="h-5 w-5" />
             </button>
@@ -113,6 +127,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
                   expanded={expanded}
                   toggle={toggle}
                   sortByOrder={sortByOrder}
+                  editMode={editMode}
                 />
               ))}
             </tbody>
@@ -129,12 +144,14 @@ function PillarRow({
   expanded,
   toggle,
   sortByOrder,
+  editMode,
 }: {
   pillar: any;
   index: number;
   expanded: Set<string>;
   toggle: (id: string) => void;
   sortByOrder: (arr: any[]) => any[];
+  editMode: boolean;
 }) {
   const id = `pillar-${pillar.id}`;
   const refCode = `P${index}`;
@@ -166,8 +183,32 @@ function PillarRow({
             <div className="text-gray-500 text-xs mt-0.5">{pillar.description}</div>
           )}
         </td>
-        <td className="py-2 pr-4 text-center">{pillar.sort_order}</td>
-        <td className="py-2 text-right">—</td>
+        <td className="py-2 pr-4 text-center">
+          {editMode ? (
+            <input
+              type="number"
+              defaultValue={pillar.sort_order}
+              className="w-12 border rounded text-center text-sm"
+            />
+          ) : (
+            pillar.sort_order
+          )}
+        </td>
+        <td className="py-2 text-right space-x-2">
+          {editMode && (
+            <>
+              <button className="text-blue-600 hover:text-blue-800">
+                <Edit className="h-4 w-4 inline" />
+              </button>
+              <button className="text-green-600 hover:text-green-800">
+                <Plus className="h-4 w-4 inline" />
+              </button>
+              <button className="text-red-600 hover:text-red-800">
+                <Trash className="h-4 w-4 inline" />
+              </button>
+            </>
+          )}
+        </td>
       </tr>
 
       {isOpen &&
@@ -179,6 +220,7 @@ function PillarRow({
             expanded={expanded}
             toggle={toggle}
             sortByOrder={sortByOrder}
+            editMode={editMode}
           />
         ))}
     </>
@@ -191,12 +233,14 @@ function ThemeRow({
   expanded,
   toggle,
   sortByOrder,
+  editMode,
 }: {
   theme: any;
   pillarIndex: number;
   expanded: Set<string>;
   toggle: (id: string) => void;
   sortByOrder: (arr: any[]) => any[];
+  editMode: boolean;
 }) {
   const id = `theme-${theme.id}`;
   const refCode = `T${pillarIndex}.${theme.sort_order}`;
@@ -228,8 +272,32 @@ function ThemeRow({
             <div className="text-gray-500 text-xs mt-0.5">{theme.description}</div>
           )}
         </td>
-        <td className="py-2 pr-4 text-center">{theme.sort_order}</td>
-        <td className="py-2 text-right">—</td>
+        <td className="py-2 pr-4 text-center">
+          {editMode ? (
+            <input
+              type="number"
+              defaultValue={theme.sort_order}
+              className="w-12 border rounded text-center text-sm"
+            />
+          ) : (
+            theme.sort_order
+          )}
+        </td>
+        <td className="py-2 text-right space-x-2">
+          {editMode && (
+            <>
+              <button className="text-blue-600 hover:text-blue-800">
+                <Edit className="h-4 w-4 inline" />
+              </button>
+              <button className="text-green-600 hover:text-green-800">
+                <Plus className="h-4 w-4 inline" />
+              </button>
+              <button className="text-red-600 hover:text-red-800">
+                <Trash className="h-4 w-4 inline" />
+              </button>
+            </>
+          )}
+        </td>
       </tr>
 
       {isOpen &&
@@ -239,6 +307,7 @@ function ThemeRow({
             sub={sub}
             pillarIndex={pillarIndex}
             themeIndex={theme.sort_order}
+            editMode={editMode}
           />
         ))}
     </>
@@ -249,10 +318,12 @@ function SubthemeRow({
   sub,
   pillarIndex,
   themeIndex,
+  editMode,
 }: {
   sub: any;
   pillarIndex: number;
   themeIndex: number;
+  editMode: boolean;
 }) {
   const refCode = `ST${pillarIndex}.${themeIndex}.${sub.sort_order}`;
 
@@ -271,8 +342,29 @@ function SubthemeRow({
           <div className="text-gray-500 text-xs mt-0.5">{sub.description}</div>
         )}
       </td>
-      <td className="py-2 pr-4 text-center">{sub.sort_order}</td>
-      <td className="py-2 text-right">—</td>
+      <td className="py-2 pr-4 text-center">
+        {editMode ? (
+          <input
+            type="number"
+            defaultValue={sub.sort_order}
+            className="w-12 border rounded text-center text-sm"
+          />
+        ) : (
+          sub.sort_order
+        )}
+      </td>
+      <td className="py-2 text-right space-x-2">
+        {editMode && (
+          <>
+            <button className="text-blue-600 hover:text-blue-800">
+              <Edit className="h-4 w-4 inline" />
+            </button>
+            <button className="text-red-600 hover:text-red-800">
+              <Trash className="h-4 w-4 inline" />
+            </button>
+          </>
+        )}
+      </td>
     </tr>
   );
 }
