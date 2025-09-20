@@ -1,10 +1,8 @@
 // app/configuration/primary/page.tsx
-import FrameworkEditor from "@/components/framework/FrameworkEditor";
 import { fetchFramework } from "@/lib/framework-client";
+import FrameworkEditor from "@/components/framework/FrameworkEditor";
 
-export const dynamic = "force-dynamic";
-
-export default async function PrimaryFrameworkEditorPage() {
+export default async function PrimaryFrameworkPage() {
   const data = await fetchFramework();
   return <FrameworkEditor data={data} />;
 }
