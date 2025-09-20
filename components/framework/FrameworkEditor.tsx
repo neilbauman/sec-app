@@ -288,7 +288,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
             {deleteTarget.childrenCount && deleteTarget.childrenCount > 0 && (
               <p className="mb-4 text-sm text-red-500">
                 Warning: This {deleteTarget.type} has {deleteTarget.childrenCount}{" "}
-                child item(s). Deleting it will also delete all of them.
+                child item(s). Deleting it will also delete them.
               </p>
             )}
             <div className="flex justify-end space-x-2">
@@ -502,4 +502,41 @@ function ThemeRow({
                 onClick={() =>
                   confirmDelete({
                     type: "theme",
-                    name: theme
+                    name: theme.name,
+                    childrenCount: theme.subthemes?.length || 0,
+                  })
+                }
+              >
+                <Trash className="h-4 w-4 inline" />
+              </button>
+            </>
+          )}
+        </td>
+      </tr>
+
+      {isOpen &&
+        sortByOrder(theme.subthemes).map((sub: any) => (
+          <SubthemeRow
+            key={sub.id}
+            sub={sub}
+            pillarIndex={pillarIndex}
+            themeIndex={theme.sort_order}
+            editMode={editMode}
+            openModal={openModal}
+            confirmDelete={confirmDelete}
+          />
+        ))}
+    </>
+  );
+}
+
+function SubthemeRow({
+  sub,
+  pillarIndex,
+  themeIndex,
+  editMode,
+  openModal,
+  confirmDelete,
+}: {
+  sub: any;
+  pillarIndex: number;
