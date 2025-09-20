@@ -12,11 +12,7 @@ import {
   Upload,
   Download,
 } from "lucide-react";
-import type {
-  NestedPillar,
-  NestedTheme,
-  Subtheme,
-} from "@/lib/framework-client";
+import type { Pillar, NestedTheme, Subtheme } from "@/lib/framework-client";
 import {
   addPillar,
   addTheme,
@@ -27,32 +23,29 @@ import {
 } from "@/lib/framework-actions";
 
 type FrameworkEditorProps = {
-  data: NestedPillar[];
+  data: Pillar[];
 };
 
 export default function FrameworkEditor({ data }: FrameworkEditorProps) {
-  const [pillars, setPillars] = useState<NestedPillar[]>(data);
+  const [pillars, setPillars] = useState<Pillar[]>(data);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
 
-  function toggleExpand(id: string) {
+  const toggleExpand = (id: string) =>
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  }
 
-  function expandAll() {
+  const expandAll = () => {
     const all: Record<string, boolean> = {};
     pillars.forEach((p) => {
       all[p.id] = true;
-      p.themes.forEach((t) => {
+      p.themes?.forEach((t: NestedTheme) => {
         all[t.id] = true;
       });
     });
     setExpanded(all);
-  }
+  };
 
-  function collapseAll() {
-    setExpanded({});
-  }
+  const collapseAll = () => setExpanded({});
 
   async function handleAddPillar() {
     const name = prompt("Enter pillar name:");
@@ -87,8 +80,8 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
 
     let count = 0;
     pillars.forEach((p) => {
-      p.themes.forEach((t) => {
-        if (t.id === themeId) count = t.subthemes.length;
+      p.themes?.forEach((t) => {
+        if (t.id === themeId) count = t.subthemes?.length ?? 0;
       });
     });
 
@@ -150,162 +143,78 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
 
       {/* Table */}
       <div className="overflow-x-auto rounded border bg-white">
-        <table className="w-full border-collapse">
-          <thead className="bg-gray-50 text-left text-sm font-medium text-gray-700">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-gray-700 font-semibold">
             <tr>
-              <th className="w-[25%] px-4 py-2">Type / Ref Code</th>
-              <th className="w-[50%] px-4 py-2">Name / Description</th>
-              <th className="w-[10%] px-4 py-2 text-center">Sort Order</th>
-              <th className="w-[15%] px-4 py-2 text-right">Actions</th>
+              <th className="w-[25%] text-left px-3 py-2">Type / Ref Code</th>
+              <th className="w-[50%] text-left px-3 py-2">
+                Name / Description
+              </th>
+              <th className="w-[10%] text-center px-3 py-2">Sort Order</th>
+              <th className="w-[15%] text-right px-3 py-2">Actions</th>
             </tr>
           </thead>
-          <tbody className="text-sm text-gray-800">
+          <tbody>
             {pillars.map((pillar) => (
-              <>
-                {/* Pillar row */}
-                <tr key={pillar.id} className="border-t">
-                  <td className="px-4 py-2 align-top">
-                    <div className="flex items-center space-x-1">
+              <tr key={pillar.id} className="border-t">
+                <td className="px-3 py-2 align-top">
+                  <div className="flex items-center space-x-1">
+                    <button
+                      onClick={() => toggleExpand(pillar.id)}
+                      className="text-gray-500"
+                    >
+                      {expanded[pillar.id] ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
+                      )}
+                    </button>
+                    <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700 font-medium">
+                      Pillar
+                    </span>
+                    <span className="text-gray-500 text-xs">
+                      {pillar.ref_code}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-3 py-2 align-top">
+                  <div className="font-semibold">{pillar.name}</div>
+                  <div className="text-gray-500 text-xs">
+                    {pillar.description}
+                  </div>
+                </td>
+                <td className="px-3 py-2 text-center align-top">
+                  {pillar.sort_order}
+                </td>
+                <td className="px-3 py-2 text-right align-top space-x-2">
+                  {editMode && (
+                    <>
                       <button
-                        onClick={() => toggleExpand(pillar.id)}
+                        onClick={() => handleAddTheme(pillar.id)}
                         className="text-gray-500 hover:text-gray-700"
                       >
-                        {expanded[pillar.id] ? (
-                          <ChevronDown className="w-4 h-4" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4" />
-                        )}
+                        <Plus className="w-4 h-4" />
                       </button>
-                      <span className="rounded bg-blue-100 text-blue-700 px-2 py-0.5 text-xs font-medium">
-                        Pillar
-                      </span>
-                      <span className="text-xs text-gray-500">{pillar.ref_code}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2 align-top">
-                    <div className="font-semibold">{pillar.name}</div>
-                    <div className="text-gray-500 text-xs">{pillar.description}</div>
-                  </td>
-                  <td className="px-4 py-2 align-top text-center">{pillar.sort_order}</td>
-                  <td className="px-4 py-2 align-top text-right space-x-2">
-                    {editMode && (
-                      <>
-                        <button
-                          onClick={() => handleAddTheme(pillar.id)}
-                          className="text-gray-500 hover:text-blue-600"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Delete pillar "${pillar.name}"?`)) {
-                              deletePillar(pillar.id).then(() =>
-                                window.location.reload()
-                              );
-                            }
-                          }}
-                          className="text-gray-500 hover:text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-
-                {/* Themes under pillar */}
-                {expanded[pillar.id] &&
-                  pillar.themes.map((theme: NestedTheme) => (
-                    <tr key={theme.id} className="border-t bg-gray-50">
-                      <td className="px-8 py-2 align-top">
-                        <div className="flex items-center space-x-1">
-                          <button
-                            onClick={() => toggleExpand(theme.id)}
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            {expanded[theme.id] ? (
-                              <ChevronDown className="w-4 h-4" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4" />
-                            )}
-                          </button>
-                          <span className="rounded bg-green-100 text-green-700 px-2 py-0.5 text-xs font-medium">
-                            Theme
-                          </span>
-                          <span className="text-xs text-gray-500">{theme.ref_code}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2 align-top">
-                        <div className="font-semibold">{theme.name}</div>
-                        <div className="text-gray-500 text-xs">{theme.description}</div>
-                      </td>
-                      <td className="px-4 py-2 align-top text-center">{theme.sort_order}</td>
-                      <td className="px-4 py-2 align-top text-right space-x-2">
-                        {editMode && (
-                          <>
-                            <button
-                              onClick={() => handleAddSubtheme(theme.id)}
-                              className="text-gray-500 hover:text-blue-600"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm(`Delete theme "${theme.name}"?`)) {
-                                  deleteTheme(theme.id).then(() =>
-                                    window.location.reload()
-                                  );
-                                }
-                              }}
-                              className="text-gray-500 hover:text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-
-                {/* Subthemes under each theme */}
-                {pillar.themes.map(
-                  (theme) =>
-                    expanded[theme.id] &&
-                    theme.subthemes.map((s: Subtheme) => (
-                      <tr key={s.id} className="border-t">
-                        <td className="px-12 py-2 align-top">
-                          <div className="flex items-center space-x-1">
-                            <span className="rounded bg-red-100 text-red-700 px-2 py-0.5 text-xs font-medium">
-                              Subtheme
-                            </span>
-                            <span className="text-xs text-gray-500">{s.ref_code}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 align-top">
-                          <div className="font-semibold">{s.name}</div>
-                          <div className="text-gray-500 text-xs">{s.description}</div>
-                        </td>
-                        <td className="px-4 py-2 align-top text-center">{s.sort_order}</td>
-                        <td className="px-4 py-2 align-top text-right">
-                          {editMode && (
-                            <button
-                              onClick={() => {
-                                if (confirm(`Delete subtheme "${s.name}"?`)) {
-                                  deleteSubtheme(s.id).then(() =>
-                                    window.location.reload()
-                                  );
-                                }
-                              }}
-                              className="text-gray-500 hover:text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                )}
-              </>
+                      <button
+                        onClick={() => {
+                          if (
+                            confirm(
+                              `Delete pillar "${pillar.name}" and all its children?`
+                            )
+                          ) {
+                            deletePillar(pillar.id).then(() =>
+                              window.location.reload()
+                            );
+                          }
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
