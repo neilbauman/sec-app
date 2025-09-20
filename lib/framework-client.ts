@@ -1,43 +1,19 @@
 // lib/framework-client.ts
-// Client-safe helpers for fetching the SSC framework structure
+import { getSupabaseClient } from "@/lib/supabase-server";
+import type { Database } from "@/types/supabase";
 
-"use client";
-
-import { getSupabaseClient } from "@/lib/supabase-client";
-
-export type Subtheme = {
-  id: string;
-  theme_id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-};
-
-export type Theme = {
-  id: string;
-  pillar_id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  subthemes: Subtheme[];
-};
-
-export type Pillar = {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  themes: Theme[];
-};
+export type Pillar = Database["public"]["Tables"]["pillars"]["Row"];
+export type Theme = Database["public"]["Tables"]["themes"]["Row"];
+export type Subtheme = Database["public"]["Tables"]["subthemes"]["Row"];
 
 /**
- * Fetch the full SSC framework, ordered hierarchically:
- * pillars → themes → subthemes
+ * Fetches the full SSC framework (pillars → themes → subthemes)
+ * and nests them into a hierarchical object.
  */
 export async function fetchFramework(): Promise<Pillar[]> {
   const supabase = getSupabaseClient();
 
-  // Fetch all three levels
+  // ---- Fetch pillars ----
   const { data: pillars, error: pillarError } = await supabase
     .from("pillars")
     .select("id, name, description, sort_order")
@@ -45,40 +21,47 @@ export async function fetchFramework(): Promise<Pillar[]> {
 
   if (pillarError) throw pillarError;
 
+  // ---- Fetch themes ----
   const { data: themes, error: themeError } = await supabase
     .from("themes")
-    .select("id, pillar_id, name, description, sort_order")
+    .select("id, name, description, sort_order, pillar_id")
     .order("sort_order", { ascending: true });
 
   if (themeError) throw themeError;
 
+  // ---- Fetch subthemes ----
   const { data: subthemes, error: subthemeError } = await supabase
     .from("subthemes")
-    .select("id, theme_id, name, description, sort_order")
+    .select("id, name, description, sort_order, theme_id")
     .order("sort_order", { ascending: true });
 
   if (subthemeError) throw subthemeError;
 
-  // Group subthemes under their parent themes
+  // ---- Build maps for nesting ----
+  const themesByPillar: Record<string, Theme[]> = {};
+  (themes || []).forEach((t) => {
+    if (!themesByPillar[t.pillar_id]) themesByPillar[t.pillar_id] = [];
+    themesByPillar[t.pillar_id].push({ ...t, subthemes: [] } as Theme & { subthemes: Subtheme[] });
+  });
+
   const subthemesByTheme: Record<string, Subtheme[]> = {};
   (subthemes || []).forEach((s) => {
     if (!subthemesByTheme[s.theme_id]) subthemesByTheme[s.theme_id] = [];
     subthemesByTheme[s.theme_id].push(s);
   });
 
-  // Group themes under their parent pillars
-  const themesByPillar: Record<string, Theme[]> = {};
-  (themes || []).forEach((t) => {
-    if (!themesByPillar[t.pillar_id]) themesByPillar[t.pillar_id] = [];
-    themesByPillar[t.pillar_id].push({
-      ...t,
-      subthemes: subthemesByTheme[t.id] || [],
+  // ---- Attach subthemes to themes ----
+  Object.values(themesByPillar).forEach((themeList) => {
+    themeList.forEach((t) => {
+      (t as Theme & { subthemes: Subtheme[] }).subthemes = subthemesByTheme[t.id] || [];
     });
   });
 
-  // Assemble the full structure
-  return (pillars || []).map((p) => ({
+  // ---- Attach themes to pillars ----
+  const nestedPillars = (pillars || []).map((p) => ({
     ...p,
     themes: themesByPillar[p.id] || [],
   }));
+
+  return nestedPillars;
 }
