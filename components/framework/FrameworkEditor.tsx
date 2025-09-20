@@ -171,41 +171,58 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       {/* Controls */}
       <div className="mb-4 flex justify-between items-center">
         <div className="flex gap-2 items-center">
-          <Button variant="outline" size="sm" onClick={expandAll}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-gray-600 border-gray-300 hover:bg-gray-100"
+            onClick={expandAll}
+          >
             <ChevronsDown className="h-4 w-4 mr-1" /> Expand All
           </Button>
-          <Button variant="outline" size="sm" onClick={collapseAll}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-gray-600 border-gray-300 hover:bg-gray-100"
+            onClick={collapseAll}
+          >
             <ChevronsUp className="h-4 w-4 mr-1" /> Collapse All
           </Button>
-          <ActionIcon
-            icon={Upload}
-            label="Upload CSV"
-            color="green"
-            onClick={() => alert("CSV upload coming soon")}
-          />
-          <ActionIcon
-            icon={Download}
-            label="Download CSV"
-            color="green"
-            onClick={() => alert("CSV download coming soon")}
-          />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Button
-            variant={editMode ? "destructive" : "default"}
+            size="sm"
+            variant="outline"
+            className="text-gray-600 border-gray-300 hover:bg-gray-100"
             onClick={() => setEditMode(!editMode)}
           >
             {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
           </Button>
           {editMode && (
-            <Button
-              onClick={() => {
-                resetForm();
-                setOpenDialog({ type: "pillar" });
-              }}
-            >
-              <Plus className="h-4 w-4 mr-1" /> Add Pillar
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-gray-600 border-gray-300 hover:bg-gray-100"
+                onClick={() => {
+                  resetForm();
+                  setOpenDialog({ type: "pillar" });
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add Pillar
+              </Button>
+              <ActionIcon
+                icon={Upload}
+                label="Upload CSV"
+                color="green"
+                onClick={() => alert("CSV upload coming soon")}
+              />
+              <ActionIcon
+                icon={Download}
+                label="Download CSV"
+                color="green"
+                onClick={() => alert("CSV download coming soon")}
+              />
+            </>
           )}
         </div>
       </div>
