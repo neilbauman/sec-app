@@ -1,14 +1,14 @@
 // lib/supabase-browser.ts
-import { createBrowserClient } from "@supabase/ssr";
-import { Database } from "@/types/supabase";
+"use client";
 
-/**
- * Create a new Supabase client for use in the browser (React components).
- * This function should be called only on the client.
- */
-export function createClient() {
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/supabase";
+
+// Create a browser-side Supabase client
+export function getSupabaseBrowser(): SupabaseClient<any> {
   return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  ) as unknown as SupabaseClient<any>;
 }

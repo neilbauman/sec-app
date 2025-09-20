@@ -1,10 +1,12 @@
 // lib/supabase-client.ts
-"use client";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/supabase";
 
-import { createClient } from "./supabase-browser";
-
-/**
- * Singleton Supabase client instance for client-side usage.
- * Import this in React components/hooks when you need Supabase.
- */
-export const supabase = createClient();
+// Create a plain Supabase client (useful in edge or neutral contexts)
+export function getSupabaseClient(): SupabaseClient<any> {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ) as unknown as SupabaseClient<any>;
+}

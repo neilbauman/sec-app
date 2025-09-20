@@ -7,13 +7,9 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <PageHeader
-        group="dashboard"
-        page="index"
-        breadcrumb={[{ label: "Dashboard" }]}
-      />
+      <PageHeader group="dashboard" page="index" />
 
-      {/* Cards */}
+      {/* Group cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {Object.entries(groups)
           .filter(([key]) => key !== "dashboard") // ✅ don’t show dashboard card
@@ -26,9 +22,7 @@ export default function DashboardPage() {
               >
                 <div className="flex items-center space-x-2 mb-2">
                   <GroupIcon className={`w-5 h-5 ${group.color}`} />
-                  <h3
-                    className={`text-lg font-semibold ${group.color}`}
-                  >
+                  <h3 className={`text-lg font-semibold ${group.color}`}>
                     <Link href={`/${key}`}>{group.name}</Link>
                   </h3>
                 </div>

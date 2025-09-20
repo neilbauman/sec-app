@@ -1,7 +1,7 @@
 "use client";
 
 import { Layers } from "lucide-react";
-import type { Breadcrumb } from "@/lib/breadcrumbs";
+import type { Breadcrumb } from "./Breadcrumbs"; // <-- fixed import
 
 type ToolsetHeaderProps = {
   title: string;
