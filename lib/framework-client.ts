@@ -7,10 +7,30 @@ export type Pillar = Database["public"]["Tables"]["pillars"]["Row"];
 export type Theme = Database["public"]["Tables"]["themes"]["Row"];
 export type Subtheme = Database["public"]["Tables"]["subthemes"]["Row"];
 
-// ---------- Insert Types ----------
-export type PillarInsert = Database["public"]["Tables"]["pillars"]["Insert"];
-export type ThemeInsert = Database["public"]["Tables"]["themes"]["Insert"];
-export type SubthemeInsert = Database["public"]["Tables"]["subthemes"]["Insert"];
+// ---------- Insert Types (manual since DB types only export Row) ----------
+export type PillarInsert = {
+  id?: string;
+  ref_code: string;
+  name: string;
+  description: string;
+  sort_order: number;
+};
+
+export type ThemeInsert = {
+  id?: string;
+  pillar_id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+};
+
+export type SubthemeInsert = {
+  id?: string;
+  theme_id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+};
 
 // ---------- Nested Types ----------
 export type NestedSubtheme = Subtheme;
@@ -30,21 +50,18 @@ export async function fetchFramework(): Promise<NestedPillar[]> {
     .from("pillars")
     .select("*")
     .order("sort_order", { ascending: true });
-
   if (pillarError) throw pillarError;
 
   const { data: themes, error: themeError } = await supabase
     .from("themes")
     .select("*")
     .order("sort_order", { ascending: true });
-
   if (themeError) throw themeError;
 
   const { data: subthemes, error: subthemeError } = await supabase
     .from("subthemes")
     .select("*")
     .order("sort_order", { ascending: true });
-
   if (subthemeError) throw subthemeError;
 
   // Group subthemes by theme
@@ -58,7 +75,10 @@ export async function fetchFramework(): Promise<NestedPillar[]> {
   const themesByPillar: Record<string, NestedTheme[]> = {};
   (themes || []).forEach((t) => {
     if (!themesByPillar[t.pillar_id]) themesByPillar[t.pillar_id] = [];
-    themesByPillar[t.pillar_id].push({ ...t, subthemes: subthemesByTheme[t.id] || [] });
+    themesByPillar[t.pillar_id].push({
+      ...t,
+      subthemes: subthemesByTheme[t.id] || [],
+    });
   });
 
   // Attach everything to pillars
