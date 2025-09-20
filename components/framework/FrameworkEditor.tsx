@@ -18,6 +18,12 @@ import {
   deletePillar,
   deleteTheme,
   deleteSubtheme,
+  addPillar,
+  editPillar,
+  addTheme,
+  editTheme,
+  addSubtheme,
+  editSubtheme,
 } from "@/lib/framework-actions";
 
 interface FrameworkEditorProps {
@@ -127,12 +133,32 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
     setModalType(null);
     setModalTarget(null);
   }
-  function handleModalSubmit(data: {
+  async function handleModalSubmit(data: {
     name: string;
     description: string;
     sort_order: number;
   }) {
     console.log("Submit modal", modalType, modalTarget, data);
+    switch (modalType) {
+      case "add-pillar":
+        await addPillar(data);
+        break;
+      case "edit-pillar":
+        await editPillar(modalTarget.id, data);
+        break;
+      case "add-theme":
+        await addTheme(modalTarget.id, data); // modalTarget is pillar
+        break;
+      case "edit-theme":
+        await editTheme(modalTarget.id, data);
+        break;
+      case "add-subtheme":
+        await addSubtheme(modalTarget.id, data); // modalTarget is theme
+        break;
+      case "edit-subtheme":
+        await editSubtheme(modalTarget.id, data);
+        break;
+    }
     closeModal();
   }
 
