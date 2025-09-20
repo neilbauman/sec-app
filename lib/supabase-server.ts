@@ -3,7 +3,11 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/supabase";
 
-export function getSupabaseServer() {
+/**
+ * Create a Supabase client configured for server-side usage (API routes or RSC).
+ * Uses Next.js cookies to manage authentication automatically.
+ */
+export function getSupabaseClient() {
   const cookieStore = cookies();
 
   return createServerClient<Database>(
@@ -18,14 +22,14 @@ export function getSupabaseServer() {
           try {
             cookieStore.set({ name, value, ...options });
           } catch {
-            // RSC no-op
+            // no-op in RSC
           }
         },
         remove(name: string, options: any) {
           try {
             cookieStore.set({ name, value: "", ...options });
           } catch {
-            // RSC no-op
+            // no-op in RSC
           }
         },
       },
