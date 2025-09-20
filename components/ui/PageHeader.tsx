@@ -4,13 +4,17 @@ import { groups, toolkit } from "@/lib/headerConfig";
 import type { GroupKey, PageKey } from "@/lib/headerConfig";
 import Link from "next/link";
 
-type PageHeaderProps = {
-  group: GroupKey;
-  page: PageKey<GroupKey>;
+type PageHeaderProps<G extends GroupKey> = {
+  group: G;
+  page: PageKey<G>;
   breadcrumb: { label: string; href?: string }[];
 };
 
-export default function PageHeader({ group, page, breadcrumb }: PageHeaderProps) {
+export default function PageHeader<G extends GroupKey>({
+  group,
+  page,
+  breadcrumb,
+}: PageHeaderProps<G>) {
   const groupInfo = groups[group];
   const pageInfo = groupInfo.pages[page];
 
