@@ -1,24 +1,9 @@
-"use server";
+// lib/framework-client.ts
+import { createClient } from "@/lib/supabase-browser";
+import { Database } from "@/types/supabase";
 
-import { createClient } from "@/lib/supabase-server";
-
-// -----------------------------
-// Types
-// -----------------------------
-export type Subtheme = {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-};
-
-export type Theme = {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  subthemes: Subtheme[];
-};
+// Create client once, synchronously
+const supabase = createClient<Database>();
 
 export type Pillar = {
   id: string;
@@ -28,66 +13,68 @@ export type Pillar = {
   themes: Theme[];
 };
 
-// -----------------------------
-// Fetch Framework
-// -----------------------------
-export async function fetchFramework(): Promise<Pillar[]> {
-  const supabase = createClient();
+export type Theme = {
+  id: string;
+  pillar_id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  subthemes: Subtheme[];
+};
 
-  // Fetch pillars
+export type Subtheme = {
+  id: string;
+  theme_id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+};
+
+// Fetch full framework hierarchy
+export async function fetchFramework(): Promise<Pillar[]> {
+  // ✅ supabase is already a client, no "await"
   const { data: pillars, error: pillarError } = await supabase
     .from("pillars")
     .select("id, name, description, sort_order")
     .order("sort_order", { ascending: true });
 
-  if (pillarError) {
-    console.error("Error fetching pillars:", pillarError);
-    return [];
-  }
+  if (pillarError) throw pillarError;
 
-  if (!pillars) return [];
+  const { data: themes, error: themeError } = await supabase
+    .from("themes")
+    .select("id, pillar_id, name, description, sort_order")
+    .order("sort_order", { ascending: true });
 
-  const result: Pillar[] = [];
+  if (themeError) throw themeError;
 
-  for (const pillar of pillars) {
-    // Fetch themes for each pillar
-    const { data: themes, error: themeError } = await supabase
-      .from("themes")
-      .select("id, name, description, sort_order")
-      .eq("pillar_id", pillar.id)
-      .order("sort_order", { ascending: true });
+  const { data: subthemes, error: subthemeError } = await supabase
+    .from("subthemes")
+    .select("id, theme_id, name, description, sort_order")
+    .order("sort_order", { ascending: true });
 
-    if (themeError) {
-      console.error("Error fetching themes:", themeError);
-      continue;
-    }
+  if (subthemeError) throw subthemeError;
 
-    const themeResults: Theme[] = [];
+  // Assemble hierarchy
+  const themesByPillar: Record<string, Theme[]> = {};
+  const subthemesByTheme: Record<string, Subtheme[]> = {};
 
-    for (const theme of themes || []) {
-      // Fetch subthemes for each theme
-      const { data: subthemes, error: subError } = await supabase
-        .from("subthemes")
-        .select("id, name, description, sort_order")
-        .eq("theme_id", theme.id)
-        .order("sort_order", { ascending: true });
+  subthemes?.forEach((s) => {
+    if (!subthemesByTheme[s.theme_id]) subthemesByTheme[s.theme_id] = [];
+    subthemesByTheme[s.theme_id].push({ ...s });
+  });
 
-      if (subError) {
-        console.error("Error fetching subthemes:", subError);
-        continue;
-      }
-
-      themeResults.push({
-        ...theme,
-        subthemes: subthemes || [],
-      });
-    }
-
-    result.push({
-      ...pillar,
-      themes: themeResults,
+  themes?.forEach((t) => {
+    if (!themesByPillar[t.pillar_id]) themesByPillar[t.pillar_id] = [];
+    themesByPillar[t.pillar_id].push({
+      ...t,
+      subthemes: subthemesByTheme[t.id] || [],
     });
-  }
+  });
 
-  return result;
+  return (
+    pillars?.map((p) => ({
+      ...p,
+      themes: themesByPillar[p.id] || [],
+    })) || []
+  );
 }
