@@ -20,6 +20,8 @@ import {
   ChevronsUp,
   Plus,
   Trash2,
+  ArrowUpTray,
+  ArrowDownTray,
 } from "lucide-react";
 import {
   Dialog,
@@ -30,7 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
-// Badge component
+// Badge for type
 function TypeBadge({ type }: { type: "pillar" | "theme" | "subtheme" }) {
   const styles: Record<string, string> = {
     pillar: "bg-blue-100 text-blue-800",
@@ -59,7 +61,7 @@ function generateRefCode(
   return `ST${indices[0]}.${indices[1]}.${indices[2]}`;
 }
 
-// Action icon with tooltip
+// Action icon (badge-like)
 function ActionIcon({
   icon: Icon,
   label,
@@ -73,17 +75,17 @@ function ActionIcon({
 }) {
   const colors =
     color === "red"
-      ? "text-red-600 hover:text-red-800"
-      : "text-green-600 hover:text-green-800";
+      ? "text-red-600 hover:bg-red-50"
+      : "text-green-600 hover:bg-green-50";
 
   return (
-    <div className="relative group">
+    <div className="relative group inline-flex">
       <button
         onClick={onClick}
-        className={`p-1 transition ${colors}`}
+        className={`inline-flex items-center justify-center rounded-full p-1.5 transition ${colors}`}
         aria-label={label}
       >
-        <Icon className="h-4 w-4" />
+        <Icon className="h-5 w-5" />
       </button>
       <span className="absolute bottom-full mb-1 hidden group-hover:block rounded bg-gray-800 px-2 py-0.5 text-xs text-white whitespace-nowrap">
         {label}
@@ -168,13 +170,25 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
 
       {/* Controls */}
       <div className="mb-4 flex justify-between items-center">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Button variant="outline" size="sm" onClick={expandAll}>
             <ChevronsDown className="h-4 w-4 mr-1" /> Expand All
           </Button>
           <Button variant="outline" size="sm" onClick={collapseAll}>
             <ChevronsUp className="h-4 w-4 mr-1" /> Collapse All
           </Button>
+          <ActionIcon
+            icon={ArrowUpTray}
+            label="Upload CSV"
+            color="green"
+            onClick={() => alert("CSV upload coming soon")}
+          />
+          <ActionIcon
+            icon={ArrowDownTray}
+            label="Download CSV"
+            color="green"
+            onClick={() => alert("CSV download coming soon")}
+          />
         </div>
         <div className="flex gap-2">
           <Button
@@ -200,10 +214,10 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       <table className="w-full border-collapse bg-white shadow rounded text-sm">
         <thead className="bg-gray-100 text-left">
           <tr>
-            <th className="px-3 py-2 w-[15%]">Type / Ref Code</th>
-            <th className="px-3 py-2 w-[50%]">Name / Description</th>
+            <th className="px-3 py-2 w-[20%]">Type / Ref Code</th>
+            <th className="px-3 py-2 w-[55%]">Name / Description</th>
             <th className="px-3 py-2 w-[10%] text-center">Sort Order</th>
-            <th className="px-3 py-2 w-[25%] text-right">Actions</th>
+            <th className="px-3 py-2 w-[15%] text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -235,7 +249,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                   <td className="px-3 py-2 text-center">{pillar.sort_order}</td>
                   <td className="px-3 py-2 text-right">
                     {editMode && (
-                      <div className="flex justify-end gap-3">
+                      <div className="flex justify-end gap-2">
                         <ActionIcon
                           icon={Plus}
                           label="Add Theme"
@@ -294,7 +308,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                           </td>
                           <td className="px-3 py-2 text-right">
                             {editMode && (
-                              <div className="flex justify-end gap-3">
+                              <div className="flex justify-end gap-2">
                                 <ActionIcon
                                   icon={Plus}
                                   label="Add Subtheme"
@@ -348,7 +362,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                 </td>
                                 <td className="px-3 py-2 text-right">
                                   {editMode && (
-                                    <div className="flex justify-end gap-3">
+                                    <div className="flex justify-end gap-2">
                                       <ActionIcon
                                         icon={Trash2}
                                         label="Delete Subtheme"
