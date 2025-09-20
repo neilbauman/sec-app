@@ -3,22 +3,16 @@ import PageHeader from "@/components/ui/PageHeader";
 import FrameworkEditor from "@/components/framework/FrameworkEditor";
 import { fetchFramework } from "@/lib/framework-client";
 import { withRefCodes } from "@/lib/refCodes";
+import type { NestedPillar } from "@/lib/framework-client";
 
 export default async function PrimaryFrameworkEditorPage() {
   const rawData = await fetchFramework();
 
-  // Normalize & assert ref_code presence
+  // Normalize: ensures ref_code, pillar_code, theme_code are filled
   const framework = withRefCodes({ pillars: rawData });
 
-  // Explicit cast: ensures all pillars have ref_code now
-  const pillarsWithCodes = framework.pillars as {
-    id: string;
-    ref_code: string;
-    name: string;
-    description: string;
-    sort_order: number;
-    themes: any[]; // allow nested objects without over-specifying here
-  }[];
+  // Tell TS: this is a NestedPillar[], but normalized
+  const pillarsWithCodes = framework.pillars as NestedPillar[];
 
   return (
     <div className="space-y-6">
