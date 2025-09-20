@@ -1,5 +1,7 @@
 // /lib/framework-actions.ts
-import { createClient } from "@/lib/supabase-server";
+// Safe actions — addPillar is real, others are still stubs.
+
+import { supabase } from "@/lib/supabase-browser";
 
 //
 // Pillars
@@ -9,8 +11,6 @@ export async function addPillar(data: {
   description: string;
   sort_order: number;
 }) {
-  const supabase = createClient();
-
   const { error } = await supabase.from("pillars").insert([
     {
       name: data.name,
