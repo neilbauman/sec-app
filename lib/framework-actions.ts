@@ -2,7 +2,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase-browser";
-import type { Database } from "@/types/supabase";
 
 type PillarInput = {
   name: string;
@@ -14,7 +13,7 @@ type PillarInput = {
 // Pillars
 // -----------------------------
 export async function addPillar(data: PillarInput) {
-  const supabase = createClient<Database>();
+  const supabase = createClient();
 
   const { error } = await supabase
     .from("pillars")
@@ -30,7 +29,7 @@ export async function addPillar(data: PillarInput) {
 }
 
 export async function deletePillar(id: string) {
-  const supabase = createClient<Database>();
+  const supabase = createClient();
 
   const { error } = await supabase.from("pillars").delete().eq("id", id);
 
@@ -41,7 +40,7 @@ export async function deletePillar(id: string) {
 // Themes
 // -----------------------------
 export async function deleteTheme(id: string) {
-  const supabase = createClient<Database>();
+  const supabase = createClient();
 
   const { error } = await supabase.from("themes").delete().eq("id", id);
 
@@ -52,7 +51,7 @@ export async function deleteTheme(id: string) {
 // Subthemes
 // -----------------------------
 export async function deleteSubtheme(id: string) {
-  const supabase = createClient<Database>();
+  const supabase = createClient();
 
   const { error } = await supabase.from("subthemes").delete().eq("id", id);
 
