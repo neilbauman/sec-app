@@ -1,9 +1,9 @@
 // /lib/framework-actions.ts
-// addPillar + editPillar are real, others are still stubs.
+// addPillar + editPillar are real, others stubs. Now addPillar creates a default theme and subtheme.
 
 import { createClient } from "@supabase/supabase-js";
 
-// Untyped client (avoids TS errors)
+// Untyped client (avoids TS schema conflicts)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -17,20 +17,63 @@ export async function addPillar(data: {
   description: string;
   sort_order: number;
 }) {
-  const { error } = await supabase.from("pillars").insert([
+  // Step 1: Insert the pillar
+  const { data: pillarData, error: pillarError } = await supabase
+    .from("pillars")
+    .insert([
+      {
+        name: data.name,
+        description: data.description,
+        sort_order: data.sort_order,
+      },
+    ])
+    .select("id")
+    .single();
+
+  if (pillarError) {
+    console.error("addPillar error:", pillarError);
+    throw pillarError;
+  }
+
+  const pillarId = pillarData.id;
+
+  // Step 2: Insert a default theme
+  const { data: themeData, error: themeError } = await supabase
+    .from("themes")
+    .insert([
+      {
+        pillar_id: pillarId,
+        name: "Default Theme",
+        description: "This is a default theme placeholder.",
+        sort_order: 1,
+      },
+    ])
+    .select("id")
+    .single();
+
+  if (themeError) {
+    console.error("addPillar default theme error:", themeError);
+    throw themeError;
+  }
+
+  const themeId = themeData.id;
+
+  // Step 3: Insert a default subtheme
+  const { error: subthemeError } = await supabase.from("subthemes").insert([
     {
-      name: data.name,
-      description: data.description,
-      sort_order: data.sort_order,
+      theme_id: themeId,
+      name: "Default Subtheme",
+      description: "This is a default subtheme placeholder.",
+      sort_order: 1,
     },
   ]);
 
-  if (error) {
-    console.error("addPillar error:", error);
-    throw error;
+  if (subthemeError) {
+    console.error("addPillar default subtheme error:", subthemeError);
+    throw subthemeError;
   }
 
-  console.log("Pillar added successfully:", data.name);
+  console.log("Pillar with defaults added successfully:", data.name);
   return Promise.resolve();
 }
 
