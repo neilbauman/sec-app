@@ -8,7 +8,7 @@ import type { Database } from "@/types/supabase";
  * Uses Next.js cookies to manage authentication automatically.
  */
 export function getSupabaseClient() {
-  const cookieStore = cookies();
+  const cookieStore = cookies(); // ✅ cookies() is synchronous
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
