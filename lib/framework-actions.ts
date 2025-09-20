@@ -1,9 +1,9 @@
 // /lib/framework-actions.ts
-// addPillar is real, others are stubs. Client is untyped to avoid TS conflicts.
+// addPillar + editPillar are real, others are still stubs.
 
 import { createClient } from "@supabase/supabase-js";
 
-// Create an untyped client (bypasses TS schema checking)
+// Untyped client (avoids TS errors)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -38,7 +38,21 @@ export async function editPillar(
   id: string,
   updates: { name: string; description: string; sort_order: number }
 ) {
-  console.log("Stub: edit pillar", id, updates);
+  const { error } = await supabase
+    .from("pillars")
+    .update({
+      name: updates.name,
+      description: updates.description,
+      sort_order: updates.sort_order,
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("editPillar error:", error);
+    throw error;
+  }
+
+  console.log("Pillar updated successfully:", id, updates);
   return Promise.resolve();
 }
 
