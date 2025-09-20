@@ -7,66 +7,131 @@ import {
   deleteTheme,
   deleteSubtheme,
 } from "@/lib/framework-actions";
-import { fetchFramework, Pillar } from "@/lib/framework-client";
+import { fetchFramework } from "@/lib/framework-client";
 import PageHeader from "@/components/ui/PageHeader";
 import {
-  ChevronDown,
-  ChevronRight,
   Plus,
   Trash2,
+  ChevronRight,
+  ChevronDown,
+  Upload,
+  Download,
 } from "lucide-react";
 
-interface FrameworkEditorProps {
-  group: "configuration";
-  page: "primary";
+interface Pillar {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  themes: Theme[];
+}
+interface Theme {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  subthemes: Subtheme[];
+}
+interface Subtheme {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
 }
 
-export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
+type ModalType = "add-pillar" | "delete-pillar" | "delete-theme" | "delete-subtheme";
+
+export default function FrameworkEditor({
+  group,
+  page,
+}: {
+  group: "configuration";
+  page: "primary";
+}) {
   const [pillars, setPillars] = useState<Pillar[]>([]);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editMode, setEditMode] = useState(false);
 
   // Modal state
-  const [modalType, setModalType] = useState<"add-pillar" | null>(null);
-  const [pillarName, setPillarName] = useState("");
-  const [pillarDesc, setPillarDesc] = useState("");
-  const [pillarSort, setPillarSort] = useState<number>(1);
+  const [modalType, setModalType] = useState<ModalType | null>(null);
+  const [targetId, setTargetId] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
 
-  async function load() {
-    try {
-      const data = await fetchFramework();
-      setPillars(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load framework data.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Add Pillar modal fields
+  const [pillarName, setPillarName] = useState("");
+  const [pillarDesc, setPillarDesc] = useState("");
 
   useEffect(() => {
+    async function load() {
+      try {
+        const data = await fetchFramework();
+        setPillars(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load framework data.");
+      } finally {
+        setLoading(false);
+      }
+    }
     load();
   }, []);
 
-  function toggleExpand(id: string) {
-    const copy = new Set(expanded);
-    if (copy.has(id)) copy.delete(id);
-    else copy.add(id);
-    setExpanded(copy);
-  }
+  const openModal = (type: ModalType, id?: string) => {
+    setModalType(type);
+    setTargetId(id ?? null);
+    setModalError(null);
+  };
 
-  function openAddPillarModal() {
-    const maxSort =
-      pillars.length > 0 ? Math.max(...pillars.map((p) => p.sort_order)) : 0;
-    setPillarSort(maxSort + 1);
+  const closeModal = () => {
+    setModalType(null);
+    setTargetId(null);
     setPillarName("");
     setPillarDesc("");
-    setModalType("add-pillar");
-  }
+    setModalError(null);
+  };
+
+  const handleAddPillar = async () => {
+    try {
+      setModalError(null);
+      const maxSort = Math.max(0, ...pillars.map((p) => p.sort_order));
+      await addPillar({
+        name: pillarName.trim(),
+        description: pillarDesc.trim(),
+        sort_order: maxSort + 1,
+      });
+      closeModal();
+      const data = await fetchFramework();
+      setPillars(data);
+    } catch (err: any) {
+      console.error(err);
+      setModalError(err.message || "Failed to add pillar.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!modalType || !targetId) return;
+    try {
+      setModalError(null);
+      if (modalType === "delete-pillar") await deletePillar(targetId);
+      if (modalType === "delete-theme") await deleteTheme(targetId);
+      if (modalType === "delete-subtheme") await deleteSubtheme(targetId);
+      closeModal();
+      const data = await fetchFramework();
+      setPillars(data);
+    } catch (err: any) {
+      console.error(err);
+      setModalError(err.message || "Delete failed.");
+    }
+  };
+
+  const toggleExpand = (id: string) => {
+    const newSet = new Set(expanded);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpanded(newSet);
+  };
 
   return (
     <div className="space-y-6">
@@ -80,27 +145,25 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
         ]}
       />
 
-      <div className="bg-white shadow rounded-lg p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <div className="flex space-x-2">
+      <div className="bg-white shadow rounded-lg p-4">
+        <div className="flex justify-between mb-3">
+          <div className="space-x-2">
             <button
-              onClick={() =>
-                setExpanded(new Set(pillars.map((p) => p.id)))
-              }
-              className="px-2 py-1 text-sm border rounded hover:bg-gray-50"
+              onClick={() => setExpanded(new Set(pillars.map((p) => p.id)))}
+              className="px-2 py-1 border rounded text-sm"
             >
               Expand All
             </button>
             <button
               onClick={() => setExpanded(new Set())}
-              className="px-2 py-1 text-sm border rounded hover:bg-gray-50"
+              className="px-2 py-1 border rounded text-sm"
             >
               Collapse All
             </button>
             {editMode && (
               <button
-                onClick={openAddPillarModal}
-                className="px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                onClick={() => openModal("add-pillar")}
+                className="px-2 py-1 bg-blue-600 text-white rounded text-sm"
               >
                 + Add Pillar
               </button>
@@ -108,209 +171,204 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
           </div>
           <button
             onClick={() => setEditMode(!editMode)}
-            className={`px-2 py-1 text-sm rounded ${
-              editMode
-                ? "bg-rose-200 text-rose-800 hover:bg-rose-300"
-                : "bg-rose-100 text-rose-700 hover:bg-rose-200"
-            }`}
+            className="px-2 py-1 bg-orange-200 text-orange-800 rounded text-sm"
           >
             {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
           </button>
         </div>
 
-        {loading && <p className="text-gray-500">Loading framework…</p>}
-        {error && <p className="text-red-600">{error}</p>}
-
-        {!loading &&
-          !error &&
-          pillars.map((pillar) => (
-            <div key={pillar.id} className="border-b">
-              <div className="flex items-start py-2">
-                <button
-                  onClick={() => toggleExpand(pillar.id)}
-                  className="mr-2 mt-1"
-                >
-                  {expanded.has(pillar.id) ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </button>
-                <div className="flex-1">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-2">
-                    Pillar
-                  </span>
-                  <span className="font-semibold">{pillar.name}</span>
-                  <div className="text-sm text-gray-600">
-                    {pillar.description}
-                  </div>
-                </div>
-                <div className="w-20 text-center">{pillar.sort_order}</div>
-                <div className="w-20 text-right">
-                  {editMode && (
-                    <button
-                      onClick={async () => {
-                        try {
-                          await deletePillar(pillar.id);
-                          load();
-                        } catch (err) {
-                          console.error(err);
-                        }
-                      }}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="h-4 w-4 inline" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {expanded.has(pillar.id) && (
-                <div className="ml-6 border-l pl-4">
-                  {pillar.themes.map((theme) => (
-                    <div key={theme.id} className="py-2">
-                      <div className="flex items-start">
-                        <button
-                          onClick={() => toggleExpand(theme.id)}
-                          className="mr-2 mt-1"
-                        >
-                          {expanded.has(theme.id) ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </button>
-                        <div className="flex-1">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-2">
-                            Theme
-                          </span>
-                          <span className="font-medium">{theme.name}</span>
-                          <div className="text-sm text-gray-600">
+        <table className="w-full text-sm border-collapse">
+          <thead className="border-b">
+            <tr className="text-left text-gray-600">
+              <th className="w-1/5 px-4 py-2">Type / Ref Code</th>
+              <th className="w-3/5 px-4 py-2">Name / Description</th>
+              <th className="w-1/10 px-4 py-2 text-center">Sort Order</th>
+              <th className="w-1/10 px-4 py-2 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pillars.map((pillar) => (
+              <>
+                <tr key={pillar.id} className="border-b">
+                  <td className="px-4 py-2">
+                    <div className="flex items-center space-x-1">
+                      <button onClick={() => toggleExpand(pillar.id)}>
+                        {expanded.has(pillar.id) ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </button>
+                      <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
+                        Pillar
+                      </span>
+                      <span className="text-xs">P{pillar.sort_order}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-2">
+                    <div className="font-semibold">{pillar.name}</div>
+                    <div className="text-gray-500 text-xs">{pillar.description}</div>
+                  </td>
+                  <td className="px-4 py-2 text-center">{pillar.sort_order}</td>
+                  <td className="px-4 py-2 text-right">
+                    {editMode && (
+                      <button
+                        onClick={() => openModal("delete-pillar", pillar.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 className="h-4 w-4 inline" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+                {expanded.has(pillar.id) &&
+                  pillar.themes.map((theme) => (
+                    <>
+                      <tr key={theme.id} className="border-b bg-gray-50">
+                        <td className="px-8 py-2">
+                          <div className="flex items-center space-x-1">
+                            <button onClick={() => toggleExpand(theme.id)}>
+                              {expanded.has(theme.id) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </button>
+                            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
+                              Theme
+                            </span>
+                            <span className="text-xs">
+                              T{pillar.sort_order}.{theme.sort_order}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2">
+                          <div className="font-medium">{theme.name}</div>
+                          <div className="text-gray-500 text-xs">
                             {theme.description}
                           </div>
-                        </div>
-                        <div className="w-20 text-center">
-                          {theme.sort_order}
-                        </div>
-                        <div className="w-20 text-right">
+                        </td>
+                        <td className="px-4 py-2 text-center">{theme.sort_order}</td>
+                        <td className="px-4 py-2 text-right">
                           {editMode && (
                             <button
-                              onClick={() => deleteTheme(theme.id)}
+                              onClick={() => openModal("delete-theme", theme.id)}
                               className="text-red-600 hover:text-red-800"
                             >
                               <Trash2 className="h-4 w-4 inline" />
                             </button>
                           )}
-                        </div>
-                      </div>
-
-                      {expanded.has(theme.id) && (
-                        <div className="ml-6 border-l pl-4">
-                          {theme.subthemes.map((sub) => (
-                            <div
-                              key={sub.id}
-                              className="flex items-start py-2"
-                            >
-                              <div className="flex-1">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 mr-2">
-                                  Subtheme
-                                </span>
-                                <span>{sub.name}</span>
-                                <div className="text-sm text-gray-600">
-                                  {sub.description}
-                                </div>
-                              </div>
-                              <div className="w-20 text-center">
+                        </td>
+                      </tr>
+                      {expanded.has(theme.id) &&
+                        theme.subthemes.map((sub) => (
+                          <tr key={sub.id} className="border-b">
+                            <td className="px-12 py-2">
+                              <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs">
+                                Subtheme
+                              </span>
+                              <span className="text-xs ml-1">
+                                ST{pillar.sort_order}.{theme.sort_order}.
                                 {sub.sort_order}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2">
+                              <div className="font-normal">{sub.name}</div>
+                              <div className="text-gray-500 text-xs">
+                                {sub.description}
                               </div>
-                              <div className="w-20 text-right">
-                                {editMode && (
-                                  <button
-                                    onClick={() => deleteSubtheme(sub.id)}
-                                    className="text-red-600 hover:text-red-800"
-                                  >
-                                    <Trash2 className="h-4 w-4 inline" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              {sub.sort_order}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {editMode && (
+                                <button
+                                  onClick={() =>
+                                    openModal("delete-subtheme", sub.id)
+                                  }
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  <Trash2 className="h-4 w-4 inline" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                    </>
                   ))}
-                </div>
-              )}
-            </div>
-          ))}
+              </>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Add Pillar Modal */}
-      {modalType === "add-pillar" && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold mb-4">Add Pillar</h2>
+      {/* Confirm Delete Modal */}
+      {modalType && modalType.startsWith("delete") && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+            <h3 className="font-semibold mb-2">Confirm Delete</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete this{" "}
+              {modalType.replace("delete-", "")}? This action cannot be undone.
+            </p>
             {modalError && (
-              <p className="text-red-600 mb-2">{modalError}</p>
+              <p className="text-red-600 text-sm mb-2">{modalError}</p>
             )}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <input
-                  type="text"
-                  value={pillarName}
-                  onChange={(e) => setPillarName(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={pillarDesc}
-                  onChange={(e) => setPillarDesc(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Sort Order
-                </label>
-                <input
-                  type="number"
-                  value={pillarSort}
-                  onChange={(e) => setPillarSort(Number(e.target.value))}
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end space-x-2">
+            <div className="flex justify-end space-x-2">
               <button
-                onClick={() => setModalType(null)}
-                className="px-4 py-2 border rounded"
+                onClick={closeModal}
+                className="px-3 py-1 border rounded text-sm"
               >
                 Cancel
               </button>
               <button
-                onClick={async () => {
-                  try {
-                    setModalError(null);
-                    await addPillar({
-                      name: pillarName.trim(),
-                      description: pillarDesc.trim(),
-                      sort_order: pillarSort,
-                    });
-                    setModalType(null);
-                    load();
-                  } catch (err: any) {
-                    console.error(err);
-                    setModalError(
-                      err.message || "Failed to add pillar"
-                    );
-                  }
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                onClick={handleDelete}
+                className="px-3 py-1 bg-red-600 text-white rounded text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Pillar Modal */}
+      {modalType === "add-pillar" && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+            <h3 className="font-semibold mb-2">Add Pillar</h3>
+            <div className="space-y-2 mb-4">
+              <div>
+                <label className="block text-sm font-medium">Name</label>
+                <input
+                  value={pillarName}
+                  onChange={(e) => setPillarName(e.target.value)}
+                  className="border w-full px-2 py-1 rounded text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Description</label>
+                <textarea
+                  value={pillarDesc}
+                  onChange={(e) => setPillarDesc(e.target.value)}
+                  className="border w-full px-2 py-1 rounded text-sm"
+                />
+              </div>
+            </div>
+            {modalError && (
+              <p className="text-red-600 text-sm mb-2">{modalError}</p>
+            )}
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={closeModal}
+                className="px-3 py-1 border rounded text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddPillar}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
               >
                 Save
               </button>
