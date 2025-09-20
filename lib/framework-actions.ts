@@ -1,6 +1,7 @@
 // /lib/framework-actions.ts
-// addPillar + editPillar are real. Rules: each Pillar gets a General theme + General subtheme;
-// each Theme gets a General subtheme. Ref codes are not stored, only computed client-side.
+// All safe DB mutations for the Primary Framework.
+// Each Pillar auto-creates a default "General" Theme and Subtheme.
+// Each Theme auto-creates a default "General" Subtheme.
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -10,16 +11,14 @@ const supabase = createClient(
 );
 
 //
-// Pillars
+// ─── PILLARS ──────────────────────────────────────────────
 //
 export async function addPillar(data: {
   name: string;
   description: string;
   sort_order: number;
 }) {
-  console.log("addPillar called with:", data);
-
-  // Insert pillar
+  // Insert the pillar
   const { data: pillarData, error: pillarError } = await supabase
     .from("pillars")
     .insert([
@@ -39,14 +38,14 @@ export async function addPillar(data: {
 
   const pillarId = pillarData.id;
 
-  // Insert default "General" theme
+  // Insert a default "General" theme at sort_order 0
   const { data: themeData, error: themeError } = await supabase
     .from("themes")
     .insert([
       {
         pillar_id: pillarId,
         name: "General",
-        description: "General theme",
+        description: "General theme (auto-created)",
         sort_order: 0,
       },
     ])
@@ -60,12 +59,12 @@ export async function addPillar(data: {
 
   const themeId = themeData.id;
 
-  // Insert default "General" subtheme
+  // Insert a default "General" subtheme at sort_order 0
   const { error: subthemeError } = await supabase.from("subthemes").insert([
     {
       theme_id: themeId,
       name: "General",
-      description: "General subtheme",
+      description: "General subtheme (auto-created)",
       sort_order: 0,
     },
   ]);
@@ -75,50 +74,23 @@ export async function addPillar(data: {
     throw subthemeError;
   }
 
-  console.log("Pillar + defaults added successfully:", data.name);
-  return Promise.resolve();
-}
-
-export async function editPillar(
-  id: string,
-  updates: { name: string; description: string; sort_order: number }
-) {
-  const { error } = await supabase
-    .from("pillars")
-    .update({
-      name: updates.name,
-      description: updates.description,
-      sort_order: updates.sort_order,
-    })
-    .eq("id", id);
-
-  if (error) {
-    console.error("editPillar error:", error);
-    throw error;
-  }
-
-  console.log("Pillar updated successfully:", id, updates);
-  return Promise.resolve();
-}
-
-export async function deletePillar(id: string) {
-  console.log("Stub: delete pillar", id);
-  return Promise.resolve();
+  console.log("Pillar with General theme + subtheme added:", data.name);
 }
 
 //
-// Themes
+// ─── THEMES ───────────────────────────────────────────────
 //
-export async function addTheme(
-  pillarId: string,
-  data: { name: string; description: string; sort_order: number }
-) {
-  // Insert theme
+export async function addTheme(data: {
+  pillar_id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+}) {
   const { data: themeData, error: themeError } = await supabase
     .from("themes")
     .insert([
       {
-        pillar_id: pillarId,
+        pillar_id: data.pillar_id,
         name: data.name,
         description: data.description,
         sort_order: data.sort_order,
@@ -134,12 +106,12 @@ export async function addTheme(
 
   const themeId = themeData.id;
 
-  // Insert default "General" subtheme
+  // Default "General" subtheme at sort_order 0
   const { error: subthemeError } = await supabase.from("subthemes").insert([
     {
       theme_id: themeId,
       name: "General",
-      description: "General subtheme",
+      description: "General subtheme (auto-created)",
       sort_order: 0,
     },
   ]);
@@ -149,43 +121,47 @@ export async function addTheme(
     throw subthemeError;
   }
 
-  console.log("Theme + default subtheme added successfully:", data.name);
-  return Promise.resolve();
+  console.log("Theme with General subtheme added:", data.name);
 }
 
-export async function editTheme(
-  id: string,
-  updates: { name: string; description: string; sort_order: number }
-) {
-  console.log("Stub: edit theme", id, updates);
-  return Promise.resolve();
+//
+// ─── SUBTHEMES ────────────────────────────────────────────
+//
+export async function addSubtheme(data: {
+  theme_id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+}) {
+  const { error } = await supabase.from("subthemes").insert([
+    {
+      theme_id: data.theme_id,
+      name: data.name,
+      description: data.description,
+      sort_order: data.sort_order,
+    },
+  ]);
+
+  if (error) {
+    console.error("addSubtheme error:", error);
+    throw error;
+  }
+
+  console.log("Subtheme added:", data.name);
+}
+
+//
+// ─── PLACEHOLDERS ─────────────────────────────────────────
+// For now, delete/edit can be wired later
+//
+export async function deletePillar(id: string) {
+  console.log("deletePillar placeholder:", id);
 }
 
 export async function deleteTheme(id: string) {
-  console.log("Stub: delete theme", id);
-  return Promise.resolve();
-}
-
-//
-// Subthemes
-//
-export async function addSubtheme(
-  themeId: string,
-  data: { name: string; description: string; sort_order: number }
-) {
-  console.log("Stub: add subtheme under theme", themeId, data);
-  return Promise.resolve();
-}
-
-export async function editSubtheme(
-  id: string,
-  updates: { name: string; description: string; sort_order: number }
-) {
-  console.log("Stub: edit subtheme", id, updates);
-  return Promise.resolve();
+  console.log("deleteTheme placeholder:", id);
 }
 
 export async function deleteSubtheme(id: string) {
-  console.log("Stub: delete subtheme", id);
-  return Promise.resolve();
+  console.log("deleteSubtheme placeholder:", id);
 }
