@@ -1,14 +1,14 @@
 // lib/supabase-server.ts
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { Database } from "@/types/supabase";
+import type { Database } from "@/types/supabase";
 
 /**
  * Create a Supabase client configured for server-side usage (API routes or RSC).
  * Uses Next.js cookies to manage authentication automatically.
  */
-export async function createClient() {
-  const cookieStore = await cookies();
+export function createClient() {
+  const cookieStore = cookies();
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
