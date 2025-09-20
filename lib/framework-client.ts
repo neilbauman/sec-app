@@ -7,31 +7,6 @@ export type Pillar = Database["public"]["Tables"]["pillars"]["Row"];
 export type Theme = Database["public"]["Tables"]["themes"]["Row"];
 export type Subtheme = Database["public"]["Tables"]["subthemes"]["Row"];
 
-// ---------- Insert Types (manual since DB types only export Row) ----------
-export type PillarInsert = {
-  id?: string;
-  ref_code: string;
-  name: string;
-  description: string;
-  sort_order: number;
-};
-
-export type ThemeInsert = {
-  id?: string;
-  pillar_id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-};
-
-export type SubthemeInsert = {
-  id?: string;
-  theme_id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-};
-
 // ---------- Nested Types ----------
 export type NestedSubtheme = Subtheme;
 export type NestedTheme = Theme & { subthemes: NestedSubtheme[] };
@@ -66,14 +41,14 @@ export async function fetchFramework(): Promise<NestedPillar[]> {
 
   // Group subthemes by theme
   const subthemesByTheme: Record<string, NestedSubtheme[]> = {};
-  (subthemes || []).forEach((s) => {
+  (subthemes as Subtheme[] || []).forEach((s) => {
     if (!subthemesByTheme[s.theme_id]) subthemesByTheme[s.theme_id] = [];
     subthemesByTheme[s.theme_id].push(s);
   });
 
   // Group themes by pillar
   const themesByPillar: Record<string, NestedTheme[]> = {};
-  (themes || []).forEach((t) => {
+  (themes as Theme[] || []).forEach((t) => {
     if (!themesByPillar[t.pillar_id]) themesByPillar[t.pillar_id] = [];
     themesByPillar[t.pillar_id].push({
       ...t,
@@ -82,7 +57,7 @@ export async function fetchFramework(): Promise<NestedPillar[]> {
   });
 
   // Attach everything to pillars
-  return (pillars || []).map((p) => ({
+  return (pillars as Pillar[] || []).map((p) => ({
     ...p,
     themes: themesByPillar[p.id] || [],
   }));
