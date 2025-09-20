@@ -2,8 +2,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase-server";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { Database } from "@/types/supabase";
 
 // -----------------------------
 // Types
@@ -32,7 +30,7 @@ export interface SubthemeInput {
 // Pillars
 // -----------------------------
 export async function addPillar(data: PillarInput) {
-  const supabase = createClient() as SupabaseClient<Database>; // ✅ explicit cast
+  const supabase = await createClient(); // ✅ await here
 
   const { error } = await supabase
     .from("pillars")
@@ -51,7 +49,7 @@ export async function addPillar(data: PillarInput) {
 }
 
 export async function updatePillar(id: string, updates: Partial<PillarInput>) {
-  const supabase = createClient() as SupabaseClient<Database>;
+  const supabase = await createClient();
 
   const { error } = await supabase.from("pillars").update(updates).eq("id", id);
 
@@ -62,7 +60,7 @@ export async function updatePillar(id: string, updates: Partial<PillarInput>) {
 }
 
 export async function deletePillar(id: string) {
-  const supabase = createClient() as SupabaseClient<Database>;
+  const supabase = await createClient();
 
   const { error } = await supabase.from("pillars").delete().eq("id", id);
 
@@ -76,7 +74,7 @@ export async function deletePillar(id: string) {
 // Themes
 // -----------------------------
 export async function addTheme(data: ThemeInput) {
-  const supabase = createClient() as SupabaseClient<Database>;
+  const supabase = await createClient();
 
   const { error } = await supabase
     .from("themes")
@@ -99,7 +97,7 @@ export async function addTheme(data: ThemeInput) {
 // Subthemes
 // -----------------------------
 export async function addSubtheme(data: SubthemeInput) {
-  const supabase = createClient() as SupabaseClient<Database>;
+  const supabase = await createClient();
 
   const { error } = await supabase
     .from("subthemes")
