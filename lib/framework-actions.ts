@@ -28,14 +28,12 @@ export type SubthemeInsert = {
 // -----------------------------
 export async function addPillar(data: PillarInsert) {
   const supabase = getSupabaseClient();
-
   const { error } = await supabase.from("pillars").insert([data]);
   if (error) throw error;
 }
 
 export async function deletePillar(id: string) {
   const supabase = getSupabaseClient();
-
   const { error } = await supabase.from("pillars").delete().eq("id", id);
   if (error) throw error;
 }
@@ -45,14 +43,12 @@ export async function deletePillar(id: string) {
 // -----------------------------
 export async function addTheme(data: ThemeInsert) {
   const supabase = getSupabaseClient();
-
   const { error } = await supabase.from("themes").insert([data]);
   if (error) throw error;
 }
 
 export async function deleteTheme(id: string) {
   const supabase = getSupabaseClient();
-
   const { error } = await supabase.from("themes").delete().eq("id", id);
   if (error) throw error;
 }
@@ -62,14 +58,12 @@ export async function deleteTheme(id: string) {
 // -----------------------------
 export async function addSubtheme(data: SubthemeInsert) {
   const supabase = getSupabaseClient();
-
   const { error } = await supabase.from("subthemes").insert([data]);
   if (error) throw error;
 }
 
 export async function deleteSubtheme(id: string) {
   const supabase = getSupabaseClient();
-
   const { error } = await supabase.from("subthemes").delete().eq("id", id);
   if (error) throw error;
 }
