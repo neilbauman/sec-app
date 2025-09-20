@@ -27,6 +27,12 @@ type ModalType =
   | "edit-theme"
   | "edit-subtheme";
 
+type DeleteTarget = {
+  type: "pillar" | "theme" | "subtheme";
+  name: string;
+  childrenCount?: number;
+};
+
 export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   const [pillars, setPillars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +44,10 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<ModalType>(null);
   const [modalTarget, setModalTarget] = useState<any>(null);
+
+  // Delete modal state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -84,6 +94,21 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
     setModalOpen(false);
     setModalType(null);
     setModalTarget(null);
+  };
+
+  // Delete handlers
+  const confirmDelete = (target: DeleteTarget) => {
+    setDeleteTarget(target);
+    setDeleteOpen(true);
+  };
+  const cancelDelete = () => {
+    setDeleteOpen(false);
+    setDeleteTarget(null);
+  };
+  const handleDelete = () => {
+    // TODO: wire to Supabase
+    console.log("Deleting", deleteTarget);
+    cancelDelete();
   };
 
   return (
@@ -164,6 +189,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
                   sortByOrder={sortByOrder}
                   editMode={editMode}
                   openModal={openModal}
+                  confirmDelete={confirmDelete}
                 />
               ))}
             </tbody>
@@ -171,7 +197,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Add/Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
@@ -240,6 +266,48 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteOpen && deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+            <button
+              onClick={cancelDelete}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h2 className="text-lg font-semibold mb-4 text-red-600">
+              Confirm Delete
+            </h2>
+            <p className="mb-4 text-sm text-gray-700">
+              Are you sure you want to delete this{" "}
+              <strong>{deleteTarget.type}</strong>:{" "}
+              <em>{deleteTarget.name}</em>?
+            </p>
+            {deleteTarget.childrenCount && deleteTarget.childrenCount > 0 && (
+              <p className="mb-4 text-sm text-red-500">
+                Warning: This {deleteTarget.type} has {deleteTarget.childrenCount}{" "}
+                child item(s). Deleting it will also delete all of them.
+              </p>
+            )}
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={cancelDelete}
+                className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-3 py-1 text-sm bg-red-600 text-white hover:bg-red-700 rounded"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -252,6 +320,7 @@ function PillarRow({
   sortByOrder,
   editMode,
   openModal,
+  confirmDelete,
 }: {
   pillar: any;
   index: number;
@@ -260,6 +329,7 @@ function PillarRow({
   sortByOrder: (arr: any[]) => any[];
   editMode: boolean;
   openModal: (type: ModalType, target?: any) => void;
+  confirmDelete: (target: DeleteTarget) => void;
 }) {
   const id = `pillar-${pillar.id}`;
   const refCode = `P${index}`;
@@ -317,7 +387,16 @@ function PillarRow({
               >
                 <Plus className="h-4 w-4 inline" />
               </button>
-              <button className="text-red-600 hover:text-red-800">
+              <button
+                className="text-red-600 hover:text-red-800"
+                onClick={() =>
+                  confirmDelete({
+                    type: "pillar",
+                    name: pillar.name,
+                    childrenCount: pillar.themes?.length || 0,
+                  })
+                }
+              >
                 <Trash className="h-4 w-4 inline" />
               </button>
             </>
@@ -336,6 +415,7 @@ function PillarRow({
             sortByOrder={sortByOrder}
             editMode={editMode}
             openModal={openModal}
+            confirmDelete={confirmDelete}
           />
         ))}
     </>
@@ -350,6 +430,7 @@ function ThemeRow({
   sortByOrder,
   editMode,
   openModal,
+  confirmDelete,
 }: {
   theme: any;
   pillarIndex: number;
@@ -358,6 +439,7 @@ function ThemeRow({
   sortByOrder: (arr: any[]) => any[];
   editMode: boolean;
   openModal: (type: ModalType, target?: any) => void;
+  confirmDelete: (target: DeleteTarget) => void;
 }) {
   const id = `theme-${theme.id}`;
   const refCode = `T${pillarIndex}.${theme.sort_order}`;
@@ -415,85 +497,9 @@ function ThemeRow({
               >
                 <Plus className="h-4 w-4 inline" />
               </button>
-              <button className="text-red-600 hover:text-red-800">
-                <Trash className="h-4 w-4 inline" />
-              </button>
-            </>
-          )}
-        </td>
-      </tr>
-
-      {isOpen &&
-        sortByOrder(theme.subthemes).map((sub: any) => (
-          <SubthemeRow
-            key={sub.id}
-            sub={sub}
-            pillarIndex={pillarIndex}
-            themeIndex={theme.sort_order}
-            editMode={editMode}
-            openModal={openModal}
-          />
-        ))}
-    </>
-  );
-}
-
-function SubthemeRow({
-  sub,
-  pillarIndex,
-  themeIndex,
-  editMode,
-  openModal,
-}: {
-  sub: any;
-  pillarIndex: number;
-  themeIndex: number;
-  editMode: boolean;
-  openModal: (type: ModalType, target?: any) => void;
-}) {
-  const refCode = `ST${pillarIndex}.${themeIndex}.${sub.sort_order}`;
-
-  return (
-    <tr className="border-b bg-gray-100">
-      <td className="py-2 pr-2 pl-8"></td>
-      <td className="py-2 pr-4 whitespace-nowrap pl-8">
-        <span className="inline-block bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full">
-          Subtheme
-        </span>
-        <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
-      </td>
-      <td className="py-2 pr-4 pl-8">
-        <div>{sub.name}</div>
-        {sub.description && (
-          <div className="text-gray-500 text-xs mt-0.5">{sub.description}</div>
-        )}
-      </td>
-      <td className="py-2 pr-4 text-center">
-        {editMode ? (
-          <input
-            type="number"
-            defaultValue={sub.sort_order}
-            className="w-12 border rounded text-center text-sm"
-          />
-        ) : (
-          sub.sort_order
-        )}
-      </td>
-      <td className="py-2 text-right space-x-2">
-        {editMode && (
-          <>
-            <button
-              className="text-blue-600 hover:text-blue-800"
-              onClick={() => openModal("edit-subtheme", sub)}
-            >
-              <Edit className="h-4 w-4 inline" />
-            </button>
-            <button className="text-red-600 hover:text-red-800">
-              <Trash className="h-4 w-4 inline" />
-            </button>
-          </>
-        )}
-      </td>
-    </tr>
-  );
-}
+              <button
+                className="text-red-600 hover:text-red-800"
+                onClick={() =>
+                  confirmDelete({
+                    type: "theme",
+                    name: theme
