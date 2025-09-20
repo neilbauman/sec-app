@@ -8,15 +8,7 @@ export default async function PrimaryFrameworkPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        group="configuration"
-        page="primary"
-        breadcrumb={[
-          { label: "Dashboard", href: "/" },
-          { label: "Configuration", href: "/configuration" },
-          { label: "Primary Framework" },
-        ]}
-      />
+      <PageHeader group="configuration" page="primary" />
 
       <div className="bg-white rounded-xl border shadow-sm p-6">
         <FrameworkEditor data={data} />
