@@ -1,41 +1,56 @@
-"use client";
+// components/ui/PageHeader.tsx
+import { Layers } from "lucide-react";
+import { groups, toolkit } from "@/lib/headerConfig";
+import type { GroupKey, PageKey } from "@/lib/headerConfig";
+import Link from "next/link";
 
-import Breadcrumbs, { Breadcrumb } from "./Breadcrumbs";
-
-export type PageHeaderProps = {
-  title?: string;
-  description?: string;
-  group?: string;
-  page?: string;
-  breadcrumb?: Breadcrumb[];
+type PageHeaderProps = {
+  group: GroupKey;
+  page: PageKey<GroupKey>;
+  breadcrumb: { label: string; href?: string }[];
 };
 
-export default function PageHeader({
-  title,
-  description,
-  group,
-  page,
-  breadcrumb,
-}: PageHeaderProps) {
-  return (
-    <div className="mb-6 border-b pb-3">
-      {/* Prefer Breadcrumbs component if provided */}
-      {breadcrumb && breadcrumb.length > 0 ? (
-        <Breadcrumbs breadcrumbs={breadcrumb} />
-      ) : (
-        /* Fallback group/page */
-        (group || page) && (
-          <div className="text-sm text-gray-500 mb-2">
-            {group && <span className="capitalize">{group}</span>}
-            {group && page && " / "}
-            {page && <span className="capitalize">{page}</span>}
-          </div>
-        )
-      )}
+export default function PageHeader({ group, page, breadcrumb }: PageHeaderProps) {
+  const groupInfo = groups[group];
+  const pageInfo = groupInfo.pages[page];
 
-      {/* Heading */}
-      {title && <h1 className="text-xl font-semibold">{title}</h1>}
-      {description && <p className="text-gray-600">{description}</p>}
+  return (
+    <div className="mb-6">
+      {/* Toolkit title */}
+      <div className="flex items-center gap-2 text-brand-rust mb-2">
+        <Layers className="h-5 w-5" />
+        <span className="font-semibold">{toolkit.name}</span>
+      </div>
+
+      {/* Group title */}
+      <div className="flex items-center gap-2 mb-4">
+        <groupInfo.icon className={`h-5 w-5 ${groupInfo.color}`} />
+        <h2 className={`text-lg font-semibold ${groupInfo.color}`}>
+          {groupInfo.name}
+        </h2>
+      </div>
+
+      {/* Page title + description */}
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold">{pageInfo.title}</h1>
+        <p className="text-gray-600">{pageInfo.description}</p>
+      </div>
+
+      {/* Breadcrumb */}
+      <div className="border-y py-2 text-sm text-gray-500 flex gap-2">
+        {breadcrumb.map((crumb, i) => (
+          <span key={i} className="flex items-center gap-2">
+            {crumb.href ? (
+              <Link href={crumb.href} className="hover:underline">
+                {crumb.label}
+              </Link>
+            ) : (
+              <span>{crumb.label}</span>
+            )}
+            {i < breadcrumb.length - 1 && <span>/</span>}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
