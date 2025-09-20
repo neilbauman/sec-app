@@ -1,5 +1,5 @@
 // /lib/framework-actions.ts
-// Safe DB mutations for the Primary Framework.
+// All safe DB mutations for the Primary Framework.
 // Rules:
 // - Every Pillar gets one "General" Theme at sort_order 0.
 // - Every Theme gets one "General" Subtheme at sort_order 0.
@@ -150,7 +150,7 @@ export async function addTheme(data: {
 
   const themeId = themeData.id;
 
-  // Insert "General" subtheme at sort_order 0
+  // Default "General" subtheme at sort_order 0
   const { error: subthemeError } = await supabase.from("subthemes").insert([
     {
       theme_id: themeId,
