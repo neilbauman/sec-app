@@ -18,7 +18,8 @@ export async function addPillar(data: { name: string; description: string; sort_
     ...data,
   };
 
-  const { error } = await supabase.from("pillars").insert([payload as any]);
+  // Force insert to bypass type issues
+  const { error } = await (supabase.from("pillars") as any).insert([payload]);
   if (error) throw error;
 }
 
@@ -31,7 +32,7 @@ export async function deletePillar(id: string) {
 /** Themes */
 export async function addTheme(data: { pillar_id: string; name: string; description: string; sort_order: number }) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("themes").insert([data as any]);
+  const { error } = await (supabase.from("themes") as any).insert([data]);
   if (error) throw error;
 }
 
@@ -44,7 +45,7 @@ export async function deleteTheme(id: string) {
 /** Subthemes */
 export async function addSubtheme(data: { theme_id: string; name: string; description: string; sort_order: number }) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("subthemes").insert([data as any]);
+  const { error } = await (supabase.from("subthemes") as any).insert([data]);
   if (error) throw error;
 }
 
