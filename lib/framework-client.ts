@@ -1,5 +1,5 @@
 // lib/framework-client.ts
-import { createClient } from "@/lib/supabase-server";
+import { getSupabaseClient } from "@/lib/supabase-browser";
 
 export type Pillar = {
   id: string;
@@ -27,49 +27,53 @@ export type Subtheme = {
 };
 
 export async function fetchFramework(): Promise<Pillar[]> {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
 
   // Fetch pillars
   const { data: pillars, error: pillarError } = await supabase
     .from("pillars")
-    .select("id, name, description, sort_order");
+    .select("id, name, description, sort_order")
+    .order("sort_order", { ascending: true });
 
   if (pillarError) throw pillarError;
+
+  if (!pillars) return [];
 
   // Fetch themes
   const { data: themes, error: themeError } = await supabase
     .from("themes")
-    .select("id, pillar_id, name, description, sort_order");
+    .select("id, pillar_id, name, description, sort_order")
+    .order("sort_order", { ascending: true });
 
   if (themeError) throw themeError;
 
   // Fetch subthemes
   const { data: subthemes, error: subthemeError } = await supabase
     .from("subthemes")
-    .select("id, theme_id, name, description, sort_order");
+    .select("id, theme_id, name, description, sort_order")
+    .order("sort_order", { ascending: true });
 
   if (subthemeError) throw subthemeError;
 
-  // Assemble hierarchy
+  // Nest data
   const themesByPillar: Record<string, Theme[]> = {};
   const subthemesByTheme: Record<string, Subtheme[]> = {};
 
-  (themes ?? []).forEach((theme) => {
-    if (!themesByPillar[theme.pillar_id]) themesByPillar[theme.pillar_id] = [];
-    themesByPillar[theme.pillar_id].push({ ...theme, subthemes: [] });
+  (themes || []).forEach((t) => {
+    if (!themesByPillar[t.pillar_id]) themesByPillar[t.pillar_id] = [];
+    themesByPillar[t.pillar_id].push({ ...t, subthemes: [] });
   });
 
-  (subthemes ?? []).forEach((subtheme) => {
-    if (!subthemesByTheme[subtheme.theme_id]) subthemesByTheme[subtheme.theme_id] = [];
-    subthemesByTheme[subtheme.theme_id].push(subtheme);
+  (subthemes || []).forEach((s) => {
+    if (!subthemesByTheme[s.theme_id]) subthemesByTheme[s.theme_id] = [];
+    subthemesByTheme[s.theme_id].push(s);
   });
 
-  (Object.values(themesByPillar).flat()).forEach((theme) => {
-    theme.subthemes = subthemesByTheme[theme.id] ?? [];
-  });
-
-  return (pillars ?? []).map((pillar) => ({
-    ...pillar,
-    themes: themesByPillar[pillar.id] ?? [],
+  return (pillars || []).map((p) => ({
+    ...p,
+    themes: (themesByPillar[p.id] || []).map((t) => ({
+      ...t,
+      subthemes: subthemesByTheme[t.id] || [],
+    })),
   }));
 }
