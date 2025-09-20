@@ -1,7 +1,10 @@
 // /lib/framework-actions.ts
-// All safe DB mutations for the Primary Framework.
-// Each Pillar auto-creates a default "General" Theme and Subtheme.
-// Each Theme auto-creates a default "General" Subtheme.
+// Safe DB mutations for the Primary Framework.
+// Rules:
+// - Every Pillar gets one "General" Theme at sort_order 0.
+// - Every Theme gets one "General" Subtheme at sort_order 0.
+// - User-created Themes/Subthemes start at sort_order >= 1.
+// - Sort order is auto-assigned as max(existing) + 1.
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -11,21 +14,61 @@ const supabase = createClient(
 );
 
 //
+// ─── HELPERS ──────────────────────────────────────────────
+//
+async function getNextSortOrder(
+  table: string,
+  foreignKey: string,
+  id: string
+): Promise<number> {
+  const { data, error } = await supabase
+    .from(table)
+    .select("sort_order")
+    .eq(foreignKey, id);
+
+  if (error) {
+    console.error(`getNextSortOrder error for ${table}:`, error);
+    throw error;
+  }
+
+  if (!data || data.length === 0) return 1; // nothing exists yet, reserve 0 for General
+
+  const maxSort = Math.max(...data.map((r: any) => r.sort_order ?? 0));
+  return maxSort + 1;
+}
+
+//
 // ─── PILLARS ──────────────────────────────────────────────
 //
 export async function addPillar(data: {
   name: string;
   description: string;
-  sort_order: number;
 }) {
-  // Insert the pillar
+  // Compute next pillar sort order
+  const { data: allPillars, error: pillarsError } = await supabase
+    .from("pillars")
+    .select("sort_order");
+
+  if (pillarsError) {
+    console.error("addPillar fetch pillars error:", pillarsError);
+    throw pillarsError;
+  }
+
+  const maxSort =
+    allPillars && allPillars.length > 0
+      ? Math.max(...allPillars.map((p: any) => p.sort_order ?? 0))
+      : 0;
+
+  const sortOrder = maxSort + 1;
+
+  // Insert pillar
   const { data: pillarData, error: pillarError } = await supabase
     .from("pillars")
     .insert([
       {
         name: data.name,
         description: data.description,
-        sort_order: data.sort_order,
+        sort_order: sortOrder,
       },
     ])
     .select("id")
@@ -38,7 +81,7 @@ export async function addPillar(data: {
 
   const pillarId = pillarData.id;
 
-  // Insert a default "General" theme at sort_order 0
+  // Insert "General" theme at sort_order 0
   const { data: themeData, error: themeError } = await supabase
     .from("themes")
     .insert([
@@ -59,7 +102,7 @@ export async function addPillar(data: {
 
   const themeId = themeData.id;
 
-  // Insert a default "General" subtheme at sort_order 0
+  // Insert "General" subtheme at sort_order 0
   const { error: subthemeError } = await supabase.from("subthemes").insert([
     {
       theme_id: themeId,
@@ -84,8 +127,9 @@ export async function addTheme(data: {
   pillar_id: string;
   name: string;
   description: string;
-  sort_order: number;
 }) {
+  const sortOrder = await getNextSortOrder("themes", "pillar_id", data.pillar_id);
+
   const { data: themeData, error: themeError } = await supabase
     .from("themes")
     .insert([
@@ -93,7 +137,7 @@ export async function addTheme(data: {
         pillar_id: data.pillar_id,
         name: data.name,
         description: data.description,
-        sort_order: data.sort_order,
+        sort_order: sortOrder,
       },
     ])
     .select("id")
@@ -106,7 +150,7 @@ export async function addTheme(data: {
 
   const themeId = themeData.id;
 
-  // Default "General" subtheme at sort_order 0
+  // Insert "General" subtheme at sort_order 0
   const { error: subthemeError } = await supabase.from("subthemes").insert([
     {
       theme_id: themeId,
@@ -131,14 +175,15 @@ export async function addSubtheme(data: {
   theme_id: string;
   name: string;
   description: string;
-  sort_order: number;
 }) {
+  const sortOrder = await getNextSortOrder("subthemes", "theme_id", data.theme_id);
+
   const { error } = await supabase.from("subthemes").insert([
     {
       theme_id: data.theme_id,
       name: data.name,
       description: data.description,
-      sort_order: data.sort_order,
+      sort_order: sortOrder,
     },
   ]);
 
@@ -152,7 +197,6 @@ export async function addSubtheme(data: {
 
 //
 // ─── PLACEHOLDERS ─────────────────────────────────────────
-// For now, delete/edit can be wired later
 //
 export async function deletePillar(id: string) {
   console.log("deletePillar placeholder:", id);
