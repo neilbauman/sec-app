@@ -1,49 +1,14 @@
 // lib/framework.ts
-import { createClient } from "./supabase-server";
+import { getSupabaseClient } from "./supabase-server";
+import type { Database } from "@/types/supabase";
 
-/**
- * Example server-side query for fetching the framework pillars.
- * Adjust the select() to match your needs.
- */
-export async function getFramework() {
-  const supabase = await createClient();
+export async function getFrameworkFlat() {
+  const supabase = getSupabaseClient();
 
   const { data, error } = await supabase
-    .from("pillars")
-    .select(`
-      id,
-      ref_code,
-      name,
-      description,
-      sort_order,
-      themes (
-        id,
-        ref_code,
-        name,
-        description,
-        sort_order,
-        subthemes (
-          id,
-          ref_code,
-          name,
-          description,
-          sort_order,
-          indicators (
-            id,
-            ref_code,
-            name,
-            description,
-            level,
-            sort_order
-          )
-        )
-      )
-    `)
-    .order("sort_order", { ascending: true });
+    .from("v_framework_flat")
+    .select("*");
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data ?? [];
+  if (error) throw error;
+  return data as Database["public"]["Views"]["v_framework_flat"]["Row"][];
 }
