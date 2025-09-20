@@ -4,11 +4,7 @@ import PageHeader from "@/components/ui/PageHeader";
 export default function AboutPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        group="about"
-        page="index"
-        breadcrumb={[{ label: "About" }]}
-      />
+      <PageHeader group="about" page="index" />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <a
