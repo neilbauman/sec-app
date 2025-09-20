@@ -87,5 +87,3 @@ export async function fetchFramework(): Promise<NestedPillar[]> {
     themes: themesByPillar[p.id] || [],
   }));
 }
-
-export type { NestedPillar, NestedTheme, NestedSubtheme };
