@@ -1,75 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "@/components/ui/PageHeader";
 import {
   ChevronRight,
   ChevronDown,
   Upload,
   Download,
-  Plus,
 } from "lucide-react";
-
-// Types
-interface Subtheme {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-}
-
-interface Theme {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  subthemes: Subtheme[];
-}
-
-interface Pillar {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  themes: Theme[];
-}
-
-interface FrameworkEditorProps {
-  group: "configuration";
-  page: "primary";
-}
+import { fetchFramework, Pillar } from "@/lib/framework-client";
 
 // Component
-export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
-  const [pillars, setPillars] = useState<Pillar[]>([
-    // Dummy data for now
-    {
-      id: "1",
-      name: "The Shelter",
-      description: "People have a dwelling. yeah2",
-      sort_order: 1,
-      themes: [
-        {
-          id: "t1",
-          name: "Physical safety",
-          description:
-            "Households live in adequate dwellings in terms of physical protection from the weather, structural integrity and location.",
-          sort_order: 1,
-          subthemes: [
-            {
-              id: "st1",
-              name: "Physical safety (general)",
-              description: "Physical safety within the dwelling context.",
-              sort_order: 1,
-            },
-          ],
-        },
-      ],
-    },
-  ]);
-
+export default function FrameworkEditor({ group, page }: { group: "configuration"; page: "primary" }) {
+  const [pillars, setPillars] = useState<Pillar[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await fetchFramework();
+        setPillars(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load framework data.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
 
   const toggleExpand = (id: string) => {
     const next = new Set(expanded);
@@ -218,36 +180,52 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
             </tr>
           </thead>
           <tbody>
-            {pillars.map((pillar, pi) =>
-              renderRow(
-                "Pillar",
-                `P${pillar.sort_order}`,
-                pillar.name,
-                pillar.description,
-                pillar.sort_order,
-                pillar.id,
-                pillar.themes.map((theme) =>
-                  renderRow(
-                    "Theme",
-                    `T${pillar.sort_order}.${theme.sort_order}`,
-                    theme.name,
-                    theme.description,
-                    theme.sort_order,
-                    theme.id,
-                    theme.subthemes.map((sub) =>
-                      renderRow(
-                        "Subtheme",
-                        `ST${pillar.sort_order}.${theme.sort_order}.${sub.sort_order}`,
-                        sub.name,
-                        sub.description,
-                        sub.sort_order,
-                        sub.id
+            {loading && (
+              <tr>
+                <td colSpan={4} className="text-gray-500 py-4 text-center">
+                  Loading framework…
+                </td>
+              </tr>
+            )}
+            {error && (
+              <tr>
+                <td colSpan={4} className="text-red-600 py-4 text-center">
+                  {error}
+                </td>
+              </tr>
+            )}
+            {!loading &&
+              !error &&
+              pillars.map((pillar) =>
+                renderRow(
+                  "Pillar",
+                  `P${pillar.sort_order}`,
+                  pillar.name,
+                  pillar.description,
+                  pillar.sort_order,
+                  pillar.id,
+                  pillar.themes.map((theme) =>
+                    renderRow(
+                      "Theme",
+                      `T${pillar.sort_order}.${theme.sort_order}`,
+                      theme.name,
+                      theme.description,
+                      theme.sort_order,
+                      theme.id,
+                      theme.subthemes.map((sub) =>
+                        renderRow(
+                          "Subtheme",
+                          `ST${pillar.sort_order}.${theme.sort_order}.${sub.sort_order}`,
+                          sub.name,
+                          sub.description,
+                          sub.sort_order,
+                          sub.id
+                        )
                       )
                     )
                   )
                 )
-              )
-            )}
+              )}
           </tbody>
         </table>
       </div>
