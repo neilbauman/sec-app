@@ -12,16 +12,6 @@ import {
   Upload,
   Download,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import {
   addPillar,
   addTheme,
@@ -124,43 +114,40 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
 
   return (
     <div className="p-4">
+      {/* Top Controls */}
       <div className="mb-4 flex justify-between items-center">
         <div className="flex gap-2 items-center">
-          <Button
-            variant="outline"
-            className="h-7 px-2 text-xs text-gray-600 border-gray-300 hover:bg-gray-100"
+          <button
             onClick={expandAll}
+            className="h-7 px-2 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 flex items-center gap-1"
           >
-            <ChevronsDown className="h-3.5 w-3.5 mr-1" /> Expand All
-          </Button>
-          <Button
-            variant="outline"
-            className="h-7 px-2 text-xs text-gray-600 border-gray-300 hover:bg-gray-100"
+            <ChevronsDown className="h-3.5 w-3.5" /> Expand All
+          </button>
+          <button
             onClick={collapseAll}
+            className="h-7 px-2 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 flex items-center gap-1"
           >
-            <ChevronsUp className="h-3.5 w-3.5 mr-1" /> Collapse All
-          </Button>
+            <ChevronsUp className="h-3.5 w-3.5" /> Collapse All
+          </button>
         </div>
         <div className="flex gap-2 items-center">
-          <Button
-            variant="outline"
-            className="h-7 px-2 text-xs text-gray-600 border-gray-300 hover:bg-gray-100"
+          <button
             onClick={() => setEditMode(!editMode)}
+            className="h-7 px-2 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
           >
             {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
-          </Button>
+          </button>
           {editMode && (
             <>
-              <Button
-                variant="outline"
-                className="h-7 px-2 text-xs text-gray-600 border-gray-300 hover:bg-gray-100"
+              <button
                 onClick={() => {
                   resetForm();
                   setOpenDialog({ type: "pillar" });
                 }}
+                className="h-7 px-2 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100 flex items-center gap-1"
               >
-                <Plus className="h-3.5 w-3.5 mr-1" /> Add Pillar
-              </Button>
+                <Plus className="h-3.5 w-3.5" /> Add Pillar
+              </button>
               <button
                 onClick={() => alert("CSV upload coming soon")}
                 className="text-gray-600 hover:text-gray-800"
@@ -210,9 +197,9 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                             <ChevronRight className="h-3.5 w-3.5" />
                           )}
                         </button>
-                        <Badge className="bg-blue-100 text-blue-700">
+                        <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700">
                           Pillar
-                        </Badge>
+                        </span>
                         <span className="text-xs text-gray-400">{ref}</span>
                       </div>
                     </td>
@@ -273,9 +260,9 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                     <ChevronRight className="h-3.5 w-3.5" />
                                   )}
                                 </button>
-                                <Badge className="bg-green-100 text-green-700">
+                                <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700">
                                   Theme
-                                </Badge>
+                                </span>
                                 <span className="text-xs text-gray-400">
                                   {tref}
                                 </span>
@@ -326,9 +313,9 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                 <tr key={s.id} className="border-t">
                                   <td className="px-3 py-2 pl-12 align-top">
                                     <div className="flex items-center gap-1">
-                                      <Badge className="bg-red-100 text-red-700">
+                                      <span className="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700">
                                         Subtheme
-                                      </Badge>
+                                      </span>
                                       <span className="text-xs text-gray-400">
                                         {sref}
                                       </span>
@@ -370,48 +357,49 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       </div>
 
       {/* Dialog */}
-      <Dialog open={!!openDialog} onOpenChange={() => setOpenDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
+      {openDialog && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50">
+          <div className="bg-white p-4 rounded-md shadow-md w-96">
+            <h2 className="text-sm font-semibold mb-2">
               {openDialog?.type === "pillar"
                 ? "Add Pillar"
                 : openDialog?.type === "theme"
                 ? "Add Theme"
                 : "Add Subtheme"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Input
-              placeholder="Name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-            <Input
-              placeholder="Description"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
+            </h2>
+            <div className="space-y-2 mb-4">
+              <input
+                className="w-full border rounded px-2 py-1 text-sm"
+                placeholder="Name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+              <input
+                className="w-full border rounded px-2 py-1 text-sm"
+                placeholder="Description"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setOpenDialog(null)}
+                className="h-7 px-2 text-xs rounded border border-gray-300 text-gray-600 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="h-7 px-3 text-xs rounded bg-[#b7410e] text-white hover:bg-[#a63a0c]"
+              >
+                Save
+              </button>
+            </div>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setOpenDialog(null)}
-              className="h-7 px-2 text-xs"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="h-7 px-3 text-xs bg-[#b7410e] text-white hover:bg-[#a63a0c]"
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }
