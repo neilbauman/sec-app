@@ -1,15 +1,18 @@
 // lib/framework-actions.ts
 "use server";
 
-import { getSupabaseClient } from "@/lib/supabase-browser";
+import { getSupabaseClient } from "@/lib/supabase-server";
 import type { Database } from "@/types/supabase";
 
-// -------- Pillars --------
-export async function addPillar(data: {
-  name: string;
-  description: string;
-  sort_order: number;
-}) {
+// Supabase Insert types
+type PillarInsert = Database["public"]["Tables"]["pillars"]["Insert"];
+type ThemeInsert = Database["public"]["Tables"]["themes"]["Insert"];
+type SubthemeInsert = Database["public"]["Tables"]["subthemes"]["Insert"];
+
+// -----------------------------
+// Pillars
+// -----------------------------
+export async function addPillar(data: PillarInsert) {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("pillars").insert([data]);
   if (error) throw error;
@@ -21,22 +24,12 @@ export async function deletePillar(id: string) {
   if (error) throw error;
 }
 
-// -------- Themes --------
-export async function addTheme(data: {
-  pillarId: string;
-  name: string;
-  description: string;
-  sort_order: number;
-}) {
+// -----------------------------
+// Themes
+// -----------------------------
+export async function addTheme(data: ThemeInsert) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("themes").insert([
-    {
-      pillar_id: data.pillarId,
-      name: data.name,
-      description: data.description,
-      sort_order: data.sort_order,
-    },
-  ]);
+  const { error } = await supabase.from("themes").insert([data]);
   if (error) throw error;
 }
 
@@ -46,22 +39,12 @@ export async function deleteTheme(id: string) {
   if (error) throw error;
 }
 
-// -------- Subthemes --------
-export async function addSubtheme(data: {
-  themeId: string;
-  name: string;
-  description: string;
-  sort_order: number;
-}) {
+// -----------------------------
+// Subthemes
+// -----------------------------
+export async function addSubtheme(data: SubthemeInsert) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("subthemes").insert([
-    {
-      theme_id: data.themeId,
-      name: data.name,
-      description: data.description,
-      sort_order: data.sort_order,
-    },
-  ]);
+  const { error } = await supabase.from("subthemes").insert([data]);
   if (error) throw error;
 }
 
