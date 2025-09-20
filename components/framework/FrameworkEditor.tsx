@@ -59,6 +59,39 @@ function generateRefCode(
   return `ST${indices[0]}.${indices[1]}.${indices[2]}`;
 }
 
+// Action icon with tooltip
+function ActionIcon({
+  icon: Icon,
+  label,
+  onClick,
+  color,
+}: {
+  icon: any;
+  label: string;
+  onClick: () => void;
+  color: "red" | "green";
+}) {
+  const colors =
+    color === "red"
+      ? "text-red-600 hover:text-red-800"
+      : "text-green-600 hover:text-green-800";
+
+  return (
+    <div className="relative group">
+      <button
+        onClick={onClick}
+        className={`p-1 transition ${colors}`}
+        aria-label={label}
+      >
+        <Icon className="h-4 w-4" />
+      </button>
+      <span className="absolute bottom-full mb-1 hidden group-hover:block rounded bg-gray-800 px-2 py-0.5 text-xs text-white whitespace-nowrap">
+        {label}
+      </span>
+    </div>
+  );
+}
+
 type FrameworkEditorProps = {
   data: NestedPillar[];
 };
@@ -170,7 +203,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
             <th className="px-3 py-2 w-[15%]">Type / Ref Code</th>
             <th className="px-3 py-2 w-[50%]">Name / Description</th>
             <th className="px-3 py-2 w-[10%] text-center">Sort Order</th>
-            <th className="px-3 py-2 w-[25%]">Actions</th>
+            <th className="px-3 py-2 w-[25%] text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -197,19 +230,16 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                   </td>
                   <td className="px-3 py-2">
                     <div className="font-medium">{pillar.name}</div>
-                    <div className="text-xs text-gray-600">
-                      {pillar.description}
-                    </div>
+                    <div className="text-xs text-gray-600">{pillar.description}</div>
                   </td>
-                  <td className="px-3 py-2 text-center">
-                    {pillar.sort_order}
-                  </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 text-center">{pillar.sort_order}</td>
+                  <td className="px-3 py-2 text-right">
                     {editMode && (
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
+                      <div className="flex justify-end gap-3">
+                        <ActionIcon
+                          icon={Plus}
+                          label="Add Theme"
+                          color="green"
                           onClick={() => {
                             resetForm();
                             setOpenDialog({
@@ -218,16 +248,13 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                               count: pillar.themes.length,
                             });
                           }}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
+                        />
+                        <ActionIcon
+                          icon={Trash2}
+                          label="Delete Pillar"
+                          color="red"
                           onClick={() => handleDelete("pillar", pillar.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        />
                       </div>
                     )}
                   </td>
@@ -243,7 +270,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                     return (
                       <>
                         <tr key={theme.id} className="border-t bg-gray-50">
-                          <td className="px-3 py-2 pl-8 align-top">
+                          <td className="px-3 py-2 pl-4 align-top">
                             <div className="flex items-center gap-2">
                               <button onClick={() => toggleExpand(theme.id)}>
                                 {expanded[theme.id] ? (
@@ -253,12 +280,10 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                 )}
                               </button>
                               <TypeBadge type="theme" />
-                              <span className="text-xs text-gray-500">
-                                {tref}
-                              </span>
+                              <span className="text-xs text-gray-500">{tref}</span>
                             </div>
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2 pl-4">
                             <div className="font-medium">{theme.name}</div>
                             <div className="text-xs text-gray-600">
                               {theme.description}
@@ -267,12 +292,13 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                           <td className="px-3 py-2 text-center">
                             {theme.sort_order}
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2 text-right">
                             {editMode && (
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
+                              <div className="flex justify-end gap-3">
+                                <ActionIcon
+                                  icon={Plus}
+                                  label="Add Subtheme"
+                                  color="green"
                                   onClick={() => {
                                     resetForm();
                                     setOpenDialog({
@@ -281,16 +307,13 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                       count: theme.subthemes.length,
                                     });
                                   }}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
+                                />
+                                <ActionIcon
+                                  icon={Trash2}
+                                  label="Delete Theme"
+                                  color="red"
                                   onClick={() => handleDelete("theme", theme.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                />
                               </div>
                             )}
                           </td>
@@ -306,7 +329,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                             ]);
                             return (
                               <tr key={s.id} className="border-t">
-                                <td className="px-3 py-2 pl-16 align-top">
+                                <td className="px-3 py-2 pl-8 align-top">
                                   <div className="flex items-center gap-2">
                                     <TypeBadge type="subtheme" />
                                     <span className="text-xs text-gray-500">
@@ -314,7 +337,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                     </span>
                                   </div>
                                 </td>
-                                <td className="px-3 py-2">
+                                <td className="px-3 py-2 pl-8">
                                   <div className="font-medium">{s.name}</div>
                                   <div className="text-xs text-gray-600">
                                     {s.description}
@@ -323,15 +346,18 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                 <td className="px-3 py-2 text-center">
                                   {s.sort_order}
                                 </td>
-                                <td className="px-3 py-2">
+                                <td className="px-3 py-2 text-right">
                                   {editMode && (
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => handleDelete("subtheme", s.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    <div className="flex justify-end gap-3">
+                                      <ActionIcon
+                                        icon={Trash2}
+                                        label="Delete Subtheme"
+                                        color="red"
+                                        onClick={() =>
+                                          handleDelete("subtheme", s.id)
+                                        }
+                                      />
+                                    </div>
                                   )}
                                 </td>
                               </tr>
