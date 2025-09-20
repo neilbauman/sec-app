@@ -3,11 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { Database } from "@/types/supabase";
 
-/**
- * Centralized helper for getting a Supabase client
- * Works consistently in server components and actions
- */
-export function getSupabaseClient() {
+export function getSupabaseServer() {
   const cookieStore = cookies();
 
   return createServerClient<Database>(
@@ -22,14 +18,14 @@ export function getSupabaseClient() {
           try {
             cookieStore.set({ name, value, ...options });
           } catch {
-            // no-op in RSC
+            // RSC no-op
           }
         },
         remove(name: string, options: any) {
           try {
             cookieStore.set({ name, value: "", ...options });
           } catch {
-            // no-op in RSC
+            // RSC no-op
           }
         },
       },
