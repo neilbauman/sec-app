@@ -1,31 +1,54 @@
-import type { FrameworkTree, Pillar, Theme, Subtheme } from '@/types/framework';
+import type { NestedPillar, NestedTheme, Subtheme } from "@/lib/framework-client";
 
-export function withRefCodes(tree: FrameworkTree): FrameworkTree {
-  return {
-    ...tree,
-    pillars: tree.pillars.map((pillar, pIdx) => {
-      const pillarCode = `P${pillar.sort_order ?? pIdx + 1}`;
+export type NormalizedSubtheme = Subtheme & {
+  ref_code: string;
+  theme_code: string;
+};
+
+export type NormalizedTheme = NestedTheme & {
+  ref_code: string;
+  pillar_code: string;
+  subthemes: NormalizedSubtheme[];
+};
+
+export type NormalizedPillar = NestedPillar & {
+  ref_code: string;
+  themes: NormalizedTheme[];
+};
+
+export function withRefCodes(data: { pillars: NestedPillar[] }) {
+  let pillarCounter = 1;
+  const pillars: NormalizedPillar[] = data.pillars.map((pillar) => {
+    const pillarCode = `P${pillarCounter++}`;
+    let themeCounter = 1;
+
+    const themes: NormalizedTheme[] = pillar.themes.map((theme) => {
+      const themeCode = `${pillarCode}.${themeCounter++}`;
+      let subCounter = 1;
+
+      const subthemes: NormalizedSubtheme[] = theme.subthemes.map((sub) => {
+        const subCode = `${themeCode}.${subCounter++}`;
+        return {
+          ...sub,
+          ref_code: subCode,
+          theme_code: themeCode,
+        };
+      });
 
       return {
-        ...pillar,
-        ref_code: pillarCode,
-        themes: (pillar.themes ?? []).map((theme, tIdx) => {
-          const themeCode = `${pillarCode}.${theme.sort_order ?? tIdx + 1}`;
+        ...theme,
+        ref_code: themeCode,
+        pillar_code: pillarCode,
+        subthemes,
+      };
+    });
 
-          return {
-            ...theme,
-            ref_code: themeCode,
-            subthemes: (theme.subthemes ?? []).map((sub, sIdx) => {
-              const subCode = `${themeCode}.${sub.sort_order ?? sIdx + 1}`;
+    return {
+      ...pillar,
+      ref_code: pillarCode,
+      themes,
+    };
+  });
 
-              return {
-                ...sub,
-                ref_code: subCode,
-              } as Subtheme;
-            }),
-          } as Theme;
-        }),
-      } as Pillar;
-    }),
-  };
+  return { pillars };
 }
