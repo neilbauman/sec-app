@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   addPillar,
   deletePillar,
+  addTheme,
   deleteTheme,
   deleteSubtheme,
 } from "@/lib/framework-actions";
@@ -14,8 +15,6 @@ import {
   Trash2,
   ChevronRight,
   ChevronDown,
-  Upload,
-  Download,
 } from "lucide-react";
 
 interface Pillar {
@@ -39,7 +38,12 @@ interface Subtheme {
   sort_order: number;
 }
 
-type ModalType = "add-pillar" | "delete-pillar" | "delete-theme" | "delete-subtheme";
+type ModalType =
+  | "add-pillar"
+  | "delete-pillar"
+  | "add-theme"
+  | "delete-theme"
+  | "delete-subtheme";
 
 export default function FrameworkEditor({
   group,
@@ -59,9 +63,13 @@ export default function FrameworkEditor({
   const [targetId, setTargetId] = useState<string | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
 
-  // Add Pillar modal fields
+  // Add Pillar fields
   const [pillarName, setPillarName] = useState("");
   const [pillarDesc, setPillarDesc] = useState("");
+
+  // Add Theme fields
+  const [themeName, setThemeName] = useState("");
+  const [themeDesc, setThemeDesc] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -89,7 +97,14 @@ export default function FrameworkEditor({
     setTargetId(null);
     setPillarName("");
     setPillarDesc("");
+    setThemeName("");
+    setThemeDesc("");
     setModalError(null);
+  };
+
+  const reload = async () => {
+    const data = await fetchFramework();
+    setPillars(data);
   };
 
   const handleAddPillar = async () => {
@@ -102,11 +117,34 @@ export default function FrameworkEditor({
         sort_order: maxSort + 1,
       });
       closeModal();
-      const data = await fetchFramework();
-      setPillars(data);
+      reload();
     } catch (err: any) {
       console.error(err);
       setModalError(err.message || "Failed to add pillar.");
+    }
+  };
+
+  const handleAddTheme = async () => {
+    if (!targetId) return;
+    try {
+      setModalError(null);
+      const pillar = pillars.find((p) => p.id === targetId);
+      const maxSort =
+        pillar && pillar.themes.length > 0
+          ? Math.max(...pillar.themes.map((t) => t.sort_order))
+          : 0;
+
+      await addTheme({
+        pillar_id: targetId,
+        name: themeName.trim(),
+        description: themeDesc.trim(),
+        sort_order: maxSort + 1,
+      });
+      closeModal();
+      reload();
+    } catch (err: any) {
+      console.error(err);
+      setModalError(err.message || "Failed to add theme.");
     }
   };
 
@@ -118,8 +156,7 @@ export default function FrameworkEditor({
       if (modalType === "delete-theme") await deleteTheme(targetId);
       if (modalType === "delete-subtheme") await deleteSubtheme(targetId);
       closeModal();
-      const data = await fetchFramework();
-      setPillars(data);
+      reload();
     } catch (err: any) {
       console.error(err);
       setModalError(err.message || "Delete failed.");
@@ -210,92 +247,54 @@ export default function FrameworkEditor({
                     <div className="text-gray-500 text-xs">{pillar.description}</div>
                   </td>
                   <td className="px-4 py-2 text-center">{pillar.sort_order}</td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2 text-right space-x-2">
                     {editMode && (
-                      <button
-                        onClick={() => openModal("delete-pillar", pillar.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="h-4 w-4 inline" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => openModal("add-theme", pillar.id)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <Plus className="h-4 w-4 inline" />
+                        </button>
+                        <button
+                          onClick={() => openModal("delete-pillar", pillar.id)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="h-4 w-4 inline" />
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>
                 {expanded.has(pillar.id) &&
                   pillar.themes.map((theme) => (
-                    <>
-                      <tr key={theme.id} className="border-b bg-gray-50">
-                        <td className="px-8 py-2">
-                          <div className="flex items-center space-x-1">
-                            <button onClick={() => toggleExpand(theme.id)}>
-                              {expanded.has(theme.id) ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
-                            </button>
-                            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
-                              Theme
-                            </span>
-                            <span className="text-xs">
-                              T{pillar.sort_order}.{theme.sort_order}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2">
-                          <div className="font-medium">{theme.name}</div>
-                          <div className="text-gray-500 text-xs">
-                            {theme.description}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 text-center">{theme.sort_order}</td>
-                        <td className="px-4 py-2 text-right">
-                          {editMode && (
-                            <button
-                              onClick={() => openModal("delete-theme", theme.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <Trash2 className="h-4 w-4 inline" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                      {expanded.has(theme.id) &&
-                        theme.subthemes.map((sub) => (
-                          <tr key={sub.id} className="border-b">
-                            <td className="px-12 py-2">
-                              <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs">
-                                Subtheme
-                              </span>
-                              <span className="text-xs ml-1">
-                                ST{pillar.sort_order}.{theme.sort_order}.
-                                {sub.sort_order}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2">
-                              <div className="font-normal">{sub.name}</div>
-                              <div className="text-gray-500 text-xs">
-                                {sub.description}
-                              </div>
-                            </td>
-                            <td className="px-4 py-2 text-center">
-                              {sub.sort_order}
-                            </td>
-                            <td className="px-4 py-2 text-right">
-                              {editMode && (
-                                <button
-                                  onClick={() =>
-                                    openModal("delete-subtheme", sub.id)
-                                  }
-                                  className="text-red-600 hover:text-red-800"
-                                >
-                                  <Trash2 className="h-4 w-4 inline" />
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                    </>
+                    <tr key={theme.id} className="border-b bg-gray-50">
+                      <td className="px-8 py-2">
+                        <div className="flex items-center space-x-1">
+                          <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
+                            Theme
+                          </span>
+                          <span className="text-xs">
+                            T{pillar.sort_order}.{theme.sort_order}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="font-medium">{theme.name}</div>
+                        <div className="text-gray-500 text-xs">{theme.description}</div>
+                      </td>
+                      <td className="px-4 py-2 text-center">{theme.sort_order}</td>
+                      <td className="px-4 py-2 text-right">
+                        {editMode && (
+                          <button
+                            onClick={() => openModal("delete-theme", theme.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="h-4 w-4 inline" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
                   ))}
               </>
             ))}
@@ -369,6 +368,50 @@ export default function FrameworkEditor({
               <button
                 onClick={handleAddPillar}
                 className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Theme Modal */}
+      {modalType === "add-theme" && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+            <h3 className="font-semibold mb-2">Add Theme</h3>
+            <div className="space-y-2 mb-4">
+              <div>
+                <label className="block text-sm font-medium">Name</label>
+                <input
+                  value={themeName}
+                  onChange={(e) => setThemeName(e.target.value)}
+                  className="border w-full px-2 py-1 rounded text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Description</label>
+                <textarea
+                  value={themeDesc}
+                  onChange={(e) => setThemeDesc(e.target.value)}
+                  className="border w-full px-2 py-1 rounded text-sm"
+                />
+              </div>
+            </div>
+            {modalError && (
+              <p className="text-red-600 text-sm mb-2">{modalError}</p>
+            )}
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={closeModal}
+                className="px-3 py-1 border rounded text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddTheme}
+                className="px-3 py-1 bg-green-600 text-white rounded text-sm"
               >
                 Save
               </button>
