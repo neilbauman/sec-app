@@ -1,10 +1,8 @@
-"use client";
-
 import { getSupabaseClient } from "@/lib/supabase-server";
 
-export type Pillar = {
+export type Subtheme = {
   id: string;
-  ref_code: string;
+  theme_id: string;
   name: string;
   description: string;
   sort_order: number;
@@ -16,34 +14,45 @@ export type Theme = {
   name: string;
   description: string;
   sort_order: number;
+  subthemes?: Subtheme[];
 };
 
-export type Subtheme = {
+export type Pillar = {
   id: string;
-  theme_id: string;
+  ref_code: string;
   name: string;
   description: string;
   sort_order: number;
+  themes?: Theme[];
 };
 
-export type FrameworkTree = Pillar & {
-  themes: (Theme & { subthemes: Subtheme[] })[];
-};
+// Fetches full framework hierarchy (pillars -> themes -> subthemes)
+export async function fetchFramework(): Promise<Pillar[]> {
+  const supabase = getSupabaseClient();
 
-// -------- Fetch Framework (full tree) --------
-export async function fetchFramework(): Promise<FrameworkTree[]> {
-  const supabase = await getSupabaseClient();
+  const { data: pillars, error: pillarError } = await supabase
+    .from("pillars")
+    .select("*")
+    .order("sort_order");
 
-  const { data: pillars, error: pillarError } = await supabase.from("pillars").select("*").order("sort_order");
   if (pillarError) throw pillarError;
 
-  const { data: themes, error: themeError } = await supabase.from("themes").select("*").order("sort_order");
+  const { data: themes, error: themeError } = await supabase
+    .from("themes")
+    .select("*")
+    .order("sort_order");
+
   if (themeError) throw themeError;
 
-  const { data: subthemes, error: subthemeError } = await supabase.from("subthemes").select("*").order("sort_order");
+  const { data: subthemes, error: subthemeError } = await supabase
+    .from("subthemes")
+    .select("*")
+    .order("sort_order");
+
   if (subthemeError) throw subthemeError;
 
-  const themesByPillar: Record<string, (Theme & { subthemes: Subtheme[] })[]> = {};
+  // Organize data into hierarchy
+  const themesByPillar: Record<string, Theme[]> = {};
   (themes || []).forEach((t) => {
     if (!themesByPillar[t.pillar_id]) themesByPillar[t.pillar_id] = [];
     themesByPillar[t.pillar_id].push({ ...t, subthemes: [] });
@@ -55,14 +64,13 @@ export async function fetchFramework(): Promise<FrameworkTree[]> {
     subthemesByTheme[s.theme_id].push(s);
   });
 
-  Object.values(themesByPillar).forEach((themeList) => {
-    themeList.forEach((theme) => {
-      theme.subthemes = subthemesByTheme[theme.id] || [];
+  const final = (pillars || []).map((p) => {
+    const pillarThemes = themesByPillar[p.id] || [];
+    pillarThemes.forEach((t) => {
+      t.subthemes = subthemesByTheme[t.id] || [];
     });
+    return { ...p, themes: pillarThemes };
   });
 
-  return (pillars || []).map((p) => ({
-    ...p,
-    themes: themesByPillar[p.id] || [],
-  }));
+  return final;
 }
