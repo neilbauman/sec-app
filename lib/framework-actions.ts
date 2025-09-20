@@ -1,9 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase-browser";
-import { Database } from "@/types/supabase";
-
-const supabase = createClient<Database>();
+import { createClient } from "@/utils/supabase/server";
 
 // -------- Pillars --------
 export async function addPillar(data: {
@@ -11,12 +8,18 @@ export async function addPillar(data: {
   description: string;
   sort_order: number;
 }) {
+  const supabase = createClient();
+
   const { error } = await supabase.from("pillars").insert([data]);
+
   if (error) throw error;
 }
 
 export async function deletePillar(id: string) {
+  const supabase = createClient();
+
   const { error } = await supabase.from("pillars").delete().eq("id", id);
+
   if (error) throw error;
 }
 
@@ -27,19 +30,27 @@ export async function addTheme(data: {
   description: string;
   sort_order: number;
 }) {
-  const { error } = await supabase.from("themes").insert([
-    {
-      pillar_id: data.pillarId,
-      name: data.name,
-      description: data.description,
-      sort_order: data.sort_order,
-    },
-  ]);
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from("themes")
+    .insert([
+      {
+        pillar_id: data.pillarId,
+        name: data.name,
+        description: data.description,
+        sort_order: data.sort_order,
+      },
+    ]);
+
   if (error) throw error;
 }
 
 export async function deleteTheme(id: string) {
+  const supabase = createClient();
+
   const { error } = await supabase.from("themes").delete().eq("id", id);
+
   if (error) throw error;
 }
 
@@ -50,18 +61,26 @@ export async function addSubtheme(data: {
   description: string;
   sort_order: number;
 }) {
-  const { error } = await supabase.from("subthemes").insert([
-    {
-      theme_id: data.themeId,
-      name: data.name,
-      description: data.description,
-      sort_order: data.sort_order,
-    },
-  ]);
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from("subthemes")
+    .insert([
+      {
+        theme_id: data.themeId,
+        name: data.name,
+        description: data.description,
+        sort_order: data.sort_order,
+      },
+    ]);
+
   if (error) throw error;
 }
 
 export async function deleteSubtheme(id: string) {
+  const supabase = createClient();
+
   const { error } = await supabase.from("subthemes").delete().eq("id", id);
+
   if (error) throw error;
 }
