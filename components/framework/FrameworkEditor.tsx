@@ -12,7 +12,7 @@ import {
   editSubtheme,
   deleteSubtheme,
 } from "@/lib/framework-actions";
-import { fetchFramework, Pillar } from "@/lib/framework-client";
+import { fetchFramework } from "@/lib/framework-client";
 import PageHeader from "@/components/ui/PageHeader";
 import {
   Plus,
@@ -24,6 +24,32 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-react";
+
+//
+// Inline types (instead of importing Pillar from framework-client)
+//
+interface Subtheme {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+}
+
+interface Theme {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  subthemes: Subtheme[];
+}
+
+interface Pillar {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+  themes: Theme[];
+}
 
 interface FrameworkEditorProps {
   group: "configuration";
@@ -240,9 +266,15 @@ function PillarRow({
       <tr className="border-b">
         <td className="py-2 pr-2 pl-4">
           <button onClick={() => toggleExpand(pillar.id)}>
-            {isOpen ? <ChevronDown className="h-4 w-4 inline" /> : <ChevronRight className="h-4 w-4 inline" />}
+            {isOpen ? (
+              <ChevronDown className="h-4 w-4 inline" />
+            ) : (
+              <ChevronRight className="h-4 w-4 inline" />
+            )}
           </button>
-          <span className="ml-2 rounded bg-blue-100 text-blue-800 px-2 py-0.5 text-xs">Pillar</span>
+          <span className="ml-2 rounded bg-blue-100 text-blue-800 px-2 py-0.5 text-xs">
+            Pillar
+          </span>
           <span className="ml-2 text-sm text-gray-600">P{index + 1}</span>
         </td>
         <td className="py-2">
@@ -294,17 +326,33 @@ function ThemeRow({
   toggleExpand,
   editMode,
   openModal,
-}: any) {
+}: {
+  theme: Theme;
+  tIndex: number;
+  pIndex: number;
+  expanded: Set<string>;
+  toggleExpand: (id: string) => void;
+  editMode: boolean;
+  openModal: (type: ModalType, target?: any) => void;
+}) {
   const isOpen = expanded.has(theme.id);
   return (
     <>
       <tr className="border-b bg-gray-50">
         <td className="py-2 pr-2 pl-8">
           <button onClick={() => toggleExpand(theme.id)}>
-            {isOpen ? <ChevronDown className="h-4 w-4 inline" /> : <ChevronRight className="h-4 w-4 inline" />}
+            {isOpen ? (
+              <ChevronDown className="h-4 w-4 inline" />
+            ) : (
+              <ChevronRight className="h-4 w-4 inline" />
+            )}
           </button>
-          <span className="ml-2 rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">Theme</span>
-          <span className="ml-2 text-sm text-gray-600">T{pIndex + 1}.{tIndex + 1}</span>
+          <span className="ml-2 rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">
+            Theme
+          </span>
+          <span className="ml-2 text-sm text-gray-600">
+            T{pIndex + 1}.{tIndex + 1}
+          </span>
         </td>
         <td className="py-2">
           <div className="font-medium">{theme.name}</div>
@@ -337,14 +385,13 @@ function ThemeRow({
         </td>
       </tr>
       {isOpen &&
-        theme.subthemes.map((sub: any, sIndex: number) => (
+        theme.subthemes.map((sub, sIndex) => (
           <SubthemeRow
             key={sub.id}
             sub={sub}
             sIndex={sIndex}
             tIndex={tIndex}
             pIndex={pIndex}
-            expanded={expanded}
             editMode={editMode}
             openModal={openModal}
           />
@@ -360,11 +407,20 @@ function SubthemeRow({
   pIndex,
   editMode,
   openModal,
-}: any) {
+}: {
+  sub: Subtheme;
+  sIndex: number;
+  tIndex: number;
+  pIndex: number;
+  editMode: boolean;
+  openModal: (type: ModalType, target?: any) => void;
+}) {
   return (
     <tr className="border-b">
       <td className="py-2 pr-2 pl-12">
-        <span className="rounded bg-red-100 text-red-800 px-2 py-0.5 text-xs">Subtheme</span>
+        <span className="rounded bg-red-100 text-red-800 px-2 py-0.5 text-xs">
+          Subtheme
+        </span>
         <span className="ml-2 text-sm text-gray-600">
           ST{pIndex + 1}.{tIndex + 1}.{sIndex + 1}
         </span>
@@ -407,7 +463,11 @@ function Modal({
 }: {
   title: string;
   onClose: () => void;
-  onSave: (values: { name: string; description: string; sort_order: number }) => void;
+  onSave: (values: {
+    name: string;
+    description: string;
+    sort_order: number;
+  }) => void;
   initialValues: { name: string; description: string; sort_order: number };
 }) {
   const [name, setName] = useState(initialValues.name);
@@ -455,7 +515,9 @@ function Modal({
           </button>
           <button
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            onClick={() => onSave({ name, description, sort_order: sortOrder })}
+            onClick={() =>
+              onSave({ name, description, sort_order: sortOrder })
+            }
           >
             Save
           </button>
