@@ -40,7 +40,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editMode, setEditMode] = useState(false);
 
-  // Modal state
+  // Add/Edit modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<ModalType>(null);
   const [modalTarget, setModalTarget] = useState<any>(null);
@@ -358,7 +358,9 @@ function PillarRow({
         <td className="py-2 pr-4">
           <div className="font-semibold">{pillar.name}</div>
           {pillar.description && (
-            <div className="text-gray-500 text-xs mt-0.5">{pillar.description}</div>
+            <div className="text-gray-500 text-xs mt-0.5">
+              {pillar.description}
+            </div>
           )}
         </td>
         <td className="py-2 pr-4 text-center">
@@ -540,3 +542,7 @@ function SubthemeRow({
 }: {
   sub: any;
   pillarIndex: number;
+  themeIndex: number;
+  editMode: boolean;
+  openModal: (type: ModalType, target?: any) => void;
+  confirmDelete: (
