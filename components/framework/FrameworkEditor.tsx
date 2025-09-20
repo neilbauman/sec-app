@@ -10,15 +10,20 @@ import {
   Edit,
   Plus,
   Trash,
-  X, // close icon for modal
 } from "lucide-react";
+
+import DeleteConfirm from "@/components/modals/DeleteConfirm";
+import {
+  deletePillar,
+  deleteTheme,
+  deleteSubtheme,
+} from "@/lib/framework-actions";
 
 interface FrameworkEditorProps {
   group: "configuration";
   page: "primary";
 }
 
-// Delete modal target typing
 type DeleteTarget = {
   type: "pillar" | "theme" | "subtheme";
   name: string;
@@ -33,7 +38,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [editMode, setEditMode] = useState(false);
 
-  // NEW: delete confirmation modal state (safe – no DB yet)
+  // Delete modal state
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
@@ -71,7 +76,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
     setExpanded(next);
   };
 
-  // Delete modal handlers (safe – just logs right now)
+  // Delete handlers
   function openDelete(target: DeleteTarget) {
     setDeleteTarget(target);
     setDeleteOpen(true);
@@ -80,10 +85,19 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
     setDeleteOpen(false);
     setDeleteTarget(null);
   }
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!deleteTarget) return;
-    // 🚧 placeholder – no DB calls yet
-    console.log("CONFIRM DELETE:", deleteTarget);
+    switch (deleteTarget.type) {
+      case "pillar":
+        await deletePillar(deleteTarget.id);
+        break;
+      case "theme":
+        await deleteTheme(deleteTarget.id);
+        break;
+      case "subtheme":
+        await deleteSubtheme(deleteTarget.id);
+        break;
+    }
     closeDelete();
   }
 
@@ -172,52 +186,13 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
         )}
       </div>
 
-      {/* DELETE CONFIRMATION MODAL (safe stub) */}
-      {deleteOpen && deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <button
-              onClick={closeDelete}
-              className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <h2 className="mb-3 text-lg font-semibold text-red-600">
-              Confirm Delete
-            </h2>
-
-            <p className="text-sm text-gray-700">
-              Are you sure you want to delete this{" "}
-              <strong className="capitalize">{deleteTarget.type}</strong>:{" "}
-              <em>{deleteTarget.name}</em>?
-            </p>
-
-            {!!deleteTarget.childrenCount && deleteTarget.childrenCount > 0 && (
-              <p className="mt-3 text-sm text-red-500">
-                This {deleteTarget.type} has {deleteTarget.childrenCount} child
-                item(s). Deleting it will also delete them.
-              </p>
-            )}
-
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                onClick={closeDelete}
-                className="rounded bg-gray-100 px-3 py-1 text-sm hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete Modal */}
+      <DeleteConfirm
+        open={deleteOpen}
+        target={deleteTarget}
+        onCancel={closeDelete}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
@@ -237,12 +212,7 @@ function PillarRow({
   toggle: (id: string) => void;
   sortByOrder: (arr: any[]) => any[];
   editMode: boolean;
-  onDelete: (target: {
-    type: "pillar" | "theme" | "subtheme";
-    name: string;
-    id: string;
-    childrenCount?: number;
-  }) => void;
+  onDelete: (target: DeleteTarget) => void;
 }) {
   const id = `pillar-${pillar.id}`;
   const refCode = `P${index}`;
@@ -253,7 +223,7 @@ function PillarRow({
       <tr className="border-b">
         <td className="py-2 pr-2">
           {pillar.themes?.length > 0 && (
-            <button onClick={() => toggle(id)} className="p-1" aria-label="Toggle pillar">
+            <button onClick={() => toggle(id)} className="p-1">
               <ChevronRight
                 className={`h-4 w-4 transition-transform ${
                   isOpen ? "rotate-90" : ""
@@ -263,15 +233,15 @@ function PillarRow({
           )}
         </td>
         <td className="py-2 pr-4 whitespace-nowrap">
-          <span className="inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">
             Pillar
           </span>
-          <span className="ml-2 text-xs text-gray-500">{refCode}</span>
+          <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
         </td>
         <td className="py-2 pr-4">
           <div className="font-semibold">{pillar.name}</div>
           {pillar.description && (
-            <div className="mt-0.5 text-xs text-gray-500">
+            <div className="text-gray-500 text-xs mt-0.5">
               {pillar.description}
             </div>
           )}
@@ -281,28 +251,26 @@ function PillarRow({
             <input
               type="number"
               defaultValue={pillar.sort_order}
-              className="w-12 rounded border text-center text-sm"
+              className="w-12 border rounded text-center text-sm"
             />
           ) : (
             pillar.sort_order
           )}
         </td>
-        <td className="py-2 text-right">
+        <td className="py-2 text-right space-x-2">
           {editMode && (
-            <div className="space-x-2">
+            <>
               <button
                 className="text-blue-600 hover:text-blue-800"
                 onClick={() => console.log("Edit pillar", pillar.id)}
-                aria-label="Edit pillar"
               >
-                <Edit className="inline h-4 w-4" />
+                <Edit className="h-4 w-4 inline" />
               </button>
               <button
                 className="text-green-600 hover:text-green-800"
                 onClick={() => console.log("Add theme under pillar", pillar.id)}
-                aria-label="Add theme"
               >
-                <Plus className="inline h-4 w-4" />
+                <Plus className="h-4 w-4 inline" />
               </button>
               <button
                 className="text-red-600 hover:text-red-800"
@@ -314,11 +282,10 @@ function PillarRow({
                     childrenCount: pillar.themes?.length || 0,
                   })
                 }
-                aria-label="Delete pillar"
               >
-                <Trash className="inline h-4 w-4" />
+                <Trash className="h-4 w-4 inline" />
               </button>
-            </div>
+            </>
           )}
         </td>
       </tr>
@@ -355,12 +322,7 @@ function ThemeRow({
   toggle: (id: string) => void;
   sortByOrder: (arr: any[]) => any[];
   editMode: boolean;
-  onDelete: (target: {
-    type: "pillar" | "theme" | "subtheme";
-    name: string;
-    id: string;
-    childrenCount?: number;
-  }) => void;
+  onDelete: (target: DeleteTarget) => void;
 }) {
   const id = `theme-${theme.id}`;
   const refCode = `T${pillarIndex}.${theme.sort_order}`;
@@ -371,7 +333,7 @@ function ThemeRow({
       <tr className="border-b bg-gray-50">
         <td className="py-2 pr-2 pl-4">
           {theme.subthemes?.length > 0 && (
-            <button onClick={() => toggle(id)} className="p-1" aria-label="Toggle theme">
+            <button onClick={() => toggle(id)} className="p-1">
               <ChevronRight
                 className={`h-3 w-3 transition-transform ${
                   isOpen ? "rotate-90" : ""
@@ -381,17 +343,15 @@ function ThemeRow({
           )}
         </td>
         <td className="py-2 pr-4 whitespace-nowrap pl-4">
-          <span className="inline-block rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800">
+          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
             Theme
           </span>
-          <span className="ml-2 text-xs text-gray-500">{refCode}</span>
+          <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
         </td>
         <td className="py-2 pr-4 pl-4">
           <div className="font-medium">{theme.name}</div>
           {theme.description && (
-            <div className="mt-0.5 text-xs text-gray-500">
-              {theme.description}
-            </div>
+            <div className="text-gray-500 text-xs mt-0.5">{theme.description}</div>
           )}
         </td>
         <td className="py-2 pr-4 text-center">
@@ -399,28 +359,26 @@ function ThemeRow({
             <input
               type="number"
               defaultValue={theme.sort_order}
-              className="w-12 rounded border text-center text-sm"
+              className="w-12 border rounded text-center text-sm"
             />
           ) : (
             theme.sort_order
           )}
         </td>
-        <td className="py-2 text-right">
+        <td className="py-2 text-right space-x-2">
           {editMode && (
-            <div className="space-x-2">
+            <>
               <button
                 className="text-blue-600 hover:text-blue-800"
                 onClick={() => console.log("Edit theme", theme.id)}
-                aria-label="Edit theme"
               >
-                <Edit className="inline h-4 w-4" />
+                <Edit className="h-4 w-4 inline" />
               </button>
               <button
                 className="text-green-600 hover:text-green-800"
                 onClick={() => console.log("Add subtheme under theme", theme.id)}
-                aria-label="Add subtheme"
               >
-                <Plus className="inline h-4 w-4" />
+                <Plus className="h-4 w-4 inline" />
               </button>
               <button
                 className="text-red-600 hover:text-red-800"
@@ -432,11 +390,10 @@ function ThemeRow({
                     childrenCount: theme.subthemes?.length || 0,
                   })
                 }
-                aria-label="Delete theme"
               >
-                <Trash className="inline h-4 w-4" />
+                <Trash className="h-4 w-4 inline" />
               </button>
-            </div>
+            </>
           )}
         </td>
       </tr>
@@ -467,12 +424,7 @@ function SubthemeRow({
   pillarIndex: number;
   themeIndex: number;
   editMode: boolean;
-  onDelete: (target: {
-    type: "pillar" | "theme" | "subtheme";
-    name: string;
-    id: string;
-    childrenCount?: number;
-  }) => void;
+  onDelete: (target: DeleteTarget) => void;
 }) {
   const refCode = `ST${pillarIndex}.${themeIndex}.${sub.sort_order}`;
 
@@ -480,15 +432,15 @@ function SubthemeRow({
     <tr className="border-b bg-gray-100">
       <td className="py-2 pr-2 pl-8"></td>
       <td className="py-2 pr-4 whitespace-nowrap pl-8">
-        <span className="inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-800">
+        <span className="inline-block bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full">
           Subtheme
         </span>
-        <span className="ml-2 text-xs text-gray-500">{refCode}</span>
+        <span className="ml-2 text-gray-500 text-xs">{refCode}</span>
       </td>
       <td className="py-2 pr-4 pl-8">
         <div>{sub.name}</div>
         {sub.description && (
-          <div className="mt-0.5 text-xs text-gray-500">{sub.description}</div>
+          <div className="text-gray-500 text-xs mt-0.5">{sub.description}</div>
         )}
       </td>
       <td className="py-2 pr-4 text-center">
@@ -496,21 +448,20 @@ function SubthemeRow({
           <input
             type="number"
             defaultValue={sub.sort_order}
-            className="w-12 rounded border text-center text-sm"
+            className="w-12 border rounded text-center text-sm"
           />
         ) : (
           sub.sort_order
         )}
       </td>
-      <td className="py-2 text-right">
+      <td className="py-2 text-right space-x-2">
         {editMode && (
-          <div className="space-x-2">
+          <>
             <button
               className="text-blue-600 hover:text-blue-800"
               onClick={() => console.log("Edit subtheme", sub.id)}
-              aria-label="Edit subtheme"
             >
-              <Edit className="inline h-4 w-4" />
+              <Edit className="h-4 w-4 inline" />
             </button>
             <button
               className="text-red-600 hover:text-red-800"
@@ -521,11 +472,10 @@ function SubthemeRow({
                   id: sub.id,
                 })
               }
-              aria-label="Delete subtheme"
             >
-              <Trash className="inline h-4 w-4" />
+              <Trash className="h-4 w-4 inline" />
             </button>
-          </div>
+          </>
         )}
       </td>
     </tr>
