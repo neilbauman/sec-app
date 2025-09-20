@@ -10,11 +10,7 @@ export default function ComprehensiveFrameworkEditorPage() {
       <PageHeader
         group="configuration"
         page="comprehensive"
-        breadcrumb={[
-          { label: "Dashboard", href: "/" },
-          { label: "Configuration", href: "/configuration" },
-          { label: "Comprehensive Framework" },
-        ]}
+        breadcrumb={[{ label: "Configuration", href: "/configuration" }, { label: "Comprehensive Framework Editor" }]}
       />
 
       <div className="bg-white rounded-xl border shadow-sm p-6 space-y-4">
