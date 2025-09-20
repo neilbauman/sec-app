@@ -1,40 +1,56 @@
 "use client";
 
-import { useState } from "react";
-import { addPillar, deletePillar, addTheme, deleteTheme, addSubtheme, deleteSubtheme } from "@/lib/framework-actions";
-import { fetchFramework, Pillar } from "@/lib/framework-client";
+import { useEffect, useState } from "react";
+import { Pillar, fetchFramework } from "@/lib/framework-client";
+import {
+  addPillar,
+  deletePillar,
+  addTheme,
+  deleteTheme,
+  addSubtheme,
+  deleteSubtheme,
+} from "@/lib/framework-actions";
 import PageHeader from "@/components/ui/PageHeader";
-import { Plus, Minus, Trash2, Edit3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 
 export default function FrameworkEditor() {
   const [pillars, setPillars] = useState<Pillar[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [modal, setModal] = useState<{ type: string; parentId?: string } | null>(null);
+
+  const [modal, setModal] = useState<{
+    type: "add-pillar" | "add-theme" | "add-subtheme" | null;
+    parentId?: string;
+  }>({ type: null });
+
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
 
-  // Load data
+  // load data from DB
   const loadData = async () => {
+    setLoading(true);
     const data = await fetchFramework();
     setPillars(data);
+    setLoading(false);
   };
 
-  // Toggle expand
-  const toggleExpand = (id: string) => {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  // Open modal
-  const openModal = (type: string, parentId?: string) => {
+  const openModal = (
+    type: "add-pillar" | "add-theme" | "add-subtheme",
+    parentId?: string
+  ) => {
     setModal({ type, parentId });
     setName("");
     setDesc("");
   };
 
-  // Handle save
+  const closeModal = () => setModal({ type: null });
+
   const handleSave = async () => {
-    if (!modal) return;
     if (modal.type === "add-pillar") {
       await addPillar({
         name,
@@ -42,8 +58,8 @@ export default function FrameworkEditor() {
         sort_order: pillars.length + 1,
       });
     } else if (modal.type === "add-theme" && modal.parentId) {
-      const parent = pillars.find((p) => p.id === modal.parentId);
-      const count = parent?.themes?.length ?? 0;
+      const pillar = pillars.find((p) => p.id === modal.parentId);
+      const count = pillar?.themes?.length ?? 0;
       await addTheme({
         pillarId: modal.parentId,
         name,
@@ -51,9 +67,8 @@ export default function FrameworkEditor() {
         sort_order: count + 1,
       });
     } else if (modal.type === "add-subtheme" && modal.parentId) {
-      const parentTheme = pillars
-        .flatMap((p) => p.themes)
-        .find((t) => t.id === modal.parentId);
+      // parentId here is the theme id
+      const parentTheme = pillars.flatMap((p) => p.themes).find((t) => t.id === modal.parentId);
       const count = parentTheme?.subthemes?.length ?? 0;
       await addSubtheme({
         themeId: modal.parentId,
@@ -62,170 +77,84 @@ export default function FrameworkEditor() {
         sort_order: count + 1,
       });
     }
-    setModal(null);
+    closeModal();
     await loadData();
   };
 
   return (
     <div className="p-4">
-      {/* Header */}
       <PageHeader
-        title="Primary Framework Editor"
-        description="Define and manage pillars, themes, and subthemes of the SSC framework."
         breadcrumb={[
           { label: "Dashboard", href: "/" },
           { label: "Configuration", href: "/configuration" },
           { label: "Primary" },
         ]}
+        title="Primary Framework Editor"
+        description="Define and manage pillars, themes, and subthemes of the SSC framework."
       />
 
-      {/* Controls */}
-      <div className="flex items-center space-x-2 mb-4">
-        <button
-          onClick={() => setEditMode((prev) => !prev)}
-          className="px-3 py-1 text-sm bg-gray-200 rounded flex items-center space-x-1"
+      <div className="flex items-center justify-between mb-4">
+        <div className="space-x-2">
+          <Button size="sm" onClick={() => loadData()}>
+            Refresh
+          </Button>
+          {editMode && (
+            <Button size="sm" onClick={() => openModal("add-pillar")}>
+              <Plus className="w-4 h-4 mr-1" /> Add Pillar
+            </Button>
+          )}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setEditMode(!editMode)}
         >
-          <Edit3 className="w-4 h-4" />
-          <span>{editMode ? "Exit Edit Mode" : "Enter Edit Mode"}</span>
-        </button>
-
-        {editMode && (
-          <button
-            onClick={() => openModal("add-pillar")}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded flex items-center space-x-1"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Pillar</span>
-          </button>
-        )}
+          {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
+        </Button>
       </div>
 
-      {/* Pillar List */}
-      <div className="space-y-4">
-        {pillars.map((pillar) => (
-          <div key={pillar.id} className="border rounded p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <button
-                  onClick={() => toggleExpand(pillar.id)}
-                  className="mr-2 text-sm"
-                >
-                  {expanded[pillar.id] ? <Minus size={16} /> : <Plus size={16} />}
-                </button>
-                <span className="font-semibold">{pillar.name}</span>
-              </div>
-              {editMode && (
-                <button
-                  onClick={async () => {
-                    await deletePillar(pillar.id);
-                    await loadData();
-                  }}
-                  className="text-red-500"
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
-
-            {expanded[pillar.id] && (
-              <div className="ml-6 mt-2 space-y-2">
-                {pillar.themes?.map((theme) => (
-                  <div key={theme.id} className="border-l pl-2">
-                    <div className="flex items-center justify-between">
-                      <span>{theme.name}</span>
-                      {editMode && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => openModal("add-subtheme", theme.id)}
-                            className="text-blue-500 text-sm"
-                          >
-                            + Subtheme
-                          </button>
-                          <button
-                            onClick={async () => {
-                              await deleteTheme(theme.id);
-                              await loadData();
-                            }}
-                            className="text-red-500 text-sm"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="ml-4 space-y-1">
-                      {theme.subthemes?.map((sub) => (
-                        <div key={sub.id} className="flex justify-between">
-                          <span className="text-sm">{sub.name}</span>
-                          {editMode && (
-                            <button
-                              onClick={async () => {
-                                await deleteSubtheme(sub.id);
-                                await loadData();
-                              }}
-                              className="text-red-500 text-xs"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
+      {loading ? (
+        <p>Loading…</p>
+      ) : (
+        <div className="border rounded-lg divide-y">
+          {pillars.map((pillar) => (
+            <div key={pillar.id} className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-800">
+                    Pillar
+                  </span>{" "}
+                  <span className="font-semibold">{pillar.name}</span>
+                  <p className="text-sm text-gray-500">{pillar.description}</p>
+                </div>
                 {editMode && (
-                  <button
-                    onClick={() => openModal("add-theme", pillar.id)}
-                    className="mt-2 text-blue-500 text-sm"
-                  >
-                    + Theme
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openModal("add-theme", pillar.id)}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={async () => {
+                        await deletePillar(pillar.id);
+                        loadData();
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Modal */}
-      {modal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
-            <h2 className="text-lg font-semibold capitalize">
-              {modal.type.replace("-", " ")}
-            </h2>
-            <input
-              type="text"
-              placeholder="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="border p-2 w-full rounded"
-            />
-            <textarea
-              placeholder="Description"
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              className="border p-2 w-full rounded"
-            />
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => setModal(null)}
-                className="px-3 py-1 bg-gray-200 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-3 py-1 bg-blue-500 text-white rounded"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+              {pillar.themes?.map((theme) => (
+                <div key={theme.id} className="pl-6 mt-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-800">
+                        Theme
+                      </span>{" "}
+                      <span className="font-semibold">{theme.name}</span>
+                      <p className="text-sm text-gray-500">{theme.description}</p>
