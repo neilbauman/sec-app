@@ -4,9 +4,16 @@
 import { getSupabaseClient } from "@/lib/supabase-client";
 
 // -----------------------------
+// Minimal insert types
+// -----------------------------
+type PillarInsert = { name: string; description: string; sort_order: number };
+type ThemeInsert = { pillar_id: string; name: string; description: string; sort_order: number };
+type SubthemeInsert = { theme_id: string; name: string; description: string; sort_order: number };
+
+// -----------------------------
 // Pillars
 // -----------------------------
-export async function addPillar(data: { name: string; description: string; sort_order: number }) {
+export async function addPillar(data: PillarInsert) {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("pillars").insert([data]);
   if (error) throw error;
@@ -21,16 +28,9 @@ export async function deletePillar(id: string) {
 // -----------------------------
 // Themes
 // -----------------------------
-export async function addTheme(data: { pillarId: string; name: string; description: string; sort_order: number }) {
+export async function addTheme(data: ThemeInsert) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("themes").insert([
-    {
-      pillar_id: data.pillarId,
-      name: data.name,
-      description: data.description,
-      sort_order: data.sort_order,
-    },
-  ]);
+  const { error } = await supabase.from("themes").insert([data]);
   if (error) throw error;
 }
 
@@ -43,16 +43,9 @@ export async function deleteTheme(id: string) {
 // -----------------------------
 // Subthemes
 // -----------------------------
-export async function addSubtheme(data: { themeId: string; name: string; description: string; sort_order: number }) {
+export async function addSubtheme(data: SubthemeInsert) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("subthemes").insert([
-    {
-      theme_id: data.themeId,
-      name: data.name,
-      description: data.description,
-      sort_order: data.sort_order,
-    },
-  ]);
+  const { error } = await supabase.from("subthemes").insert([data]);
   if (error) throw error;
 }
 
