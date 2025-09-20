@@ -1,50 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchFramework, Pillar } from "@/lib/framework-client";
+import PageHeader from "@/components/ui/PageHeader";
 import {
   addPillar,
   deletePillar,
   addTheme,
   deleteTheme,
+  addSubtheme,
   deleteSubtheme,
 } from "@/lib/framework-actions";
-import { fetchFramework } from "@/lib/framework-client";
-import PageHeader from "@/components/ui/PageHeader";
 import {
+  ChevronDown,
+  ChevronRight,
   Plus,
   Trash2,
-  ChevronRight,
-  ChevronDown,
 } from "lucide-react";
 
-interface Pillar {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  themes: Theme[];
-}
-interface Theme {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  subthemes: Subtheme[];
-}
-interface Subtheme {
-  id: string;
-  name: string;
-  description: string;
-  sort_order: number;
-}
-
-type ModalType =
-  | "add-pillar"
-  | "delete-pillar"
-  | "add-theme"
-  | "delete-theme"
-  | "delete-subtheme";
-
+// -----------------------------
+// Main Component
+// -----------------------------
 export default function FrameworkEditor({
   group,
   page,
@@ -59,117 +35,139 @@ export default function FrameworkEditor({
   const [editMode, setEditMode] = useState(false);
 
   // Modal state
-  const [modalType, setModalType] = useState<ModalType | null>(null);
-  const [targetId, setTargetId] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState<"add-pillar" | "add-theme" | "add-subtheme" | null>(null);
+  const [modalTarget, setModalTarget] = useState<any>(null);
   const [modalError, setModalError] = useState<string | null>(null);
 
-  // Add Pillar fields
-  const [pillarName, setPillarName] = useState("");
-  const [pillarDesc, setPillarDesc] = useState("");
-
-  // Add Theme fields
-  const [themeName, setThemeName] = useState("");
-  const [themeDesc, setThemeDesc] = useState("");
-
   useEffect(() => {
-    async function load() {
-      try {
-        const data = await fetchFramework();
-        setPillars(data);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load framework data.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    loadFramework();
   }, []);
 
-  const openModal = (type: ModalType, id?: string) => {
+  async function loadFramework() {
+    setLoading(true);
+    try {
+      const data = await fetchFramework();
+      setPillars(data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load framework data.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function toggleExpand(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function expandAll() {
+    const allIds: string[] = [];
+    pillars.forEach((p) => {
+      allIds.push(p.id);
+      p.themes.forEach((t) => {
+        allIds.push(t.id);
+        t.subthemes.forEach((s) => allIds.push(s.id));
+      });
+    });
+    setExpanded(new Set(allIds));
+  }
+
+  function collapseAll() {
+    setExpanded(new Set());
+  }
+
+  function openModal(type: typeof modalType, target?: any) {
     setModalType(type);
-    setTargetId(id ?? null);
+    setModalTarget(target ?? null);
     setModalError(null);
-  };
+    setShowModal(true);
+  }
 
-  const closeModal = () => {
+  function closeModal() {
+    setShowModal(false);
     setModalType(null);
-    setTargetId(null);
-    setPillarName("");
-    setPillarDesc("");
-    setThemeName("");
-    setThemeDesc("");
+    setModalTarget(null);
     setModalError(null);
-  };
+  }
 
-  const reload = async () => {
-    const data = await fetchFramework();
-    setPillars(data);
-  };
-
-  const handleAddPillar = async () => {
-    try {
-      setModalError(null);
-      const maxSort = Math.max(0, ...pillars.map((p) => p.sort_order));
-      await addPillar({
-        name: pillarName.trim(),
-        description: pillarDesc.trim(),
-        sort_order: maxSort + 1,
-      });
-      closeModal();
-      reload();
-    } catch (err: any) {
-      console.error(err);
-      setModalError(err.message || "Failed to add pillar.");
+  // -----------------------------
+  // Save handlers with error handling
+  // -----------------------------
+  async function handleSavePillar(name: string, description: string) {
+    setModalError(null);
+    const sort_order = (pillars.length || 0) + 1;
+    const result = await addPillar({ name, description, sort_order });
+    if (!result.success) {
+      setModalError(result.message);
+      return;
     }
-  };
+    closeModal();
+    loadFramework();
+  }
 
-  const handleAddTheme = async () => {
-    if (!targetId) return;
-    try {
-      setModalError(null);
-      const pillar = pillars.find((p) => p.id === targetId);
-      const maxSort =
-        pillar && pillar.themes.length > 0
-          ? Math.max(...pillar.themes.map((t) => t.sort_order))
-          : 0;
-
-      await addTheme({
-        pillar_id: targetId,
-        name: themeName.trim(),
-        description: themeDesc.trim(),
-        sort_order: maxSort + 1,
-      });
-      closeModal();
-      reload();
-    } catch (err: any) {
-      console.error(err);
-      setModalError(err.message || "Failed to add theme.");
+  async function handleSaveTheme(name: string, description: string) {
+    if (!modalTarget) return;
+    setModalError(null);
+    const sort_order = (modalTarget.themes?.length || 0) + 1;
+    const result = await addTheme({
+      pillar_id: modalTarget.id,
+      name,
+      description,
+      sort_order,
+    });
+    if (!result.success) {
+      setModalError(result.message);
+      return;
     }
-  };
+    closeModal();
+    loadFramework();
+  }
 
-  const handleDelete = async () => {
-    if (!modalType || !targetId) return;
-    try {
-      setModalError(null);
-      if (modalType === "delete-pillar") await deletePillar(targetId);
-      if (modalType === "delete-theme") await deleteTheme(targetId);
-      if (modalType === "delete-subtheme") await deleteSubtheme(targetId);
-      closeModal();
-      reload();
-    } catch (err: any) {
-      console.error(err);
-      setModalError(err.message || "Delete failed.");
+  async function handleSaveSubtheme(name: string, description: string) {
+    if (!modalTarget) return;
+    setModalError(null);
+    const sort_order = (modalTarget.subthemes?.length || 0) + 1;
+    const result = await addSubtheme({
+      theme_id: modalTarget.id,
+      name,
+      description,
+      sort_order,
+    });
+    if (!result.success) {
+      setModalError(result.message);
+      return;
     }
-  };
+    closeModal();
+    loadFramework();
+  }
 
-  const toggleExpand = (id: string) => {
-    const newSet = new Set(expanded);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setExpanded(newSet);
-  };
+  // -----------------------------
+  // Delete handlers
+  // -----------------------------
+  async function handleDeletePillar(id: string) {
+    await deletePillar(id);
+    loadFramework();
+  }
 
+  async function handleDeleteTheme(id: string) {
+    await deleteTheme(id);
+    loadFramework();
+  }
+
+  async function handleDeleteSubtheme(id: string) {
+    await deleteSubtheme(id);
+    loadFramework();
+  }
+
+  // -----------------------------
+  // Render
+  // -----------------------------
   return (
     <div className="space-y-6">
       <PageHeader
@@ -182,17 +180,18 @@ export default function FrameworkEditor({
         ]}
       />
 
-      <div className="bg-white shadow rounded-lg p-4">
-        <div className="flex justify-between mb-3">
-          <div className="space-x-2">
+      <div className="bg-white shadow rounded-lg p-4 space-y-4">
+        {/* Toolbar */}
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
             <button
-              onClick={() => setExpanded(new Set(pillars.map((p) => p.id)))}
+              onClick={expandAll}
               className="px-2 py-1 border rounded text-sm"
             >
               Expand All
             </button>
             <button
-              onClick={() => setExpanded(new Set())}
+              onClick={collapseAll}
               className="px-2 py-1 border rounded text-sm"
             >
               Collapse All
@@ -200,225 +199,292 @@ export default function FrameworkEditor({
             {editMode && (
               <button
                 onClick={() => openModal("add-pillar")}
-                className="px-2 py-1 bg-blue-600 text-white rounded text-sm"
+                className="px-2 py-1 bg-blue-500 text-white rounded text-sm"
               >
                 + Add Pillar
               </button>
             )}
           </div>
           <button
-            onClick={() => setEditMode(!editMode)}
+            onClick={() => setEditMode((prev) => !prev)}
             className="px-2 py-1 bg-orange-200 text-orange-800 rounded text-sm"
           >
             {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
           </button>
         </div>
 
-        <table className="w-full text-sm border-collapse">
-          <thead className="border-b">
-            <tr className="text-left text-gray-600">
-              <th className="w-1/5 px-4 py-2">Type / Ref Code</th>
-              <th className="w-3/5 px-4 py-2">Name / Description</th>
-              <th className="w-1/10 px-4 py-2 text-center">Sort Order</th>
-              <th className="w-1/10 px-4 py-2 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pillars.map((pillar) => (
-              <>
-                <tr key={pillar.id} className="border-b">
-                  <td className="px-4 py-2">
-                    <div className="flex items-center space-x-1">
-                      <button onClick={() => toggleExpand(pillar.id)}>
-                        {expanded.has(pillar.id) ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </button>
-                      <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs">
-                        Pillar
-                      </span>
-                      <span className="text-xs">P{pillar.sort_order}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2">
-                    <div className="font-semibold">{pillar.name}</div>
-                    <div className="text-gray-500 text-xs">{pillar.description}</div>
-                  </td>
-                  <td className="px-4 py-2 text-center">{pillar.sort_order}</td>
-                  <td className="px-4 py-2 text-right space-x-2">
-                    {editMode && (
-                      <>
-                        <button
-                          onClick={() => openModal("add-theme", pillar.id)}
-                          className="text-green-600 hover:text-green-800"
-                        >
-                          <Plus className="h-4 w-4 inline" />
-                        </button>
-                        <button
-                          onClick={() => openModal("delete-pillar", pillar.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="h-4 w-4 inline" />
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-                {expanded.has(pillar.id) &&
-                  pillar.themes.map((theme) => (
-                    <tr key={theme.id} className="border-b bg-gray-50">
-                      <td className="px-8 py-2">
-                        <div className="flex items-center space-x-1">
-                          <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs">
-                            Theme
-                          </span>
-                          <span className="text-xs">
-                            T{pillar.sort_order}.{theme.sort_order}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="font-medium">{theme.name}</div>
-                        <div className="text-gray-500 text-xs">{theme.description}</div>
-                      </td>
-                      <td className="px-4 py-2 text-center">{theme.sort_order}</td>
-                      <td className="px-4 py-2 text-right">
-                        {editMode && (
-                          <button
-                            onClick={() => openModal("delete-theme", theme.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <Trash2 className="h-4 w-4 inline" />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-              </>
-            ))}
-          </tbody>
-        </table>
+        {/* Table header */}
+        <div className="grid grid-cols-12 font-semibold text-sm border-b pb-2">
+          <div className="col-span-4">Type / Ref Code</div>
+          <div className="col-span-6">Name / Description</div>
+          <div className="col-span-1 text-center">Sort Order</div>
+          <div className="col-span-1 text-center">Actions</div>
+        </div>
+
+        {loading && <p className="text-gray-500">Loading framework…</p>}
+        {error && <p className="text-red-600">{error}</p>}
+
+        {!loading &&
+          !error &&
+          pillars.map((pillar, pIndex) => (
+            <div key={pillar.id} className="border-b">
+              <RowPillar
+                pillar={pillar}
+                index={pIndex}
+                expanded={expanded}
+                toggleExpand={toggleExpand}
+                editMode={editMode}
+                openModal={openModal}
+                handleDelete={handleDeletePillar}
+              />
+            </div>
+          ))}
       </div>
 
-      {/* Confirm Delete Modal */}
-      {modalType && modalType.startsWith("delete") && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
-            <h3 className="font-semibold mb-2">Confirm Delete</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to delete this{" "}
-              {modalType.replace("delete-", "")}? This action cannot be undone.
-            </p>
-            {modalError && (
-              <p className="text-red-600 text-sm mb-2">{modalError}</p>
-            )}
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={closeModal}
-                className="px-3 py-1 border rounded text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                className="px-3 py-1 bg-red-600 text-white rounded text-sm"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Pillar Modal */}
-      {modalType === "add-pillar" && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
-            <h3 className="font-semibold mb-2">Add Pillar</h3>
-            <div className="space-y-2 mb-4">
-              <div>
-                <label className="block text-sm font-medium">Name</label>
-                <input
-                  value={pillarName}
-                  onChange={(e) => setPillarName(e.target.value)}
-                  className="border w-full px-2 py-1 rounded text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Description</label>
-                <textarea
-                  value={pillarDesc}
-                  onChange={(e) => setPillarDesc(e.target.value)}
-                  className="border w-full px-2 py-1 rounded text-sm"
-                />
-              </div>
-            </div>
-            {modalError && (
-              <p className="text-red-600 text-sm mb-2">{modalError}</p>
-            )}
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={closeModal}
-                className="px-3 py-1 border rounded text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddPillar}
-                className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Theme Modal */}
-      {modalType === "add-theme" && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
-            <h3 className="font-semibold mb-2">Add Theme</h3>
-            <div className="space-y-2 mb-4">
-              <div>
-                <label className="block text-sm font-medium">Name</label>
-                <input
-                  value={themeName}
-                  onChange={(e) => setThemeName(e.target.value)}
-                  className="border w-full px-2 py-1 rounded text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Description</label>
-                <textarea
-                  value={themeDesc}
-                  onChange={(e) => setThemeDesc(e.target.value)}
-                  className="border w-full px-2 py-1 rounded text-sm"
-                />
-              </div>
-            </div>
-            {modalError && (
-              <p className="text-red-600 text-sm mb-2">{modalError}</p>
-            )}
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={closeModal}
-                className="px-3 py-1 border rounded text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddTheme}
-                className="px-3 py-1 bg-green-600 text-white rounded text-sm"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Modal */}
+      {showModal && modalType && (
+        <Modal
+          type={modalType}
+          onClose={closeModal}
+          onSave={
+            modalType === "add-pillar"
+              ? handleSavePillar
+              : modalType === "add-theme"
+              ? handleSaveTheme
+              : handleSaveSubtheme
+          }
+          error={modalError}
+        />
       )}
     </div>
   );
 }
+
+// -----------------------------
+// Row Components
+// -----------------------------
+function RowPillar({
+  pillar,
+  index,
+  expanded,
+  toggleExpand,
+  editMode,
+  openModal,
+  handleDelete,
+}: {
+  pillar: Pillar;
+  index: number;
+  expanded: Set<string>;
+  toggleExpand: (id: string) => void;
+  editMode: boolean;
+  openModal: (type: any, target?: any) => void;
+  handleDelete: (id: string) => void;
+}) {
+  const isOpen = expanded.has(pillar.id);
+  return (
+    <>
+      <div className="grid grid-cols-12 py-2 items-center">
+        <div className="col-span-4 flex items-center gap-2">
+          <button onClick={() => toggleExpand(pillar.id)}>
+            {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </button>
+          <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">
+            Pillar
+          </span>
+          <span className="text-sm font-mono">{`P${pillar.sort_order}`}</span>
+        </div>
+        <div className="col-span-6">
+          <div className="font-medium">{pillar.name}</div>
+          <div className="text-xs text-gray-600">{pillar.description}</div>
+        </div>
+        <div className="col-span-1 text-center">{pillar.sort_order}</div>
+        <div className="col-span-1 text-center">
+          {editMode && (
+            <>
+              <button
+                onClick={() => openModal("add-theme", pillar)}
+                className="text-green-600 hover:text-green-800"
+              >
+                <Plus size={16} />
+              </button>
+              <button
+                onClick={() => handleDelete(pillar.id)}
+                className="text-red-600 hover:text-red-800 ml-2"
+              >
+                <Trash2 size={16} />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      {isOpen &&
+        pillar.themes.map((theme, tIndex) => (
+          <RowTheme
+            key={theme.id}
+            theme={theme}
+            pillarIndex={index}
+            expanded={expanded}
+            toggleExpand={toggleExpand}
+            editMode={editMode}
+            openModal={openModal}
+            handleDelete={handleDeleteTheme}
+          />
+        ))}
+    </>
+  );
+}
+
+function RowTheme({
+  theme,
+  pillarIndex,
+  expanded,
+  toggleExpand,
+  editMode,
+  openModal,
+  handleDelete,
+}: {
+  theme: any;
+  pillarIndex: number;
+  expanded: Set<string>;
+  toggleExpand: (id: string) => void;
+  editMode: boolean;
+  openModal: (type: any, target?: any) => void;
+  handleDelete: (id: string) => void;
+}) {
+  const isOpen = expanded.has(theme.id);
+  return (
+    <>
+      <div className="grid grid-cols-12 py-2 items-center pl-6 bg-gray-50">
+        <div className="col-span-4 flex items-center gap-2">
+          <button onClick={() => toggleExpand(theme.id)}>
+            {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </button>
+          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded">
+            Theme
+          </span>
+          <span className="text-sm font-mono">{`T${pillarIndex + 1}.${theme.sort_order}`}</span>
+        </div>
+        <div className="col-span-6">
+          <div className="font-medium">{theme.name}</div>
+          <div className="text-xs text-gray-600">{theme.description}</div>
+        </div>
+        <div className="col-span-1 text-center">{theme.sort_order}</div>
+        <div className="col-span-1 text-center">
+          {editMode && (
+            <>
+              <button
+                onClick={() => openModal("add-subtheme", theme)}
+                className="text-green-600 hover:text-green-800"
+              >
+                <Plus size={16} />
+              </button>
+              <button
+                onClick={() => handleDelete(theme.id)}
+                className="text-red-600 hover:text-red-800 ml-2"
+              >
+                <Trash2 size={16} />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      {isOpen &&
+        theme.subthemes.map((sub: any, sIndex: number) => (
+          <RowSubtheme
+            key={sub.id}
+            sub={sub}
+            pillarIndex={pillarIndex}
+            themeIndex={theme.sort_order}
+            editMode={editMode}
+            openModal={openModal}
+            handleDelete={handleDeleteSubtheme}
+          />
+        ))}
+    </>
+  );
+}
+
+function RowSubtheme({
+  sub,
+  pillarIndex,
+  themeIndex,
+  editMode,
+  openModal,
+  handleDelete,
+}: {
+  sub: any;
+  pillarIndex: number;
+  themeIndex: number;
+  editMode: boolean;
+  openModal: (type: any, target?: any) => void;
+  handleDelete: (id: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-12 py-2 items-center pl-12">
+      <div className="col-span-4 flex items-center gap-2">
+        <span className="px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded">
+          Subtheme
+        </span>
+        <span className="text-sm font-mono">{`ST${pillarIndex + 1}.${themeIndex}.${sub.sort_order}`}</span>
+      </div>
+      <div className="col-span-6">
+        <div className="font-medium">{sub.name}</div>
+        <div className="text-xs text-gray-600">{sub.description}</div>
+      </div>
+      <div className="col-span-1 text-center">{sub.sort_order}</div>
+      <div className="col-span-1 text-center">
+        {editMode && (
+          <button
+            onClick={() => handleDelete(sub.id)}
+            className="text-red-600 hover:text-red-800"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------
+// Modal
+// -----------------------------
+function Modal({
+  type,
+  onClose,
+  onSave,
+  error,
+}: {
+  type: "add-pillar" | "add-theme" | "add-subtheme";
+  onClose: () => void;
+  onSave: (name: string, description: string) => void;
+  error: string | null;
+}) {
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4">
+        <h2 className="text-lg font-semibold">
+          {type === "add-pillar"
+            ? "Add Pillar"
+            : type === "add-theme"
+            ? "Add Theme"
+            : "Add Subtheme"}
+        </h2>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Name</label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full border rounded px-2 py-1"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Description</label>
+          <textarea
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
