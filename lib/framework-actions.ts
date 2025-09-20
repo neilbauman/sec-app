@@ -3,12 +3,14 @@
 
 import { createClient } from "@/lib/supabase-browser";
 
+// Pillar input
 type PillarInput = {
   name: string;
   description: string;
   sort_order: number;
 };
 
+// Theme input
 type ThemeInput = {
   pillar_id: string;
   name: string;
@@ -64,7 +66,7 @@ export async function deleteTheme(id: string) {
 }
 
 // -----------------------------
-// Subthemes (stubs until later)
+// Subthemes
 // -----------------------------
 export async function deleteSubtheme(id: string) {
   const supabase = createClient();
