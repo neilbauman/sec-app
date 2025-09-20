@@ -1,68 +1,54 @@
-// components/ui/PageHeader.tsx
-import { groups, toolkit, GroupKey, PageKey } from "@/lib/headerConfig";
+"use client";
 
-export interface PageHeaderProps<G extends GroupKey> {
-  group: G;
-  page: PageKey<G>;
+import Link from "next/link";
+
+export type PageHeaderProps = {
+  title?: string;
+  description?: string;
+  group?: string;
+  page?: string;
   breadcrumb?: { label: string; href?: string }[];
-}
+};
 
-export default function PageHeader<G extends GroupKey>({
+export default function PageHeader({
+  title,
+  description,
   group,
   page,
   breadcrumb,
-}: PageHeaderProps<G>) {
-  const groupData = groups[group];
-  const pageData = groupData.pages[page];
-
-  const defaultBreadcrumb = [
-    { label: "Dashboard", href: "/" },
-    { label: groupData.name, href: `/${group}` },
-    { label: pageData.title },
-  ];
-
-  const trail = breadcrumb ?? defaultBreadcrumb;
-
-  const ToolkitIcon = toolkit.icon;
-  const GroupIcon = groupData.icon;
-
+}: PageHeaderProps) {
   return (
-    <div className="space-y-4">
-      {/* Toolkit Title */}
-      <div className="flex items-center space-x-2">
-        <ToolkitIcon className="w-6 h-6 text-brand-rust" />
-        <h1 className="text-xl font-bold text-brand-rust">{toolkit.name}</h1>
-      </div>
+    <div className="mb-6 border-b pb-3">
+      {/* Breadcrumb navigation */}
+      {breadcrumb && breadcrumb.length > 0 && (
+        <nav className="text-sm text-gray-500 mb-2">
+          {breadcrumb.map((crumb, i) => (
+            <span key={i}>
+              {crumb.href ? (
+                <Link href={crumb.href} className="hover:underline">
+                  {crumb.label}
+                </Link>
+              ) : (
+                crumb.label
+              )}
+              {i < breadcrumb.length - 1 && " / "}
+            </span>
+          ))}
+        </nav>
+      )}
 
-      {/* Group Title */}
-      <div className="flex items-center space-x-2">
-        <GroupIcon className={`w-5 h-5 ${groupData.color}`} />
-        <h2 className={`text-lg font-semibold ${groupData.color}`}>
-          {groupData.name}
-        </h2>
-      </div>
+      {/* Fallback group/page */}
+      {!breadcrumb && (group || page) && (
+        <div className="text-sm text-gray-500 mb-2">
+          {group && <span className="capitalize">{group}</span>}
+          {group && page && " / "}
+          {page && <span className="capitalize">{page}</span>}
+        </div>
+      )}
 
-      {/* Page Title & Description */}
-      <div>
-        <h3 className="text-xl font-bold">{pageData.title}</h3>
-        <p className="text-gray-600">{pageData.description}</p>
-      </div>
-
-      {/* Breadcrumb */}
-      <nav className="text-sm text-brand-rust border-t border-b border-gray-200 py-2">
-        {trail.map((crumb, idx) => (
-          <span key={idx}>
-            {idx > 0 && " / "}
-            {crumb.href ? (
-              <a href={crumb.href} className="hover:underline">
-                {crumb.label}
-              </a>
-            ) : (
-              <span className="font-semibold">{crumb.label}</span>
-            )}
-          </span>
-        ))}
-      </nav>
+      {/* Heading */}
+      {title && <h1 className="text-xl font-semibold">{title}</h1>}
+      {description && <p className="text-gray-600">{description}</p>}
     </div>
   );
 }
