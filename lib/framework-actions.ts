@@ -1,5 +1,5 @@
 // /lib/framework-actions.ts
-// Safe stubbed actions for now (just console.log). Later we’ll wire to Supabase.
+import { createClient } from "@/lib/supabase-server";
 
 //
 // Pillars
@@ -9,7 +9,22 @@ export async function addPillar(data: {
   description: string;
   sort_order: number;
 }) {
-  console.log("Stub: add pillar", data);
+  const supabase = createClient();
+
+  const { error } = await supabase.from("pillars").insert([
+    {
+      name: data.name,
+      description: data.description,
+      sort_order: data.sort_order,
+    },
+  ]);
+
+  if (error) {
+    console.error("addPillar error:", error);
+    throw error;
+  }
+
+  console.log("Pillar added successfully:", data.name);
   return Promise.resolve();
 }
 
