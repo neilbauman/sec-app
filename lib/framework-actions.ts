@@ -1,6 +1,4 @@
 // /lib/framework-actions.ts
-// addPillar is real, others are still stubs. Using `as any` for TS safety bypass.
-
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "@/types/supabase";
 
@@ -17,13 +15,15 @@ export async function addPillar(data: {
   description: string;
   sort_order: number;
 }) {
-  const { error } = await supabase.from("pillars").insert([
-    {
-      name: data.name,
-      description: data.description,
-      sort_order: data.sort_order,
-    } as any, // 👈 bypass type error
-  ]);
+  const { error } = await supabase
+    .from("pillars" as any) // 👈 type bypass
+    .insert([
+      {
+        name: data.name,
+        description: data.description,
+        sort_order: data.sort_order,
+      },
+    ]);
 
   if (error) {
     console.error("addPillar error:", error);
