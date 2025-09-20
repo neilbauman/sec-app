@@ -1,8 +1,10 @@
 // /lib/framework-actions.ts
-import { createClient } from "@supabase/supabase-js";
-import { Database } from "@/types/supabase";
+// addPillar is real, others are stubs. Client is untyped to avoid TS conflicts.
 
-const supabase = createClient<Database>(
+import { createClient } from "@supabase/supabase-js";
+
+// Create an untyped client (bypasses TS schema checking)
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
@@ -15,15 +17,13 @@ export async function addPillar(data: {
   description: string;
   sort_order: number;
 }) {
-  const { error } = await supabase
-    .from("pillars" as any) // 👈 type bypass
-    .insert([
-      {
-        name: data.name,
-        description: data.description,
-        sort_order: data.sort_order,
-      },
-    ]);
+  const { error } = await supabase.from("pillars").insert([
+    {
+      name: data.name,
+      description: data.description,
+      sort_order: data.sort_order,
+    },
+  ]);
 
   if (error) {
     console.error("addPillar error:", error);
