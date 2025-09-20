@@ -16,7 +16,6 @@ import { fetchFramework } from "@/lib/framework-client";
 import PageHeader from "@/components/ui/PageHeader";
 import {
   Plus,
-  Minus,
   Edit,
   Trash2,
   Upload,
@@ -26,7 +25,7 @@ import {
 } from "lucide-react";
 
 //
-// Inline types (instead of importing Pillar from framework-client)
+// Inline types
 //
 interface Subtheme {
   id: string;
@@ -76,9 +75,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   const [editMode, setEditMode] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [modalType, setModalType] = useState<ModalType>(null);
-  const [modalTarget, setModalTarget] = useState<any>(null);
 
-  // Reload framework data
   async function loadFramework() {
     try {
       setLoading(true);
@@ -97,17 +94,13 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
     loadFramework();
   }, []);
 
-  // Modal open/close
-  function openModal(type: ModalType, target?: any) {
+  function openModal(type: ModalType) {
     setModalType(type);
-    setModalTarget(target || null);
   }
   function closeModal() {
     setModalType(null);
-    setModalTarget(null);
   }
 
-  // Save handlers
   async function handleSavePillar(values: {
     name: string;
     description: string;
@@ -122,14 +115,9 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
     }
   }
 
-  // Expand/collapse
   function toggleExpand(id: string) {
     const newSet = new Set(expanded);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
-    }
+    newSet.has(id) ? newSet.delete(id) : newSet.add(id);
     setExpanded(newSet);
   }
 
@@ -163,7 +151,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
 
       <div className="bg-white shadow rounded-lg p-6 space-y-4">
         <div className="flex justify-between items-center">
-          <div className="space-x-2">
+          <div className="space-x-2 flex items-center">
             <button
               className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
               onClick={expandAll}
@@ -176,6 +164,14 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
             >
               Collapse All
             </button>
+            {editMode && (
+              <button
+                className="px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => openModal("add-pillar")}
+              >
+                + Add Pillar
+              </button>
+            )}
           </div>
           <div className="space-x-2 flex items-center">
             <button className="p-2 rounded hover:bg-gray-100">
@@ -183,12 +179,6 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
             </button>
             <button className="p-2 rounded hover:bg-gray-100">
               <Download className="h-4 w-4" />
-            </button>
-            <button
-              className="px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
-              onClick={() => openModal("add-pillar")}
-            >
-              + Add Pillar
             </button>
             <button
               className="px-3 py-1 text-sm rounded bg-orange-200 text-orange-800 hover:bg-orange-300"
@@ -221,7 +211,6 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
                   expanded={expanded}
                   toggleExpand={toggleExpand}
                   editMode={editMode}
-                  openModal={openModal}
                 />
               ))}
             </tbody>
@@ -243,7 +232,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
 }
 
 //
-// Row components
+// Pillar Row
 //
 function PillarRow({
   pillar,
@@ -251,14 +240,12 @@ function PillarRow({
   expanded,
   toggleExpand,
   editMode,
-  openModal,
 }: {
   pillar: Pillar;
   index: number;
   expanded: Set<string>;
   toggleExpand: (id: string) => void;
   editMode: boolean;
-  openModal: (type: ModalType, target?: any) => void;
 }) {
   const isOpen = expanded.has(pillar.id);
   return (
@@ -282,178 +269,56 @@ function PillarRow({
           <div className="text-sm text-gray-500">{pillar.description}</div>
         </td>
         <td className="py-2 text-center">{pillar.sort_order}</td>
-        <td className="py-2 text-right space-x-2">
+        <td className="py-2 text-right">
           {editMode && (
-            <>
-              <button
-                className="text-blue-600 hover:text-blue-800"
-                onClick={() => openModal("edit-pillar", pillar)}
-              >
-                <Edit className="h-4 w-4 inline" />
-              </button>
-              <button
-                className="text-red-600 hover:text-red-800"
-                onClick={() => openModal("delete-pillar", pillar)}
-              >
-                <Trash2 className="h-4 w-4 inline" />
-              </button>
-            </>
+            <button className="text-blue-600 hover:text-blue-800">
+              <Edit className="h-4 w-4 inline" />
+            </button>
           )}
         </td>
       </tr>
       {isOpen &&
         pillar.themes.map((theme, tIndex) => (
-          <ThemeRow
-            key={theme.id}
-            theme={theme}
-            tIndex={tIndex}
-            pIndex={index}
-            expanded={expanded}
-            toggleExpand={toggleExpand}
-            editMode={editMode}
-            openModal={openModal}
-          />
+          <ThemeRow key={theme.id} theme={theme} tIndex={tIndex} pIndex={index} />
         ))}
     </>
   );
 }
 
+//
+// Theme Row
+//
 function ThemeRow({
   theme,
   tIndex,
   pIndex,
-  expanded,
-  toggleExpand,
-  editMode,
-  openModal,
 }: {
   theme: Theme;
   tIndex: number;
   pIndex: number;
-  expanded: Set<string>;
-  toggleExpand: (id: string) => void;
-  editMode: boolean;
-  openModal: (type: ModalType, target?: any) => void;
-}) {
-  const isOpen = expanded.has(theme.id);
-  return (
-    <>
-      <tr className="border-b bg-gray-50">
-        <td className="py-2 pr-2 pl-8">
-          <button onClick={() => toggleExpand(theme.id)}>
-            {isOpen ? (
-              <ChevronDown className="h-4 w-4 inline" />
-            ) : (
-              <ChevronRight className="h-4 w-4 inline" />
-            )}
-          </button>
-          <span className="ml-2 rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">
-            Theme
-          </span>
-          <span className="ml-2 text-sm text-gray-600">
-            T{pIndex + 1}.{tIndex + 1}
-          </span>
-        </td>
-        <td className="py-2">
-          <div className="font-medium">{theme.name}</div>
-          <div className="text-sm text-gray-500">{theme.description}</div>
-        </td>
-        <td className="py-2 text-center">{theme.sort_order}</td>
-        <td className="py-2 text-right space-x-2">
-          {editMode && (
-            <>
-              <button
-                className="text-blue-600 hover:text-blue-800"
-                onClick={() => openModal("edit-theme", theme)}
-              >
-                <Edit className="h-4 w-4 inline" />
-              </button>
-              <button
-                className="text-green-600 hover:text-green-800"
-                onClick={() => openModal("add-subtheme", theme)}
-              >
-                <Plus className="h-4 w-4 inline" />
-              </button>
-              <button
-                className="text-red-600 hover:text-red-800"
-                onClick={() => openModal("delete-theme", theme)}
-              >
-                <Trash2 className="h-4 w-4 inline" />
-              </button>
-            </>
-          )}
-        </td>
-      </tr>
-      {isOpen &&
-        theme.subthemes.map((sub, sIndex) => (
-          <SubthemeRow
-            key={sub.id}
-            sub={sub}
-            sIndex={sIndex}
-            tIndex={tIndex}
-            pIndex={pIndex}
-            editMode={editMode}
-            openModal={openModal}
-          />
-        ))}
-    </>
-  );
-}
-
-function SubthemeRow({
-  sub,
-  sIndex,
-  tIndex,
-  pIndex,
-  editMode,
-  openModal,
-}: {
-  sub: Subtheme;
-  sIndex: number;
-  tIndex: number;
-  pIndex: number;
-  editMode: boolean;
-  openModal: (type: ModalType, target?: any) => void;
 }) {
   return (
-    <tr className="border-b">
-      <td className="py-2 pr-2 pl-12">
-        <span className="rounded bg-red-100 text-red-800 px-2 py-0.5 text-xs">
-          Subtheme
+    <tr className="border-b bg-gray-50">
+      <td className="py-2 pr-2 pl-8">
+        <span className="rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">
+          Theme
         </span>
         <span className="ml-2 text-sm text-gray-600">
-          ST{pIndex + 1}.{tIndex + 1}.{sIndex + 1}
+          T{pIndex + 1}.{tIndex + 1}
         </span>
       </td>
       <td className="py-2">
-        <div className="font-medium">{sub.name}</div>
-        <div className="text-sm text-gray-500">{sub.description}</div>
+        <div className="font-medium">{theme.name}</div>
+        <div className="text-sm text-gray-500">{theme.description}</div>
       </td>
-      <td className="py-2 text-center">{sub.sort_order}</td>
-      <td className="py-2 text-right space-x-2">
-        {editMode && (
-          <>
-            <button
-              className="text-blue-600 hover:text-blue-800"
-              onClick={() => openModal("edit-subtheme", sub)}
-            >
-              <Edit className="h-4 w-4 inline" />
-            </button>
-            <button
-              className="text-red-600 hover:text-red-800"
-              onClick={() => openModal("delete-subtheme", sub)}
-            >
-              <Trash2 className="h-4 w-4 inline" />
-            </button>
-          </>
-        )}
-      </td>
+      <td className="py-2 text-center">{theme.sort_order}</td>
+      <td />
     </tr>
   );
 }
 
 //
-// Reusable Modal Component
+// Modal
 //
 function Modal({
   title,
