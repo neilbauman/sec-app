@@ -6,6 +6,9 @@ import type {
   PillarInsert,
   ThemeInsert,
   SubthemeInsert,
+  Pillar,
+  Theme,
+  Subtheme,
 } from "@/lib/framework-client";
 
 /** Small helper to generate a short ref code if the column is required */
@@ -25,13 +28,15 @@ export async function addPillar(
     ...data,
   };
 
-  const { error } = await supabase.from("pillars").insert([payload]);
+  const { error } = await supabase
+    .from<Pillar>("pillars")
+    .insert([payload as Pillar]);
   if (error) throw error;
 }
 
 export async function deletePillar(id: string) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("pillars").delete().eq("id", id);
+  const { error } = await supabase.from<Pillar>("pillars").delete().eq("id", id);
   if (error) throw error;
 }
 
@@ -40,30 +45,34 @@ export async function addTheme(
   data: Pick<ThemeInsert, "pillar_id" | "name" | "description" | "sort_order">
 ) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("themes").insert([data]);
+  const { error } = await supabase
+    .from<Theme>("themes")
+    .insert([data as Theme]);
   if (error) throw error;
 }
 
 export async function deleteTheme(id: string) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("themes").delete().eq("id", id);
+  const { error } = await supabase.from<Theme>("themes").delete().eq("id", id);
   if (error) throw error;
 }
 
 /** Subthemes */
 export async function addSubtheme(
-  data: Pick<
-    SubthemeInsert,
-    "theme_id" | "name" | "description" | "sort_order"
-  >
+  data: Pick<SubthemeInsert, "theme_id" | "name" | "description" | "sort_order">
 ) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("subthemes").insert([data]);
+  const { error } = await supabase
+    .from<Subtheme>("subthemes")
+    .insert([data as Subtheme]);
   if (error) throw error;
 }
 
 export async function deleteSubtheme(id: string) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("subthemes").delete().eq("id", id);
+  const { error } = await supabase
+    .from<Subtheme>("subthemes")
+    .delete()
+    .eq("id", id);
   if (error) throw error;
 }
