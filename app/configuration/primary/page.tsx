@@ -5,11 +5,20 @@ import { fetchFramework } from "@/lib/framework-client";
 import { withRefCodes } from "@/lib/refCodes";
 
 export default async function PrimaryFrameworkEditorPage() {
-  // fetch raw DB framework
   const rawData = await fetchFramework();
 
-  // normalize ref codes (P1, T1.2, ST1.2.1, etc.)
+  // Normalize & assert ref_code presence
   const framework = withRefCodes({ pillars: rawData });
+
+  // Explicit cast: ensures all pillars have ref_code now
+  const pillarsWithCodes = framework.pillars as {
+    id: string;
+    ref_code: string;
+    name: string;
+    description: string;
+    sort_order: number;
+    themes: any[]; // allow nested objects without over-specifying here
+  }[];
 
   return (
     <div className="space-y-6">
@@ -22,9 +31,7 @@ export default async function PrimaryFrameworkEditorPage() {
           { label: "Primary Framework Editor" },
         ]}
       />
-
-      {/* pass only the normalized pillar array */}
-      <FrameworkEditor data={framework.pillars} />
+      <FrameworkEditor data={pillarsWithCodes} />
     </div>
   );
 }
