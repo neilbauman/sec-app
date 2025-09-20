@@ -4,10 +4,10 @@ import { cookies } from "next/headers";
 import type { Database } from "@/types/supabase";
 
 /**
- * Server-side Supabase client (RSC, Server Actions, Route Handlers).
- * NOTE: cookies() is sync in Next 13+; do not `await` it.
+ * Create a Supabase client configured for server-side usage (API routes or RSC).
+ * Uses Next.js cookies to manage authentication automatically.
  */
-export function getSupabaseClient(): SupabaseClient<Database> {
+export function createClient(): SupabaseClient<Database> {
   const cookieStore = cookies();
 
   return createServerClient<Database>(
@@ -36,3 +36,6 @@ export function getSupabaseClient(): SupabaseClient<Database> {
     }
   );
 }
+
+/** Alias to keep backwards compatibility if some files still import this */
+export const getSupabaseClient = createClient;
