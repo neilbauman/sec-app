@@ -1,36 +1,18 @@
 // lib/framework-actions.ts
-"use server";
+import { createClient } from "@/lib/supabase-browser";
+import { Database } from "@/types/supabase";
 
-import { createClient } from "@/lib/supabase-server";
-
-// -----------------------------
-// Types
-// -----------------------------
-export interface PillarInput {
+type PillarInput = {
   name: string;
   description: string;
   sort_order: number;
-}
-
-export interface ThemeInput {
-  name: string;
-  description: string;
-  sort_order: number;
-  pillar_id: string;
-}
-
-export interface SubthemeInput {
-  name: string;
-  description: string;
-  sort_order: number;
-  theme_id: string;
-}
+};
 
 // -----------------------------
 // Pillars
 // -----------------------------
 export async function addPillar(data: PillarInput) {
-  const supabase = await createClient(); // ✅ await here
+  const supabase = createClient();
 
   const { error } = await supabase
     .from("pillars")
@@ -42,76 +24,29 @@ export async function addPillar(data: PillarInput) {
       },
     ]);
 
-  if (error) {
-    console.error("Error inserting pillar:", error);
-    throw new Error(error.message);
-  }
-}
-
-export async function updatePillar(id: string, updates: Partial<PillarInput>) {
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("pillars").update(updates).eq("id", id);
-
-  if (error) {
-    console.error("Error updating pillar:", error);
-    throw new Error(error.message);
-  }
+  if (error) throw error;
 }
 
 export async function deletePillar(id: string) {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { error } = await supabase.from("pillars").delete().eq("id", id);
 
-  if (error) {
-    console.error("Error deleting pillar:", error);
-    throw new Error(error.message);
-  }
+  if (error) throw error;
 }
 
 // -----------------------------
-// Themes
+// Theme stubs
 // -----------------------------
-export async function addTheme(data: ThemeInput) {
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("themes")
-    .insert([
-      {
-        name: data.name,
-        description: data.description,
-        sort_order: data.sort_order,
-        pillar_id: data.pillar_id,
-      },
-    ]);
-
-  if (error) {
-    console.error("Error inserting theme:", error);
-    throw new Error(error.message);
-  }
+export async function deleteTheme(id: string) {
+  console.log("Stub: deleteTheme not implemented yet. ID:", id);
+  return { success: false, message: "deleteTheme not implemented" };
 }
 
 // -----------------------------
-// Subthemes
+// Subtheme stubs
 // -----------------------------
-export async function addSubtheme(data: SubthemeInput) {
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("subthemes")
-    .insert([
-      {
-        name: data.name,
-        description: data.description,
-        sort_order: data.sort_order,
-        theme_id: data.theme_id,
-      },
-    ]);
-
-  if (error) {
-    console.error("Error inserting subtheme:", error);
-    throw new Error(error.message);
-  }
+export async function deleteSubtheme(id: string) {
+  console.log("Stub: deleteSubtheme not implemented yet. ID:", id);
+  return { success: false, message: "deleteSubtheme not implemented" };
 }
