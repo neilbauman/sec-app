@@ -2,7 +2,6 @@
 "use server";
 
 import { getSupabaseClient } from "@/lib/supabase-server";
-import type { Database } from "@/types/supabase";
 
 /** Small helper to generate a short ref code if the column is required */
 function generateRefCode(name: string) {
@@ -11,27 +10,15 @@ function generateRefCode(name: string) {
   return `${base}-${rand}`;
 }
 
-// Supabase table types
-type Pillar = Database["public"]["Tables"]["pillars"]["Row"];
-type PillarInsert = Database["public"]["Tables"]["pillars"]["Insert"];
-
-type Theme = Database["public"]["Tables"]["themes"]["Row"];
-type ThemeInsert = Database["public"]["Tables"]["themes"]["Insert"];
-
-type Subtheme = Database["public"]["Tables"]["subthemes"]["Row"];
-type SubthemeInsert = Database["public"]["Tables"]["subthemes"]["Insert"];
-
 /** Pillars */
-export async function addPillar(
-  data: Omit<PillarInsert, "ref_code" | "id">
-) {
+export async function addPillar(data: { name: string; description: string; sort_order: number }) {
   const supabase = getSupabaseClient();
-  const payload: PillarInsert = {
+  const payload = {
     ref_code: generateRefCode(data.name),
     ...data,
   };
 
-  const { error } = await supabase.from("pillars").insert([payload]);
+  const { error } = await supabase.from("pillars").insert([payload as any]);
   if (error) throw error;
 }
 
@@ -42,9 +29,9 @@ export async function deletePillar(id: string) {
 }
 
 /** Themes */
-export async function addTheme(data: ThemeInsert) {
+export async function addTheme(data: { pillar_id: string; name: string; description: string; sort_order: number }) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("themes").insert([data]);
+  const { error } = await supabase.from("themes").insert([data as any]);
   if (error) throw error;
 }
 
@@ -55,9 +42,9 @@ export async function deleteTheme(id: string) {
 }
 
 /** Subthemes */
-export async function addSubtheme(data: SubthemeInsert) {
+export async function addSubtheme(data: { theme_id: string; name: string; description: string; sort_order: number }) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("subthemes").insert([data]);
+  const { error } = await supabase.from("subthemes").insert([data as any]);
   if (error) throw error;
 }
 
