@@ -1,172 +1,153 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import PageHeader from "../ui/PageHeader";
-import {
-  Pillar,
-  Theme,
-  Subtheme,
-  fetchFramework,
-} from "@/lib/framework-client";
 import {
   addPillar,
   addTheme,
   addSubtheme,
+  fetchFramework,
   deletePillar,
   deleteTheme,
   deleteSubtheme,
 } from "@/lib/framework-actions";
+import type { Pillar, Theme, Subtheme } from "@/lib/framework-client";
 
-export default function FrameworkEditor() {
-  const [pillars, setPillars] = useState<Pillar[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function FrameworkEditor({ data }: { data: Pillar[] }) {
+  const [pillars, setPillars] = useState<Pillar[]>(data);
 
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const data = await fetchFramework();
-        setPillars(data);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
+    setPillars(data);
+  }, [data]);
 
-  async function handleAddPillar() {
+  // Add a new pillar
+  const handleAddPillar = async () => {
     const name = prompt("Enter pillar name:");
     if (!name) return;
-    await addPillar({ name, description: "", sort_order: pillars.length + 1 });
-    const data = await fetchFramework();
-    setPillars(data);
-  }
 
-  async function handleAddTheme(pillarId: string) {
+    const ref_code = crypto.randomUUID(); // ✅ Generate unique ref_code
+
+    await addPillar({
+      ref_code,
+      name,
+      description: "",
+      sort_order: pillars.length + 1,
+    });
+
+    const updated = await fetchFramework();
+    setPillars(updated);
+  };
+
+  // Add a new theme under a pillar
+  const handleAddTheme = async (pillarId: string) => {
     const name = prompt("Enter theme name:");
     if (!name) return;
+
+    const pillar = pillars.find((p) => p.id === pillarId);
+    const count = pillar?.themes?.length ?? 0;
+
     await addTheme({
       pillar_id: pillarId,
       name,
       description: "",
-      sort_order: 1,
+      sort_order: count + 1,
     });
-    const data = await fetchFramework();
-    setPillars(data);
-  }
 
-  async function handleAddSubtheme(themeId: string) {
+    const updated = await fetchFramework();
+    setPillars(updated);
+  };
+
+  // Add a subtheme under a theme
+  const handleAddSubtheme = async (themeId: string) => {
     const name = prompt("Enter subtheme name:");
     if (!name) return;
+
+    const theme = pillars.flatMap((p) => p.themes || []).find((t) => t.id === themeId);
+    const count = theme?.subthemes?.length ?? 0;
+
     await addSubtheme({
       theme_id: themeId,
       name,
       description: "",
-      sort_order: 1,
+      sort_order: count + 1,
     });
-    const data = await fetchFramework();
-    setPillars(data);
-  }
 
-  async function handleDeletePillar(id: string) {
-    if (!confirm("Delete this pillar?")) return;
-    await deletePillar(id);
-    const data = await fetchFramework();
-    setPillars(data);
-  }
-
-  async function handleDeleteTheme(id: string) {
-    if (!confirm("Delete this theme?")) return;
-    await deleteTheme(id);
-    const data = await fetchFramework();
-    setPillars(data);
-  }
-
-  async function handleDeleteSubtheme(id: string) {
-    if (!confirm("Delete this subtheme?")) return;
-    await deleteSubtheme(id);
-    const data = await fetchFramework();
-    setPillars(data);
-  }
+    const updated = await fetchFramework();
+    setPillars(updated);
+  };
 
   return (
-    <div className="p-4">
+    <div>
       <PageHeader
         title="Framework Editor"
-        description="Manage pillars, themes, and subthemes."
-        breadcrumb={[{ label: "Dashboard", href: "/" }, { label: "Framework" }]}
+        description="Manage pillars, themes, and subthemes"
+        breadcrumb={[
+          { label: "Home", href: "/" },
+          { label: "Configuration" },
+          { label: "Framework Editor" },
+        ]}
       />
 
       <button
         onClick={handleAddPillar}
-        className="mb-4 px-4 py-2 bg-blue-600 text-white rounded"
+        className="px-3 py-1 bg-[#b7410e] text-white rounded mb-4"
       >
         + Add Pillar
       </button>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <div className="space-y-6">
-          {pillars.map((pillar) => (
-            <div key={pillar.id} className="border rounded p-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">{pillar.name}</h2>
-                <button
-                  onClick={() => handleDeletePillar(pillar.id)}
-                  className="text-red-600 text-sm"
-                >
-                  Delete
-                </button>
-              </div>
+      <ul>
+        {pillars.map((pillar) => (
+          <li key={pillar.id} className="mb-4">
+            <div className="font-bold text-lg">{pillar.name}</div>
+            <button
+              onClick={() => handleAddTheme(pillar.id)}
+              className="ml-2 text-sm text-blue-600"
+            >
+              + Add Theme
+            </button>
+            <button
+              onClick={() => deletePillar(pillar.id)}
+              className="ml-2 text-sm text-red-600"
+            >
+              Delete Pillar
+            </button>
 
-              <button
-                onClick={() => handleAddTheme(pillar.id)}
-                className="mt-2 px-3 py-1 bg-green-600 text-white rounded text-sm"
-              >
-                + Add Theme
-              </button>
+            <ul className="ml-6 mt-2">
+              {pillar.themes?.map((theme) => (
+                <li key={theme.id} className="mb-2">
+                  <div className="font-semibold">{theme.name}</div>
+                  <button
+                    onClick={() => handleAddSubtheme(theme.id)}
+                    className="ml-2 text-sm text-blue-600"
+                  >
+                    + Add Subtheme
+                  </button>
+                  <button
+                    onClick={() => deleteTheme(theme.id)}
+                    className="ml-2 text-sm text-red-600"
+                  >
+                    Delete Theme
+                  </button>
 
-              <div className="ml-4 mt-2 space-y-2">
-                {pillar.themes?.map((theme: Theme) => (
-                  <div key={theme.id} className="border rounded p-2">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-medium">{theme.name}</h3>
-                      <button
-                        onClick={() => handleDeleteTheme(theme.id)}
-                        className="text-red-600 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={() => handleAddSubtheme(theme.id)}
-                      className="mt-1 px-2 py-1 bg-purple-600 text-white rounded text-xs"
-                    >
-                      + Add Subtheme
-                    </button>
-
-                    <ul className="ml-4 mt-1 list-disc text-sm">
-                      {theme.subthemes?.map((s: Subtheme) => (
-                        <li key={s.id} className="flex justify-between">
-                          <span>{s.name}</span>
-                          <button
-                            onClick={() => handleDeleteSubtheme(s.id)}
-                            className="text-red-600 text-xs"
-                          >
-                            Delete
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+                  <ul className="ml-6 mt-1">
+                    {theme.subthemes?.map((s) => (
+                      <li key={s.id} className="text-sm">
+                        {s.name}
+                        <button
+                          onClick={() => deleteSubtheme(s.id)}
+                          className="ml-2 text-xs text-red-600"
+                        >
+                          Delete
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
