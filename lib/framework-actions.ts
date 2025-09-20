@@ -1,7 +1,11 @@
 // /lib/framework-actions.ts
-// Safe actions — addPillar is real, others are still stubs.
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/types/supabase";
 
-import { supabase } from "@/lib/supabase-browser";
+const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 //
 // Pillars
@@ -28,6 +32,7 @@ export async function addPillar(data: {
   return Promise.resolve();
 }
 
+// Keep others stubbed
 export async function editPillar(
   id: string,
   updates: { name: string; description: string; sort_order: number }
@@ -41,9 +46,6 @@ export async function deletePillar(id: string) {
   return Promise.resolve();
 }
 
-//
-// Themes
-//
 export async function addTheme(
   pillarId: string,
   data: { name: string; description: string; sort_order: number }
@@ -65,9 +67,6 @@ export async function deleteTheme(id: string) {
   return Promise.resolve();
 }
 
-//
-// Subthemes
-//
 export async function addSubtheme(
   themeId: string,
   data: { name: string; description: string; sort_order: number }
