@@ -55,17 +55,7 @@ interface FrameworkEditorProps {
   page: "primary";
 }
 
-type ModalType =
-  | "add-pillar"
-  | "edit-pillar"
-  | "delete-pillar"
-  | "add-theme"
-  | "edit-theme"
-  | "delete-theme"
-  | "add-subtheme"
-  | "edit-subtheme"
-  | "delete-subtheme"
-  | null;
+type ModalType = "add-pillar" | null;
 
 export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
   const [pillars, setPillars] = useState<Pillar[]>([]);
@@ -196,7 +186,7 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b text-left text-sm text-gray-700">
-                <th className="w-1/5 py-2">Type / Ref Code</th>
+                <th className="w-1/5 py-2">Type</th>
                 <th className="w-3/5 py-2">Name / Description</th>
                 <th className="w-1/10 py-2 text-center">Sort Order</th>
                 <th className="w-1/10 py-2 text-right">Actions</th>
@@ -210,7 +200,6 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
                   index={pIndex}
                   expanded={expanded}
                   toggleExpand={toggleExpand}
-                  editMode={editMode}
                 />
               ))}
             </tbody>
@@ -218,7 +207,6 @@ export default function FrameworkEditor({ group, page }: FrameworkEditorProps) {
         )}
       </div>
 
-      {/* Add Pillar Modal */}
       {modalType === "add-pillar" && (
         <Modal
           title="Add Pillar"
@@ -239,13 +227,11 @@ function PillarRow({
   index,
   expanded,
   toggleExpand,
-  editMode,
 }: {
   pillar: Pillar;
   index: number;
   expanded: Set<string>;
   toggleExpand: (id: string) => void;
-  editMode: boolean;
 }) {
   const isOpen = expanded.has(pillar.id);
   return (
@@ -269,13 +255,7 @@ function PillarRow({
           <div className="text-sm text-gray-500">{pillar.description}</div>
         </td>
         <td className="py-2 text-center">{pillar.sort_order}</td>
-        <td className="py-2 text-right">
-          {editMode && (
-            <button className="text-blue-600 hover:text-blue-800">
-              <Edit className="h-4 w-4 inline" />
-            </button>
-          )}
-        </td>
+        <td />
       </tr>
       {isOpen &&
         pillar.themes.map((theme, tIndex) => (
@@ -298,20 +278,65 @@ function ThemeRow({
   pIndex: number;
 }) {
   return (
-    <tr className="border-b bg-gray-50">
-      <td className="py-2 pr-2 pl-8">
-        <span className="rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">
-          Theme
+    <>
+      <tr className="border-b bg-gray-50">
+        <td className="py-2 pr-2 pl-8">
+          <span className="rounded bg-green-100 text-green-800 px-2 py-0.5 text-xs">
+            Theme
+          </span>
+          <span className="ml-2 text-sm text-gray-600">
+            T{pIndex + 1}.{tIndex + 1}
+          </span>
+        </td>
+        <td className="py-2">
+          <div className="font-medium">{theme.name}</div>
+          <div className="text-sm text-gray-500">{theme.description}</div>
+        </td>
+        <td className="py-2 text-center">{theme.sort_order}</td>
+        <td />
+      </tr>
+      {theme.subthemes.map((sub, sIndex) => (
+        <SubthemeRow
+          key={sub.id}
+          sub={sub}
+          sIndex={sIndex}
+          tIndex={tIndex}
+          pIndex={pIndex}
+        />
+      ))}
+    </>
+  );
+}
+
+//
+// Subtheme Row
+//
+function SubthemeRow({
+  sub,
+  sIndex,
+  tIndex,
+  pIndex,
+}: {
+  sub: Subtheme;
+  sIndex: number;
+  tIndex: number;
+  pIndex: number;
+}) {
+  return (
+    <tr className="border-b">
+      <td className="py-2 pr-2 pl-12">
+        <span className="rounded bg-red-100 text-red-800 px-2 py-0.5 text-xs">
+          Subtheme
         </span>
         <span className="ml-2 text-sm text-gray-600">
-          T{pIndex + 1}.{tIndex + 1}
+          ST{pIndex + 1}.{tIndex + 1}.{sIndex + 1}
         </span>
       </td>
       <td className="py-2">
-        <div className="font-medium">{theme.name}</div>
-        <div className="text-sm text-gray-500">{theme.description}</div>
+        <div className="font-medium">{sub.name}</div>
+        <div className="text-sm text-gray-500">{sub.description}</div>
       </td>
-      <td className="py-2 text-center">{theme.sort_order}</td>
+      <td className="py-2 text-center">{sub.sort_order}</td>
       <td />
     </tr>
   );
