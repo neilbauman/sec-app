@@ -4,10 +4,26 @@
 import { createClient } from "@/lib/supabase-server";
 import type { Database } from "@/types/supabase";
 
-// Supabase Insert types
-type PillarInsert = Database["public"]["Tables"]["pillars"]["Insert"];
-type ThemeInsert = Database["public"]["Tables"]["themes"]["Insert"];
-type SubthemeInsert = Database["public"]["Tables"]["subthemes"]["Insert"];
+// Inline input types
+type PillarInsert = {
+  name: string;
+  description: string;
+  sort_order: number;
+};
+
+type ThemeInsert = {
+  pillarId: string;
+  name: string;
+  description: string;
+  sort_order: number;
+};
+
+type SubthemeInsert = {
+  themeId: string;
+  name: string;
+  description: string;
+  sort_order: number;
+};
 
 // -----------------------------
 // Pillars
