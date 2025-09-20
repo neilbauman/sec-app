@@ -23,7 +23,7 @@ export default function PageHeader<G extends GroupKey>({
     [
       { label: "Dashboard", href: "/" },
       ...(page === "index"
-        ? [{ label: cfg.name }]
+        ? [{ label: cfg.name }] // group index
         : [
             { label: cfg.name, href: `/${group}` },
             { label: pageInfo.title },
@@ -55,34 +55,26 @@ export default function PageHeader<G extends GroupKey>({
       {/* Breadcrumb */}
       <div className="border-y py-2">
         <nav className="text-sm">
-          <ol className="flex flex-wrap items-center space-x-2 text-gray-500">
-            {crumbs.map((c, i) => (
-              <li key={i} className="flex items-center">
-                {c.href ? (
-                  <Link
-                    href={c.href}
-                    className={`hover:underline ${
-                      i === crumbs.length - 1
-                        ? "font-semibold text-gray-900"
-                        : cfg.color
-                    }`}
-                  >
-                    {c.label}
-                  </Link>
-                ) : (
-                  <span
-                    className={
-                      i === crumbs.length - 1
-                        ? "font-semibold text-gray-900"
-                        : cfg.color
-                    }
-                  >
-                    {c.label}
-                  </span>
-                )}
-                {i < crumbs.length - 1 && <span className="mx-1">/</span>}
-              </li>
-            ))}
+          <ol className="flex flex-wrap items-center space-x-2">
+            {crumbs.map((c, i) => {
+              const isLast = i === crumbs.length - 1;
+              return (
+                <li key={i} className="flex items-center">
+                  {c.href && !isLast ? (
+                    <Link href={c.href} className={`hover:underline ${cfg.color}`}>
+                      {c.label}
+                    </Link>
+                  ) : (
+                    <span
+                      className={`${cfg.color} ${isLast ? "font-semibold" : ""}`}
+                    >
+                      {c.label}
+                    </span>
+                  )}
+                  {!isLast && <span className="mx-1 text-gray-400">/</span>}
+                </li>
+              );
+            })}
           </ol>
         </nav>
       </div>
