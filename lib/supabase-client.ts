@@ -1,10 +1,14 @@
 // lib/supabase-client.ts
-"use client";
-
-import { createClient } from "./supabase-browser";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/supabase";
 
 /**
- * Singleton Supabase client instance for client-side usage.
- * Import this in React components/hooks when you need Supabase.
+ * Universal Supabase client (safe for Pages Router).
+ * Future-proof: if you migrate to App Router, add a supabase-server.ts separately.
  */
-export const supabase = createClient();
+export function getSupabaseClient() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
