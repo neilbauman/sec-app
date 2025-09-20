@@ -18,6 +18,9 @@ export default function PageHeader<G extends GroupKey>({
   const groupInfo = groups[group];
   const pageInfo = groupInfo.pages[page];
 
+  // Prepend "Dashboard" to every breadcrumb
+  const crumbs = [{ label: "Dashboard", href: "/" }, ...breadcrumb];
+
   return (
     <div className="mb-6">
       {/* Toolkit title */}
@@ -41,19 +44,26 @@ export default function PageHeader<G extends GroupKey>({
       </div>
 
       {/* Breadcrumb */}
-      <div className="border-y py-2 text-sm text-gray-500 flex gap-2">
-        {breadcrumb.map((crumb, i) => (
-          <span key={i} className="flex items-center gap-2">
-            {crumb.href ? (
-              <Link href={crumb.href} className="hover:underline">
-                {crumb.label}
-              </Link>
-            ) : (
-              <span>{crumb.label}</span>
-            )}
-            {i < breadcrumb.length - 1 && <span>/</span>}
-          </span>
-        ))}
+      <div
+        className={`border-y py-2 text-sm flex gap-2 ${groupInfo.color}`}
+      >
+        {crumbs.map((crumb, i) => {
+          const isLast = i === crumbs.length - 1;
+          return (
+            <span key={i} className="flex items-center gap-2">
+              {crumb.href && !isLast ? (
+                <Link href={crumb.href} className="hover:underline">
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span className={isLast ? "font-semibold" : ""}>
+                  {crumb.label}
+                </span>
+              )}
+              {i < crumbs.length - 1 && <span>/</span>}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
