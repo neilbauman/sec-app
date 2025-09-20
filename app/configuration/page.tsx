@@ -17,11 +17,8 @@ const tools = [
 export default function ConfigurationPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        group="configuration"
-        page="index"
-        breadcrumb={[{ label: "Configuration" }]}
-      />
+      <PageHeader group="configuration" page="index" />
+
       <div className="prose max-w-none">
         <p>
           Manage and adjust the global configuration of the SSC toolset. Choose
