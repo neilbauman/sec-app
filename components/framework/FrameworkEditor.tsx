@@ -20,8 +20,8 @@ import {
   ChevronsUp,
   Plus,
   Trash2,
-  ArrowUpTray,
-  ArrowDownTray,
+  Upload,
+  Download,
 } from "lucide-react";
 import {
   Dialog,
@@ -178,13 +178,13 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
             <ChevronsUp className="h-4 w-4 mr-1" /> Collapse All
           </Button>
           <ActionIcon
-            icon={ArrowUpTray}
+            icon={Upload}
             label="Upload CSV"
             color="green"
             onClick={() => alert("CSV upload coming soon")}
           />
           <ActionIcon
-            icon={ArrowDownTray}
+            icon={Download}
             label="Download CSV"
             color="green"
             onClick={() => alert("CSV download coming soon")}
@@ -228,7 +228,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
             return (
               <>
                 {/* Pillar Row */}
-                <tr key={pillar.id} className="border-t">
+                <tr key={pillar.id} className="border-t hover:bg-gray-50">
                   <td className="px-3 py-2 align-top">
                     <div className="flex items-center gap-2">
                       <button onClick={() => toggleExpand(pillar.id)}>
@@ -283,7 +283,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                     ]);
                     return (
                       <>
-                        <tr key={theme.id} className="border-t bg-gray-50">
+                        <tr key={theme.id} className="border-t bg-gray-50 hover:bg-gray-100">
                           <td className="px-3 py-2 pl-4 align-top">
                             <div className="flex items-center gap-2">
                               <button onClick={() => toggleExpand(theme.id)}>
@@ -342,7 +342,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                               s.sort_order || sIdx + 1,
                             ]);
                             return (
-                              <tr key={s.id} className="border-t">
+                              <tr key={s.id} className="border-t hover:bg-gray-50">
                                 <td className="px-3 py-2 pl-8 align-top">
                                   <div className="flex items-center gap-2">
                                     <TypeBadge type="subtheme" />
