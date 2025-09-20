@@ -1,17 +1,21 @@
 // app/configuration/primary/page.tsx
 import PageHeader from "@/components/ui/PageHeader";
 import FrameworkEditor from "@/components/framework/FrameworkEditor";
-import { getFrameworkData } from "@/lib/framework-server";
+import { fetchFramework } from "@/lib/framework-client";
 
 export default async function PrimaryFrameworkPage() {
-  const data = await getFrameworkData();
+  const data = await fetchFramework();
 
   return (
     <div className="space-y-6">
       <PageHeader
         group="configuration"
         page="primary"
-        breadcrumb={[{ label: "Configuration", href: "/configuration" }, { label: "Primary Framework" }]}
+        breadcrumb={[
+          { label: "Dashboard", href: "/" },
+          { label: "Configuration", href: "/configuration" },
+          { label: "Primary Framework" },
+        ]}
       />
 
       <div className="bg-white rounded-xl border shadow-sm p-6">
