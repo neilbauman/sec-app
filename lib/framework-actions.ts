@@ -1,6 +1,8 @@
 // lib/framework-actions.ts
+"use server";
+
 import { createClient } from "@/lib/supabase-browser";
-import { Database } from "@/types/supabase";
+import type { Database } from "@/types/supabase";
 
 type PillarInput = {
   name: string;
@@ -12,7 +14,7 @@ type PillarInput = {
 // Pillars
 // -----------------------------
 export async function addPillar(data: PillarInput) {
-  const supabase = createClient();
+  const supabase = createClient<Database>();
 
   const { error } = await supabase
     .from("pillars")
@@ -28,7 +30,7 @@ export async function addPillar(data: PillarInput) {
 }
 
 export async function deletePillar(id: string) {
-  const supabase = createClient();
+  const supabase = createClient<Database>();
 
   const { error } = await supabase.from("pillars").delete().eq("id", id);
 
@@ -36,17 +38,23 @@ export async function deletePillar(id: string) {
 }
 
 // -----------------------------
-// Theme stubs
+// Themes
 // -----------------------------
 export async function deleteTheme(id: string) {
-  console.log("Stub: deleteTheme not implemented yet. ID:", id);
-  return { success: false, message: "deleteTheme not implemented" };
+  const supabase = createClient<Database>();
+
+  const { error } = await supabase.from("themes").delete().eq("id", id);
+
+  if (error) throw error;
 }
 
 // -----------------------------
-// Subtheme stubs
+// Subthemes
 // -----------------------------
 export async function deleteSubtheme(id: string) {
-  console.log("Stub: deleteSubtheme not implemented yet. ID:", id);
-  return { success: false, message: "deleteSubtheme not implemented" };
+  const supabase = createClient<Database>();
+
+  const { error } = await supabase.from("subthemes").delete().eq("id", id);
+
+  if (error) throw error;
 }
