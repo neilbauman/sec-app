@@ -2,21 +2,13 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  Plus,
-  Trash2,
-  Upload,
-  Download,
-} from "lucide-react";
-import Badge from "@/components/ui/badge"; // ✅ default import
-import Button from "@/components/ui/button"; // ✅ default import
+import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import Badge from "@/components/ui/badge";
+import Button from "@/components/ui/button";
 import {
   addPillar,
   addTheme,
   addSubtheme,
-  removeItem,
 } from "@/lib/framework-actions";
 import {
   NormalizedPillar,
@@ -29,21 +21,23 @@ type FrameworkEditorProps = {
 };
 
 export default function FrameworkEditor({ data }: FrameworkEditorProps) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [pillars, setPillars] = useState<NormalizedPillar[]>(data);
   const [editMode, setEditMode] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+  // Toggle expand/collapse
   const toggleExpand = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const expandAll = () => {
     const all: Record<string, boolean> = {};
-    data.forEach((p) => {
+    pillars.forEach((p) => {
       all[p.id] = true;
-      p.themes?.forEach((t) => {
+      p.themes.forEach((t) => {
         all[t.id] = true;
-        t.subthemes?.forEach((st) => {
-          all[st.id] = true;
+        t.subthemes.forEach((s) => {
+          all[s.id] = true;
         });
       });
     });
@@ -54,193 +48,177 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setExpanded({});
   };
 
+  // Action handlers
+  const onAddPillar = () => {
+    const updated = addPillar(pillars);
+    setPillars(updated);
+  };
+
+  const onAddTheme = (pillarId: string) => {
+    const updated = addTheme(pillars, pillarId);
+    setPillars(updated);
+  };
+
+  const onAddSubtheme = (themeId: string) => {
+    const updated = addSubtheme(pillars, themeId);
+    setPillars(updated);
+  };
+
+  // Helpers for rendering
+  const renderBadge = (type: "pillar" | "theme" | "subtheme") => {
+    switch (type) {
+      case "pillar":
+        return <Badge variant="default">Pillar</Badge>;
+      case "theme":
+        return <Badge variant="success">Theme</Badge>;
+      case "subtheme":
+        return <Badge variant="danger">Subtheme</Badge>;
+    }
+  };
+
+  const renderRow = (
+    item: NormalizedPillar | NormalizedTheme | NormalizedSubtheme,
+    type: "pillar" | "theme" | "subtheme",
+    parentId?: string
+  ) => {
+    const isExpanded = expanded[item.id] ?? false;
+    const hasChildren =
+      type === "pillar"
+        ? (item as NormalizedPillar).themes.length > 0
+        : type === "theme"
+        ? (item as NormalizedTheme).subthemes.length > 0
+        : false;
+
+    return (
+      <React.Fragment key={item.id}>
+        <tr>
+          {/* Type/Ref Code */}
+          <td
+            className={`px-4 py-2 align-top ${
+              type === "theme" ? "pl-8" : type === "subtheme" ? "pl-12" : ""
+            }`}
+          >
+            <div className="flex items-center space-x-1">
+              {hasChildren && (
+                <button
+                  onClick={() => toggleExpand(item.id)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </button>
+              )}
+              {renderBadge(type)}
+              <span className="text-xs text-gray-500 ml-1">
+                {(item as any).ref_code}
+              </span>
+            </div>
+          </td>
+
+          {/* Name/Description */}
+          <td className="px-4 py-2 align-top">
+            <div>
+              <div className="font-medium">{item.name}</div>
+              {item.description && (
+                <div className="text-sm text-gray-500">{item.description}</div>
+              )}
+            </div>
+          </td>
+
+          {/* Sort Order */}
+          <td className="px-4 py-2 align-top text-center">
+            {item.sort_order}
+          </td>
+
+          {/* Actions (edit mode only) */}
+          <td className="px-4 py-2 align-top text-right">
+            {editMode && (
+              <div className="flex space-x-1 justify-end">
+                {type === "pillar" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onAddTheme(item.id)}
+                  >
+                    <Plus className="w-4 h-4 text-gray-600" />
+                  </Button>
+                )}
+                {type === "theme" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onAddSubtheme(item.id)}
+                  >
+                    <Plus className="w-4 h-4 text-gray-600" />
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled
+                  title="Remove not yet implemented"
+                >
+                  <Trash2 className="w-4 h-4 text-gray-600" />
+                </Button>
+              </div>
+            )}
+          </td>
+        </tr>
+
+        {/* Children rows */}
+        {isExpanded && type === "pillar" && (item as NormalizedPillar).themes.map((theme) =>
+          renderRow(theme, "theme", item.id)
+        )}
+        {isExpanded && type === "theme" && (item as NormalizedTheme).subthemes.map((sub) =>
+          renderRow(sub, "subtheme", item.id)
+        )}
+      </React.Fragment>
+    );
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Top controls */}
-      <div className="flex items-center justify-between">
+    <div className="bg-white rounded-xl border shadow-sm">
+      <div className="flex justify-between items-center px-4 py-2 border-b">
         <div className="flex space-x-2">
-          <Button size="sm" onClick={expandAll}>
+          <Button size="sm" variant="outline" onClick={expandAll}>
             Expand All
           </Button>
-          <Button size="sm" onClick={collapseAll}>
+          <Button size="sm" variant="outline" onClick={collapseAll}>
             Collapse All
           </Button>
-          {editMode ? (
-            <>
-              <Button
-                size="sm"
-                className="bg-blue-100 text-blue-800 hover:bg-blue-200"
-                onClick={() => addPillar()}
-              >
-                + Add Pillar
-              </Button>
-              <Button
-                size="sm"
-                className="bg-rust-100 text-rust-800 hover:bg-rust-200"
-                onClick={() => setEditMode(false)}
-              >
-                Exit Edit Mode
-              </Button>
-            </>
-          ) : (
-            <Button
-              size="sm"
-              className="bg-rust-100 text-rust-800 hover:bg-rust-200"
-              onClick={() => setEditMode(true)}
-            >
-              Enter Edit Mode
+        </div>
+        <div className="flex space-x-2">
+          {editMode && (
+            <Button size="sm" variant="default" onClick={onAddPillar}>
+              + Add Pillar
             </Button>
           )}
+          <Button
+            size="sm"
+            variant={editMode ? "destructive" : "default"}
+            onClick={() => setEditMode(!editMode)}
+          >
+            {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
+          </Button>
         </div>
-        {editMode && (
-          <div className="flex space-x-2">
-            <Upload className="w-4 h-4 text-gray-600 cursor-pointer" />
-            <Download className="w-4 h-4 text-gray-600 cursor-pointer" />
-          </div>
-        )}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto bg-white border rounded-lg shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="w-1/5 px-4 py-2 text-left font-semibold">
-                Type / Ref Code
-              </th>
-              <th className="w-3/5 px-4 py-2 text-left font-semibold">
-                Name / Description
-              </th>
-              <th className="w-1/10 px-4 py-2 text-center font-semibold">
-                Sort Order
-              </th>
-              <th className="w-1/10 px-4 py-2 text-right font-semibold">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((pillar) => (
-              <React.Fragment key={pillar.id}>
-                {/* Pillar row */}
-                <tr>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => toggleExpand(pillar.id)}
-                        className="text-gray-500"
-                      >
-                        {expanded[pillar.id] ? (
-                          <ChevronDown className="w-4 h-4" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4" />
-                        )}
-                      </button>
-                      <Badge>{`Pillar ${pillar.ref_code}`}</Badge>
-                    </div>
-                  </td>
-                  <td className="px-4 py-2">{pillar.name}</td>
-                  <td className="px-4 py-2 text-center">
-                    {pillar.sort_order}
-                  </td>
-                  <td className="px-4 py-2 text-right">
-                    {editMode && (
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          size="sm"
-                          onClick={() => addTheme(pillar.id)}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => removeItem("pillar", pillar.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-
-                {/* Themes */}
-                {expanded[pillar.id] &&
-                  pillar.themes?.map((theme) => (
-                    <React.Fragment key={theme.id}>
-                      <tr>
-                        <td className="px-4 py-2 pl-10">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => toggleExpand(theme.id)}
-                              className="text-gray-500"
-                            >
-                              {expanded[theme.id] ? (
-                                <ChevronDown className="w-4 h-4" />
-                              ) : (
-                                <ChevronRight className="w-4 h-4" />
-                              )}
-                            </button>
-                            <Badge variant="success">{`Theme ${theme.ref_code}`}</Badge>
-                          </div>
-                        </td>
-                        <td className="px-4 py-2">{theme.name}</td>
-                        <td className="px-4 py-2 text-center">
-                          {theme.sort_order}
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          {editMode && (
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                size="sm"
-                                onClick={() => addSubtheme(theme.id)}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => removeItem("theme", theme.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-
-                      {/* Subthemes */}
-                      {expanded[theme.id] &&
-                        theme.subthemes?.map((sub) => (
-                          <tr key={sub.id}>
-                            <td className="px-4 py-2 pl-16">
-                              <Badge variant="danger">{`Subtheme ${sub.ref_code}`}</Badge>
-                            </td>
-                            <td className="px-4 py-2">{sub.name}</td>
-                            <td className="px-4 py-2 text-center">
-                              {sub.sort_order}
-                            </td>
-                            <td className="px-4 py-2 text-right">
-                              {editMode && (
-                                <div className="flex justify-end space-x-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() =>
-                                      removeItem("subtheme", sub.id)
-                                    }
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                    </React.Fragment>
-                  ))}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <table className="min-w-full text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-4 py-2 text-left w-1/4">Type / Ref Code</th>
+            <th className="px-4 py-2 text-left w-1/2">Name / Description</th>
+            <th className="px-4 py-2 text-center w-1/8">Sort Order</th>
+            <th className="px-4 py-2 text-right w-1/8">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pillars.map((pillar) => renderRow(pillar, "pillar"))}
+        </tbody>
+      </table>
     </div>
   );
 }
