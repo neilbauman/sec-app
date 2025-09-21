@@ -15,17 +15,15 @@ export async function POST(req: Request) {
 
     // Insert pillars, themes, and subthemes
     for (const pillar of pillars) {
-      const { id, ref_code, name, description, sort_order } = pillar;
-      await supabase.from("pillars").insert([{ id, ref_code, name, description, sort_order }]);
+      const { id, name, description, sort_order } = pillar;
+      await supabase.from("pillars").insert([{ id, name, description, sort_order }]);
 
       for (const theme of pillar.themes) {
-        const { id: themeId, ref_code: themeRef, name, description, sort_order } = theme;
+        const { id: themeId, name, description, sort_order } = theme;
         await supabase.from("themes").insert([
           {
             id: themeId,
-            ref_code: themeRef,
-            pillar_id: pillar.id,
-            pillar_code: pillar.ref_code,
+            theme_id: pillar.id, // ✅ FK to pillar
             name,
             description,
             sort_order,
@@ -33,13 +31,11 @@ export async function POST(req: Request) {
         ]);
 
         for (const sub of theme.subthemes) {
-          const { id: subId, ref_code: subRef, name, description, sort_order } = sub;
+          const { id: subId, name, description, sort_order } = sub;
           await supabase.from("subthemes").insert([
             {
               id: subId,
-              ref_code: subRef,
-              theme_id: theme.id,
-              theme_code: theme.ref_code,
+              theme_id: theme.id, // ✅ FK to theme
               name,
               description,
               sort_order,
