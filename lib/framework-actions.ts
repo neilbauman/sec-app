@@ -91,7 +91,7 @@ export async function addPillar(pillars: NestedPillar[]): Promise<NestedPillar[]
   const { data, error } = await supabase
     .from("pillars")
     .insert({
-      name: "New Pillar",
+      name: "Untitled Pillar",
       description: "",
       sort_order: pillars.length + 1,
     } satisfies Omit<Pillar, "id">)
@@ -119,7 +119,7 @@ export async function addTheme(
     .from("themes")
     .insert({
       pillar_id: pillarId,
-      name: "New Theme",
+      name: "Untitled Theme",
       description: "",
       sort_order: pillar.themes.length + 1,
     } satisfies Omit<Theme, "id">)
@@ -154,7 +154,7 @@ export async function addSubtheme(
     .from("subthemes")
     .insert({
       theme_id: themeId,
-      name: "New Subtheme",
+      name: "Untitled Subtheme",
       description: "",
       sort_order: theme.subthemes.length + 1,
     } satisfies Omit<Subtheme, "id">)
