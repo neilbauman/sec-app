@@ -101,7 +101,7 @@ export async function addPillar(pillars: NestedPillar[]): Promise<NestedPillar[]
 
   const newPillars: NestedPillar[] = [
     ...pillars,
-    { ...data, ref_code: "", themes: [] }, // ref_code recalculated in reindex
+    { ...data, ref_code: "", themes: [] }, // ref_code recalculated
   ];
 
   return reindexFramework(newPillars);
@@ -118,7 +118,7 @@ export async function addTheme(
   const { data, error } = await supabase
     .from("themes")
     .insert({
-      pillar_id: pillarId,
+      theme_id: pillarId, // ✅ correct FK per schema
       name: "Untitled Theme",
       description: "",
       sort_order: pillar.themes.length + 1,
@@ -153,7 +153,7 @@ export async function addSubtheme(
   const { data, error } = await supabase
     .from("subthemes")
     .insert({
-      theme_id: themeId,
+      theme_id: themeId, // ✅ assuming schema like themes
       name: "Untitled Subtheme",
       description: "",
       sort_order: theme.subthemes.length + 1,
