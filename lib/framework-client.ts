@@ -61,7 +61,6 @@ export async function fetchFramework(): Promise<NestedPillar[]> {
     .order("sort_order", { ascending: true });
   if (subthemeError) throw subthemeError;
 
-  // Group subthemes by theme
   const subthemesByTheme: Record<string, NestedSubtheme[]> = {};
   (subthemes || []).forEach((s, sIdx) => {
     const ref_code = `ST${s.sort_order ?? sIdx + 1}`;
@@ -69,7 +68,6 @@ export async function fetchFramework(): Promise<NestedPillar[]> {
     subthemesByTheme[s.theme_id].push({ ...s, ref_code });
   });
 
-  // Group themes by pillar
   const themesByPillar: Record<string, NestedTheme[]> = {};
   (themes || []).forEach((t, tIdx) => {
     const ref_code = `T${t.sort_order ?? tIdx + 1}`;
@@ -81,7 +79,6 @@ export async function fetchFramework(): Promise<NestedPillar[]> {
     });
   });
 
-  // Attach everything to pillars
   return (pillars || []).map((p, pIdx) => {
     const ref_code = `P${p.sort_order ?? pIdx + 1}`;
     return {
@@ -90,4 +87,32 @@ export async function fetchFramework(): Promise<NestedPillar[]> {
       themes: themesByPillar[p.id] || [],
     };
   });
+}
+
+// ---------- Update Helpers ----------
+export async function updatePillar(
+  id: string,
+  fields: Partial<Pick<Pillar, "name" | "description">>
+) {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("pillars").update(fields).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateTheme(
+  id: string,
+  fields: Partial<Pick<Theme, "name" | "description">>
+) {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("themes").update(fields).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateSubtheme(
+  id: string,
+  fields: Partial<Pick<Subtheme, "name" | "description">>
+) {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("subthemes").update(fields).eq("id", id);
+  if (error) throw error;
 }
