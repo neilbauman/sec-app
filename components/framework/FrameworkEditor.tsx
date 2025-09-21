@@ -1,14 +1,7 @@
+// components/framework/FrameworkEditor.tsx
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Trash2, Upload, Download } from "lucide-react";
-import Badge from "@/components/ui/badge";
-import Button from "@/components/ui/button";
-import {
-  NormalizedPillar,
-  NormalizedTheme,
-  NormalizedSubtheme,
-} from "@/lib/framework-utils";
+import React, { useState } from "react";
 import {
   addPillar,
   addTheme,
@@ -17,43 +10,26 @@ import {
   removeTheme,
   removeSubtheme,
 } from "@/lib/framework-actions";
+import {
+  NormalizedPillar,
+  NormalizedTheme,
+  NormalizedSubtheme,
+} from "@/lib/framework-utils";
+import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import Badge from "@/components/ui/badge";
+import Button from "@/components/ui/button";
 
-// Props expect already-normalized data
-export type FrameworkEditorProps = {
+type FrameworkEditorProps = {
   data: NormalizedPillar[];
 };
-
-// Small indentation used for nested rows (kept subtle per UI feedback)
-const INDENT = "pl-5"; // slightly smaller than before
 
 export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [pillars, setPillars] = useState<NormalizedPillar[]>(data);
   const [editMode, setEditMode] = useState(false);
-
-  // track expanded state per id
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
 
-  // quick helpers
-  const expandAll = () => {
-    const p: Record<string, boolean> = {};
-    const t: Record<string, boolean> = {};
-    pillars.forEach((pi) => {
-      p[pi.id] = true;
-      pi.themes?.forEach((th) => {
-        t[th.id] = true;
-      });
-    });
-    setOpenPillars(p);
-    setOpenThemes(t);
-  };
-
-  const collapseAll = () => {
-    setOpenPillars({});
-    setOpenThemes({});
-  };
-
-  // ---- Action handlers (stay in edit mode after any action) ----
+  // ---------- Action handlers ----------
   const onAddPillar = () => {
     const updated = addPillar(pillars);
     setPillars(updated);
@@ -65,8 +41,8 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setOpenPillars((s) => ({ ...s, [pillarId]: true }));
   };
 
-  const onAddSubtheme = (themeId: string, pillarId: string) => {
-    const updated = addSubtheme(pillars, themeId);
+  const onAddSubtheme = (pillarId: string, themeId: string) => {
+    const updated = addSubtheme(pillars, pillarId, themeId);
     setPillars(updated);
     setOpenPillars((s) => ({ ...s, [pillarId]: true }));
     setOpenThemes((s) => ({ ...s, [themeId]: true }));
@@ -77,227 +53,157 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setPillars(updated);
   };
 
-  const onRemoveTheme = (themeId: string) => {
-    const updated = removeTheme(pillars, themeId);
+  const onRemoveTheme = (pillarId: string, themeId: string) => {
+    const updated = removeTheme(pillars, pillarId, themeId);
     setPillars(updated);
   };
 
-  const onRemoveSubtheme = (subId: string) => {
-    const updated = removeSubtheme(pillars, subId);
+  const onRemoveSubtheme = (pillarId: string, themeId: string, subthemeId: string) => {
+    const updated = removeSubtheme(pillars, pillarId, themeId, subthemeId);
     setPillars(updated);
   };
 
-  // compute display ref codes on the fly so we never depend on DB columns
-  const displayPillars = useMemo(() => {
-    return pillars.map((p, pIdx) => {
-      const pCode = `P${pIdx + 1}`;
-      const themes = (p.themes || []).map((t, tIdx) => {
-        const tCode = `T${pIdx + 1}.${tIdx + 1}`;
-        const subs = (t.subthemes || []).map((s, sIdx) => ({
-          ...s,
-          __ref: `ST${pIdx + 1}.${tIdx + 1}.${sIdx + 1}`,
-        }));
-        return { ...t, __ref: tCode, subthemes: subs } as NormalizedTheme & { __ref: string; subthemes: (NormalizedSubtheme & { __ref: string })[] };
-      });
-      return { ...p, __ref: pCode, themes } as NormalizedPillar & { __ref: string; themes: (NormalizedTheme & { __ref: string; subthemes: (NormalizedSubtheme & { __ref: string })[] })[] };
-    });
-  }, [pillars]);
-
-  // ---- UI pieces ----
-  const HeaderBar = () => (
-    <div className="flex items-center justify-between mb-3">
-      {/* Left controls */}
-      <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" onClick={expandAll}>
-          Expand all
-        </Button>
-        <Button size="sm" variant="outline" onClick={collapseAll}>
-          Collapse all
-        </Button>
-      </div>
-
-      {/* Right controls */}
-      <div className="flex items-center gap-2">
-        {editMode && (
-          <>
-            <button aria-label="Upload CSV" className="p-2 rounded hover:bg-gray-100">
-              <Upload className="w-5 h-5 text-gray-600" />
-            </button>
-            <button aria-label="Download CSV" className="p-2 rounded hover:bg-gray-100">
-              <Download className="w-5 h-5 text-gray-600" />
-            </button>
-          </>
-        )}
-
-        {/* Add Pillar (blue) to the left of Edit toggle (rust) */}
+  // ---------- Render ----------
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
         {editMode && (
           <Button size="sm" variant="primary" onClick={onAddPillar}>
             + Add Pillar
           </Button>
         )}
-
-        <Button size="sm" variant="rust" onClick={() => setEditMode((v) => !v)}>
+        <Button
+          size="sm"
+          variant="rust"
+          onClick={() => setEditMode(!editMode)}
+        >
           {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
         </Button>
       </div>
-    </div>
-  );
 
-  const TableHeader = () => (
-    <div className="grid grid-cols-[26%_54%_10%_10%] text-xs font-semibold text-gray-500 border-b pb-2">
-      <div>Type / Ref Code</div>
-      <div>Name / Description</div>
-      <div className="text-center">Sort</div>
-      <div className="text-right">Actions</div>
-    </div>
-  );
-
-  const CaretButton: React.FC<{ open: boolean; onClick: () => void }> = ({ open, onClick }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className="mr-2 rounded p-1 hover:bg-gray-100"
-      aria-label={open ? "Collapse" : "Expand"}
-    >
-      {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-    </button>
-  );
-
-  return (
-    <div className="bg-white rounded-xl border shadow-sm p-4 md:p-6">
-      <HeaderBar />
-      <TableHeader />
-
-      {/* Rows */}
-      <div className="divide-y">
-        {displayPillars.map((p) => {
-          const pOpen = !!openPillars[p.id];
-          return (
-            <div key={p.id} className="py-3">
-              {/* Pillar row */}
-              <div className="grid grid-cols-[26%_54%_10%_10%] items-start">
-                {/* Type/Ref */}
-                <div className="flex items-center">
-                  <CaretButton open={pOpen} onClick={() => setOpenPillars((s) => ({ ...s, [p.id]: !pOpen }))} />
-                  <div className={`flex items-center gap-2 ${INDENT}`}>
-                    <Badge variant="default">Pillar</Badge>
-                    <span className="text-xs text-gray-500">{p.__ref}</span>
-                  </div>
-                </div>
-                {/* Name/Description */}
-                <div className={`${INDENT}`}>
-                  <div className="font-medium text-gray-900">{p.name}</div>
-                  <div className="text-sm text-gray-600">{p.description}</div>
-                </div>
-                <div className="text-center tabular-nums text-gray-700">{p.sort_order}</div>
-                <div className="flex items-center justify-end gap-2">
-                  {editMode && (
-                    <>
-                      <button
-                        className="p-1.5 rounded hover:bg-gray-100"
-                        title="Add Theme"
-                        onClick={() => onAddTheme(p.id)}
-                      >
-                        <Plus className="w-4 h-4 text-gray-600" />
-                      </button>
-                      <button
-                        className="p-1.5 rounded hover:bg-gray-100"
-                        title="Delete Pillar"
-                        onClick={() => onRemovePillar(p.id)}
-                      >
-                        <Trash2 className="w-4 h-4 text-gray-600" />
-                      </button>
-                    </>
+      <div className="space-y-3">
+        {pillars.map((pillar) => (
+          <div key={pillar.id} className="border rounded-lg p-3">
+            {/* Pillar row */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    setOpenPillars((s) => ({
+                      ...s,
+                      [pillar.id]: !s[pillar.id],
+                    }))
+                  }
+                >
+                  {openPillars[pillar.id] ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
                   )}
-                </div>
+                </button>
+                <Badge variant="default">Pillar</Badge>
+                <span className="font-medium">{pillar.name}</span>
+                <span className="text-gray-500 text-xs">{pillar.ref_code}</span>
               </div>
-
-              {/* Themes */}
-              {pOpen && (p.themes?.length ?? 0) > 0 && (
-                <div className="mt-2 space-y-2">
-                  {p.themes!.map((t, tIdx) => {
-                    const tOpen = !!openThemes[t.id];
-                    return (
-                      <div key={t.id} className="grid grid-cols-[26%_54%_10%_10%] items-start">
-                        {/* Type/Ref */}
-                        <div className="flex items-center">
-                          <div className={`ml-6 ${INDENT} -ml-1 flex items-center`}>
-                            <CaretButton
-                              open={tOpen}
-                              onClick={() => setOpenThemes((s) => ({ ...s, [t.id]: !tOpen }))}
-                            />
-                            <div className="flex items-center gap-2">
-                              <Badge variant="success">Theme</Badge>
-                              <span className="text-xs text-gray-500">{t.__ref}</span>
-                            </div>
-                          </div>
-                        </div>
-                        {/* Name/Description */}
-                        <div className={`ml-6 ${INDENT}`}>
-                          <div className="font-medium text-gray-900">{t.name}</div>
-                          <div className="text-sm text-gray-600">{t.description}</div>
-                        </div>
-                        <div className="text-center tabular-nums text-gray-700">{t.sort_order}</div>
-                        <div className="flex items-center justify-end gap-2">
-                          {editMode && (
-                            <>
-                              <button
-                                className="p-1.5 rounded hover:bg-gray-100"
-                                title="Add Subtheme"
-                                onClick={() => onAddSubtheme(t.id, p.id)}
-                              >
-                                <Plus className="w-4 h-4 text-gray-600" />
-                              </button>
-                              <button
-                                className="p-1.5 rounded hover:bg-gray-100"
-                                title="Delete Theme"
-                                onClick={() => onRemoveTheme(t.id)}
-                              >
-                                <Trash2 className="w-4 h-4 text-gray-600" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Subthemes */}
-                        {tOpen && (t.subthemes?.length ?? 0) > 0 && (
-                          <div className="col-span-4 mt-2 space-y-2">
-                            {t.subthemes!.map((s) => (
-                              <div key={s.id} className="grid grid-cols-[26%_54%_10%_10%] items-start">
-                                <div className="flex items-center">
-                                  <div className={`ml-12 ${INDENT} flex items-center gap-2`}>
-                                    <Badge variant="danger">Subtheme</Badge>
-                                    <span className="text-xs text-gray-500">{s.__ref}</span>
-                                  </div>
-                                </div>
-                                <div className={`ml-12 ${INDENT}`}>
-                                  <div className="font-medium text-gray-900">{s.name}</div>
-                                  <div className="text-sm text-gray-600">{s.description}</div>
-                                </div>
-                                <div className="text-center tabular-nums text-gray-700">{s.sort_order}</div>
-                                <div className="flex items-center justify-end gap-2">
-                                  {editMode && (
-                                    <button
-                                      className="p-1.5 rounded hover:bg-gray-100"
-                                      title="Delete Subtheme"
-                                      onClick={() => onRemoveSubtheme(s.id)}
-                                    >
-                                      <Trash2 className="w-4 h-4 text-gray-600" />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+              {editMode && (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onAddTheme(pillar.id)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => onRemovePillar(pillar.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               )}
             </div>
-          );
-        })}
+
+            {/* Themes */}
+            {openPillars[pillar.id] && (
+              <div className="ml-6 mt-2 space-y-2">
+                {pillar.themes.map((theme) => (
+                  <div key={theme.id} className="border-l-2 pl-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            setOpenThemes((s) => ({
+                              ...s,
+                              [theme.id]: !s[theme.id],
+                            }))
+                          }
+                        >
+                          {openThemes[theme.id] ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
+                        </button>
+                        <Badge variant="success">Theme</Badge>
+                        <span>{theme.name}</span>
+                        <span className="text-gray-500 text-xs">{theme.ref_code}</span>
+                      </div>
+                      {editMode && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onAddSubtheme(pillar.id, theme.id)}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => onRemoveTheme(pillar.id, theme.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Subthemes */}
+                    {openThemes[theme.id] && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {theme.subthemes.map((sub) => (
+                          <div
+                            key={sub.id}
+                            className="flex justify-between items-center"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Badge variant="danger">Subtheme</Badge>
+                              <span>{sub.name}</span>
+                              <span className="text-gray-500 text-xs">{sub.ref_code}</span>
+                            </div>
+                            {editMode && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() =>
+                                  onRemoveSubtheme(pillar.id, theme.id, sub.id)
+                                }
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
