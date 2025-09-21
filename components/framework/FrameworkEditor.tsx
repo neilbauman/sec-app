@@ -2,10 +2,18 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, ChevronRight, ChevronDown, ChevronsUp, ChevronsDown, Upload, Download } from "lucide-react";
-import { NestedPillar, NestedTheme, Subtheme } from "@/lib/framework-client";
-import { addPillar, addTheme, addSubtheme, deletePillar, deleteTheme, deleteSubtheme } from "@/lib/framework-actions";
-import PageHeader from "@/components/ui/PageHeader";
+import type { NestedPillar, NestedTheme, Subtheme } from "@/lib/framework-client";
+import {
+  addPillar,
+  addTheme,
+  addSubtheme,
+  deletePillar,
+  deleteTheme,
+  deleteSubtheme,
+} from "@/lib/framework-actions";
+import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 type FrameworkEditorProps = {
   data: NestedPillar[];
@@ -13,43 +21,13 @@ type FrameworkEditorProps = {
 
 export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [pillars, setPillars] = useState<NestedPillar[]>(data);
-  const [editMode, setEditMode] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [editMode, setEditMode] = useState(false);
 
-  // ----- Helpers -----
-  function getRefCodePillar(idx: number) {
-    return `P${idx + 1}`;
-  }
-  function getRefCodeTheme(pillarIndex: number, themeIndex: number) {
-    return `T${pillarIndex + 1}.${themeIndex + 1}`;
-  }
-  function getRefCodeSub(pillarIndex: number, themeIndex: number, subIndex: number) {
-    return `ST${pillarIndex + 1}.${themeIndex + 1}.${subIndex + 1}`;
-  }
-
-  function toggleExpand(id: string) {
+  const toggleExpand = (id: string) => {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  }
+  };
 
-  function expandAll() {
-    const all: Record<string, boolean> = {};
-    pillars.forEach((p) => {
-      all[p.id] = true;
-      p.themes.forEach((t) => {
-        all[t.id] = true;
-        t.subthemes.forEach((s) => {
-          all[s.id] = true;
-        });
-      });
-    });
-    setExpanded(all);
-  }
-
-  function collapseAll() {
-    setExpanded({});
-  }
-
-  // ----- Add Handlers -----
   async function handleAddPillar() {
     const name = prompt("Enter pillar name:");
     if (!name) return;
@@ -57,10 +35,12 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     window.location.reload();
   }
 
-  async function handleAddTheme(pillarId: string, pillarIndex: number) {
+  async function handleAddTheme(pillarId: string) {
     const name = prompt("Enter theme name:");
     if (!name) return;
-    const count = pillars[pillarIndex].themes.length;
+    const pillar = pillars.find((p) => p.id === pillarId);
+    const count = pillar?.themes?.length ?? 0;
+
     await addTheme({
       pillar_id: pillarId,
       name,
@@ -70,10 +50,12 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     window.location.reload();
   }
 
-  async function handleAddSubtheme(themeId: string, pillarIndex: number, themeIndex: number) {
+  async function handleAddSubtheme(themeId: string) {
     const name = prompt("Enter subtheme name:");
     if (!name) return;
-    const count = pillars[pillarIndex].themes[themeIndex].subthemes.length;
+    const parent = pillars.flatMap((p) => p.themes).find((t) => t.id === themeId);
+    const count = parent?.subthemes.length ?? 0;
+
     await addSubtheme({
       theme_id: themeId,
       name,
@@ -84,99 +66,214 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        group="configuration"
-        page="primary"
-        breadcrumb={[{ label: "Dashboard", href: "/" }, { label: "Configuration", href: "/configuration" }, { label: "Primary Framework" }]}
-      />
-
+    <div className="bg-white rounded-xl border shadow-sm p-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={expandAll}
-            className="px-2 py-1 text-sm border rounded text-gray-600 hover:bg-gray-100 flex items-center gap-1"
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex space-x-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const all: Record<string, boolean> = {};
+              pillars.forEach((p) => {
+                all[p.id] = true;
+                p.themes.forEach((t) => {
+                  all[t.id] = true;
+                  t.subthemes.forEach((s) => (all[s.id] = true));
+                });
+              });
+              setExpanded(all);
+            }}
           >
-            <ChevronsDown className="w-4 h-4" /> Expand All
-          </button>
-          <button
-            onClick={collapseAll}
-            className="px-2 py-1 text-sm border rounded text-gray-600 hover:bg-gray-100 flex items-center gap-1"
+            Expand All
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setExpanded({})}
           >
-            <ChevronsUp className="w-4 h-4" /> Collapse All
-          </button>
-          {editMode && (
-            <button
-              onClick={handleAddPillar}
-              className="px-2 py-1 text-sm border rounded text-blue-600 hover:bg-blue-50 flex items-center gap-1"
-            >
-              <Plus className="w-4 h-4" /> Add Pillar
-            </button>
-          )}
+            Collapse All
+          </Button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex space-x-2">
           {editMode && (
-            <>
-              <button className="p-1 text-gray-500 hover:text-gray-700">
-                <Upload className="w-4 h-4" />
-              </button>
-              <button className="p-1 text-gray-500 hover:text-gray-700">
-                <Download className="w-4 h-4" />
-              </button>
-            </>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-blue-600 border-blue-600"
+              onClick={handleAddPillar}
+            >
+              + Add Pillar
+            </Button>
           )}
-          <button
-            onClick={() => setEditMode(!editMode)}
-            className="px-2 py-1 text-sm border rounded text-[#b7410e] hover:bg-orange-50 flex items-center gap-1"
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-[#b7410e] border-[#b7410e]"
+            onClick={() => setEditMode((prev) => !prev)}
           >
             {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto bg-white border rounded-lg shadow-sm">
-        <table className="w-full border-collapse text-sm">
-          <thead className="bg-gray-100 text-gray-700 text-left">
-            <tr>
-              <th className="w-[20%] px-3 py-2">Type / Ref Code</th>
-              <th className="w-[55%] px-3 py-2">Name / Description</th>
-              <th className="w-[10%] px-3 py-2 text-center">Sort</th>
-              <th className="w-[15%] px-3 py-2 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pillars.map((pillar, pIdx) => (
-              <tr key={pillar.id} className="border-t">
-                <td className="px-3 py-2 align-top">
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => toggleExpand(pillar.id)} className="text-gray-500 hover:text-gray-700">
-                      {expanded[pillar.id] ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                    <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700">Pillar</span>
-                    <span className="text-gray-500 text-xs">{getRefCodePillar(pIdx)}</span>
-                  </div>
-                </td>
-                <td className="px-3 py-2">{pillar.name}</td>
-                <td className="px-3 py-2 text-center">{pillar.sort_order}</td>
-                <td className="px-3 py-2 text-right">
-                  {editMode && (
-                    <>
-                      <button onClick={() => handleAddTheme(pillar.id, pIdx)} className="p-1 text-gray-500 hover:text-gray-700">
-                        <Plus className="w-4 h-4" />
+      <table className="min-w-full border border-gray-200 rounded-md text-sm">
+        <thead className="bg-gray-50 text-gray-700 font-medium">
+          <tr>
+            <th className="w-[25%] px-3 py-2 text-left">Type / Ref Code</th>
+            <th className="w-[50%] px-3 py-2 text-left">Name / Description</th>
+            <th className="w-[10%] px-3 py-2 text-center">Sort</th>
+            <th className="w-[15%] px-3 py-2 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pillars.map((pillar, i) => {
+            const pillarRef = `P${pillar.sort_order ?? i + 1}`;
+            return (
+              <>
+                <tr key={pillar.id} className="border-t">
+                  <td className="px-3 py-2">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => toggleExpand(pillar.id)}
+                        className="text-gray-500"
+                      >
+                        {expanded[pillar.id] ? (
+                          <ChevronDown size={16} />
+                        ) : (
+                          <ChevronRight size={16} />
+                        )}
                       </button>
-                      <button onClick={() => deletePillar(pillar.id).then(() => window.location.reload())} className="p-1 text-red-500 hover:text-red-700">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                      <Badge className="bg-blue-100 text-blue-600">Pillar</Badge>
+                      <span className="text-gray-500">{pillarRef}</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="font-semibold">{pillar.name}</div>
+                    <div className="text-gray-500 text-xs">{pillar.description}</div>
+                  </td>
+                  <td className="px-3 py-2 text-center">{pillar.sort_order}</td>
+                  <td className="px-3 py-2 text-right space-x-2">
+                    {editMode && (
+                      <>
+                        <button
+                          onClick={() => handleAddTheme(pillar.id)}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          <Plus size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete pillar "${pillar.name}"?`)) {
+                              deletePillar(pillar.id).then(() =>
+                                window.location.reload()
+                              );
+                            }
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+
+                {expanded[pillar.id] &&
+                  pillar.themes.map((theme, j) => {
+                    const themeRef = `${pillarRef}.${theme.sort_order ?? j + 1}`;
+                    return (
+                      <>
+                        <tr key={theme.id} className="border-t bg-gray-50">
+                          <td className="px-6 py-2">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => toggleExpand(theme.id)}
+                                className="text-gray-500"
+                              >
+                                {expanded[theme.id] ? (
+                                  <ChevronDown size={14} />
+                                ) : (
+                                  <ChevronRight size={14} />
+                                )}
+                              </button>
+                              <Badge className="bg-green-100 text-green-600">Theme</Badge>
+                              <span className="text-gray-500">{themeRef}</span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="font-semibold">{theme.name}</div>
+                            <div className="text-gray-500 text-xs">{theme.description}</div>
+                          </td>
+                          <td className="px-3 py-2 text-center">{theme.sort_order}</td>
+                          <td className="px-3 py-2 text-right space-x-2">
+                            {editMode && (
+                              <>
+                                <button
+                                  onClick={() => handleAddSubtheme(theme.id)}
+                                  className="text-gray-500 hover:text-gray-700"
+                                >
+                                  <Plus size={16} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`Delete theme "${theme.name}"?`)) {
+                                      deleteTheme(theme.id).then(() =>
+                                        window.location.reload()
+                                      );
+                                    }
+                                  }}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+
+                        {expanded[theme.id] &&
+                          theme.subthemes.map((s, k) => {
+                            const subRef = `${themeRef}.${s.sort_order ?? k + 1}`;
+                            return (
+                              <tr key={s.id} className="border-t">
+                                <td className="px-10 py-2">
+                                  <Badge className="bg-red-100 text-red-600">Sub</Badge>
+                                  <span className="ml-2 text-gray-500">{subRef}</span>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <div className="font-semibold">{s.name}</div>
+                                  <div className="text-gray-500 text-xs">{s.description}</div>
+                                </td>
+                                <td className="px-3 py-2 text-center">{s.sort_order}</td>
+                                <td className="px-3 py-2 text-right space-x-2">
+                                  {editMode && (
+                                    <button
+                                      onClick={() => {
+                                        if (confirm(`Delete subtheme "${s.name}"?`)) {
+                                          deleteSubtheme(s.id).then(() =>
+                                            window.location.reload()
+                                          );
+                                        }
+                                      }}
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </>
+                    );
+                  })}
+              </>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
