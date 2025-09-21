@@ -57,7 +57,7 @@ export async function addTheme(
 
   const newTheme: NestedTheme = {
     id: data.id,
-    theme_id: pillarId, // ✅ required by type
+    theme_id: pillarId,
     ref_code: "",
     name: data.name,
     description: data.description,
@@ -99,7 +99,7 @@ export async function addSubtheme(
 
   const newSub: NestedSubtheme = {
     id: data.id,
-    theme_id: themeId, // ✅ required by type
+    theme_id: themeId,
     ref_code: "",
     name: data.name,
     description: data.description,
@@ -112,6 +112,76 @@ export async function addSubtheme(
           ...p,
           themes: p.themes.map((t) =>
             t.id === themeId ? { ...t, subthemes: [...t.subthemes, newSub] } : t
+          ),
+        }
+      : p
+  );
+  return recalcRefCodes(updated);
+}
+
+// ---------- Update ----------
+export async function updatePillar(
+  pillars: NestedPillar[],
+  pillarId: string,
+  fields: Partial<Pick<NestedPillar, "name" | "description">>
+): Promise<NestedPillar[]> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("pillars").update(fields).eq("id", pillarId);
+  if (error) throw error;
+
+  const updated = pillars.map((p) =>
+    p.id === pillarId ? { ...p, ...fields } : p
+  );
+  return recalcRefCodes(updated);
+}
+
+export async function updateTheme(
+  pillars: NestedPillar[],
+  pillarId: string,
+  themeId: string,
+  fields: Partial<Pick<NestedTheme, "name" | "description">>
+): Promise<NestedPillar[]> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("themes").update(fields).eq("id", themeId);
+  if (error) throw error;
+
+  const updated = pillars.map((p) =>
+    p.id === pillarId
+      ? {
+          ...p,
+          themes: p.themes.map((t) =>
+            t.id === themeId ? { ...t, ...fields } : t
+          ),
+        }
+      : p
+  );
+  return recalcRefCodes(updated);
+}
+
+export async function updateSubtheme(
+  pillars: NestedPillar[],
+  pillarId: string,
+  themeId: string,
+  subId: string,
+  fields: Partial<Pick<NestedSubtheme, "name" | "description">>
+): Promise<NestedPillar[]> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("subthemes").update(fields).eq("id", subId);
+  if (error) throw error;
+
+  const updated = pillars.map((p) =>
+    p.id === pillarId
+      ? {
+          ...p,
+          themes: p.themes.map((t) =>
+            t.id === themeId
+              ? {
+                  ...t,
+                  subthemes: t.subthemes.map((s) =>
+                    s.id === subId ? { ...s, ...fields } : s
+                  ),
+                }
+              : t
           ),
         }
       : p
@@ -140,9 +210,7 @@ export async function removeTheme(
   if (error) throw error;
   return recalcRefCodes(
     pillars.map((p) =>
-      p.id === pillarId
-        ? { ...p, themes: p.themes.filter((t) => t.id !== themeId) }
-        : p
+      p.id === pillarId ? { ...p, themes: p.themes.filter((t) => t.id !== themeId) } : p
     )
   );
 }
@@ -162,9 +230,7 @@ export async function removeSubtheme(
         ? {
             ...p,
             themes: p.themes.map((t) =>
-              t.id === themeId
-                ? { ...t, subthemes: t.subthemes.filter((s) => s.id !== subId) }
-                : t
+              t.id === themeId ? { ...t, subthemes: t.subthemes.filter((s) => s.id !== subId) } : t
             ),
           }
         : p
