@@ -1,12 +1,17 @@
-// /components/ui/badge.tsx
+// components/ui/badge.tsx
 import React from "react";
 
 type BadgeProps = {
   children: React.ReactNode;
   variant?: "default" | "success" | "danger";
+  className?: string;
 };
 
-export default function Badge({ children, variant = "default" }: BadgeProps) {
+export default function Badge({
+  children,
+  variant = "default",
+  className = "",
+}: BadgeProps) {
   let colorClasses = "";
 
   switch (variant) {
@@ -24,7 +29,7 @@ export default function Badge({ children, variant = "default" }: BadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${colorClasses}`}
+      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${colorClasses} ${className}`}
     >
       {children}
     </span>
