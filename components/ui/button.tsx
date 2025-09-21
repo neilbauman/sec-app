@@ -1,72 +1,52 @@
-import React from "react";
+// /components/ui/button.tsx
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/utils";
 
-type ButtonProps = {
-  children: React.ReactNode;
-  onClick?: () => void;
-  size?: "sm" | "md" | "lg";
-  variant?: "default" | "outline" | "destructive" | "ghost" | "primary" | "rust";
-  className?: string;
-};
-
-export default function Button({
-  children,
-  onClick,
-  size = "md",
-  variant = "default",
-  className = "",
-}: ButtonProps) {
-  let baseClasses =
-    "inline-flex items-center rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors";
-
-  let sizeClasses = "";
-  switch (size) {
-    case "sm":
-      sizeClasses = "px-2 py-1 text-sm";
-      break;
-    case "lg":
-      sizeClasses = "px-4 py-2 text-lg";
-      break;
-    case "md":
-    default:
-      sizeClasses = "px-3 py-1.5 text-base";
-      break;
+const buttonVariants = cva(
+  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none",
+  {
+    variants: {
+      variant: {
+        default: "bg-blue-600 text-white hover:bg-blue-700",
+        primary: "bg-blue-500 text-white hover:bg-blue-600",
+        outline:
+          "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50",
+        destructive: "bg-red-600 text-white hover:bg-red-700",
+        ghost: "bg-transparent hover:bg-gray-100 text-gray-700",
+        rust: "bg-orange-100 text-orange-800 ring-1 ring-inset ring-orange-300 hover:bg-orange-200",
+        // 👇 New badge-like variants
+        "badge-blue":
+          "bg-blue-100 text-blue-800 ring-1 ring-inset ring-blue-200 hover:bg-blue-200",
+        "badge-rust":
+          "bg-orange-100 text-orange-800 ring-1 ring-inset ring-orange-200 hover:bg-orange-200",
+      },
+      size: {
+        default: "px-4 py-2",
+        sm: "px-2 py-1 text-xs",
+        lg: "px-6 py-3 text-lg",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
   }
+);
 
-  let colorClasses = "";
-  switch (variant) {
-    case "primary":
-      colorClasses =
-        "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500";
-      break;
-    case "rust":
-      colorClasses =
-        "bg-orange-700 text-white hover:bg-orange-800 focus:ring-orange-600";
-      break;
-    case "outline":
-      colorClasses =
-        "border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-400";
-      break;
-    case "destructive":
-      colorClasses =
-        "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500";
-      break;
-    case "ghost":
-      colorClasses =
-        "bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-gray-300";
-      break;
-    case "default":
-    default:
-      colorClasses =
-        "bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400";
-      break;
-  }
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {}
 
-  return (
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, ...props }, ref) => (
     <button
-      onClick={onClick}
-      className={`${baseClasses} ${sizeClasses} ${colorClasses} ${className}`}
-    >
-      {children}
-    </button>
-  );
-}
+      className={cn(buttonVariants({ variant, size, className }))}
+      ref={ref}
+      {...props}
+    />
+  )
+);
+Button.displayName = "Button";
+
+export { Button, buttonVariants };
