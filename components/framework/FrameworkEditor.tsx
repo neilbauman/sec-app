@@ -9,6 +9,7 @@ import {
   Trash2,
   Upload,
   Download,
+  Pencil,
 } from "lucide-react";
 import Badge from "@/components/ui/badge";
 import Button from "@/components/ui/button";
@@ -83,21 +84,26 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
         <Badge variant="danger">Subtheme</Badge>
         <span className="ml-1 text-gray-500 text-xs">{sub.ref_code}</span>
       </td>
-      <td className="pl-4 py-2">
+      <td className="pl-12 py-2">
         <div className="font-medium">{sub.name}</div>
         {sub.description && (
           <div className="text-sm text-gray-500">{sub.description}</div>
         )}
       </td>
       <td className="text-center">{sub.sort_order}</td>
-      <td className="text-right pr-4">
+      <td className="text-right pr-4 space-x-1">
         {editMode && (
-          <button
-            onClick={() => onRemoveSubtheme(pillarId, themeId, sub.id)}
-            className="p-1 hover:text-red-600"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <>
+            <button className="p-1 hover:text-blue-600">
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onRemoveSubtheme(pillarId, themeId, sub.id)}
+              className="p-1 hover:text-red-600"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </>
         )}
       </td>
     </tr>
@@ -122,7 +128,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
           <Badge variant="success">Theme</Badge>
           <span className="ml-1 text-gray-500 text-xs">{theme.ref_code}</span>
         </td>
-        <td className="pl-4 py-2">
+        <td className="pl-8 py-2">
           <div className="font-medium">{theme.name}</div>
           {theme.description && (
             <div className="text-sm text-gray-500">{theme.description}</div>
@@ -137,6 +143,9 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                 className="p-1 hover:text-blue-600"
               >
                 <Plus className="w-4 h-4" />
+              </button>
+              <button className="p-1 hover:text-blue-600">
+                <Pencil className="w-4 h-4" />
               </button>
               <button
                 onClick={() => onRemoveTheme(pillarId, theme.id)}
@@ -188,6 +197,9 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
               >
                 <Plus className="w-4 h-4" />
               </button>
+              <button className="p-1 hover:text-blue-600">
+                <Pencil className="w-4 h-4" />
+              </button>
               <button
                 onClick={() => onRemovePillar(pillar.id)}
                 className="p-1 hover:text-red-600"
@@ -216,19 +228,22 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
           </Button>
         </div>
 
-        <div className="space-x-2 flex items-center">
+        <div className="flex items-center space-x-3">
           {editMode && (
-            <>
-              <Upload className="w-4 h-4 text-gray-600 cursor-pointer" />
-              <Download className="w-4 h-4 text-gray-600 cursor-pointer" />
-              <Button size="sm" variant="primary" onClick={onAddPillar}>
-                + Add Pillar
-              </Button>
-            </>
+            <div className="flex items-center border rounded-md px-2 py-1 bg-gray-50">
+              <Upload className="w-4 h-4 text-gray-600 mr-1" />
+              <Download className="w-4 h-4 text-gray-600 mr-2" />
+              <span className="text-xs font-medium text-gray-700">Bulk Edit</span>
+            </div>
+          )}
+          {editMode && (
+            <Button size="sm" variant="badge-blue" onClick={onAddPillar}>
+              + Add Pillar
+            </Button>
           )}
           <Button
             size="sm"
-            variant="rust"
+            variant="badge-rust"
             onClick={() => setEditMode(!editMode)}
           >
             {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
@@ -242,8 +257,8 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
           <tr>
             <th className="text-left py-2 px-4 w-1/4">Type / Ref Code</th>
             <th className="text-left py-2 px-4 w-2/4">Name / Description</th>
-            <th className="text-center py-2 px-2 w-1/8">Sort</th>
-            <th className="text-right py-2 px-4 w-1/8">Actions</th>
+            <th className="text-center py-2 px-2 w-1/12">Sort</th>
+            <th className="text-right py-2 px-4 w-1/12">Actions</th>
           </tr>
         </thead>
         <tbody>{pillars.map(renderPillar)}</tbody>
