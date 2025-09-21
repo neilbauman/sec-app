@@ -1,140 +1,85 @@
 // lib/framework-client.ts
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseClient } from "@/lib/supabase-client";
+import { recalcRefCodes } from "@/lib/refCodes";
 
 // ---------- Types ----------
-
-// Raw DB rows
-export type Pillar = {
+export type NestedSubtheme = {
   id: string;
-  name: string;
-  description: string | null;
-  sort_order: number;
-  default_indicator_id?: string | null;
-};
-
-export type Theme = {
-  id: string;
-  theme_id: string; // ✅ FK to pillars.id
-  name: string;
-  description: string | null;
-  sort_order: number;
-  default_indicator_id?: string | null;
-};
-
-export type Subtheme = {
-  id: string;
-  theme_id: string; // ✅ FK to themes.id
-  name: string;
-  description: string | null;
-  sort_order: number;
-  default_indicator_id?: string | null;
-};
-
-// Nested UI-ready structures
-export type NestedSubtheme = Subtheme & {
+  theme_id: string;
   ref_code: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
 };
 
-export type NestedTheme = Theme & {
+export type NestedTheme = {
+  id: string;
+  theme_id: string; // FK to pillar
   ref_code: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
   subthemes: NestedSubtheme[];
 };
 
-export type NestedPillar = Pillar & {
+export type NestedPillar = {
+  id: string;
   ref_code: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
   themes: NestedTheme[];
 };
 
-// ---------- Supabase client ----------
-
-export function getSupabaseClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
-
-// ---------- Update helpers ----------
-
-export async function updatePillar(
-  id: string,
-  fields: Partial<Pick<Pillar, "name" | "description">>
-) {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.from("pillars").update(fields).eq("id", id);
-  if (error) throw error;
-}
-
-export async function updateTheme(
-  id: string,
-  fields: Partial<Pick<Theme, "name" | "description">>
-) {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.from("themes").update(fields).eq("id", id);
-  if (error) throw error;
-}
-
-export async function updateSubtheme(
-  id: string,
-  fields: Partial<Pick<Subtheme, "name" | "description">>
-) {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.from("subthemes").update(fields).eq("id", id);
-  if (error) throw error;
-}
-
-// ---------- Fetch framework (pillars → themes → subthemes) ----------
-
+// ---------- Fetch Framework ----------
 export async function fetchFramework(): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
 
-  // Fetch pillars
-  const { data: pillars, error: pillarError } = await supabase
+  const { data, error } = await supabase
     .from("pillars")
-    .select("*")
+    .select(
+      `
+      id,
+      name,
+      description,
+      sort_order,
+      themes (
+        id,
+        pillar_id,
+        name,
+        description,
+        sort_order,
+        subthemes (
+          id,
+          theme_id,
+          name,
+          description,
+          sort_order
+        )
+      )
+    `
+    )
     .order("sort_order", { ascending: true });
-  if (pillarError) throw pillarError;
-  if (!pillars) return [];
 
-  // Fetch themes
-  const { data: themes, error: themeError } = await supabase
-    .from("themes")
-    .select("*")
-    .order("sort_order", { ascending: true });
-  if (themeError) throw themeError;
+  if (error) {
+    console.error("fetchFramework error:", error);
+    throw error;
+  }
 
-  // Fetch subthemes
-  const { data: subthemes, error: subError } = await supabase
-    .from("subthemes")
-    .select("*")
-    .order("sort_order", { ascending: true });
-  if (subError) throw subError;
+  // Ensure themes and subthemes are arrays
+  const normalized: NestedPillar[] = (data || []).map((pillar: any) => ({
+    ...pillar,
+    ref_code: "",
+    themes: (pillar.themes || []).map((theme: any) => ({
+      ...theme,
+      ref_code: "",
+      subthemes: (theme.subthemes || []).map((sub: any) => ({
+        ...sub,
+        ref_code: "",
+      })),
+    })),
+  }));
 
-  // Build nested structure with ref codes
-  const nested: NestedPillar[] = (pillars || []).map((p, pIdx) => {
-    const pillarThemes = (themes || [])
-      .filter((t) => t.theme_id === p.id)
-      .map((t, tIdx) => {
-        const themeSubs = (subthemes || [])
-          .filter((s) => s.theme_id === t.id)
-          .map((s, sIdx) => ({
-            ...s,
-            ref_code: `ST${pIdx + 1}.${tIdx + 1}.${sIdx + 1}`,
-          }));
-
-        return {
-          ...t,
-          ref_code: `T${pIdx + 1}.${tIdx + 1}`,
-          subthemes: themeSubs,
-        };
-      });
-
-    return {
-      ...p,
-      ref_code: `P${pIdx + 1}`,
-      themes: pillarThemes,
-    };
-  });
-
-  return nested;
+  // Recalculate P/T/ST codes + sort order
+  return recalcRefCodes(normalized);
 }
