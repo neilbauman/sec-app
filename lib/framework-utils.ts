@@ -1,67 +1,67 @@
 // lib/framework-utils.ts
 import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+import { generateRefCodes } from "@/lib/refCodes";
 
-// ---------- Normalized Types ----------
-export type NormalizedSubtheme = {
-  id: string;
-  ref_code: string;
-  theme_id: string;
-  theme_code: string;
-  name: string;
-  description: string;
-  sort_order: number;
-};
+/**
+ * Deep clone the framework tree so we don’t mutate state directly.
+ */
+export function cloneFramework(pillars: NestedPillar[]): NestedPillar[] {
+  return JSON.parse(JSON.stringify(pillars)) as NestedPillar[];
+}
 
-export type NormalizedTheme = {
-  id: string;
-  ref_code: string;
-  pillar_id: string;
-  pillar_code: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  subthemes: NormalizedSubtheme[];
-};
+/**
+ * Recalculate all ref codes in the framework.
+ */
+export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
+  return generateRefCodes(pillars);
+}
 
-export type NormalizedPillar = {
-  id: string;
-  ref_code: string;
-  name: string;
-  description: string;
-  sort_order: number;
-  themes: NormalizedTheme[];
-};
+/**
+ * Flatten the framework into a simple array of all nodes.
+ */
+export function flattenFramework(pillars: NestedPillar[]): Array<NestedPillar | NestedTheme | NestedSubtheme> {
+  const result: Array<NestedPillar | NestedTheme | NestedSubtheme> = [];
 
-// ---------- Normalization ----------
-export function normalizeFramework(nested: NestedPillar[]): NormalizedPillar[] {
-  return nested.map((pillar, pIndex) => {
-    const pillarCode = `P${pIndex + 1}`;
-
-    const normalizedThemes: NormalizedTheme[] = pillar.themes.map(
-      (theme, tIndex) => {
-        const themeCode = `${pillarCode}.${tIndex + 1}`;
-
-        const normalizedSubs: NormalizedSubtheme[] = theme.subthemes.map(
-          (sub, sIndex) => ({
-            ...sub,
-            ref_code: `${themeCode}.${sIndex + 1}`,
-            theme_code: themeCode,
-          })
-        );
-
-        return {
-          ...theme,
-          ref_code: themeCode,
-          pillar_code: pillarCode,
-          subthemes: normalizedSubs,
-        };
-      }
-    );
-
-    return {
-      ...pillar,
-      ref_code: pillarCode,
-      themes: normalizedThemes,
-    };
+  pillars.forEach((p) => {
+    result.push(p);
+    p.themes.forEach((t) => {
+      result.push(t);
+      t.subthemes.forEach((s) => {
+        result.push(s);
+      });
+    });
   });
+
+  return result;
+}
+
+/**
+ * Find a pillar by ID.
+ */
+export function findPillar(pillars: NestedPillar[], pillarId: string): NestedPillar | undefined {
+  return pillars.find((p) => p.id === pillarId);
+}
+
+/**
+ * Find a theme by ID.
+ */
+export function findTheme(pillars: NestedPillar[], themeId: string): NestedTheme | undefined {
+  for (const pillar of pillars) {
+    const theme = pillar.themes.find((t) => t.id === themeId);
+    if (theme) return theme;
+  }
+  return undefined;
+}
+
+/**
+ * Find a subtheme by ID.
+ */
+export function findSubtheme(pillars: NestedPillar[], subthemeId: string): NestedSubtheme | undefined {
+  for (const pillar of pillars) {
+    for (const theme of pillar.themes) {
+      const sub = theme.subthemes.find((s) => s.id === subthemeId);
+      if (sub) return sub;
+    }
+  }
+  return undefined;
 }
