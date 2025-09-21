@@ -1,0 +1,57 @@
+// app/api/framework/save/route.ts
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase-server";
+import { NormalizedPillar } from "@/lib/framework-utils";
+
+export async function POST(req: Request) {
+  const supabase = createClient();
+  const { pillars }: { pillars: NormalizedPillar[] } = await req.json();
+
+  try {
+    // Clear existing data
+    await supabase.from("subthemes").delete().neq("id", "");
+    await supabase.from("themes").delete().neq("id", "");
+    await supabase.from("pillars").delete().neq("id", "");
+
+    // Insert pillars, themes, and subthemes
+    for (const pillar of pillars) {
+      const { id, ref_code, name, description, sort_order } = pillar;
+      await supabase.from("pillars").insert([{ id, ref_code, name, description, sort_order }]);
+
+      for (const theme of pillar.themes) {
+        const { id: themeId, ref_code: themeRef, name, description, sort_order } = theme;
+        await supabase.from("themes").insert([
+          {
+            id: themeId,
+            ref_code: themeRef,
+            pillar_id: pillar.id,
+            pillar_code: pillar.ref_code,
+            name,
+            description,
+            sort_order,
+          },
+        ]);
+
+        for (const sub of theme.subthemes) {
+          const { id: subId, ref_code: subRef, name, description, sort_order } = sub;
+          await supabase.from("subthemes").insert([
+            {
+              id: subId,
+              ref_code: subRef,
+              theme_id: theme.id,
+              theme_code: theme.ref_code,
+              name,
+              description,
+              sort_order,
+            },
+          ]);
+        }
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Save framework error:", err);
+    return NextResponse.json({ success: false, error: (err as Error).message }, { status: 500 });
+  }
+}
