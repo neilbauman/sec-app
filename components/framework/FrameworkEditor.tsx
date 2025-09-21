@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
-import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+import type { NestedPillar } from "@/lib/framework-client";
 import {
   addPillar,
   addTheme,
@@ -30,6 +30,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null); // track row being modified
 
   // expand / collapse
   const togglePillar = (id: string) =>
@@ -52,22 +53,88 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setOpenThemes({});
   };
 
-  // add/remove
-  const onAddPillar = () => setPillars((prev) => addPillar(prev));
-  const onAddTheme = (pillarId: string) =>
-    setPillars((prev) => addTheme(prev, pillarId));
-  const onAddSubtheme = (pillarId: string, themeId: string) =>
-    setPillars((prev) => addSubtheme(prev, pillarId, themeId));
+  // ---------- Add / Remove (async) ----------
+  async function handleAddPillar() {
+    setLoading("pillar:add");
+    try {
+      const updated = await addPillar(pillars);
+      setPillars(updated);
+    } catch (err) {
+      console.error("Failed to add pillar:", err);
+      alert("Error adding pillar");
+    } finally {
+      setLoading(null);
+    }
+  }
 
-  const onDeletePillar = (pillarId: string) =>
-    setPillars((prev) => removePillar(prev, pillarId));
-  const onDeleteTheme = (pillarId: string, themeId: string) =>
-    setPillars((prev) => removeTheme(prev, pillarId, themeId));
-  const onDeleteSubtheme = (
+  async function handleAddTheme(pillarId: string) {
+    setLoading(`pillar:${pillarId}:theme:add`);
+    try {
+      const updated = await addTheme(pillars, pillarId);
+      setPillars(updated);
+    } catch (err) {
+      console.error("Failed to add theme:", err);
+      alert("Error adding theme");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleAddSubtheme(pillarId: string, themeId: string) {
+    setLoading(`theme:${themeId}:sub:add`);
+    try {
+      const updated = await addSubtheme(pillars, pillarId, themeId);
+      setPillars(updated);
+    } catch (err) {
+      console.error("Failed to add subtheme:", err);
+      alert("Error adding subtheme");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleDeletePillar(pillarId: string) {
+    setLoading(`pillar:${pillarId}:del`);
+    try {
+      const updated = await removePillar(pillars, pillarId);
+      setPillars(updated);
+    } catch (err) {
+      console.error("Failed to delete pillar:", err);
+      alert("Error deleting pillar");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleDeleteTheme(pillarId: string, themeId: string) {
+    setLoading(`theme:${themeId}:del`);
+    try {
+      const updated = await removeTheme(pillars, pillarId, themeId);
+      setPillars(updated);
+    } catch (err) {
+      console.error("Failed to delete theme:", err);
+      alert("Error deleting theme");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleDeleteSubtheme(
     pillarId: string,
     themeId: string,
     subId: string
-  ) => setPillars((prev) => removeSubtheme(prev, pillarId, themeId, subId));
+  ) {
+    setLoading(`sub:${subId}:del`);
+    try {
+      const updated = await removeSubtheme(pillars, pillarId, themeId, subId);
+      setPillars(updated);
+    } catch (err) {
+      console.error("Failed to delete subtheme:", err);
+      alert("Error deleting subtheme");
+    } finally {
+      setLoading(null);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -83,7 +150,12 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
         </div>
         <div className="flex gap-2">
           {editMode && (
-            <Button size="sm" variant="outline" onClick={onAddPillar}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAddPillar}
+              disabled={loading === "pillar:add"}
+            >
               <Plus className="w-4 h-4 mr-1" /> Add Pillar
             </Button>
           )}
@@ -148,14 +220,16 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                       {editMode && (
                         <div className="flex gap-3 justify-center">
                           <button
-                            onClick={() => onAddTheme(pillar.id)}
+                            onClick={() => handleAddTheme(pillar.id)}
+                            disabled={loading === `pillar:${pillar.id}:theme:add`}
                             className="p-1 rounded hover:bg-blue-50"
                             aria-label="Add Theme"
                           >
                             <Plus className="w-4 h-4 text-blue-600" />
                           </button>
                           <button
-                            onClick={() => onDeletePillar(pillar.id)}
+                            onClick={() => handleDeletePillar(pillar.id)}
+                            disabled={loading === `pillar:${pillar.id}:del`}
                             className="p-1 rounded hover:bg-red-50"
                             aria-label="Delete Pillar"
                           >
@@ -208,14 +282,16 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                               {editMode && (
                                 <div className="flex gap-3 justify-center">
                                   <button
-                                    onClick={() => onAddSubtheme(pillar.id, theme.id)}
+                                    onClick={() => handleAddSubtheme(pillar.id, theme.id)}
+                                    disabled={loading === `theme:${theme.id}:sub:add`}
                                     className="p-1 rounded hover:bg-blue-50"
                                     aria-label="Add Subtheme"
                                   >
                                     <Plus className="w-4 h-4 text-blue-600" />
                                   </button>
                                   <button
-                                    onClick={() => onDeleteTheme(pillar.id, theme.id)}
+                                    onClick={() => handleDeleteTheme(pillar.id, theme.id)}
+                                    disabled={loading === `theme:${theme.id}:del`}
                                     className="p-1 rounded hover:bg-red-50"
                                     aria-label="Delete Theme"
                                   >
@@ -256,8 +332,13 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                   {editMode && (
                                     <button
                                       onClick={() =>
-                                        onDeleteSubtheme(pillar.id, theme.id, sub.id)
+                                        handleDeleteSubtheme(
+                                          pillar.id,
+                                          theme.id,
+                                          sub.id
+                                        )
                                       }
+                                      disabled={loading === `sub:${sub.id}:del`}
                                       className="p-1 rounded hover:bg-red-50"
                                       aria-label="Delete Subtheme"
                                     >
