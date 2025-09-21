@@ -2,7 +2,9 @@
 "use client";
 
 import { useState } from "react";
-import type { NestedPillar, NestedTheme, Subtheme } from "@/lib/framework-client";
+import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import Badge from "@/components/ui/badge"; // ✅ fixed import
+import { Button } from "@/components/ui/button";
 import {
   addPillar,
   addTheme,
@@ -11,16 +13,18 @@ import {
   deleteTheme,
   deleteSubtheme,
 } from "@/lib/framework-actions";
-import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import type {
+  NormalizedPillar,
+  NormalizedTheme,
+  NormalizedSubtheme,
+} from "@/lib/framework-utils";
 
 type FrameworkEditorProps = {
-  data: NestedPillar[];
+  data: NormalizedPillar[];
 };
 
 export default function FrameworkEditor({ data }: FrameworkEditorProps) {
-  const [pillars, setPillars] = useState<NestedPillar[]>(data);
+  const [pillars, setPillars] = useState<NormalizedPillar[]>(data);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
 
@@ -28,16 +32,39 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const expandAll = () => {
+    const all: Record<string, boolean> = {};
+    pillars.forEach((p) => {
+      all[p.id] = true;
+      p.themes?.forEach((t) => {
+        all[t.id] = true;
+        t.subthemes?.forEach((s) => {
+          all[s.id] = true;
+        });
+      });
+    });
+    setExpanded(all);
+  };
+
+  const collapseAll = () => {
+    setExpanded({});
+  };
+
   async function handleAddPillar() {
     const name = prompt("Enter pillar name:");
     if (!name) return;
-    await addPillar({ name, description: "", sort_order: pillars.length + 1 });
+    await addPillar({
+      name,
+      description: "",
+      sort_order: pillars.length + 1,
+    });
     window.location.reload();
   }
 
   async function handleAddTheme(pillarId: string) {
     const name = prompt("Enter theme name:");
     if (!name) return;
+
     const pillar = pillars.find((p) => p.id === pillarId);
     const count = pillar?.themes?.length ?? 0;
 
@@ -53,8 +80,13 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   async function handleAddSubtheme(themeId: string) {
     const name = prompt("Enter subtheme name:");
     if (!name) return;
-    const parent = pillars.flatMap((p) => p.themes).find((t) => t.id === themeId);
-    const count = parent?.subthemes.length ?? 0;
+
+    let count = 0;
+    pillars.forEach((p) => {
+      p.themes?.forEach((t) => {
+        if (t.id === themeId) count = t.subthemes?.length ?? 0;
+      });
+    });
 
     await addSubtheme({
       theme_id: themeId,
@@ -66,51 +98,33 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border shadow-sm p-4">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex space-x-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              const all: Record<string, boolean> = {};
-              pillars.forEach((p) => {
-                all[p.id] = true;
-                p.themes.forEach((t) => {
-                  all[t.id] = true;
-                  t.subthemes.forEach((s) => (all[s.id] = true));
-                });
-              });
-              setExpanded(all);
-            }}
-          >
-            Expand All
+    <div className="space-y-4">
+      {/* Controls */}
+      <div className="flex justify-between items-center">
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={expandAll}>
+            <ChevronDown className="w-4 h-4 mr-1" /> Expand All
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setExpanded({})}
-          >
-            Collapse All
+          <Button variant="outline" size="sm" onClick={collapseAll}>
+            <ChevronRight className="w-4 h-4 mr-1" /> Collapse All
           </Button>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex gap-2">
           {editMode && (
             <Button
-              size="sm"
               variant="outline"
-              className="text-blue-600 border-blue-600"
+              size="sm"
+              className="bg-blue-50 text-blue-600 hover:bg-blue-100"
               onClick={handleAddPillar}
             >
               + Add Pillar
             </Button>
           )}
           <Button
-            size="sm"
             variant="outline"
-            className="text-[#b7410e] border-[#b7410e]"
-            onClick={() => setEditMode((prev) => !prev)}
+            size="sm"
+            className="bg-[#b7410e]/10 text-[#b7410e] hover:bg-[#b7410e]/20"
+            onClick={() => setEditMode(!editMode)}
           >
             {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
           </Button>
@@ -118,162 +132,153 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       </div>
 
       {/* Table */}
-      <table className="min-w-full border border-gray-200 rounded-md text-sm">
-        <thead className="bg-gray-50 text-gray-700 font-medium">
-          <tr>
-            <th className="w-[25%] px-3 py-2 text-left">Type / Ref Code</th>
-            <th className="w-[50%] px-3 py-2 text-left">Name / Description</th>
-            <th className="w-[10%] px-3 py-2 text-center">Sort</th>
-            <th className="w-[15%] px-3 py-2 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pillars.map((pillar, i) => {
-            const pillarRef = `P${pillar.sort_order ?? i + 1}`;
-            return (
-              <>
-                <tr key={pillar.id} className="border-t">
-                  <td className="px-3 py-2">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => toggleExpand(pillar.id)}
-                        className="text-gray-500"
-                      >
-                        {expanded[pillar.id] ? (
-                          <ChevronDown size={16} />
-                        ) : (
-                          <ChevronRight size={16} />
-                        )}
-                      </button>
-                      <Badge className="bg-blue-100 text-blue-600">Pillar</Badge>
-                      <span className="text-gray-500">{pillarRef}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="font-semibold">{pillar.name}</div>
-                    <div className="text-gray-500 text-xs">{pillar.description}</div>
-                  </td>
-                  <td className="px-3 py-2 text-center">{pillar.sort_order}</td>
-                  <td className="px-3 py-2 text-right space-x-2">
-                    {editMode && (
-                      <>
-                        <button
-                          onClick={() => handleAddTheme(pillar.id)}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          <Plus size={16} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Delete pillar "${pillar.name}"?`)) {
-                              deletePillar(pillar.id).then(() =>
-                                window.location.reload()
-                              );
-                            }
-                          }}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-
-                {expanded[pillar.id] &&
-                  pillar.themes.map((theme, j) => {
-                    const themeRef = `${pillarRef}.${theme.sort_order ?? j + 1}`;
-                    return (
-                      <>
-                        <tr key={theme.id} className="border-t bg-gray-50">
-                          <td className="px-6 py-2">
-                            <div className="flex items-center space-x-2">
-                              <button
-                                onClick={() => toggleExpand(theme.id)}
-                                className="text-gray-500"
-                              >
-                                {expanded[theme.id] ? (
-                                  <ChevronDown size={14} />
-                                ) : (
-                                  <ChevronRight size={14} />
-                                )}
-                              </button>
-                              <Badge className="bg-green-100 text-green-600">Theme</Badge>
-                              <span className="text-gray-500">{themeRef}</span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="font-semibold">{theme.name}</div>
-                            <div className="text-gray-500 text-xs">{theme.description}</div>
-                          </td>
-                          <td className="px-3 py-2 text-center">{theme.sort_order}</td>
-                          <td className="px-3 py-2 text-right space-x-2">
-                            {editMode && (
-                              <>
-                                <button
-                                  onClick={() => handleAddSubtheme(theme.id)}
-                                  className="text-gray-500 hover:text-gray-700"
-                                >
-                                  <Plus size={16} />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    if (confirm(`Delete theme "${theme.name}"?`)) {
-                                      deleteTheme(theme.id).then(() =>
-                                        window.location.reload()
-                                      );
-                                    }
-                                  }}
-                                  className="text-red-500 hover:text-red-700"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </>
-                            )}
-                          </td>
-                        </tr>
-
-                        {expanded[theme.id] &&
-                          theme.subthemes.map((s, k) => {
-                            const subRef = `${themeRef}.${s.sort_order ?? k + 1}`;
-                            return (
-                              <tr key={s.id} className="border-t">
-                                <td className="px-10 py-2">
-                                  <Badge className="bg-red-100 text-red-600">Sub</Badge>
-                                  <span className="ml-2 text-gray-500">{subRef}</span>
-                                </td>
-                                <td className="px-3 py-2">
-                                  <div className="font-semibold">{s.name}</div>
-                                  <div className="text-gray-500 text-xs">{s.description}</div>
-                                </td>
-                                <td className="px-3 py-2 text-center">{s.sort_order}</td>
-                                <td className="px-3 py-2 text-right space-x-2">
-                                  {editMode && (
-                                    <button
-                                      onClick={() => {
-                                        if (confirm(`Delete subtheme "${s.name}"?`)) {
-                                          deleteSubtheme(s.id).then(() =>
-                                            window.location.reload()
-                                          );
-                                        }
-                                      }}
-                                      className="text-red-500 hover:text-red-700"
-                                    >
-                                      <Trash2 size={16} />
-                                    </button>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </>
-                    );
-                  })}
-              </>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="overflow-x-auto rounded-lg border bg-white">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr className="text-left text-gray-700">
+              <th className="px-4 py-2 w-1/5">Type / Ref Code</th>
+              <th className="px-4 py-2 w-3/5">Name / Description</th>
+              <th className="px-4 py-2 w-1/10 text-center">Sort</th>
+              <th className="px-4 py-2 w-1/10 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pillars.map((pillar) => (
+              <FrameworkRow
+                key={pillar.id}
+                item={pillar}
+                type="pillar"
+                expanded={expanded}
+                toggleExpand={toggleExpand}
+                editMode={editMode}
+                onAddTheme={handleAddTheme}
+                onAddSubtheme={handleAddSubtheme}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
+  );
+}
+
+type FrameworkRowProps = {
+  item: NormalizedPillar | NormalizedTheme | NormalizedSubtheme;
+  type: "pillar" | "theme" | "subtheme";
+  expanded: Record<string, boolean>;
+  toggleExpand: (id: string) => void;
+  editMode: boolean;
+  onAddTheme: (pillarId: string) => void;
+  onAddSubtheme: (themeId: string) => void;
+};
+
+function FrameworkRow({
+  item,
+  type,
+  expanded,
+  toggleExpand,
+  editMode,
+  onAddTheme,
+  onAddSubtheme,
+}: FrameworkRowProps) {
+  const isExpanded = expanded[item.id];
+  const hasChildren =
+    (type === "pillar" && (item as NormalizedPillar).themes?.length > 0) ||
+    (type === "theme" && (item as NormalizedTheme).subthemes?.length > 0);
+
+  const badgeColor =
+    type === "pillar"
+      ? "bg-blue-100 text-blue-600"
+      : type === "theme"
+      ? "bg-green-100 text-green-600"
+      : "bg-red-100 text-red-600";
+
+  return (
+    <>
+      <tr className="border-t">
+        <td className="px-4 py-2 align-top">
+          <div className="flex items-center gap-2">
+            {hasChildren && (
+              <button
+                onClick={() => toggleExpand(item.id)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+            )}
+            <Badge className={badgeColor}>
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </Badge>
+            <span className="text-gray-500 text-xs">{item.ref_code}</span>
+          </div>
+        </td>
+        <td className="px-4 py-2">
+          <div className="font-medium">{item.name}</div>
+          <div className="text-gray-500 text-xs">{item.description}</div>
+        </td>
+        <td className="px-4 py-2 text-center">{item.sort_order}</td>
+        <td className="px-4 py-2 text-right">
+          {editMode && (
+            <div className="flex justify-end gap-2">
+              {type === "pillar" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onAddTheme(item.id)}
+                >
+                  <Plus className="w-4 h-4 text-gray-600" />
+                </Button>
+              )}
+              {type === "theme" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onAddSubtheme(item.id)}
+                >
+                  <Plus className="w-4 h-4 text-gray-600" />
+                </Button>
+              )}
+              <Button size="sm" variant="ghost">
+                <Trash2 className="w-4 h-4 text-red-600" />
+              </Button>
+            </div>
+          )}
+        </td>
+      </tr>
+
+      {isExpanded &&
+        type === "pillar" &&
+        (item as NormalizedPillar).themes?.map((theme) => (
+          <FrameworkRow
+            key={theme.id}
+            item={theme}
+            type="theme"
+            expanded={expanded}
+            toggleExpand={toggleExpand}
+            editMode={editMode}
+            onAddTheme={onAddTheme}
+            onAddSubtheme={onAddSubtheme}
+          />
+        ))}
+
+      {isExpanded &&
+        type === "theme" &&
+        (item as NormalizedTheme).subthemes?.map((s) => (
+          <FrameworkRow
+            key={s.id}
+            item={s}
+            type="subtheme"
+            expanded={expanded}
+            toggleExpand={toggleExpand}
+            editMode={editMode}
+            onAddTheme={onAddTheme}
+            onAddSubtheme={onAddSubtheme}
+          />
+        ))}
+    </>
   );
 }
