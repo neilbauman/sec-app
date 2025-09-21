@@ -1,11 +1,9 @@
 // lib/framework-client.ts
-"use client"
-
-
 import { createClient } from "@supabase/supabase-js";
 
 // ---------- Types ----------
 
+// Raw DB rows
 export type Pillar = {
   id: string;
   name: string;
@@ -32,7 +30,7 @@ export type Subtheme = {
   default_indicator_id?: string | null;
 };
 
-// Nested structures for UI
+// Nested UI-ready structures
 export type NestedSubtheme = Subtheme & {
   ref_code: string;
 };
@@ -90,38 +88,35 @@ export async function updateSubtheme(
 export async function fetchFramework(): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
 
-  // Fetch all pillars
+  // Fetch pillars
   const { data: pillars, error: pillarError } = await supabase
     .from("pillars")
     .select("*")
     .order("sort_order", { ascending: true });
-
   if (pillarError) throw pillarError;
   if (!pillars) return [];
 
-  // Fetch all themes
+  // Fetch themes
   const { data: themes, error: themeError } = await supabase
     .from("themes")
     .select("*")
     .order("sort_order", { ascending: true });
-
   if (themeError) throw themeError;
 
-  // Fetch all subthemes
+  // Fetch subthemes
   const { data: subthemes, error: subError } = await supabase
     .from("subthemes")
     .select("*")
     .order("sort_order", { ascending: true });
-
   if (subError) throw subError;
 
-  // Build nested structure
+  // Build nested structure with ref codes
   const nested: NestedPillar[] = (pillars || []).map((p, pIdx) => {
     const pillarThemes = (themes || [])
-      .filter((t) => t.theme_id === p.id) // ✅ FK link
+      .filter((t) => t.theme_id === p.id)
       .map((t, tIdx) => {
         const themeSubs = (subthemes || [])
-          .filter((s) => s.theme_id === t.id) // ✅ FK link
+          .filter((s) => s.theme_id === t.id)
           .map((s, sIdx) => ({
             ...s,
             ref_code: `ST${pIdx + 1}.${tIdx + 1}.${sIdx + 1}`,
