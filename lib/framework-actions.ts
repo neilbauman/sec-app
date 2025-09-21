@@ -12,29 +12,90 @@ import {
   updateSubtheme,
 } from "@/lib/framework-client";
 
+/**
+ * Recalculate sort_order and ref_code for all pillars/themes/subthemes,
+ * persist the new sort_order values in Supabase,
+ * and return the updated nested structure with fresh ref_codes.
+ */
+async function reindexFramework(pillars: NestedPillar[]): Promise<NestedPillar[]> {
+  const supabase = getSupabaseClient();
+
+  const pillarUpdates: { id: string; sort_order: number }[] = [];
+  const themeUpdates: { id: string; sort_order: number }[] = [];
+  const subthemeUpdates: { id: string; sort_order: number }[] = [];
+
+  const reindexedPillars: NestedPillar[] = pillars.map((p, pIdx) => {
+    const newPillarSort = pIdx + 1;
+    pillarUpdates.push({ id: p.id, sort_order: newPillarSort });
+
+    const reindexedThemes: NestedTheme[] = p.themes.map((t, tIdx) => {
+      const newThemeSort = tIdx + 1;
+      themeUpdates.push({ id: t.id, sort_order: newThemeSort });
+
+      const reindexedSubs: NestedSubtheme[] = t.subthemes.map((s, sIdx) => {
+        const newSubSort = sIdx + 1;
+        subthemeUpdates.push({ id: s.id, sort_order: newSubSort });
+
+        return {
+          ...s,
+          sort_order: newSubSort,
+          ref_code: `ST${newPillarSort}.${newThemeSort}.${newSubSort}`,
+        };
+      });
+
+      return {
+        ...t,
+        sort_order: newThemeSort,
+        ref_code: `T${newPillarSort}.${newThemeSort}`,
+        subthemes: reindexedSubs,
+      };
+    });
+
+    return {
+      ...p,
+      sort_order: newPillarSort,
+      ref_code: `P${newPillarSort}`,
+      themes: reindexedThemes,
+    };
+  });
+
+  // Persist updated sort_order values in Supabase
+  if (pillarUpdates.length > 0) {
+    const { error } = await supabase.from("pillars").upsert(pillarUpdates);
+    if (error) throw error;
+  }
+  if (themeUpdates.length > 0) {
+    const { error } = await supabase.from("themes").upsert(themeUpdates);
+    if (error) throw error;
+  }
+  if (subthemeUpdates.length > 0) {
+    const { error } = await supabase.from("subthemes").upsert(subthemeUpdates);
+    if (error) throw error;
+  }
+
+  return reindexedPillars;
+}
+
 // ---------- Add ----------
 export async function addPillar(pillars: NestedPillar[]): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  const sort_order = pillars.length + 1;
-
   const { data, error } = await supabase
     .from("pillars")
     .insert({
       name: "New Pillar",
       description: "",
-      sort_order,
+      sort_order: pillars.length + 1,
     } satisfies Omit<Pillar, "id">)
     .select()
     .single();
-
   if (error) throw error;
 
-  const newPillar: NestedPillar = {
-    ...data,
-    ref_code: `P${sort_order}`,
-    themes: [],
-  };
-  return [...pillars, newPillar];
+  const newPillars: NestedPillar[] = [
+    ...pillars,
+    { ...data, ref_code: "", themes: [] },
+  ];
+
+  return reindexFramework(newPillars);
 }
 
 export async function addTheme(
@@ -42,11 +103,8 @@ export async function addTheme(
   pillarId: string
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-
   const pillar = pillars.find((p) => p.id === pillarId);
   if (!pillar) return pillars;
-
-  const sort_order = pillar.themes.length + 1;
 
   const { data, error } = await supabase
     .from("themes")
@@ -54,22 +112,19 @@ export async function addTheme(
       pillar_id: pillarId,
       name: "New Theme",
       description: "",
-      sort_order,
+      sort_order: pillar.themes.length + 1,
     } satisfies Omit<Theme, "id">)
     .select()
     .single();
-
   if (error) throw error;
 
-  const newTheme: NestedTheme = {
-    ...data,
-    ref_code: `T${sort_order}`,
-    subthemes: [],
-  };
-
-  return pillars.map((p) =>
-    p.id === pillarId ? { ...p, themes: [...p.themes, newTheme] } : p
+  const newPillars: NestedPillar[] = pillars.map((p) =>
+    p.id === pillarId
+      ? { ...p, themes: [...p.themes, { ...data, ref_code: "", subthemes: [] }] }
+      : p
   );
+
+  return reindexFramework(newPillars);
 }
 
 export async function addSubtheme(
@@ -78,14 +133,10 @@ export async function addSubtheme(
   themeId: string
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-
   const pillar = pillars.find((p) => p.id === pillarId);
   if (!pillar) return pillars;
-
   const theme = pillar.themes.find((t) => t.id === themeId);
   if (!theme) return pillars;
-
-  const sort_order = theme.subthemes.length + 1;
 
   const { data, error } = await supabase
     .from("subthemes")
@@ -93,30 +144,26 @@ export async function addSubtheme(
       theme_id: themeId,
       name: "New Subtheme",
       description: "",
-      sort_order,
+      sort_order: theme.subthemes.length + 1,
     } satisfies Omit<Subtheme, "id">)
     .select()
     .single();
-
   if (error) throw error;
 
-  const newSub: NestedSubtheme = {
-    ...data,
-    ref_code: `ST${sort_order}`,
-  };
-
-  return pillars.map((p) =>
+  const newPillars: NestedPillar[] = pillars.map((p) =>
     p.id === pillarId
       ? {
           ...p,
           themes: p.themes.map((t) =>
             t.id === themeId
-              ? { ...t, subthemes: [...t.subthemes, newSub] }
+              ? { ...t, subthemes: [...t.subthemes, { ...data, ref_code: "" }] }
               : t
           ),
         }
       : p
   );
+
+  return reindexFramework(newPillars);
 }
 
 // ---------- Remove ----------
@@ -128,7 +175,8 @@ export async function removePillar(
   const { error } = await supabase.from("pillars").delete().eq("id", pillarId);
   if (error) throw error;
 
-  return pillars.filter((p) => p.id !== pillarId);
+  const newPillars = pillars.filter((p) => p.id !== pillarId);
+  return reindexFramework(newPillars);
 }
 
 export async function removeTheme(
@@ -140,11 +188,12 @@ export async function removeTheme(
   const { error } = await supabase.from("themes").delete().eq("id", themeId);
   if (error) throw error;
 
-  return pillars.map((pillar) =>
-    pillar.id === pillarId
-      ? { ...pillar, themes: pillar.themes.filter((t) => t.id !== themeId) }
-      : pillar
+  const newPillars = pillars.map((p) =>
+    p.id === pillarId
+      ? { ...p, themes: p.themes.filter((t) => t.id !== themeId) }
+      : p
   );
+  return reindexFramework(newPillars);
 }
 
 export async function removeSubtheme(
@@ -154,39 +203,32 @@ export async function removeSubtheme(
   subthemeId: string
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  const { error } = await supabase
-    .from("subthemes")
-    .delete()
-    .eq("id", subthemeId);
+  const { error } = await supabase.from("subthemes").delete().eq("id", subthemeId);
   if (error) throw error;
 
-  return pillars.map((pillar) =>
-    pillar.id === pillarId
+  const newPillars = pillars.map((p) =>
+    p.id === pillarId
       ? {
-          ...pillar,
-          themes: pillar.themes.map((theme) =>
-            theme.id === themeId
-              ? {
-                  ...theme,
-                  subthemes: theme.subthemes.filter((s) => s.id !== subthemeId),
-                }
-              : theme
+          ...p,
+          themes: p.themes.map((t) =>
+            t.id === themeId
+              ? { ...t, subthemes: t.subthemes.filter((s) => s.id !== subthemeId) }
+              : t
           ),
         }
-      : pillar
+      : p
   );
+  return reindexFramework(newPillars);
 }
 
-// ---------- Edit (persist) ----------
+// ---------- Edit ----------
 export async function editPillar(
   pillars: NestedPillar[],
   pillarId: string,
   fields: { name?: string; description?: string }
 ): Promise<NestedPillar[]> {
   await updatePillar(pillarId, fields);
-  return pillars.map((p) =>
-    p.id === pillarId ? { ...p, ...fields } : p
-  );
+  return pillars.map((p) => (p.id === pillarId ? { ...p, ...fields } : p));
 }
 
 export async function editTheme(
@@ -197,9 +239,7 @@ export async function editTheme(
   await updateTheme(themeId, fields);
   return pillars.map((p) => ({
     ...p,
-    themes: p.themes.map((t) =>
-      t.id === themeId ? { ...t, ...fields } : t
-    ),
+    themes: p.themes.map((t) => (t.id === themeId ? { ...t, ...fields } : t)),
   }));
 }
 
