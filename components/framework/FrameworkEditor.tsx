@@ -166,4 +166,186 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   );
 }
 
-// (PillarRow + ThemeRow stay the same as the last version)
+// ---------- Pillar Row ----------
+function PillarRow({
+  pillar,
+  open,
+  toggle,
+  editMode,
+  openThemes,
+  toggleTheme,
+  onAddTheme,
+  onRemovePillar,
+  onRemoveTheme,
+  onAddSubtheme,
+  onRemoveSubtheme,
+}: {
+  pillar: NormalizedPillar;
+  open?: boolean;
+  toggle: (id: string) => void;
+  editMode: boolean;
+  openThemes: Record<string, boolean>;
+  toggleTheme: (id: string) => void;
+  onAddTheme: (pillarId: string) => void;
+  onRemovePillar: (pillarId: string) => void;
+  onRemoveTheme: (pillarId: string, themeId: string) => void;
+  onAddSubtheme: (pillarId: string, themeId: string) => void;
+  onRemoveSubtheme: (pillarId: string, themeId: string, subId: string) => void;
+}) {
+  return (
+    <>
+      <tr className="border-t">
+        <td className="px-3 py-2 align-top">
+          <div className="flex items-center gap-1">
+            {pillar.themes.length > 0 && (
+              <button onClick={() => toggle(pillar.id)} className="text-gray-500">
+                {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </button>
+            )}
+            <Badge variant="default">Pillar</Badge>
+            <span className="text-xs text-gray-500">{pillar.ref_code}</span>
+          </div>
+        </td>
+        <td className="px-3 py-2 align-top">
+          <div className="font-medium">{pillar.name}</div>
+          <div className="text-xs text-gray-500">{pillar.description}</div>
+        </td>
+        <td className="px-3 py-2 text-center align-top">{pillar.sort_order}</td>
+        <td className="px-3 py-2 text-right align-top">
+          {editMode && (
+            <div className="flex gap-2 justify-end">
+              <Button size="sm" variant="ghost" onClick={() => onAddTheme(pillar.id)}>
+                <Plus className="w-4 h-4 text-gray-600" />
+              </Button>
+              <Button size="sm" variant="ghost">
+                <Edit className="w-4 h-4 text-gray-600" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onRemovePillar(pillar.id)}
+              >
+                <Trash2 className="w-4 h-4 text-red-600" />
+              </Button>
+            </div>
+          )}
+        </td>
+      </tr>
+
+      {open &&
+        pillar.themes.map((theme) => (
+          <ThemeRow
+            key={theme.id}
+            theme={theme}
+            pillarId={pillar.id}
+            editMode={editMode}
+            open={openThemes[theme.id]}
+            toggle={toggleTheme}
+            onAddSubtheme={onAddSubtheme}
+            onRemoveTheme={onRemoveTheme}
+            onRemoveSubtheme={onRemoveSubtheme}
+          />
+        ))}
+    </>
+  );
+}
+
+// ---------- Theme Row ----------
+function ThemeRow({
+  theme,
+  pillarId,
+  editMode,
+  open,
+  toggle,
+  onAddSubtheme,
+  onRemoveTheme,
+  onRemoveSubtheme,
+}: {
+  theme: NormalizedTheme;
+  pillarId: string;
+  editMode: boolean;
+  open?: boolean;
+  toggle: (id: string) => void;
+  onAddSubtheme: (pillarId: string, themeId: string) => void;
+  onRemoveTheme: (pillarId: string, themeId: string) => void;
+  onRemoveSubtheme: (pillarId: string, themeId: string, subId: string) => void;
+}) {
+  return (
+    <>
+      <tr className="border-t bg-gray-50">
+        <td className="px-6 py-2 align-top">
+          <div className="flex items-center gap-1">
+            {theme.subthemes.length > 0 && (
+              <button onClick={() => toggle(theme.id)} className="text-gray-500">
+                {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </button>
+            )}
+            <Badge variant="success">Theme</Badge>
+            <span className="text-xs text-gray-500">{theme.ref_code}</span>
+          </div>
+        </td>
+        <td className="px-3 py-2 align-top">
+          <div className="font-medium">{theme.name}</div>
+          <div className="text-xs text-gray-500">{theme.description}</div>
+        </td>
+        <td className="px-3 py-2 text-center align-top">{theme.sort_order}</td>
+        <td className="px-3 py-2 text-right align-top">
+          {editMode && (
+            <div className="flex gap-2 justify-end">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onAddSubtheme(pillarId, theme.id)}
+              >
+                <Plus className="w-4 h-4 text-gray-600" />
+              </Button>
+              <Button size="sm" variant="ghost">
+                <Edit className="w-4 h-4 text-gray-600" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onRemoveTheme(pillarId, theme.id)}
+              >
+                <Trash2 className="w-4 h-4 text-red-600" />
+              </Button>
+            </div>
+          )}
+        </td>
+      </tr>
+
+      {open &&
+        theme.subthemes.map((sub) => (
+          <tr key={sub.id} className="border-t bg-gray-100">
+            <td className="px-10 py-2 align-top">
+              <div className="flex items-center gap-1">
+                <Badge variant="danger">Subtheme</Badge>
+                <span className="text-xs text-gray-500">{sub.ref_code}</span>
+              </div>
+            </td>
+            <td className="px-3 py-2 align-top">
+              <div className="font-medium">{sub.name}</div>
+              <div className="text-xs text-gray-500">{sub.description}</div>
+            </td>
+            <td className="px-3 py-2 text-center align-top">{sub.sort_order}</td>
+            <td className="px-3 py-2 text-right align-top">
+              {editMode && (
+                <div className="flex gap-2 justify-end">
+                  <Button size="sm" variant="ghost">
+                    <Edit className="w-4 h-4 text-gray-600" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onRemoveSubtheme(pillarId, theme.id, sub.id)}
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </Button>
+                </div>
+              )}
+            </td>
+          </tr>
+        ))}
+    </>
+  );
+}
