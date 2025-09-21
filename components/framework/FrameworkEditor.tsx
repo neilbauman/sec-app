@@ -118,7 +118,11 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                   <tr key={pillar.id} className="[&>td]:px-3 [&>td]:py-2">
                     <td>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => togglePillar(pillar.id)}>
+                        <button
+                          onClick={() => togglePillar(pillar.id)}
+                          className="p-1 rounded hover:bg-gray-100"
+                          aria-label={pillarOpen ? "Collapse Pillar" : "Expand Pillar"}
+                        >
                           {pillarOpen ? (
                             <ChevronDown className="w-4 h-4 text-gray-600" />
                           ) : (
@@ -143,16 +147,20 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                     <td className="text-center">
                       {editMode && (
                         <div className="flex gap-3 justify-center">
-                          <Plus
-                            className="w-4 h-4 text-blue-600 cursor-pointer hover:text-blue-800"
-                            title="Add Theme"
+                          <button
                             onClick={() => onAddTheme(pillar.id)}
-                          />
-                          <Trash2
-                            className="w-4 h-4 text-red-600 cursor-pointer hover:text-red-800"
-                            title="Delete Pillar"
+                            className="p-1 rounded hover:bg-blue-50"
+                            aria-label="Add Theme"
+                          >
+                            <Plus className="w-4 h-4 text-blue-600" />
+                          </button>
+                          <button
                             onClick={() => onDeletePillar(pillar.id)}
-                          />
+                            className="p-1 rounded hover:bg-red-50"
+                            aria-label="Delete Pillar"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
                         </div>
                       )}
                     </td>
@@ -170,7 +178,11 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                           >
                             <td>
                               <div className="flex items-center gap-2 pl-4">
-                                <button onClick={() => toggleTheme(theme.id)}>
+                                <button
+                                  onClick={() => toggleTheme(theme.id)}
+                                  className="p-1 rounded hover:bg-gray-100"
+                                  aria-label={themeOpen ? "Collapse Theme" : "Expand Theme"}
+                                >
                                   {themeOpen ? (
                                     <ChevronDown className="w-4 h-4 text-gray-600" />
                                   ) : (
@@ -195,20 +207,20 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                             <td className="text-center">
                               {editMode && (
                                 <div className="flex gap-3 justify-center">
-                                  <Plus
-                                    className="w-4 h-4 text-blue-600 cursor-pointer hover:text-blue-800"
-                                    title="Add Subtheme"
-                                    onClick={() =>
-                                      onAddSubtheme(pillar.id, theme.id)
-                                    }
-                                  />
-                                  <Trash2
-                                    className="w-4 h-4 text-red-600 cursor-pointer hover:text-red-800"
-                                    title="Delete Theme"
-                                    onClick={() =>
-                                      onDeleteTheme(pillar.id, theme.id)
-                                    }
-                                  />
+                                  <button
+                                    onClick={() => onAddSubtheme(pillar.id, theme.id)}
+                                    className="p-1 rounded hover:bg-blue-50"
+                                    aria-label="Add Subtheme"
+                                  >
+                                    <Plus className="w-4 h-4 text-blue-600" />
+                                  </button>
+                                  <button
+                                    onClick={() => onDeleteTheme(pillar.id, theme.id)}
+                                    className="p-1 rounded hover:bg-red-50"
+                                    aria-label="Delete Theme"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-600" />
+                                  </button>
                                 </div>
                               )}
                             </td>
@@ -242,17 +254,15 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                 </td>
                                 <td className="text-center">
                                   {editMode && (
-                                    <Trash2
-                                      className="w-4 h-4 text-red-600 cursor-pointer hover:text-red-800"
-                                      title="Delete Subtheme"
+                                    <button
                                       onClick={() =>
-                                        onDeleteSubtheme(
-                                          pillar.id,
-                                          theme.id,
-                                          sub.id
-                                        )
+                                        onDeleteSubtheme(pillar.id, theme.id, sub.id)
                                       }
-                                    />
+                                      className="p-1 rounded hover:bg-red-50"
+                                      aria-label="Delete Subtheme"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-red-600" />
+                                    </button>
                                   )}
                                 </td>
                               </tr>
