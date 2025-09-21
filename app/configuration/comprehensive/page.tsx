@@ -1,6 +1,7 @@
 // app/configuration/comprehensive/page.tsx
 import PageHeader from "@/components/ui/PageHeader";
-import { fetchFramework } from "@/lib/framework-client";
+import FrameworkEditor from "@/components/framework/FrameworkEditor";
+import { fetchFramework, NestedPillar } from "@/lib/framework-client";
 
 export default async function ComprehensiveFrameworkEditorPage() {
   const framework = await fetchFramework();
