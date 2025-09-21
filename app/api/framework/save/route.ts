@@ -5,7 +5,7 @@ import { NestedPillar } from "@/lib/framework-client";
 
 export async function POST(req: Request) {
   const supabase = createClient();
-  const { pillars }: { pillars: NormalizedPillar[] } = await req.json();
+  const { pillars }: { pillars: NestedPillar[] } = await req.json();
 
   try {
     // Clear existing data
