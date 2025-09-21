@@ -5,8 +5,9 @@ import { fetchFramework } from "@/lib/framework-client";
 import { normalizeFramework } from "@/lib/framework-utils";
 
 export default async function PrimaryFrameworkEditorPage() {
-  const nested = await fetchFramework(); // NestedPillar[]
-  const framework = normalizeFramework(nested); // NormalizedPillar[]
+  // Fetch from DB and normalize into ref_code / pillar_code / theme_code
+  const nested = await fetchFramework();
+  const framework = normalizeFramework(nested);
 
   return (
     <div className="space-y-6">
@@ -19,7 +20,11 @@ export default async function PrimaryFrameworkEditorPage() {
           { label: "Primary Framework" },
         ]}
       />
-      <FrameworkEditor data={framework} />
+
+      <div className="bg-white rounded-xl border shadow-sm p-6">
+        {/* Framework Editor Table */}
+        <FrameworkEditor data={framework} />
+      </div>
     </div>
   );
 }
