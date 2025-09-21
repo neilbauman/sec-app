@@ -2,22 +2,34 @@
 import type { Database } from "@/types/supabase";
 import { createClient } from "@/lib/supabase-server";
 
-// ---------- Base Table Types ----------
-export type Pillar = Database["public"]["Tables"]["pillars"]["Row"];
-export type Theme = Database["public"]["Tables"]["themes"]["Row"];
-export type Subtheme = Database["public"]["Tables"]["subthemes"]["Row"];
+// ---------- Base Table Types (from DB, no ref_code anymore) ----------
+export type Pillar = {
+  id: string;
+  name: string;
+  description: string;
+  sort_order: number;
+};
 
-// ---------- Nested Types ----------
-export type NestedSubtheme = Subtheme & { ref_code: string; theme_code: string };
-export type NestedTheme = Theme & {
-  ref_code: string;
-  pillar_code: string;
-  subthemes: NestedSubtheme[];
+export type Theme = {
+  id: string;
+  pillar_id: string;
+  name: string;
+  description: string;
+  sort_order: number;
 };
-export type NestedPillar = Pillar & {
-  ref_code: string;
-  themes: NestedTheme[];
+
+export type Subtheme = {
+  id: string;
+  theme_id: string;
+  name: string;
+  description: string;
+  sort_order: number;
 };
+
+// ---------- Nested Types (app-level, add ref_code dynamically) ----------
+export type NestedSubtheme = Subtheme & { ref_code: string };
+export type NestedTheme = Theme & { ref_code: string; subthemes: NestedSubtheme[] };
+export type NestedPillar = Pillar & { ref_code: string; themes: NestedTheme[] };
 
 // ---------- Client Factory ----------
 export function getSupabaseClient() {
@@ -28,7 +40,6 @@ export function getSupabaseClient() {
 export async function fetchFramework(): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
 
-  // Pull raw DB rows
   const { data: pillars, error: pillarError } = await supabase
     .from("pillars")
     .select("*")
@@ -48,41 +59,32 @@ export async function fetchFramework(): Promise<NestedPillar[]> {
   if (subthemeError) throw subthemeError;
 
   // Group subthemes by theme
-  const subthemesByTheme: Record<string, Subtheme[]> = {};
-  (subthemes || []).forEach((s) => {
+  const subthemesByTheme: Record<string, NestedSubtheme[]> = {};
+  (subthemes || []).forEach((s, sIdx) => {
+    const ref_code = `ST${s.sort_order ?? sIdx + 1}`;
     if (!subthemesByTheme[s.theme_id]) subthemesByTheme[s.theme_id] = [];
-    subthemesByTheme[s.theme_id].push(s);
+    subthemesByTheme[s.theme_id].push({ ...s, ref_code });
   });
 
   // Group themes by pillar
-  const themesByPillar: Record<string, Theme[]> = {};
-  (themes || []).forEach((t) => {
+  const themesByPillar: Record<string, NestedTheme[]> = {};
+  (themes || []).forEach((t, tIdx) => {
+    const ref_code = `T${t.sort_order ?? tIdx + 1}`;
     if (!themesByPillar[t.pillar_id]) themesByPillar[t.pillar_id] = [];
-    themesByPillar[t.pillar_id].push(t);
+    themesByPillar[t.pillar_id].push({
+      ...t,
+      ref_code,
+      subthemes: subthemesByTheme[t.id] || [],
+    });
   });
 
-  // 🔑 Normalize with ref codes
-  return (pillars || []).map((p, pi) => {
-    const pillarCode = `P${pi + 1}`;
+  // Attach everything to pillars
+  return (pillars || []).map((p, pIdx) => {
+    const ref_code = `P${p.sort_order ?? pIdx + 1}`;
     return {
       ...p,
-      ref_code: pillarCode,
-      themes: (themesByPillar[p.id] || []).map((t, ti) => {
-        const themeCode = `T${pi + 1}.${ti + 1}`;
-        return {
-          ...t,
-          ref_code: themeCode,
-          pillar_code: pillarCode,
-          subthemes: (subthemesByTheme[t.id] || []).map((s, si) => {
-            const subCode = `ST${pi + 1}.${ti + 1}.${si + 1}`;
-            return {
-              ...s,
-              ref_code: subCode,
-              theme_code: themeCode,
-            };
-          }),
-        };
-      }),
+      ref_code,
+      themes: themesByPillar[p.id] || [],
     };
   });
 }
