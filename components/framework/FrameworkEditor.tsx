@@ -1,13 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  Edit2,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Edit2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
 import type { NestedPillar } from "@/lib/framework-client";
@@ -53,11 +47,8 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setOpenThemes({});
   };
 
-  // ---------- Async helper ----------
-  async function runAsync<T>(
-    key: string,
-    fn: () => Promise<T>
-  ): Promise<T | null> {
+  // ---------- Async wrapper ----------
+  async function runAsync<T>(key: string, fn: () => Promise<T>): Promise<T | null> {
     setLoading(key);
     setErrorMsg(null);
     try {
@@ -107,11 +98,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       return updated;
     });
 
-  const handleDeleteSubtheme = (
-    pillarId: string,
-    themeId: string,
-    subId: string
-  ) =>
+  const handleDeleteSubtheme = (pillarId: string, themeId: string, subId: string) =>
     runAsync(`sub:${subId}:del`, async () => {
       const updated = await removeSubtheme(pillars, pillarId, themeId, subId);
       setPillars(updated);
@@ -148,11 +135,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
               <Plus className="w-4 h-4 mr-1" /> Add Pillar
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setEditMode((s) => !s)}
-          >
+          <Button size="sm" variant="outline" onClick={() => setEditMode((s) => !s)}>
             <Edit2 className="w-4 h-4 mr-1" />
             {editMode ? "Editing" : "View Mode"}
           </Button>
@@ -174,54 +157,137 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
             {pillars.map((pillar) => {
               const pillarOpen = !!openPillars[pillar.id];
               return (
-                <tr key={pillar.id} className="[&>td]:px-3 [&>td]:py-2">
+                <>
                   {/* Pillar row */}
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => togglePillar(pillar.id)}
-                        className="p-1 rounded hover:bg-gray-100"
-                      >
-                        {pillarOpen ? (
-                          <ChevronDown className="w-4 h-4 text-gray-600" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-600" />
-                        )}
-                      </button>
-                      <Badge>Pillar</Badge>
-                      <span className="text-xs text-gray-500">
-                        {pillar.ref_code}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="font-medium">{pillar.name}</div>
-                    {pillar.description && (
-                      <div className="text-xs text-gray-600">
-                        {pillar.description}
-                      </div>
-                    )}
-                  </td>
-                  <td className="text-center">{pillar.sort_order}</td>
-                  <td className="text-center">
-                    {editMode && (
-                      <div className="flex gap-3 justify-center">
+                  <tr key={pillar.id} className="[&>td]:px-3 [&>td]:py-2">
+                    <td>
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleAddTheme(pillar.id)}
-                          className="p-1 rounded hover:bg-blue-50"
+                          onClick={() => togglePillar(pillar.id)}
+                          className="p-1 rounded hover:bg-gray-100"
                         >
-                          <Plus className="w-4 h-4 text-blue-600" />
+                          {pillarOpen ? (
+                            <ChevronDown className="w-4 h-4 text-gray-600" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-gray-600" />
+                          )}
                         </button>
-                        <button
-                          onClick={() => handleDeletePillar(pillar.id)}
-                          className="p-1 rounded hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </button>
+                        <Badge>Pillar</Badge>
+                        <span className="text-xs text-gray-500">{pillar.ref_code}</span>
                       </div>
-                    )}
-                  </td>
-                </tr>
+                    </td>
+                    <td>
+                      <div className="font-medium">{pillar.name}</div>
+                      {pillar.description && (
+                        <div className="text-xs text-gray-600">{pillar.description}</div>
+                      )}
+                    </td>
+                    <td className="text-center">{pillar.sort_order}</td>
+                    <td className="text-center">
+                      {editMode && (
+                        <div className="flex gap-3 justify-center">
+                          <button
+                            onClick={() => handleAddTheme(pillar.id)}
+                            className="p-1 rounded hover:bg-blue-50"
+                          >
+                            <Plus className="w-4 h-4 text-blue-600" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePillar(pillar.id)}
+                            className="p-1 rounded hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+
+                  {/* Themes */}
+                  {pillarOpen &&
+                    pillar.themes.map((theme) => {
+                      const themeOpen = !!openThemes[theme.id];
+                      return (
+                        <>
+                          <tr key={theme.id} className="[&>td]:px-3 [&>td]:py-2">
+                            <td>
+                              <div className="flex items-center gap-2 pl-4">
+                                <button
+                                  onClick={() => toggleTheme(theme.id)}
+                                  className="p-1 rounded hover:bg-gray-100"
+                                >
+                                  {themeOpen ? (
+                                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4 text-gray-600" />
+                                  )}
+                                </button>
+                                <Badge variant="success">Theme</Badge>
+                                <span className="text-xs text-gray-500">{theme.ref_code}</span>
+                              </div>
+                            </td>
+                            <td className="pl-4">
+                              <div className="font-medium">{theme.name}</div>
+                              {theme.description && (
+                                <div className="text-xs text-gray-600">{theme.description}</div>
+                              )}
+                            </td>
+                            <td className="text-center">{theme.sort_order}</td>
+                            <td className="text-center">
+                              {editMode && (
+                                <div className="flex gap-3 justify-center">
+                                  <button
+                                    onClick={() => handleAddSubtheme(pillar.id, theme.id)}
+                                    className="p-1 rounded hover:bg-blue-50"
+                                  >
+                                    <Plus className="w-4 h-4 text-blue-600" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteTheme(pillar.id, theme.id)}
+                                    className="p-1 rounded hover:bg-red-50"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-600" />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+
+                          {/* Subthemes */}
+                          {themeOpen &&
+                            theme.subthemes.map((sub) => (
+                              <tr key={sub.id} className="[&>td]:px-3 [&>td]:py-2">
+                                <td>
+                                  <div className="flex items-center gap-2 pl-8">
+                                    <Badge variant="danger">Subtheme</Badge>
+                                    <span className="text-xs text-gray-500">{sub.ref_code}</span>
+                                  </div>
+                                </td>
+                                <td className="pl-8">
+                                  <div className="font-medium">{sub.name}</div>
+                                  {sub.description && (
+                                    <div className="text-xs text-gray-600">{sub.description}</div>
+                                  )}
+                                </td>
+                                <td className="text-center">{sub.sort_order}</td>
+                                <td className="text-center">
+                                  {editMode && (
+                                    <button
+                                      onClick={() =>
+                                        handleDeleteSubtheme(pillar.id, theme.id, sub.id)
+                                      }
+                                      className="p-1 rounded hover:bg-red-50"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-red-600" />
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                        </>
+                      );
+                    })}
+                </>
               );
             })}
           </tbody>
