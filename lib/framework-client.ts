@@ -1,4 +1,7 @@
 // lib/framework-client.ts
+"use client"
+
+
 import { createClient } from "@supabase/supabase-js";
 
 // ---------- Types ----------
