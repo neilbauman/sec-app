@@ -1,48 +1,39 @@
 // lib/refCodes.ts
-import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
 
 /**
- * Generate ref codes for the entire framework (pillars → themes → subthemes).
+ * Recalculate hierarchical reference codes:
+ *  - Pillars: P1, P2, ...
+ *  - Themes: T{pillarIndex}.{themeIndex}  (e.g., T1.1, T2.3)
+ *  - Subthemes: ST{pillarIndex}.{themeIndex}.{subIndex}  (e.g., ST1.2.1)
  */
-export function generateRefCodes(pillars: NestedPillar[]): NestedPillar[] {
-  return pillars.map((pillar, pIdx) => {
-    const refPillar: NestedPillar = {
-      ...pillar,
-      ref_code: `P${pIdx + 1}`,
-      themes: pillar.themes.map((theme, tIdx) => {
-        const refTheme: NestedTheme = {
-          ...theme,
-          ref_code: `T${pIdx + 1}.${tIdx + 1}`,
-          subthemes: theme.subthemes.map((sub, sIdx) => {
-            const refSub: NestedSubtheme = {
-              ...sub,
-              ref_code: `ST${pIdx + 1}.${tIdx + 1}.${sIdx + 1}`,
-            };
-            return refSub;
-          }),
+export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
+  return pillars.map((pillar, pIndex) => {
+    const pillarRef = `P${pIndex + 1}`;
+    const themes: NestedTheme[] = pillar.themes.map((theme, tIndex) => {
+      const themeRef = `T${pIndex + 1}.${tIndex + 1}`;
+      const subthemes: NestedSubtheme[] = theme.subthemes.map((sub, sIndex) => {
+        const subRef = `ST${pIndex + 1}.${tIndex + 1}.${sIndex + 1}`;
+        return {
+          ...sub,
+          ref_code: subRef,
+          sort_order: sIndex + 1,
         };
-        return refTheme;
-      }),
+      });
+
+      return {
+        ...theme,
+        ref_code: themeRef,
+        sort_order: tIndex + 1,
+        subthemes,
+      };
+    });
+
+    return {
+      ...pillar,
+      ref_code: pillarRef,
+      sort_order: pIndex + 1,
+      themes,
     };
-    return refPillar;
   });
-}
-
-/**
- * Generate a ref code string for a single item.
- */
-export function generatePillarRef(pillarIndex: number): string {
-  return `P${pillarIndex + 1}`;
-}
-
-export function generateThemeRef(pillarIndex: number, themeIndex: number): string {
-  return `T${pillarIndex + 1}.${themeIndex + 1}`;
-}
-
-export function generateSubthemeRef(
-  pillarIndex: number,
-  themeIndex: number,
-  subIndex: number
-): string {
-  return `ST${pillarIndex + 1}.${themeIndex + 1}.${subIndex + 1}`;
 }
