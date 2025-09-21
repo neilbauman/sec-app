@@ -5,75 +5,112 @@ import {
   NormalizedSubtheme,
 } from "@/lib/framework-utils";
 
-// ----------------- Pillars -----------------
+// ---------- Add ----------
 export function addPillar(pillars: NormalizedPillar[]): NormalizedPillar[] {
   const newPillar: NormalizedPillar = {
     id: crypto.randomUUID(),
     ref_code: `P${pillars.length + 1}`,
     name: "New Pillar",
-    description: "Description here...",
+    description: "",
     sort_order: pillars.length + 1,
     themes: [],
   };
-
   return [...pillars, newPillar];
 }
 
-// ----------------- Themes -----------------
 export function addTheme(
   pillars: NormalizedPillar[],
   pillarId: string
 ): NormalizedPillar[] {
   return pillars.map((pillar) => {
-    if (pillar.id !== pillarId) return pillar;
-
-    const newTheme: NormalizedTheme = {
-      id: crypto.randomUUID(),
-      pillar_id: pillarId,
-      pillar_code: pillar.ref_code,
-      ref_code: `${pillar.ref_code}.${pillar.themes.length + 1}`,
-      name: "New Theme",
-      description: "Description here...",
-      sort_order: pillar.themes.length + 1,
-      subthemes: [],
-    };
-
-    return {
-      ...pillar,
-      themes: [...pillar.themes, newTheme],
-    };
+    if (pillar.id === pillarId) {
+      const newTheme: NormalizedTheme = {
+        id: crypto.randomUUID(),
+        ref_code: `${pillar.ref_code}.${pillar.themes.length + 1}`,
+        pillar_id: pillarId,
+        pillar_code: pillar.ref_code,
+        name: "New Theme",
+        description: "",
+        sort_order: pillar.themes.length + 1,
+        subthemes: [],
+      };
+      return { ...pillar, themes: [...pillar.themes, newTheme] };
+    }
+    return pillar;
   });
 }
 
-// ----------------- Subthemes -----------------
 export function addSubtheme(
   pillars: NormalizedPillar[],
   pillarId: string,
   themeId: string
 ): NormalizedPillar[] {
   return pillars.map((pillar) => {
-    if (pillar.id !== pillarId) return pillar;
+    if (pillar.id === pillarId) {
+      const updatedThemes = pillar.themes.map((theme) => {
+        if (theme.id === themeId) {
+          const newSub: NormalizedSubtheme = {
+            id: crypto.randomUUID(),
+            ref_code: `${theme.ref_code}.${theme.subthemes.length + 1}`,
+            theme_id: themeId,
+            theme_code: theme.ref_code,
+            name: "New Subtheme",
+            description: "",
+            sort_order: theme.subthemes.length + 1,
+          };
+          return { ...theme, subthemes: [...theme.subthemes, newSub] };
+        }
+        return theme;
+      });
+      return { ...pillar, themes: updatedThemes };
+    }
+    return pillar;
+  });
+}
 
-    return {
-      ...pillar,
-      themes: pillar.themes.map((theme) => {
-        if (theme.id !== themeId) return theme;
+// ---------- Remove ----------
+export function removePillar(
+  pillars: NormalizedPillar[],
+  pillarId: string
+): NormalizedPillar[] {
+  return pillars.filter((p) => p.id !== pillarId);
+}
 
-        const newSubtheme: NormalizedSubtheme = {
-          id: crypto.randomUUID(),
-          theme_id: themeId,
-          theme_code: theme.ref_code,
-          ref_code: `${theme.ref_code}.${theme.subthemes.length + 1}`,
-          name: "New Subtheme",
-          description: "Description here...",
-          sort_order: theme.subthemes.length + 1,
-        };
+export function removeTheme(
+  pillars: NormalizedPillar[],
+  pillarId: string,
+  themeId: string
+): NormalizedPillar[] {
+  return pillars.map((pillar) => {
+    if (pillar.id === pillarId) {
+      return {
+        ...pillar,
+        themes: pillar.themes.filter((t) => t.id !== themeId),
+      };
+    }
+    return pillar;
+  });
+}
 
-        return {
-          ...theme,
-          subthemes: [...theme.subthemes, newSubtheme],
-        };
-      }),
-    };
+export function removeSubtheme(
+  pillars: NormalizedPillar[],
+  pillarId: string,
+  themeId: string,
+  subthemeId: string
+): NormalizedPillar[] {
+  return pillars.map((pillar) => {
+    if (pillar.id === pillarId) {
+      const updatedThemes = pillar.themes.map((theme) => {
+        if (theme.id === themeId) {
+          return {
+            ...theme,
+            subthemes: theme.subthemes.filter((s) => s.id !== subthemeId),
+          };
+        }
+        return theme;
+      });
+      return { ...pillar, themes: updatedThemes };
+    }
+    return pillar;
   });
 }
