@@ -30,7 +30,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState<string | null>(null); // track row being modified
+  const [loading, setLoading] = useState<string | null>(null);
 
   // expand / collapse
   const togglePillar = (id: string) =>
