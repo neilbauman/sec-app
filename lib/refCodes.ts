@@ -4,8 +4,8 @@ import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-
 /**
  * Recalculate hierarchical reference codes:
  *  - Pillars: P1, P2, ...
- *  - Themes: T{pillarIndex}.{themeIndex}  (e.g., T1.1, T2.3)
- *  - Subthemes: ST{pillarIndex}.{themeIndex}.{subIndex}  (e.g., ST1.2.1)
+ *  - Themes: T{pillarIndex}.{themeIndex}
+ *  - Subthemes: ST{pillarIndex}.{themeIndex}.{subIndex}
  */
 export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
   return pillars.map((pillar, pIndex) => {
@@ -37,3 +37,6 @@ export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
     };
   });
 }
+
+// ✅ Alias so old code using generateRefCodes still works
+export const generateRefCodes = recalcRefCodes;
