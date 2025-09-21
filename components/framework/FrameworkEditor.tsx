@@ -54,19 +54,18 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setOpenThemes({});
   };
 
-  // ---------- Async helpers ----------
+  // ---------- Async helper ----------
   async function runAsync<T>(
     key: string,
-    fn: () => Promise<T>,
-    errorMsgOverride?: string
+    fn: () => Promise<T>
   ): Promise<T | null> {
     setLoading(key);
     setErrorMsg(null);
     try {
       return await fn();
-    } catch (err) {
-      console.error(errorMsgOverride || "Error:", err);
-      setErrorMsg(errorMsgOverride || "Something went wrong.");
+    } catch (err: any) {
+      console.error("Framework action failed:", err);
+      setErrorMsg(err?.message || "Something went wrong.");
       return null;
     } finally {
       setLoading(null);
@@ -79,35 +78,35 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       const updated = await addPillar(pillars);
       setPillars(updated);
       return updated;
-    }, "Error adding pillar");
+    });
 
   const handleAddTheme = (pillarId: string) =>
     runAsync(`pillar:${pillarId}:theme:add`, async () => {
       const updated = await addTheme(pillars, pillarId);
       setPillars(updated);
       return updated;
-    }, "Error adding theme");
+    });
 
   const handleAddSubtheme = (pillarId: string, themeId: string) =>
     runAsync(`theme:${themeId}:sub:add`, async () => {
       const updated = await addSubtheme(pillars, pillarId, themeId);
       setPillars(updated);
       return updated;
-    }, "Error adding subtheme");
+    });
 
   const handleDeletePillar = (pillarId: string) =>
     runAsync(`pillar:${pillarId}:del`, async () => {
       const updated = await removePillar(pillars, pillarId);
       setPillars(updated);
       return updated;
-    }, "Error deleting pillar");
+    });
 
   const handleDeleteTheme = (pillarId: string, themeId: string) =>
     runAsync(`theme:${themeId}:del`, async () => {
       const updated = await removeTheme(pillars, pillarId, themeId);
       setPillars(updated);
       return updated;
-    }, "Error deleting theme");
+    });
 
   const handleDeleteSubtheme = (
     pillarId: string,
@@ -118,7 +117,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       const updated = await removeSubtheme(pillars, pillarId, themeId, subId);
       setPillars(updated);
       return updated;
-    }, "Error deleting subtheme");
+    });
 
   return (
     <div className="space-y-4">
