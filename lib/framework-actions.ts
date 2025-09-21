@@ -101,7 +101,7 @@ export async function addPillar(pillars: NestedPillar[]): Promise<NestedPillar[]
 
   const newPillars: NestedPillar[] = [
     ...pillars,
-    { ...data, ref_code: "", themes: [] },
+    { ...data, ref_code: "", themes: [] }, // ref_code recalculated in reindex
   ];
 
   return reindexFramework(newPillars);
@@ -129,7 +129,10 @@ export async function addTheme(
 
   const newPillars: NestedPillar[] = pillars.map((p) =>
     p.id === pillarId
-      ? { ...p, themes: [...p.themes, { ...data, ref_code: "", subthemes: [] }] }
+      ? {
+          ...p,
+          themes: [...p.themes, { ...data, ref_code: "", subthemes: [] }],
+        }
       : p
   );
 
@@ -183,6 +186,9 @@ export async function removePillar(
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("pillars").delete().eq("id", pillarId);
   if (error) {
+    if (error.message.includes("violates foreign key constraint")) {
+      throw new Error("Delete all themes under this pillar first.");
+    }
     console.error("Supabase pillar delete error:", error);
     throw error;
   }
@@ -199,6 +205,9 @@ export async function removeTheme(
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("themes").delete().eq("id", themeId);
   if (error) {
+    if (error.message.includes("violates foreign key constraint")) {
+      throw new Error("Delete all subthemes under this theme first.");
+    }
     console.error("Supabase theme delete error:", error);
     throw error;
   }
@@ -218,7 +227,10 @@ export async function removeSubtheme(
   subthemeId: string
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("subthemes").delete().eq("id", subthemeId);
+  const { error } = await supabase
+    .from("subthemes")
+    .delete()
+    .eq("id", subthemeId);
   if (error) {
     console.error("Supabase subtheme delete error:", error);
     throw error;
@@ -230,7 +242,10 @@ export async function removeSubtheme(
           ...p,
           themes: p.themes.map((t) =>
             t.id === themeId
-              ? { ...t, subthemes: t.subthemes.filter((s) => s.id !== subthemeId) }
+              ? {
+                  ...t,
+                  subthemes: t.subthemes.filter((s) => s.id !== subthemeId),
+                }
               : t
           ),
         }
