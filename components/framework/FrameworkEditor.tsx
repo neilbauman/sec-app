@@ -12,7 +12,7 @@ import {
   Download,
 } from "lucide-react";
 import Badge from "@/components/ui/badge";
-import { Button } from "@/components/ui/button"; // ✅ fixed import
+import { Button } from "@/components/ui/button";
 import {
   addPillar,
   addTheme,
@@ -56,6 +56,22 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const toggleTheme = (id: string) =>
     setOpenThemes((s) => ({ ...s, [id]: !s[id] }));
 
+  const expandAll = () => {
+    const pillarState: Record<string, boolean> = {};
+    const themeState: Record<string, boolean> = {};
+    pillars.forEach((p) => {
+      pillarState[p.id] = true;
+      p.themes.forEach((t) => (themeState[t.id] = true));
+    });
+    setOpenPillars(pillarState);
+    setOpenThemes(themeState);
+  };
+
+  const collapseAll = () => {
+    setOpenPillars({});
+    setOpenThemes({});
+  };
+
   // ---------- Render ----------
   return (
     <div className="space-y-4">
@@ -78,6 +94,22 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
           >
             {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={expandAll}
+            className="bg-gray-50 text-gray-700 hover:bg-gray-100"
+          >
+            Expand All
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={collapseAll}
+            className="bg-gray-50 text-gray-700 hover:bg-gray-100"
+          >
+            Collapse All
+          </Button>
         </div>
         {editMode && (
           <div className="flex items-center gap-2 border rounded-md px-3 py-1 bg-gray-50">
@@ -99,18 +131,20 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
             <tr>
               <th className="w-[25%] px-3 py-2 text-left">Type / Ref Code</th>
               <th className="w-[45%] px-3 py-2 text-left">Name / Description</th>
-              <th className="w-[15%] px-3 py-2 text-center">Sort Order</th>
+              <th className="w-[15%] px-3 py-2 text-center">Sort</th>
               <th className="w-[15%] px-3 py-2 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {pillars.map((pillar, pi) => (
+            {pillars.map((pillar) => (
               <PillarRow
                 key={pillar.id}
                 pillar={pillar}
                 open={openPillars[pillar.id]}
                 toggle={togglePillar}
                 editMode={editMode}
+                openThemes={openThemes}
+                toggleTheme={toggleTheme}
                 onAddTheme={onAddTheme}
                 onRemovePillar={onRemovePillar}
                 onRemoveTheme={onRemoveTheme}
@@ -131,6 +165,8 @@ function PillarRow({
   open,
   toggle,
   editMode,
+  openThemes,
+  toggleTheme,
   onAddTheme,
   onRemovePillar,
   onRemoveTheme,
@@ -141,6 +177,8 @@ function PillarRow({
   open?: boolean;
   toggle: (id: string) => void;
   editMode: boolean;
+  openThemes: Record<string, boolean>;
+  toggleTheme: (id: string) => void;
   onAddTheme: (id: string) => void;
   onRemovePillar: (id: string) => void;
   onRemoveTheme: (pillarId: string, themeId: string) => void;
@@ -167,7 +205,10 @@ function PillarRow({
             <span className="text-xs text-gray-500 ml-1">{pillar.ref_code}</span>
           </div>
         </td>
-        <td className="px-3 py-2">{pillar.name}</td>
+        <td className="px-3 py-2">
+          <div className="font-medium">{pillar.name}</div>
+          <div className="text-xs text-gray-500">{pillar.description}</div>
+        </td>
         <td className="px-3 py-2 text-center">{pillar.sort_order}</td>
         <td className="px-3 py-2 text-right">
           {editMode && (
@@ -191,6 +232,8 @@ function PillarRow({
             key={theme.id}
             pillar={pillar}
             theme={theme}
+            open={openThemes[theme.id]}
+            toggleTheme={toggleTheme}
             editMode={editMode}
             onRemoveTheme={onRemoveTheme}
             onAddSubtheme={onAddSubtheme}
@@ -205,6 +248,8 @@ function PillarRow({
 function ThemeRow({
   pillar,
   theme,
+  open,
+  toggleTheme,
   editMode,
   onRemoveTheme,
   onAddSubtheme,
@@ -212,6 +257,8 @@ function ThemeRow({
 }: {
   pillar: NormalizedPillar;
   theme: NormalizedTheme;
+  open?: boolean;
+  toggleTheme: (id: string) => void;
   editMode: boolean;
   onRemoveTheme: (pillarId: string, themeId: string) => void;
   onAddSubtheme: (pillarId: string, themeId: string) => void;
@@ -226,11 +273,21 @@ function ThemeRow({
       <tr className="border-t">
         <td className="px-3 py-2 pl-8">
           <div className="flex items-center gap-1">
+            <button onClick={() => toggleTheme(theme.id)} className="mr-1">
+              {open ? (
+                <ChevronDown className="w-4 h-4 text-gray-500" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-gray-500" />
+              )}
+            </button>
             <Badge variant="success">Theme</Badge>
             <span className="text-xs text-gray-500 ml-1">{theme.ref_code}</span>
           </div>
         </td>
-        <td className="px-3 py-2 pl-8">{theme.name}</td>
+        <td className="px-3 py-2 pl-8">
+          <div className="font-medium">{theme.name}</div>
+          <div className="text-xs text-gray-500">{theme.description}</div>
+        </td>
         <td className="px-3 py-2 text-center">{theme.sort_order}</td>
         <td className="px-3 py-2 text-right">
           {editMode && (
@@ -256,36 +313,40 @@ function ThemeRow({
           )}
         </td>
       </tr>
-      {theme.subthemes.map((sub) => (
-        <tr key={sub.id} className="border-t">
-          <td className="px-3 py-2 pl-12">
-            <div className="flex items-center gap-1">
-              <Badge variant="danger">Subtheme</Badge>
-              <span className="text-xs text-gray-500 ml-1">{sub.ref_code}</span>
-            </div>
-          </td>
-          <td className="px-3 py-2 pl-12">{sub.name}</td>
-          <td className="px-3 py-2 text-center">{sub.sort_order}</td>
-          <td className="px-3 py-2 text-right">
-            {editMode && (
-              <div className="flex justify-end gap-2">
-                <Button size="sm" variant="ghost">
-                  <Edit className="w-4 h-4 text-gray-600" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() =>
-                    onRemoveSubtheme(pillar.id, theme.id, sub.id)
-                  }
-                >
-                  <Trash2 className="w-4 h-4 text-gray-600" />
-                </Button>
+      {open &&
+        theme.subthemes.map((sub) => (
+          <tr key={sub.id} className="border-t">
+            <td className="px-3 py-2 pl-12">
+              <div className="flex items-center gap-1">
+                <Badge variant="danger">Subtheme</Badge>
+                <span className="text-xs text-gray-500 ml-1">{sub.ref_code}</span>
               </div>
-            )}
-          </td>
-        </tr>
-      ))}
+            </td>
+            <td className="px-3 py-2 pl-12">
+              <div className="font-medium">{sub.name}</div>
+              <div className="text-xs text-gray-500">{sub.description}</div>
+            </td>
+            <td className="px-3 py-2 text-center">{sub.sort_order}</td>
+            <td className="px-3 py-2 text-right">
+              {editMode && (
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="ghost">
+                    <Edit className="w-4 h-4 text-gray-600" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      onRemoveSubtheme(pillar.id, theme.id, sub.id)
+                    }
+                  >
+                    <Trash2 className="w-4 h-4 text-gray-600" />
+                  </Button>
+                </div>
+              )}
+            </td>
+          </tr>
+        ))}
     </>
   );
 }
