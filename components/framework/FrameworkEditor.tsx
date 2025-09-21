@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
-import { useToast } from "@/components/ui/use-toast";
 import type { NestedPillar } from "@/lib/framework-client";
 import {
   addPillar,
@@ -32,7 +31,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
-  const { toast } = useToast();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // expand / collapse
   const togglePillar = (id: string) =>
@@ -59,23 +58,15 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   async function runAsync<T>(
     key: string,
     fn: () => Promise<T>,
-    successMsg?: string,
-    errorMsg?: string
+    errorMsgOverride?: string
   ): Promise<T | null> {
     setLoading(key);
+    setErrorMsg(null);
     try {
-      const result = await fn();
-      if (successMsg) {
-        toast({ description: successMsg });
-      }
-      return result;
+      return await fn();
     } catch (err) {
-      console.error(errorMsg || "Error:", err);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: errorMsg || "Something went wrong.",
-      });
+      console.error(errorMsgOverride || "Error:", err);
+      setErrorMsg(errorMsgOverride || "Something went wrong.");
       return null;
     } finally {
       setLoading(null);
@@ -88,35 +79,35 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       const updated = await addPillar(pillars);
       setPillars(updated);
       return updated;
-    }, "Pillar added");
+    }, "Error adding pillar");
 
   const handleAddTheme = (pillarId: string) =>
     runAsync(`pillar:${pillarId}:theme:add`, async () => {
       const updated = await addTheme(pillars, pillarId);
       setPillars(updated);
       return updated;
-    }, "Theme added");
+    }, "Error adding theme");
 
   const handleAddSubtheme = (pillarId: string, themeId: string) =>
     runAsync(`theme:${themeId}:sub:add`, async () => {
       const updated = await addSubtheme(pillars, pillarId, themeId);
       setPillars(updated);
       return updated;
-    }, "Subtheme added");
+    }, "Error adding subtheme");
 
   const handleDeletePillar = (pillarId: string) =>
     runAsync(`pillar:${pillarId}:del`, async () => {
       const updated = await removePillar(pillars, pillarId);
       setPillars(updated);
       return updated;
-    }, undefined, "Error deleting pillar");
+    }, "Error deleting pillar");
 
   const handleDeleteTheme = (pillarId: string, themeId: string) =>
     runAsync(`theme:${themeId}:del`, async () => {
       const updated = await removeTheme(pillars, pillarId, themeId);
       setPillars(updated);
       return updated;
-    }, undefined, "Error deleting theme");
+    }, "Error deleting theme");
 
   const handleDeleteSubtheme = (
     pillarId: string,
@@ -127,10 +118,17 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       const updated = await removeSubtheme(pillars, pillarId, themeId, subId);
       setPillars(updated);
       return updated;
-    }, undefined, "Error deleting subtheme");
+    }, "Error deleting subtheme");
 
   return (
     <div className="space-y-4">
+      {/* Error banner */}
+      {errorMsg && (
+        <div className="rounded-md bg-red-50 border border-red-200 text-red-700 px-4 py-2 text-sm">
+          {errorMsg}
+        </div>
+      )}
+
       {/* Top controls */}
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
