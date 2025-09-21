@@ -62,15 +62,24 @@ async function reindexFramework(pillars: NestedPillar[]): Promise<NestedPillar[]
   // Persist updated sort_order values in Supabase
   if (pillarUpdates.length > 0) {
     const { error } = await supabase.from("pillars").upsert(pillarUpdates);
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase pillar reindex error:", error);
+      throw error;
+    }
   }
   if (themeUpdates.length > 0) {
     const { error } = await supabase.from("themes").upsert(themeUpdates);
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase theme reindex error:", error);
+      throw error;
+    }
   }
   if (subthemeUpdates.length > 0) {
     const { error } = await supabase.from("subthemes").upsert(subthemeUpdates);
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase subtheme reindex error:", error);
+      throw error;
+    }
   }
 
   return reindexedPillars;
@@ -173,7 +182,10 @@ export async function removePillar(
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("pillars").delete().eq("id", pillarId);
-  if (error) throw error;
+  if (error) {
+    console.error("Supabase pillar delete error:", error);
+    throw error;
+  }
 
   const newPillars = pillars.filter((p) => p.id !== pillarId);
   return reindexFramework(newPillars);
@@ -186,7 +198,10 @@ export async function removeTheme(
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("themes").delete().eq("id", themeId);
-  if (error) throw error;
+  if (error) {
+    console.error("Supabase theme delete error:", error);
+    throw error;
+  }
 
   const newPillars = pillars.map((p) =>
     p.id === pillarId
@@ -204,7 +219,10 @@ export async function removeSubtheme(
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("subthemes").delete().eq("id", subthemeId);
-  if (error) throw error;
+  if (error) {
+    console.error("Supabase subtheme delete error:", error);
+    throw error;
+  }
 
   const newPillars = pillars.map((p) =>
     p.id === pillarId
