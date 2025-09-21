@@ -1,7 +1,7 @@
 // lib/refCodes.ts
 import type { Pillar, Theme, Subtheme } from "@/lib/framework-client";
 
-export type NormalizedPillar = {
+export type NestedPillar = {
   id: string;
   ref_code: string;       // e.g. P1, P2
   name: string;
