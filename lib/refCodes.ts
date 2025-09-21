@@ -1,102 +1,48 @@
 // lib/refCodes.ts
-import type { Pillar, Theme, Subtheme } from "@/lib/framework-client";
-
-export type NestedPillar = {
-  id: string;
-  ref_code: string;       // e.g. P1, P2
-  name: string;
-  description: string;
-  sort_order: number;
-  themes: NormalizedTheme[];
-};
-
-export type NormalizedTheme = {
-  id: string;
-  ref_code: string;       // e.g. T1.1, T2.2
-  pillar_id: string;
-  pillar_code: string;    // parent pillar’s code (P1, P2)
-  name: string;
-  description: string;
-  sort_order: number;
-  subthemes: NormalizedSubtheme[];
-};
-
-export type NormalizedSubtheme = {
-  id: string;
-  ref_code: string;       // e.g. ST1.1.1
-  theme_id: string;
-  theme_code: string;     // parent theme’s code (T1.1)
-  name: string;
-  description: string;
-  sort_order: number;
-};
+import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
 
 /**
- * Normalizes raw framework data into a consistent shape
- * with generated ref codes.
+ * Generate ref codes for the entire framework (pillars → themes → subthemes).
  */
-export function normalizeFramework(raw: {
-  pillars: Pillar[];
-  themes: Theme[];
-  subthemes: Subtheme[];
-}): { pillars: NormalizedPillar[] } {
-  // Index themes by pillar
-  const themesByPillar: Record<string, Theme[]> = {};
-  raw.themes.forEach((t) => {
-    if (!themesByPillar[t.pillar_id]) themesByPillar[t.pillar_id] = [];
-    themesByPillar[t.pillar_id].push(t);
+export function generateRefCodes(pillars: NestedPillar[]): NestedPillar[] {
+  return pillars.map((pillar, pIdx) => {
+    const refPillar: NestedPillar = {
+      ...pillar,
+      ref_code: `P${pIdx + 1}`,
+      themes: pillar.themes.map((theme, tIdx) => {
+        const refTheme: NestedTheme = {
+          ...theme,
+          ref_code: `T${pIdx + 1}.${tIdx + 1}`,
+          subthemes: theme.subthemes.map((sub, sIdx) => {
+            const refSub: NestedSubtheme = {
+              ...sub,
+              ref_code: `ST${pIdx + 1}.${tIdx + 1}.${sIdx + 1}`,
+            };
+            return refSub;
+          }),
+        };
+        return refTheme;
+      }),
+    };
+    return refPillar;
   });
+}
 
-  // Index subthemes by theme
-  const subsByTheme: Record<string, Subtheme[]> = {};
-  raw.subthemes.forEach((s) => {
-    if (!subsByTheme[s.theme_id]) subsByTheme[s.theme_id] = [];
-    subsByTheme[s.theme_id].push(s);
-  });
+/**
+ * Generate a ref code string for a single item.
+ */
+export function generatePillarRef(pillarIndex: number): string {
+  return `P${pillarIndex + 1}`;
+}
 
-  const nestedPillars: NestedPillar[] = raw.pillars
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((pillar, pIdx) => {
-      const pillarCode = `P${pIdx + 1}`;
+export function generateThemeRef(pillarIndex: number, themeIndex: number): string {
+  return `T${pillarIndex + 1}.${themeIndex + 1}`;
+}
 
-      const themes: NormalizedTheme[] = (themesByPillar[pillar.id] || [])
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((theme, tIdx) => {
-          const themeCode = `${pillarCode}.${tIdx + 1}`;
-
-          const subthemes: NormalizedSubtheme[] = (subsByTheme[theme.id] || [])
-            .sort((a, b) => a.sort_order - b.sort_order)
-            .map((sub, sIdx) => ({
-              id: sub.id,
-              ref_code: `${themeCode}.${sIdx + 1}`,
-              theme_id: theme.id,
-              theme_code: themeCode,
-              name: sub.name,
-              description: sub.description,
-              sort_order: sub.sort_order,
-            }));
-
-          return {
-            id: theme.id,
-            ref_code: themeCode,
-            pillar_id: pillar.id,
-            pillar_code: pillarCode,
-            name: theme.name,
-            description: theme.description,
-            sort_order: theme.sort_order,
-            subthemes,
-          };
-        });
-
-      return {
-        id: pillar.id,
-        ref_code: pillarCode,
-        name: pillar.name,
-        description: pillar.description,
-        sort_order: pillar.sort_order,
-        themes,
-      };
-    });
-
-  return { pillars: nestedPillars };
+export function generateSubthemeRef(
+  pillarIndex: number,
+  themeIndex: number,
+  subIndex: number
+): string {
+  return `ST${pillarIndex + 1}.${themeIndex + 1}.${subIndex + 1}`;
 }
