@@ -1,15 +1,13 @@
 // components/framework/FrameworkEditor.tsx
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
   Edit2,
   Plus,
   Trash2,
-  Upload,
-  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
@@ -26,32 +24,18 @@ import {
   removeTheme,
   removeSubtheme,
 } from "@/lib/framework-actions";
-import { getSupabaseBrowser } from "@/lib/supabase-browser";
-
-/** Pale button styles matching badges */
-const paleBtn =
-  "bg-blue-50 text-blue-800 ring-1 ring-inset ring-blue-200 hover:bg-blue-100";
-const paleBtnGreen =
-  "bg-green-50 text-green-800 ring-1 ring-inset ring-green-200 hover:bg-green-100";
-const paleBtnGray =
-  "bg-gray-50 text-gray-700 ring-1 ring-inset ring-gray-200 hover:bg-gray-100";
 
 type FrameworkEditorProps = {
   data: NestedPillar[];
 };
 
 export default function FrameworkEditor({ data }: FrameworkEditorProps) {
-  const supabase = useMemo(() => getSupabaseBrowser(), []);
   const [pillars, setPillars] = useState<NestedPillar[]>(data);
-
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
-  const [editMode, setEditMode] = useState<boolean>(false);
-  const [editingRow, setEditingRow] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  // ---------- Expand / Collapse ----------
+  // expand / collapse
   const togglePillar = (id: string) =>
     setOpenPillars((s) => ({ ...s, [id]: !s[id] }));
   const toggleTheme = (id: string) =>
@@ -62,78 +46,17 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     const nextT: Record<string, boolean> = {};
     pillars.forEach((p) => {
       nextP[p.id] = true;
-      p.themes.forEach((t) => {
-        nextT[t.id] = true;
-      });
+      p.themes.forEach((t) => (nextT[t.id] = true));
     });
     setOpenPillars(nextP);
     setOpenThemes(nextT);
   };
-
   const collapseAll = () => {
     setOpenPillars({});
     setOpenThemes({});
   };
 
-  // ---------- Inline Edit persistence ----------
-  async function persistField(
-    type: "pillar" | "theme" | "subtheme",
-    id: string,
-    field: "name" | "description",
-    value: string
-  ) {
-    setEditingRow(id);
-    try {
-      if (type === "pillar") {
-        const { error } = await supabase
-          .from("pillars")
-          .update({ [field]: value })
-          .eq("id", id);
-        if (error) throw error;
-        setPillars((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, [field]: value } : p))
-        );
-      } else if (type === "theme") {
-        const { error } = await supabase
-          .from("themes")
-          .update({ [field]: value })
-          .eq("id", id);
-        if (error) throw error;
-        setPillars((prev) =>
-          prev.map((p) => ({
-            ...p,
-            themes: p.themes.map((t) =>
-              t.id === id ? { ...t, [field]: value } : t
-            ),
-          }))
-        );
-      } else {
-        const { error } = await supabase
-          .from("subthemes")
-          .update({ [field]: value })
-          .eq("id", id);
-        if (error) throw error;
-        setPillars((prev) =>
-          prev.map((p) => ({
-            ...p,
-            themes: p.themes.map((t) => ({
-              ...t,
-              subthemes: t.subthemes.map((s) =>
-                s.id === id ? { ...s, [field]: value } : s
-              ),
-            })),
-          }))
-        );
-      }
-    } catch (err) {
-      console.error("Failed to save field:", err);
-      alert("Error saving changes.");
-    } finally {
-      setEditingRow(null);
-    }
-  }
-
-  // ---------- Add / Remove ----------
+  // add/remove
   const onAddPillar = () => setPillars((prev) => addPillar(prev));
   const onAddTheme = (pillarId: string) =>
     setPillars((prev) => addTheme(prev, pillarId));
@@ -144,33 +67,42 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setPillars((prev) => removePillar(prev, pillarId));
   const onDeleteTheme = (pillarId: string, themeId: string) =>
     setPillars((prev) => removeTheme(prev, pillarId, themeId));
-  const onDeleteSubtheme = (pillarId: string, themeId: string, subId: string) =>
-    setPillars((prev) => removeSubtheme(prev, pillarId, themeId, subId));
+  const onDeleteSubtheme = (
+    pillarId: string,
+    themeId: string,
+    subId: string
+  ) => setPillars((prev) => removeSubtheme(prev, pillarId, themeId, subId));
 
-  // ---------- Render ----------
   return (
     <div className="space-y-4">
-      {/* Top Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button onClick={expandAll} className={paleBtn} size="sm">
+      {/* Top controls */}
+      <div className="flex justify-between items-center">
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={expandAll}>
             Expand All
           </Button>
-          <Button onClick={collapseAll} className={paleBtn} size="sm">
+          <Button size="sm" variant="outline" onClick={collapseAll}>
             Collapse All
           </Button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2">
           {editMode && (
-            <Button onClick={onAddPillar} className={paleBtnGreen} size="sm">
-              <Plus className="w-4 h-4 mr-1" />
-              Add Pillar
+            <Button
+              size="sm"
+              className="bg-green-100 text-green-800 border border-green-300"
+              onClick={onAddPillar}
+            >
+              <Plus className="w-4 h-4 mr-1" /> Add Pillar
             </Button>
           )}
           <Button
-            onClick={() => setEditMode((s) => !s)}
-            className={editMode ? paleBtn : paleBtnGray}
             size="sm"
+            className={
+              editMode
+                ? "bg-blue-100 text-blue-800 border border-blue-300"
+                : "bg-gray-100 text-gray-700 border border-gray-300"
+            }
+            onClick={() => setEditMode((s) => !s)}
           >
             <Edit2 className="w-4 h-4 mr-1" />
             {editMode ? "Editing" : "View Mode"}
@@ -179,15 +111,15 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border">
+      <div className="overflow-x-auto rounded border">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
+          <thead className="bg-gray-50">
             <tr className="[&>th]:px-3 [&>th]:py-2 text-left">
               <th className="w-40">Type</th>
               <th className="w-24">Ref Code</th>
               <th className="min-w-[18rem]">Name / Description</th>
-              <th className="w-24 text-right">Sort</th>
-              <th className="w-56 text-right">Actions</th>
+              <th className="w-20 text-center">Sort</th>
+              <th className="w-40 text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -195,13 +127,11 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
               const pillarOpen = !!openPillars[pillar.id];
               return (
                 <>
+                  {/* Pillar row */}
                   <tr key={pillar.id} className="[&>td]:px-3 [&>td]:py-2">
                     <td>
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => togglePillar(pillar.id)}
-                          className="w-5 h-5"
-                        >
+                        <button onClick={() => togglePillar(pillar.id)}>
                           {pillarOpen ? (
                             <ChevronDown className="w-4 h-4" />
                           ) : (
@@ -211,41 +141,29 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                         <Badge>Pillar</Badge>
                       </div>
                     </td>
-                    <td>{pillar.ref_code}</td>
+                    <td className="text-gray-500 text-xs">{pillar.ref_code}</td>
                     <td>
-                      <EditableField
-                        disabled={!editMode || editingRow === pillar.id}
-                        type="pillar"
-                        id={pillar.id}
-                        label="name"
-                        value={pillar.name}
-                        onSave={persistField}
-                      />
-                      <EditableField
-                        disabled={!editMode || editingRow === pillar.id}
-                        type="pillar"
-                        id={pillar.id}
-                        label="description"
-                        value={pillar.description}
-                        onSave={persistField}
-                        textarea
-                      />
+                      <div className="font-medium">{pillar.name}</div>
+                      {pillar.description && (
+                        <div className="text-xs text-gray-600">
+                          {pillar.description}
+                        </div>
+                      )}
                     </td>
-                    <td className="text-right">{pillar.sort_order}</td>
-                    <td className="text-right">
+                    <td className="text-center">{pillar.sort_order}</td>
+                    <td className="text-center">
                       {editMode && (
-                        <div className="flex gap-2 justify-end">
+                        <div className="flex gap-2 justify-center">
                           <Button
                             size="sm"
-                            className={paleBtn}
+                            variant="outline"
                             onClick={() => onAddTheme(pillar.id)}
                           >
-                            <Plus className="w-4 h-4 mr-1" />
-                            Theme
+                            <Plus className="w-4 h-4 mr-1" /> Theme
                           </Button>
                           <Button
                             size="sm"
-                            className="bg-red-50 text-red-800 ring-1 ring-inset ring-red-200"
+                            variant="destructive"
                             onClick={() => onDeletePillar(pillar.id)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -254,71 +172,112 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                       )}
                     </td>
                   </tr>
+
+                  {/* Themes */}
                   {pillarOpen &&
                     pillar.themes.map((theme) => {
                       const themeOpen = !!openThemes[theme.id];
                       return (
-                        <tr key={theme.id} className="[&>td]:px-3 [&>td]:py-2">
-                          <td>
-                            <div className="flex items-center gap-2 pl-6">
-                              <button
-                                onClick={() => toggleTheme(theme.id)}
-                                className="w-5 h-5"
-                              >
-                                {themeOpen ? (
-                                  <ChevronDown className="w-4 h-4" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4" />
-                                )}
-                              </button>
-                              <Badge variant="success">Theme</Badge>
-                            </div>
-                          </td>
-                          <td>{theme.ref_code}</td>
-                          <td>
-                            <EditableField
-                              disabled={!editMode || editingRow === theme.id}
-                              type="theme"
-                              id={theme.id}
-                              label="name"
-                              value={theme.name}
-                              onSave={persistField}
-                            />
-                            <EditableField
-                              disabled={!editMode || editingRow === theme.id}
-                              type="theme"
-                              id={theme.id}
-                              label="description"
-                              value={theme.description}
-                              onSave={persistField}
-                              textarea
-                            />
-                          </td>
-                          <td className="text-right">{theme.sort_order}</td>
-                          <td className="text-right">
-                            {editMode && (
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  size="sm"
-                                  className={paleBtn}
-                                  onClick={() =>
-                                    onAddSubtheme(pillar.id, theme.id)
-                                  }
-                                >
-                                  <Plus className="w-4 h-4 mr-1" />
-                                  Subtheme
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="bg-red-50 text-red-800 ring-1 ring-inset ring-red-200"
-                                  onClick={() => onDeleteTheme(pillar.id, theme.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
+                        <>
+                          <tr key={theme.id} className="[&>td]:px-3 [&>td]:py-2">
+                            <td>
+                              <div className="flex items-center gap-2 pl-6">
+                                <button onClick={() => toggleTheme(theme.id)}>
+                                  {themeOpen ? (
+                                    <ChevronDown className="w-4 h-4" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <Badge variant="success">Theme</Badge>
                               </div>
-                            )}
-                          </td>
-                        </tr>
+                            </td>
+                            <td className="text-gray-500 text-xs">
+                              {theme.ref_code}
+                            </td>
+                            <td>
+                              <div className="font-medium">{theme.name}</div>
+                              {theme.description && (
+                                <div className="text-xs text-gray-600">
+                                  {theme.description}
+                                </div>
+                              )}
+                            </td>
+                            <td className="text-center">{theme.sort_order}</td>
+                            <td className="text-center">
+                              {editMode && (
+                                <div className="flex gap-2 justify-center">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      onAddSubtheme(pillar.id, theme.id)
+                                    }
+                                  >
+                                    <Plus className="w-4 h-4 mr-1" /> Subtheme
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() =>
+                                      onDeleteTheme(pillar.id, theme.id)
+                                    }
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+
+                          {/* Subthemes */}
+                          {themeOpen &&
+                            theme.subthemes.map((sub) => (
+                              <tr
+                                key={sub.id}
+                                className="[&>td]:px-3 [&>td]:py-2"
+                              >
+                                <td>
+                                  <div className="flex items-center gap-2 pl-12">
+                                    <Badge variant="danger">Subtheme</Badge>
+                                  </div>
+                                </td>
+                                <td className="text-gray-500 text-xs">
+                                  {sub.ref_code}
+                                </td>
+                                <td>
+                                  <div className="font-medium">{sub.name}</div>
+                                  {sub.description && (
+                                    <div className="text-xs text-gray-600">
+                                      {sub.description}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="text-center">
+                                  {sub.sort_order}
+                                </td>
+                                <td className="text-center">
+                                  {editMode && (
+                                    <div className="flex gap-2 justify-center">
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() =>
+                                          onDeleteSubtheme(
+                                            pillar.id,
+                                            theme.id,
+                                            sub.id
+                                          )
+                                        }
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                        </>
                       );
                     })}
                 </>
@@ -328,52 +287,5 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
         </table>
       </div>
     </div>
-  );
-}
-
-/* -------- EditableField subcomponent -------- */
-function EditableField({
-  disabled,
-  type,
-  id,
-  label,
-  value,
-  onSave,
-  textarea,
-}: {
-  disabled?: boolean;
-  type: "pillar" | "theme" | "subtheme";
-  id: string;
-  label: "name" | "description";
-  value: string;
-  onSave: (
-    type: "pillar" | "theme" | "subtheme",
-    id: string,
-    field: "name" | "description",
-    value: string
-  ) => Promise<void>;
-  textarea?: boolean;
-}) {
-  const [val, setVal] = useState(value);
-  return textarea ? (
-    <textarea
-      disabled={disabled}
-      value={val}
-      onChange={(e) => setVal(e.target.value)}
-      onBlur={() => {
-        if (val !== value) onSave(type, id, label, val);
-      }}
-      className="w-full text-xs text-gray-600 border rounded px-2 py-1"
-    />
-  ) : (
-    <input
-      disabled={disabled}
-      value={val}
-      onChange={(e) => setVal(e.target.value)}
-      onBlur={() => {
-        if (val !== value) onSave(type, id, label, val);
-      }}
-      className="w-full border rounded px-2 py-1"
-    />
   );
 }
