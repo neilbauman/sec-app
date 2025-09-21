@@ -1,10 +1,16 @@
 // lib/framework-actions.ts
 import { getSupabaseClient } from "@/lib/supabase-client";
-import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+import type {
+  NestedPillar,
+  NestedTheme,
+  NestedSubtheme,
+} from "@/lib/framework-client";
 import { recalcRefCodes } from "@/lib/refCodes";
 
 // ---------- Add ----------
-export async function addPillar(pillars: NestedPillar[]): Promise<NestedPillar[]> {
+export async function addPillar(
+  pillars: NestedPillar[]
+): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("pillars")
@@ -26,7 +32,10 @@ export async function addPillar(pillars: NestedPillar[]): Promise<NestedPillar[]
   return recalcRefCodes([...pillars, newPillar]);
 }
 
-export async function addTheme(pillars: NestedPillar[], pillarId: string): Promise<NestedPillar[]> {
+export async function addTheme(
+  pillars: NestedPillar[],
+  pillarId: string
+): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
   const pillar = pillars.find((p) => p.id === pillarId);
   if (!pillar) return pillars;
@@ -48,6 +57,7 @@ export async function addTheme(pillars: NestedPillar[], pillarId: string): Promi
 
   const newTheme: NestedTheme = {
     id: data.id,
+    theme_id: pillarId, // ✅ required by type
     ref_code: "",
     name: data.name,
     description: data.description,
@@ -89,6 +99,7 @@ export async function addSubtheme(
 
   const newSub: NestedSubtheme = {
     id: data.id,
+    theme_id: themeId, // ✅ required by type
     ref_code: "",
     name: data.name,
     description: data.description,
@@ -109,7 +120,10 @@ export async function addSubtheme(
 }
 
 // ---------- Remove ----------
-export async function removePillar(pillars: NestedPillar[], pillarId: string): Promise<NestedPillar[]> {
+export async function removePillar(
+  pillars: NestedPillar[],
+  pillarId: string
+): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
   const { error } = await supabase.from("pillars").delete().eq("id", pillarId);
   if (error) throw error;
@@ -126,7 +140,9 @@ export async function removeTheme(
   if (error) throw error;
   return recalcRefCodes(
     pillars.map((p) =>
-      p.id === pillarId ? { ...p, themes: p.themes.filter((t) => t.id !== themeId) } : p
+      p.id === pillarId
+        ? { ...p, themes: p.themes.filter((t) => t.id !== themeId) }
+        : p
     )
   );
 }
@@ -146,7 +162,9 @@ export async function removeSubtheme(
         ? {
             ...p,
             themes: p.themes.map((t) =>
-              t.id === themeId ? { ...t, subthemes: t.subthemes.filter((s) => s.id !== subId) } : t
+              t.id === themeId
+                ? { ...t, subthemes: t.subthemes.filter((s) => s.id !== subId) }
+                : t
             ),
           }
         : p
