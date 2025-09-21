@@ -1,10 +1,12 @@
 // app/configuration/primary/page.tsx
 import PageHeader from "@/components/ui/PageHeader";
-import { fetchFramework } from "@/lib/framework-client";
 import FrameworkEditor from "@/components/framework/FrameworkEditor";
+import { fetchFramework } from "@/lib/framework-client";
+import { normalizeFramework } from "@/lib/framework-utils";
 
 export default async function PrimaryFrameworkEditorPage() {
-  const framework = await fetchFramework();
+  const nested = await fetchFramework(); // NestedPillar[]
+  const framework = normalizeFramework(nested); // NormalizedPillar[]
 
   return (
     <div className="space-y-6">
@@ -17,7 +19,6 @@ export default async function PrimaryFrameworkEditorPage() {
           { label: "Primary Framework" },
         ]}
       />
-
       <FrameworkEditor data={framework} />
     </div>
   );
