@@ -1,56 +1,79 @@
 // lib/framework-actions.ts
-"use server";
+import {
+  NormalizedPillar,
+  NormalizedTheme,
+  NormalizedSubtheme,
+} from "@/lib/framework-utils";
 
-import { getSupabaseClient } from "@/lib/supabase-server";
-
-/** Small helper to generate a short ref code if the column is required */
-function generateRefCode(name: string) {
-  const base = name.replace(/\s+/g, "-").toLowerCase().slice(0, 12);
-  const rand = Math.random().toString(36).slice(2, 6);
-  return `${base}-${rand}`;
-}
-
-/** Pillars */
-export async function addPillar(data: { name: string; description: string; sort_order: number }) {
-  const supabase = getSupabaseClient();
-  const payload = {
-    ref_code: generateRefCode(data.name),
-    ...data,
+// ----------------- Pillars -----------------
+export function addPillar(pillars: NormalizedPillar[]): NormalizedPillar[] {
+  const newPillar: NormalizedPillar = {
+    id: crypto.randomUUID(),
+    ref_code: `P${pillars.length + 1}`,
+    name: "New Pillar",
+    description: "Description here...",
+    sort_order: pillars.length + 1,
+    themes: [],
   };
 
-  // Force insert to bypass type issues
-  const { error } = await (supabase.from("pillars") as any).insert([payload]);
-  if (error) throw error;
+  return [...pillars, newPillar];
 }
 
-export async function deletePillar(id: string) {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.from("pillars").delete().eq("id", id);
-  if (error) throw error;
+// ----------------- Themes -----------------
+export function addTheme(
+  pillars: NormalizedPillar[],
+  pillarId: string
+): NormalizedPillar[] {
+  return pillars.map((pillar) => {
+    if (pillar.id !== pillarId) return pillar;
+
+    const newTheme: NormalizedTheme = {
+      id: crypto.randomUUID(),
+      pillar_id: pillarId,
+      pillar_code: pillar.ref_code,
+      ref_code: `${pillar.ref_code}.${pillar.themes.length + 1}`,
+      name: "New Theme",
+      description: "Description here...",
+      sort_order: pillar.themes.length + 1,
+      subthemes: [],
+    };
+
+    return {
+      ...pillar,
+      themes: [...pillar.themes, newTheme],
+    };
+  });
 }
 
-/** Themes */
-export async function addTheme(data: { pillar_id: string; name: string; description: string; sort_order: number }) {
-  const supabase = getSupabaseClient();
-  const { error } = await (supabase.from("themes") as any).insert([data]);
-  if (error) throw error;
-}
+// ----------------- Subthemes -----------------
+export function addSubtheme(
+  pillars: NormalizedPillar[],
+  pillarId: string,
+  themeId: string
+): NormalizedPillar[] {
+  return pillars.map((pillar) => {
+    if (pillar.id !== pillarId) return pillar;
 
-export async function deleteTheme(id: string) {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.from("themes").delete().eq("id", id);
-  if (error) throw error;
-}
+    return {
+      ...pillar,
+      themes: pillar.themes.map((theme) => {
+        if (theme.id !== themeId) return theme;
 
-/** Subthemes */
-export async function addSubtheme(data: { theme_id: string; name: string; description: string; sort_order: number }) {
-  const supabase = getSupabaseClient();
-  const { error } = await (supabase.from("subthemes") as any).insert([data]);
-  if (error) throw error;
-}
+        const newSubtheme: NormalizedSubtheme = {
+          id: crypto.randomUUID(),
+          theme_id: themeId,
+          theme_code: theme.ref_code,
+          ref_code: `${theme.ref_code}.${theme.subthemes.length + 1}`,
+          name: "New Subtheme",
+          description: "Description here...",
+          sort_order: theme.subthemes.length + 1,
+        };
 
-export async function deleteSubtheme(id: string) {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.from("subthemes").delete().eq("id", id);
-  if (error) throw error;
+        return {
+          ...theme,
+          subthemes: [...theme.subthemes, newSubtheme],
+        };
+      }),
+    };
+  });
 }
