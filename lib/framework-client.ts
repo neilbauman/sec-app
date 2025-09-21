@@ -1,6 +1,7 @@
 // lib/framework-client.ts
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/supabase";
-import { createClient } from "@/lib/supabase-server";
 
 // ---------- Base Table Types (from DB, no ref_code anymore) ----------
 export type Pillar = {
@@ -32,8 +33,11 @@ export type NestedTheme = Theme & { ref_code: string; subthemes: NestedSubtheme[
 export type NestedPillar = Pillar & { ref_code: string; themes: NestedTheme[] };
 
 // ---------- Client Factory ----------
-export function getSupabaseClient() {
-  return createClient();
+export function getSupabaseClient(): SupabaseClient<Database> {
+  return createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 }
 
 // ---------- Fetch Framework Helper ----------
