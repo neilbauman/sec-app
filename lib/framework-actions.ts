@@ -1,13 +1,13 @@
 // lib/framework-actions.ts
 import {
-  NormalizedPillar,
-  NormalizedTheme,
-  NormalizedSubtheme,
-} from "@/lib/framework-utils";
+  NestedPillar,
+  NestedTheme,
+  NestedSubtheme,
+} from "@/lib/framework-client";
 
 // ---------- Add ----------
-export function addPillar(pillars: NormalizedPillar[]): NormalizedPillar[] {
-  const newPillar: NormalizedPillar = {
+export function addPillar(pillars: NestedPillar[]): NestedPillar[] {
+  const newPillar: NestedPillar = {
     id: crypto.randomUUID(),
     ref_code: `P${pillars.length + 1}`,
     name: "New Pillar",
@@ -19,16 +19,15 @@ export function addPillar(pillars: NormalizedPillar[]): NormalizedPillar[] {
 }
 
 export function addTheme(
-  pillars: NormalizedPillar[],
+  pillars: NestedPillar[],
   pillarId: string
-): NormalizedPillar[] {
+): NestedPillar[] {
   return pillars.map((pillar) => {
     if (pillar.id === pillarId) {
-      const newTheme: NormalizedTheme = {
+      const newTheme: NestedTheme = {
         id: crypto.randomUUID(),
         ref_code: `${pillar.ref_code}.${pillar.themes.length + 1}`,
         pillar_id: pillarId,
-        pillar_code: pillar.ref_code,
         name: "New Theme",
         description: "",
         sort_order: pillar.themes.length + 1,
@@ -41,19 +40,18 @@ export function addTheme(
 }
 
 export function addSubtheme(
-  pillars: NormalizedPillar[],
+  pillars: NestedPillar[],
   pillarId: string,
   themeId: string
-): NormalizedPillar[] {
+): NestedPillar[] {
   return pillars.map((pillar) => {
     if (pillar.id === pillarId) {
       const updatedThemes = pillar.themes.map((theme) => {
         if (theme.id === themeId) {
-          const newSub: NormalizedSubtheme = {
+          const newSub: NestedSubtheme = {
             id: crypto.randomUUID(),
             ref_code: `${theme.ref_code}.${theme.subthemes.length + 1}`,
             theme_id: themeId,
-            theme_code: theme.ref_code,
             name: "New Subtheme",
             description: "",
             sort_order: theme.subthemes.length + 1,
@@ -70,17 +68,17 @@ export function addSubtheme(
 
 // ---------- Remove ----------
 export function removePillar(
-  pillars: NormalizedPillar[],
+  pillars: NestedPillar[],
   pillarId: string
-): NormalizedPillar[] {
+): NestedPillar[] {
   return pillars.filter((p) => p.id !== pillarId);
 }
 
 export function removeTheme(
-  pillars: NormalizedPillar[],
+  pillars: NestedPillar[],
   pillarId: string,
   themeId: string
-): NormalizedPillar[] {
+): NestedPillar[] {
   return pillars.map((pillar) => {
     if (pillar.id === pillarId) {
       return {
@@ -93,11 +91,11 @@ export function removeTheme(
 }
 
 export function removeSubtheme(
-  pillars: NormalizedPillar[],
+  pillars: NestedPillar[],
   pillarId: string,
   themeId: string,
   subthemeId: string
-): NormalizedPillar[] {
+): NestedPillar[] {
   return pillars.map((pillar) => {
     if (pillar.id === pillarId) {
       const updatedThemes = pillar.themes.map((theme) => {
