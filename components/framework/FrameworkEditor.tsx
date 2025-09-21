@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Edit2, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Edit2,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
 import type { NestedPillar } from "@/lib/framework-client";
@@ -12,6 +18,9 @@ import {
   removePillar,
   removeTheme,
   removeSubtheme,
+  updatePillar,
+  updateTheme,
+  updateSubtheme,
 } from "@/lib/framework-actions";
 
 type FrameworkEditorProps = {
@@ -26,7 +35,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // ---------- Expand / Collapse ----------
+  // expand / collapse
   const togglePillar = (id: string) =>
     setOpenPillars((s) => ({ ...s, [id]: !s[id] }));
   const toggleTheme = (id: string) =>
@@ -47,8 +56,11 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setOpenThemes({});
   };
 
-  // ---------- Async wrapper ----------
-  async function runAsync<T>(key: string, fn: () => Promise<T>): Promise<T | null> {
+  // ---------- Async helper ----------
+  async function runAsync<T>(
+    key: string,
+    fn: () => Promise<T>
+  ): Promise<T | null> {
     setLoading(key);
     setErrorMsg(null);
     try {
@@ -98,12 +110,65 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       return updated;
     });
 
-  const handleDeleteSubtheme = (pillarId: string, themeId: string, subId: string) =>
+  const handleDeleteSubtheme = (
+    pillarId: string,
+    themeId: string,
+    subId: string
+  ) =>
     runAsync(`sub:${subId}:del`, async () => {
       const updated = await removeSubtheme(pillars, pillarId, themeId, subId);
       setPillars(updated);
       return updated;
     });
+
+  // ---------- Inline Edit ----------
+  const handleUpdate = async (
+    type: "pillar" | "theme" | "subtheme",
+    pillarId: string,
+    themeId: string | null,
+    subId: string | null,
+    field: "name" | "description",
+    value: string
+  ) => {
+    const key = `${type}:${field}:update`;
+    await runAsync(key, async () => {
+      let updated: NestedPillar[] = pillars;
+      if (type === "pillar") {
+        updated = await updatePillar(pillars, pillarId, { [field]: value });
+      } else if (type === "theme" && themeId) {
+        updated = await updateTheme(pillars, pillarId, themeId, { [field]: value });
+      } else if (type === "subtheme" && themeId && subId) {
+        updated = await updateSubtheme(pillars, pillarId, themeId, subId, { [field]: value });
+      }
+      setPillars(updated);
+      return updated;
+    });
+  };
+
+  const EditableText: React.FC<{
+    value: string;
+    placeholder: string;
+    onSave: (val: string) => void;
+    className?: string;
+  }> = ({ value, placeholder, onSave, className }) => {
+    const [local, setLocal] = useState(value);
+
+    return (
+      <input
+        type="text"
+        className={`w-full border rounded px-1 py-0.5 text-sm ${className || ""}`}
+        value={local}
+        placeholder={placeholder}
+        onChange={(e) => setLocal(e.target.value)}
+        onBlur={() => local !== value && onSave(local)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+      />
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -135,7 +200,11 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
               <Plus className="w-4 h-4 mr-1" /> Add Pillar
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => setEditMode((s) => !s)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setEditMode((s) => !s)}
+          >
             <Edit2 className="w-4 h-4 mr-1" />
             {editMode ? "Editing" : "View Mode"}
           </Button>
@@ -165,6 +234,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                         <button
                           onClick={() => togglePillar(pillar.id)}
                           className="p-1 rounded hover:bg-gray-100"
+                          aria-label={pillarOpen ? "Collapse Pillar" : "Expand Pillar"}
                         >
                           {pillarOpen ? (
                             <ChevronDown className="w-4 h-4 text-gray-600" />
@@ -173,13 +243,40 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                           )}
                         </button>
                         <Badge>Pillar</Badge>
-                        <span className="text-xs text-gray-500">{pillar.ref_code}</span>
+                        <span className="text-xs text-gray-500">
+                          {pillar.ref_code}
+                        </span>
                       </div>
                     </td>
                     <td>
-                      <div className="font-medium">{pillar.name}</div>
-                      {pillar.description && (
-                        <div className="text-xs text-gray-600">{pillar.description}</div>
+                      {editMode ? (
+                        <div className="space-y-1">
+                          <EditableText
+                            value={pillar.name}
+                            placeholder="Pillar name"
+                            onSave={(val) =>
+                              handleUpdate("pillar", pillar.id, null, null, "name", val)
+                            }
+                            className="font-medium"
+                          />
+                          <EditableText
+                            value={pillar.description || ""}
+                            placeholder="Description"
+                            onSave={(val) =>
+                              handleUpdate("pillar", pillar.id, null, null, "description", val)
+                            }
+                            className="text-xs text-gray-600"
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="font-medium">{pillar.name}</div>
+                          {pillar.description && (
+                            <div className="text-xs text-gray-600">
+                              {pillar.description}
+                            </div>
+                          )}
+                        </>
                       )}
                     </td>
                     <td className="text-center">{pillar.sort_order}</td>
@@ -188,13 +285,17 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                         <div className="flex gap-3 justify-center">
                           <button
                             onClick={() => handleAddTheme(pillar.id)}
+                            disabled={loading === `pillar:${pillar.id}:theme:add`}
                             className="p-1 rounded hover:bg-blue-50"
+                            aria-label="Add Theme"
                           >
                             <Plus className="w-4 h-4 text-blue-600" />
                           </button>
                           <button
                             onClick={() => handleDeletePillar(pillar.id)}
+                            disabled={loading === `pillar:${pillar.id}:del`}
                             className="p-1 rounded hover:bg-red-50"
+                            aria-label="Delete Pillar"
                           >
                             <Trash2 className="w-4 h-4 text-red-600" />
                           </button>
@@ -209,12 +310,16 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                       const themeOpen = !!openThemes[theme.id];
                       return (
                         <>
-                          <tr key={theme.id} className="[&>td]:px-3 [&>td]:py-2">
+                          <tr
+                            key={theme.id}
+                            className="[&>td]:px-3 [&>td]:py-2"
+                          >
                             <td>
                               <div className="flex items-center gap-2 pl-4">
                                 <button
                                   onClick={() => toggleTheme(theme.id)}
                                   className="p-1 rounded hover:bg-gray-100"
+                                  aria-label={themeOpen ? "Collapse Theme" : "Expand Theme"}
                                 >
                                   {themeOpen ? (
                                     <ChevronDown className="w-4 h-4 text-gray-600" />
@@ -223,13 +328,47 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                   )}
                                 </button>
                                 <Badge variant="success">Theme</Badge>
-                                <span className="text-xs text-gray-500">{theme.ref_code}</span>
+                                <span className="text-xs text-gray-500">
+                                  {theme.ref_code}
+                                </span>
                               </div>
                             </td>
                             <td className="pl-4">
-                              <div className="font-medium">{theme.name}</div>
-                              {theme.description && (
-                                <div className="text-xs text-gray-600">{theme.description}</div>
+                              {editMode ? (
+                                <div className="space-y-1">
+                                  <EditableText
+                                    value={theme.name}
+                                    placeholder="Theme name"
+                                    onSave={(val) =>
+                                      handleUpdate("theme", pillar.id, theme.id, null, "name", val)
+                                    }
+                                    className="font-medium"
+                                  />
+                                  <EditableText
+                                    value={theme.description || ""}
+                                    placeholder="Description"
+                                    onSave={(val) =>
+                                      handleUpdate(
+                                        "theme",
+                                        pillar.id,
+                                        theme.id,
+                                        null,
+                                        "description",
+                                        val
+                                      )
+                                    }
+                                    className="text-xs text-gray-600"
+                                  />
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="font-medium">{theme.name}</div>
+                                  {theme.description && (
+                                    <div className="text-xs text-gray-600">
+                                      {theme.description}
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </td>
                             <td className="text-center">{theme.sort_order}</td>
@@ -238,13 +377,17 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                 <div className="flex gap-3 justify-center">
                                   <button
                                     onClick={() => handleAddSubtheme(pillar.id, theme.id)}
+                                    disabled={loading === `theme:${theme.id}:sub:add`}
                                     className="p-1 rounded hover:bg-blue-50"
+                                    aria-label="Add Subtheme"
                                   >
                                     <Plus className="w-4 h-4 text-blue-600" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteTheme(pillar.id, theme.id)}
+                                    disabled={loading === `theme:${theme.id}:del`}
                                     className="p-1 rounded hover:bg-red-50"
+                                    aria-label="Delete Theme"
                                   >
                                     <Trash2 className="w-4 h-4 text-red-600" />
                                   </button>
@@ -256,17 +399,61 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                           {/* Subthemes */}
                           {themeOpen &&
                             theme.subthemes.map((sub) => (
-                              <tr key={sub.id} className="[&>td]:px-3 [&>td]:py-2">
+                              <tr
+                                key={sub.id}
+                                className="[&>td]:px-3 [&>td]:py-2"
+                              >
                                 <td>
                                   <div className="flex items-center gap-2 pl-8">
                                     <Badge variant="danger">Subtheme</Badge>
-                                    <span className="text-xs text-gray-500">{sub.ref_code}</span>
+                                    <span className="text-xs text-gray-500">
+                                      {sub.ref_code}
+                                    </span>
                                   </div>
                                 </td>
                                 <td className="pl-8">
-                                  <div className="font-medium">{sub.name}</div>
-                                  {sub.description && (
-                                    <div className="text-xs text-gray-600">{sub.description}</div>
+                                  {editMode ? (
+                                    <div className="space-y-1">
+                                      <EditableText
+                                        value={sub.name}
+                                        placeholder="Subtheme name"
+                                        onSave={(val) =>
+                                          handleUpdate(
+                                            "subtheme",
+                                            pillar.id,
+                                            theme.id,
+                                            sub.id,
+                                            "name",
+                                            val
+                                          )
+                                        }
+                                        className="font-medium"
+                                      />
+                                      <EditableText
+                                        value={sub.description || ""}
+                                        placeholder="Description"
+                                        onSave={(val) =>
+                                          handleUpdate(
+                                            "subtheme",
+                                            pillar.id,
+                                            theme.id,
+                                            sub.id,
+                                            "description",
+                                            val
+                                          )
+                                        }
+                                        className="text-xs text-gray-600"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <div className="font-medium">{sub.name}</div>
+                                      {sub.description && (
+                                        <div className="text-xs text-gray-600">
+                                          {sub.description}
+                                        </div>
+                                      )}
+                                    </>
                                   )}
                                 </td>
                                 <td className="text-center">{sub.sort_order}</td>
@@ -274,9 +461,15 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                   {editMode && (
                                     <button
                                       onClick={() =>
-                                        handleDeleteSubtheme(pillar.id, theme.id, sub.id)
+                                        handleDeleteSubtheme(
+                                          pillar.id,
+                                          theme.id,
+                                          sub.id
+                                        )
                                       }
+                                      disabled={loading === `sub:${sub.id}:del`}
                                       className="p-1 rounded hover:bg-red-50"
+                                      aria-label="Delete Subtheme"
                                     >
                                       <Trash2 className="w-4 h-4 text-red-600" />
                                     </button>
