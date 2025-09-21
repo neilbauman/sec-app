@@ -1,7 +1,7 @@
 // app/configuration/primary/page.tsx
 import PageHeader from "@/components/ui/PageHeader";
-import FrameworkEditor from "@/components/framework/FrameworkEditor";
 import { fetchFramework } from "@/lib/framework-client";
+import FrameworkEditor from "@/components/framework/FrameworkEditor";
 
 export default async function PrimaryFrameworkEditorPage() {
   const framework = await fetchFramework();
