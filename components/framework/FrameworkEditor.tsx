@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 import type { NestedPillar } from "@/lib/framework-client";
 import {
   addPillar,
@@ -31,6 +32,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // expand / collapse
   const togglePillar = (id: string) =>
@@ -53,88 +55,79 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setOpenThemes({});
   };
 
-  // ---------- Add / Remove (async) ----------
-  async function handleAddPillar() {
-    setLoading("pillar:add");
+  // ---------- Async helpers ----------
+  async function runAsync<T>(
+    key: string,
+    fn: () => Promise<T>,
+    successMsg?: string,
+    errorMsg?: string
+  ): Promise<T | null> {
+    setLoading(key);
     try {
+      const result = await fn();
+      if (successMsg) {
+        toast({ description: successMsg });
+      }
+      return result;
+    } catch (err) {
+      console.error(errorMsg || "Error:", err);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMsg || "Something went wrong.",
+      });
+      return null;
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  // ---------- Add / Remove ----------
+  const handleAddPillar = () =>
+    runAsync("pillar:add", async () => {
       const updated = await addPillar(pillars);
       setPillars(updated);
-    } catch (err) {
-      console.error("Failed to add pillar:", err);
-      alert("Error adding pillar");
-    } finally {
-      setLoading(null);
-    }
-  }
+      return updated;
+    }, "Pillar added");
 
-  async function handleAddTheme(pillarId: string) {
-    setLoading(`pillar:${pillarId}:theme:add`);
-    try {
+  const handleAddTheme = (pillarId: string) =>
+    runAsync(`pillar:${pillarId}:theme:add`, async () => {
       const updated = await addTheme(pillars, pillarId);
       setPillars(updated);
-    } catch (err) {
-      console.error("Failed to add theme:", err);
-      alert("Error adding theme");
-    } finally {
-      setLoading(null);
-    }
-  }
+      return updated;
+    }, "Theme added");
 
-  async function handleAddSubtheme(pillarId: string, themeId: string) {
-    setLoading(`theme:${themeId}:sub:add`);
-    try {
+  const handleAddSubtheme = (pillarId: string, themeId: string) =>
+    runAsync(`theme:${themeId}:sub:add`, async () => {
       const updated = await addSubtheme(pillars, pillarId, themeId);
       setPillars(updated);
-    } catch (err) {
-      console.error("Failed to add subtheme:", err);
-      alert("Error adding subtheme");
-    } finally {
-      setLoading(null);
-    }
-  }
+      return updated;
+    }, "Subtheme added");
 
-  async function handleDeletePillar(pillarId: string) {
-    setLoading(`pillar:${pillarId}:del`);
-    try {
+  const handleDeletePillar = (pillarId: string) =>
+    runAsync(`pillar:${pillarId}:del`, async () => {
       const updated = await removePillar(pillars, pillarId);
       setPillars(updated);
-    } catch (err) {
-      console.error("Failed to delete pillar:", err);
-      alert("Error deleting pillar");
-    } finally {
-      setLoading(null);
-    }
-  }
+      return updated;
+    }, undefined, "Error deleting pillar");
 
-  async function handleDeleteTheme(pillarId: string, themeId: string) {
-    setLoading(`theme:${themeId}:del`);
-    try {
+  const handleDeleteTheme = (pillarId: string, themeId: string) =>
+    runAsync(`theme:${themeId}:del`, async () => {
       const updated = await removeTheme(pillars, pillarId, themeId);
       setPillars(updated);
-    } catch (err) {
-      console.error("Failed to delete theme:", err);
-      alert("Error deleting theme");
-    } finally {
-      setLoading(null);
-    }
-  }
+      return updated;
+    }, undefined, "Error deleting theme");
 
-  async function handleDeleteSubtheme(
+  const handleDeleteSubtheme = (
     pillarId: string,
     themeId: string,
     subId: string
-  ) {
-    setLoading(`sub:${subId}:del`);
-    try {
+  ) =>
+    runAsync(`sub:${subId}:del`, async () => {
       const updated = await removeSubtheme(pillars, pillarId, themeId, subId);
       setPillars(updated);
-    } catch (err) {
-      console.error("Failed to delete subtheme:", err);
-      alert("Error deleting subtheme");
-    } finally {
-      setLoading(null);
-    }
-  }
+      return updated;
+    }, undefined, "Error deleting subtheme");
 
   return (
     <div className="space-y-4">
