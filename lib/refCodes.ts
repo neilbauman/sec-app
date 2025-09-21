@@ -54,7 +54,7 @@ export function normalizeFramework(raw: {
     subsByTheme[s.theme_id].push(s);
   });
 
-  const normalizedPillars: NormalizedPillar[] = raw.pillars
+  const nestedPillars: NestedPillar[] = raw.pillars
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((pillar, pIdx) => {
       const pillarCode = `P${pIdx + 1}`;
@@ -98,5 +98,5 @@ export function normalizeFramework(raw: {
       };
     });
 
-  return { pillars: normalizedPillars };
+  return { pillars: nestedPillars };
 }
