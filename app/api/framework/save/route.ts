@@ -1,7 +1,7 @@
 // app/api/framework/save/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { NormalizedPillar } from "@/lib/framework-utils";
+import { NestedPillar } from "@/lib/framework-client";
 
 export async function POST(req: Request) {
   const supabase = createClient();
