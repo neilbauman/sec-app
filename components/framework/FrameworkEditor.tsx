@@ -11,11 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 
 type Props = {
-  initialPillars: NestedPillar[];
+  data: NestedPillar[]; // 👈 match existing usage in page.tsx
 };
 
-export default function FrameworkEditor({ initialPillars }: Props) {
-  const [pillars, setPillars] = useState<NestedPillar[]>(initialPillars);
+export default function FrameworkEditor({ data }: Props) {
+  const [pillars, setPillars] = useState<NestedPillar[]>(data);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function handleChange(
