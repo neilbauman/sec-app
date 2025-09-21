@@ -2,9 +2,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Trash2, Edit3 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight, Plus, Trash2, Edit2 } from "lucide-react";
 import Badge from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  NormalizedPillar,
+  NormalizedTheme,
+  NormalizedSubtheme,
+} from "@/lib/framework-utils";
 import {
   addPillar,
   addTheme,
@@ -13,301 +18,259 @@ import {
   removeTheme,
   removeSubtheme,
 } from "@/lib/framework-actions";
-import {
-  NormalizedPillar,
-  NormalizedTheme,
-  NormalizedSubtheme,
-} from "@/lib/framework-utils";
 import { getFrameworkClient } from "@/lib/framework-client";
 
+// ---------------- Types ----------------
 type FrameworkEditorProps = {
   data: NormalizedPillar[];
 };
 
-// Reusable inline editable cell
-function EditableCell({
-  value,
-  placeholder,
-  onChange,
-  className = "",
-}: {
-  value: string;
-  placeholder: string;
-  onChange: (val: string) => void;
-  className?: string;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [temp, setTemp] = useState(value);
-
-  const handleBlur = async () => {
-    setEditing(false);
-    if (temp !== value) {
-      onChange(temp);
-    }
-  };
-
-  return editing ? (
-    <input
-      className={`border rounded px-1 text-sm w-full ${className}`}
-      value={temp}
-      onChange={(e) => setTemp(e.target.value)}
-      onBlur={handleBlur}
-      autoFocus
-    />
-  ) : (
-    <span
-      className={`cursor-pointer ${value ? "" : "text-gray-400 italic"} ${className}`}
-      onClick={() => setEditing(true)}
-    >
-      {value || placeholder}
-    </span>
-  );
-}
-
+// ---------------- Component ----------------
 export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [pillars, setPillars] = useState<NormalizedPillar[]>(data);
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
+  const [editMode, setEditMode] = useState(false);
+
   const supabase = getFrameworkClient();
 
-  // -------------------
-  // Add / Remove Actions
-  // -------------------
-  const onAddPillar = async () => {
+  // ---------- Save helper ----------
+  async function saveFramework(updated: NormalizedPillar[]) {
+    setPillars(updated);
+    // Save JSON into framework_config table (id=1 row)
+    const { error } = await supabase
+      .from("framework_config")
+      .update({ config: updated })
+      .eq("id", 1);
+
+    if (error) console.error("Failed to save framework:", error);
+  }
+
+  // ---------- Action handlers ----------
+  const onAddPillar = () => {
     const updated = addPillar(pillars);
-    setPillars(updated);
-    await supabase.from("pillars").insert({
-      id: updated[updated.length - 1].id,
-      ref_code: updated[updated.length - 1].ref_code,
-      name: updated[updated.length - 1].name,
-      description: updated[updated.length - 1].description,
-      sort_order: updated[updated.length - 1].sort_order,
-    });
+    saveFramework(updated);
   };
 
-  const onAddTheme = async (pillarId: string) => {
+  const onAddTheme = (pillarId: string) => {
     const updated = addTheme(pillars, pillarId);
-    setPillars(updated);
-    const pillar = updated.find((p) => p.id === pillarId)!;
-    const theme = pillar.themes[pillar.themes.length - 1];
-    await supabase.from("themes").insert(theme);
+    saveFramework(updated);
+    setOpenPillars((s) => ({ ...s, [pillarId]: true }));
   };
 
-  const onAddSubtheme = async (pillarId: string, themeId: string) => {
+  const onAddSubtheme = (pillarId: string, themeId: string) => {
     const updated = addSubtheme(pillars, pillarId, themeId);
-    setPillars(updated);
-    const pillar = updated.find((p) => p.id === pillarId)!;
-    const theme = pillar.themes.find((t) => t.id === themeId)!;
-    const sub = theme.subthemes[theme.subthemes.length - 1];
-    await supabase.from("subthemes").insert(sub);
+    saveFramework(updated);
+    setOpenPillars((s) => ({ ...s, [pillarId]: true }));
+    setOpenThemes((s) => ({ ...s, [themeId]: true }));
   };
 
-  const onRemovePillar = async (pillarId: string) => {
-    setPillars(removePillar(pillars, pillarId));
-    await supabase.from("pillars").delete().eq("id", pillarId);
+  const onRemovePillar = (pillarId: string) => {
+    const updated = removePillar(pillars, pillarId);
+    saveFramework(updated);
   };
 
-  const onRemoveTheme = async (pillarId: string, themeId: string) => {
-    setPillars(removeTheme(pillars, pillarId, themeId));
-    await supabase.from("themes").delete().eq("id", themeId);
+  const onRemoveTheme = (pillarId: string, themeId: string) => {
+    const updated = removeTheme(pillars, pillarId, themeId);
+    saveFramework(updated);
   };
 
-  const onRemoveSubtheme = async (
+  const onRemoveSubtheme = (
     pillarId: string,
     themeId: string,
-    subId: string
+    subthemeId: string
   ) => {
-    setPillars(removeSubtheme(pillars, pillarId, themeId, subId));
-    await supabase.from("subthemes").delete().eq("id", subId);
+    const updated = removeSubtheme(pillars, pillarId, themeId, subthemeId);
+    saveFramework(updated);
   };
 
-  // -------------------
-  // Inline Edit Handler
-  // -------------------
-  const onUpdateField = async (
-    table: "pillars" | "themes" | "subthemes",
-    id: string,
-    field: "name" | "description",
-    value: string
-  ) => {
-    // Update local state
-    setPillars((prev) =>
-      prev.map((p) => {
-        if (table === "pillars" && p.id === id) {
-          return { ...p, [field]: value };
-        }
-        if (table === "themes") {
-          return {
-            ...p,
-            themes: p.themes.map((t) =>
-              t.id === id ? { ...t, [field]: value } : t
-            ),
-          };
-        }
-        if (table === "subthemes") {
-          return {
-            ...p,
-            themes: p.themes.map((t) => ({
-              ...t,
-              subthemes: t.subthemes.map((s) =>
-                s.id === id ? { ...s, [field]: value } : s
-              ),
-            })),
-          };
-        }
-        return p;
-      })
+  // ---------- Row components ----------
+  const PillarRow = ({ pillar }: { pillar: NormalizedPillar }) => {
+    const isOpen = openPillars[pillar.id];
+    return (
+      <>
+        <tr>
+          <td className="px-2 py-1">
+            <button
+              onClick={() =>
+                setOpenPillars((s) => ({ ...s, [pillar.id]: !s[pillar.id] }))
+              }
+            >
+              {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </button>
+          </td>
+          <td className="px-2 py-1">
+            <Badge variant="default">Pillar</Badge>
+            <div className="font-medium">{pillar.name}</div>
+            <div className="text-xs text-gray-500">{pillar.description}</div>
+          </td>
+          <td className="px-2 py-1 text-sm">{pillar.ref_code}</td>
+          <td className="px-2 py-1 text-sm">{pillar.sort_order}</td>
+          <td className="px-2 py-1 flex gap-2">
+            {editMode && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onAddTheme(pillar.id)}
+                >
+                  <Plus size={14} />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onRemovePillar(pillar.id)}
+                >
+                  <Trash2 size={14} />
+                </Button>
+                <Button size="sm" variant="ghost">
+                  <Edit2 size={14} />
+                </Button>
+              </>
+            )}
+          </td>
+        </tr>
+        {isOpen &&
+          pillar.themes.map((theme) => (
+            <ThemeRow key={theme.id} theme={theme} pillar={pillar} />
+          ))}
+      </>
     );
-
-    // Save directly to Supabase
-    await supabase.from(table).update({ [field]: value }).eq("id", id);
   };
 
-  // -------------------
-  // Row Components
-  // -------------------
-  const SubthemeRow = (s: NormalizedSubtheme, pillarId: string, themeId: string) => (
-    <tr key={s.id} className="border-b">
-      <td className="px-4 py-2 pl-16">
+  const ThemeRow = ({
+    theme,
+    pillar,
+  }: {
+    theme: NormalizedTheme;
+    pillar: NormalizedPillar;
+  }) => {
+    const isOpen = openThemes[theme.id];
+    return (
+      <>
+        <tr>
+          <td className="px-6 py-1">
+            <button
+              onClick={() =>
+                setOpenThemes((s) => ({ ...s, [theme.id]: !s[theme.id] }))
+              }
+            >
+              {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </button>
+          </td>
+          <td className="px-2 py-1">
+            <Badge variant="success">Theme</Badge>
+            <div className="font-medium">{theme.name}</div>
+            <div className="text-xs text-gray-500">{theme.description}</div>
+          </td>
+          <td className="px-2 py-1 text-sm">{theme.ref_code}</td>
+          <td className="px-2 py-1 text-sm">{theme.sort_order}</td>
+          <td className="px-2 py-1 flex gap-2">
+            {editMode && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onAddSubtheme(pillar.id, theme.id)}
+                >
+                  <Plus size={14} />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onRemoveTheme(pillar.id, theme.id)}
+                >
+                  <Trash2 size={14} />
+                </Button>
+                <Button size="sm" variant="ghost">
+                  <Edit2 size={14} />
+                </Button>
+              </>
+            )}
+          </td>
+        </tr>
+        {isOpen &&
+          theme.subthemes.map((sub) => (
+            <SubthemeRow
+              key={sub.id}
+              subtheme={sub}
+              pillar={pillar}
+              theme={theme}
+            />
+          ))}
+      </>
+    );
+  };
+
+  const SubthemeRow = ({
+    subtheme,
+    pillar,
+    theme,
+  }: {
+    subtheme: NormalizedSubtheme;
+    pillar: NormalizedPillar;
+    theme: NormalizedTheme;
+  }) => (
+    <tr>
+      <td className="px-10 py-1"></td>
+      <td className="px-2 py-1">
         <Badge variant="danger">Subtheme</Badge>
+        <div className="font-medium">{subtheme.name}</div>
+        <div className="text-xs text-gray-500">{subtheme.description}</div>
       </td>
-      <td className="px-4 py-2">
-        <EditableCell
-          value={s.name}
-          placeholder="Subtheme name"
-          onChange={(val) => onUpdateField("subthemes", s.id, "name", val)}
-        />
-        <div className="text-xs text-gray-500">
-          <EditableCell
-            value={s.description}
-            placeholder="Description"
-            onChange={(val) => onUpdateField("subthemes", s.id, "description", val)}
-          />
-        </div>
-      </td>
-      <td className="px-4 py-2 text-xs text-gray-500">{s.ref_code}</td>
-      <td className="px-4 py-2"></td>
-      <td className="px-4 py-2 flex gap-2">
-        <Button size="sm" variant="ghost" onClick={() => onRemoveSubtheme(pillarId, themeId, s.id)}>
-          <Trash2 className="w-4 h-4" />
-        </Button>
+      <td className="px-2 py-1 text-sm">{subtheme.ref_code}</td>
+      <td className="px-2 py-1 text-sm">{subtheme.sort_order}</td>
+      <td className="px-2 py-1 flex gap-2">
+        {editMode && (
+          <>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onRemoveSubtheme(pillar.id, theme.id, subtheme.id)}
+            >
+              <Trash2 size={14} />
+            </Button>
+            <Button size="sm" variant="ghost">
+              <Edit2 size={14} />
+            </Button>
+          </>
+        )}
       </td>
     </tr>
   );
 
-  const ThemeRow = (t: NormalizedTheme, pillarId: string) => (
-    <>
-      <tr key={t.id} className="border-b">
-        <td className="px-4 py-2 pl-12">
-          <button
-            onClick={() =>
-              setOpenThemes((s) => ({ ...s, [t.id]: !s[t.id] }))
-            }
-          >
-            {openThemes[t.id] ? (
-              <ChevronDown className="w-4 h-4 inline mr-1" />
-            ) : (
-              <ChevronRight className="w-4 h-4 inline mr-1" />
-            )}
-          </button>
-          <Badge variant="success">Theme</Badge>
-        </td>
-        <td className="px-4 py-2">
-          <EditableCell
-            value={t.name}
-            placeholder="Theme name"
-            onChange={(val) => onUpdateField("themes", t.id, "name", val)}
-          />
-          <div className="text-xs text-gray-500">
-            <EditableCell
-              value={t.description}
-              placeholder="Description"
-              onChange={(val) => onUpdateField("themes", t.id, "description", val)}
-            />
-          </div>
-        </td>
-        <td className="px-4 py-2 text-xs text-gray-500">{t.ref_code}</td>
-        <td className="px-4 py-2"></td>
-        <td className="px-4 py-2 flex gap-2">
-          <Button size="sm" variant="ghost" onClick={() => onAddSubtheme(pillarId, t.id)}>
-            <Plus className="w-4 h-4" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => onRemoveTheme(pillarId, t.id)}>
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </td>
-      </tr>
-      {openThemes[t.id] && t.subthemes.map((s) => SubthemeRow(s, pillarId, t.id))}
-    </>
-  );
-
-  const PillarRow = (p: NormalizedPillar) => (
-    <>
-      <tr key={p.id} className="border-b bg-gray-50">
-        <td className="px-4 py-2">
-          <button
-            onClick={() =>
-              setOpenPillars((s) => ({ ...s, [p.id]: !s[p.id] }))
-            }
-          >
-            {openPillars[p.id] ? (
-              <ChevronDown className="w-4 h-4 inline mr-1" />
-            ) : (
-              <ChevronRight className="w-4 h-4 inline mr-1" />
-            )}
-          </button>
-          <Badge>Pillar</Badge>
-        </td>
-        <td className="px-4 py-2">
-          <EditableCell
-            value={p.name}
-            placeholder="Pillar name"
-            onChange={(val) => onUpdateField("pillars", p.id, "name", val)}
-          />
-          <div className="text-xs text-gray-500">
-            <EditableCell
-              value={p.description}
-              placeholder="Description"
-              onChange={(val) => onUpdateField("pillars", p.id, "description", val)}
-            />
-          </div>
-        </td>
-        <td className="px-4 py-2 text-xs text-gray-500">{p.ref_code}</td>
-        <td className="px-4 py-2"></td>
-        <td className="px-4 py-2 flex gap-2">
-          <Button size="sm" variant="ghost" onClick={() => onAddTheme(p.id)}>
-            <Plus className="w-4 h-4" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => onRemovePillar(p.id)}>
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </td>
-      </tr>
-      {openPillars[p.id] && p.themes.map((t) => ThemeRow(t, p.id))}
-    </>
-  );
-
-  // -------------------
-  // Render
-  // -------------------
+  // ---------- Main render ----------
   return (
-    <div>
-      <div className="flex justify-end mb-4 gap-2">
-        <Button size="sm" variant="outline" onClick={onAddPillar}>
-          + Add Pillar
+    <div className="p-4">
+      <div className="flex justify-end gap-2 mb-4">
+        {editMode && (
+          <Button size="sm" variant="outline" onClick={onAddPillar}>
+            + Add Pillar
+          </Button>
+        )}
+        <Button size="sm" variant="outline">
+          Bulk Edit
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setEditMode(!editMode)}>
+          {editMode ? "Exit Edit Mode" : "Enter Edit Mode"}
         </Button>
       </div>
+
       <table className="min-w-full border text-sm">
-        <thead>
-          <tr className="bg-gray-100 text-left">
-            <th className="px-4 py-2 w-40">Type</th>
-            <th className="px-4 py-2">Name / Description</th>
-            <th className="px-4 py-2 w-32">Ref Code</th>
-            <th className="px-4 py-2 w-24">Sort</th>
-            <th className="px-4 py-2 w-32">Actions</th>
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-2 py-1"></th>
+            <th className="px-2 py-1 text-left">Name / Description</th>
+            <th className="px-2 py-1 text-left">Ref Code</th>
+            <th className="px-2 py-1 text-left">Sort</th>
+            <th className="px-2 py-1 text-left">Actions</th>
           </tr>
         </thead>
-        <tbody>{pillars.map((p) => PillarRow(p))}</tbody>
+        <tbody>
+          {pillars.map((pillar) => (
+            <PillarRow key={pillar.id} pillar={pillar} />
+          ))}
+        </tbody>
       </table>
     </div>
   );
