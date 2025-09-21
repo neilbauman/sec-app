@@ -1,8 +1,8 @@
 // app/configuration/primary/page.tsx
 import PageHeader from "@/components/ui/PageHeader";
 import FrameworkEditor from "@/components/framework/FrameworkEditor";
-import { fetchFramework } from "@/lib/framework-client";
-import { normalizeFramework } from "@/lib/framework-utils";
+import { fetchFramework, NestedPillar } from "@/lib/framework-client";
+
 
 export default async function PrimaryFrameworkEditorPage() {
   // Fetch from DB and normalize into ref_code / pillar_code / theme_code
