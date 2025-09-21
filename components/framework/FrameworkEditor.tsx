@@ -99,6 +99,11 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     );
   };
 
+  const onSaveFramework = () => {
+    console.log("Framework saved:", JSON.stringify(pillars, null, 2));
+    alert("Framework saved (check console for JSON)");
+  };
+
   return (
     <div className="p-4 bg-white rounded-lg shadow">
       <div className="flex justify-between items-center mb-4">
@@ -123,9 +128,14 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
         </div>
         <div className="flex gap-2">
           {editMode && (
-            <Button size="sm" variant="outline" onClick={onAddPillar}>
-              + Add Pillar
-            </Button>
+            <>
+              <Button size="sm" variant="default" onClick={onSaveFramework}>
+                Save Framework
+              </Button>
+              <Button size="sm" variant="outline" onClick={onAddPillar}>
+                + Add Pillar
+              </Button>
+            </>
           )}
           <Button
             size="sm"
