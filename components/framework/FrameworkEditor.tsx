@@ -6,7 +6,7 @@ import { ChevronDown, ChevronRight, Plus, Trash2, Edit3, X, Check } from "lucide
 import Badge from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NormalizedPillar } from "@/lib/framework-utils";
-import { createClient } from "@/lib/supabase-browser";
+import { getSupabaseClient } from "@/lib/framework-client";  // ✅ use this
 
 type FrameworkEditorProps = {
   data: NormalizedPillar[];
