@@ -100,8 +100,18 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   };
 
   const onSaveFramework = () => {
-    console.log("Framework saved:", JSON.stringify(pillars, null, 2));
-    alert("Framework saved (check console for JSON)");
+    const json = JSON.stringify(pillars, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "framework.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
   };
 
   return (
