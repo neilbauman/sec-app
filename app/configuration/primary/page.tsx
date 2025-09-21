@@ -3,11 +3,9 @@ import PageHeader from "@/components/ui/PageHeader";
 import FrameworkEditor from "@/components/framework/FrameworkEditor";
 import { fetchFramework, NestedPillar } from "@/lib/framework-client";
 
-
 export default async function PrimaryFrameworkEditorPage() {
-  // Fetch from DB and normalize into ref_code / pillar_code / theme_code
-  const nested = await fetchFramework();
-  const framework = normalizeFramework(nested);
+  // Fetch framework directly (already returns NestedPillar[] with ref_codes)
+  const framework: NestedPillar[] = await fetchFramework();
 
   return (
     <div className="space-y-6">
