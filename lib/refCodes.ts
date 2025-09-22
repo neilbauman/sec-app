@@ -1,42 +1,32 @@
 // lib/refCodes.ts
-import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+import type {
+  NestedPillar,
+  NestedTheme,
+  NestedSubtheme,
+} from "@/lib/framework-client";
 
 /**
- * Recalculate hierarchical reference codes:
- *  - Pillars: P1, P2, ...
- *  - Themes: T{pillarIndex}.{themeIndex}
- *  - Subthemes: ST{pillarIndex}.{themeIndex}.{subIndex}
+ * Recalculate hierarchical reference codes for all pillars, themes, and subthemes.
+ * Format:
+ *   Pillar → P1, P2, ...
+ *   Theme → T{pillarIndex}.{themeIndex}  (e.g., T2.3)
+ *   Subtheme → ST{pillarIndex}.{themeIndex}.{subIndex}  (e.g., ST1.2.1)
  */
 export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
-  return pillars.map((pillar, pIndex) => {
-    const pillarRef = `P${pIndex + 1}`;
-    const themes: NestedTheme[] = pillar.themes.map((theme, tIndex) => {
-      const themeRef = `T${pIndex + 1}.${tIndex + 1}`;
-      const subthemes: NestedSubtheme[] = theme.subthemes.map((sub, sIndex) => {
-        const subRef = `ST${pIndex + 1}.${tIndex + 1}.${sIndex + 1}`;
-        return {
-          ...sub,
-          ref_code: subRef,
-          sort_order: sIndex + 1,
-        };
+  return pillars.map((pillar, pIdx) => {
+    const pillarRef = `P${pIdx + 1}`;
+
+    const themes: NestedTheme[] = pillar.themes.map((theme, tIdx) => {
+      const themeRef = `T${pIdx + 1}.${tIdx + 1}`;
+
+      const subthemes: NestedSubtheme[] = theme.subthemes.map((sub, sIdx) => {
+        const subRef = `ST${pIdx + 1}.${tIdx + 1}.${sIdx + 1}`;
+        return { ...sub, ref_code: subRef };
       });
 
-      return {
-        ...theme,
-        ref_code: themeRef,
-        sort_order: tIndex + 1,
-        subthemes,
-      };
+      return { ...theme, ref_code: themeRef, subthemes };
     });
 
-    return {
-      ...pillar,
-      ref_code: pillarRef,
-      sort_order: pIndex + 1,
-      themes,
-    };
+    return { ...pillar, ref_code: pillarRef, themes };
   });
 }
-
-// ✅ Alias so old code using generateRefCodes still works
-export const generateRefCodes = recalcRefCodes;
