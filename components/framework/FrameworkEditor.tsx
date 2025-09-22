@@ -8,11 +8,10 @@ import {
   Edit2,
   Plus,
   Trash2,
-  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
-import type { NestedPillar } from "@/lib/framework-client";
+import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
 import {
   addPillar,
   addTheme,
@@ -27,21 +26,17 @@ type FrameworkEditorProps = {
   data: NestedPillar[];
 };
 
-type EditingRow =
-  | { type: "pillar" | "theme" | "subtheme"; id: string }
-  | null;
-
 export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [pillars, setPillars] = useState<NestedPillar[]>(data);
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
-  const [inlineAll, setInlineAll] = useState(false);
-  const [editingRow, setEditingRow] = useState<EditingRow>(null);
+  const [globalEdit, setGlobalEdit] = useState(false);
+  const [rowEdit, setRowEdit] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // expand / collapse
+  // ---------- Expand / Collapse ----------
   const togglePillar = (id: string) =>
     setOpenPillars((s) => ({ ...s, [id]: !s[id] }));
   const toggleTheme = (id: string) =>
@@ -62,7 +57,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setOpenThemes({});
   };
 
-  // async wrapper
+  // ---------- Async helper ----------
   async function runAsync<T>(
     key: string,
     fn: () => Promise<T>
@@ -127,81 +122,49 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       return updated;
     });
 
-  // ---------- Update ----------
-  const handleUpdate = (
-    row: { type: "pillar" | "theme" | "subtheme"; id: string },
+  // ---------- Inline Editing ----------
+  const handleFieldChange = (
+    row: NestedPillar | NestedTheme | NestedSubtheme,
     field: "name" | "description",
     value: string
   ) =>
-    runAsync(`${row.type}:${row.id}:update`, async () => {
-      const updated = await updateRow(pillars, row.type, row.id, {
-        [field]: value,
-      });
+    runAsync(`${row.id}:update`, async () => {
+      const updatedRow = { ...row, [field]: value };
+      const updated = await updateRow(pillars, updatedRow);
       setPillars(updated);
-      setEditingRow(null);
       return updated;
     });
 
-  const renderNameDesc = (
-    row: any,
-    rowType: "pillar" | "theme" | "subtheme",
+  const renderCell = (
+    row: NestedPillar | NestedTheme | NestedSubtheme,
+    field: "name" | "description",
     indent = 0
   ) => {
-    const isEditing =
-      inlineAll || (editingRow?.id === row.id && editingRow?.type === rowType);
-
+    const isEditing = globalEdit || rowEdit[row.id];
     if (isEditing) {
       return (
-        <div className={`pl-${indent}`}>
-          <input
-            type="text"
-            defaultValue={row.name}
-            className="w-full border rounded px-2 py-1 text-sm mb-1"
-            onBlur={(e) =>
-              handleUpdate({ type: rowType, id: row.id }, "name", e.target.value)
+        <input
+          type="text"
+          defaultValue={row[field] || ""}
+          className="w-full border rounded px-2 py-1 text-sm"
+          style={{ marginLeft: indent }}
+          onBlur={(e) => handleFieldChange(row, field, e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              (e.target as HTMLInputElement).blur();
             }
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-          />
-          <textarea
-            defaultValue={row.description || ""}
-            className="w-full border rounded px-2 py-1 text-xs text-gray-600"
-            onBlur={(e) =>
-              handleUpdate(
-                { type: rowType, id: row.id },
-                "description",
-                e.target.value
-              )
-            }
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                (e.target as HTMLTextAreaElement).blur();
-              }
-            }}
-          />
-        </div>
+          }}
+        />
       );
     }
-
     return (
-      <div className={`pl-${indent}`}>
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{row.name}</span>
-          {editMode && !inlineAll && (
-            <button
-              onClick={() => setEditingRow({ type: rowType, id: row.id })}
-              className="p-1 rounded hover:bg-gray-100"
-            >
-              <Pencil className="w-3 h-3 text-gray-500" />
-            </button>
-          )}
-        </div>
-        {row.description && (
-          <div className="text-xs text-gray-600">{row.description}</div>
+      <div style={{ marginLeft: indent }}>
+        {field === "name" ? (
+          <div className="font-medium">{row.name}</div>
+        ) : (
+          row.description && (
+            <div className="text-xs text-gray-600">{row.description}</div>
+          )
         )}
       </div>
     );
@@ -225,15 +188,6 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
           <Button size="sm" variant="outline" onClick={collapseAll}>
             Collapse All
           </Button>
-          {editMode && (
-            <Button
-              size="sm"
-              variant={inlineAll ? "default" : "outline"}
-              onClick={() => setInlineAll((s) => !s)}
-            >
-              {inlineAll ? "Inline Edit All" : "Per-Row Editing"}
-            </Button>
-          )}
         </div>
         <div className="flex gap-2">
           {editMode && (
@@ -246,6 +200,13 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
               <Plus className="w-4 h-4 mr-1" /> Add Pillar
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setGlobalEdit((s) => !s)}
+          >
+            {globalEdit ? "Global Edit On" : "Global Edit Off"}
+          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -265,7 +226,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
               <th className="w-60">Type / Ref Code</th>
               <th className="min-w-[18rem]">Name / Description</th>
               <th className="w-20 text-center">Sort</th>
-              <th className="w-24 text-center">Actions</th>
+              <th className="w-32 text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -280,9 +241,6 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                         <button
                           onClick={() => togglePillar(pillar.id)}
                           className="p-1 rounded hover:bg-gray-100"
-                          aria-label={
-                            pillarOpen ? "Collapse Pillar" : "Expand Pillar"
-                          }
                         >
                           {pillarOpen ? (
                             <ChevronDown className="w-4 h-4 text-gray-600" />
@@ -296,28 +254,36 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                         </span>
                       </div>
                     </td>
-                    <td>{renderNameDesc(pillar, "pillar", 0)}</td>
+                    <td>
+                      {renderCell(pillar, "name")}
+                      {renderCell(pillar, "description")}
+                    </td>
                     <td className="text-center">{pillar.sort_order}</td>
                     <td className="text-center">
                       {editMode && (
-                        <div className="flex gap-3 justify-center">
+                        <div className="flex gap-2 justify-center">
                           <button
                             onClick={() => handleAddTheme(pillar.id)}
-                            disabled={
-                              loading === `pillar:${pillar.id}:theme:add`
-                            }
-                            className="p-1 rounded hover:bg-blue-50"
-                            aria-label="Add Theme"
+                            className="p-1 hover:bg-blue-50"
                           >
                             <Plus className="w-4 h-4 text-blue-600" />
                           </button>
                           <button
                             onClick={() => handleDeletePillar(pillar.id)}
-                            disabled={loading === `pillar:${pillar.id}:del`}
-                            className="p-1 rounded hover:bg-red-50"
-                            aria-label="Delete Pillar"
+                            className="p-1 hover:bg-red-50"
                           >
                             <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                          <button
+                            onClick={() =>
+                              setRowEdit((s) => ({
+                                ...s,
+                                [pillar.id]: !s[pillar.id],
+                              }))
+                            }
+                            className="p-1 hover:bg-gray-100"
+                          >
+                            <Edit2 className="w-4 h-4 text-gray-600" />
                           </button>
                         </div>
                       )}
@@ -336,9 +302,6 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                 <button
                                   onClick={() => toggleTheme(theme.id)}
                                   className="p-1 rounded hover:bg-gray-100"
-                                  aria-label={
-                                    themeOpen ? "Collapse Theme" : "Expand Theme"
-                                  }
                                 >
                                   {themeOpen ? (
                                     <ChevronDown className="w-4 h-4 text-gray-600" />
@@ -353,23 +316,18 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                               </div>
                             </td>
                             <td className="pl-4">
-                              {renderNameDesc(theme, "theme", 4)}
+                              {renderCell(theme, "name", 4)}
+                              {renderCell(theme, "description", 4)}
                             </td>
-                            <td className="text-center">
-                              {theme.sort_order}
-                            </td>
+                            <td className="text-center">{theme.sort_order}</td>
                             <td className="text-center">
                               {editMode && (
-                                <div className="flex gap-3 justify-center">
+                                <div className="flex gap-2 justify-center">
                                   <button
                                     onClick={() =>
                                       handleAddSubtheme(pillar.id, theme.id)
                                     }
-                                    disabled={
-                                      loading === `theme:${theme.id}:sub:add`
-                                    }
-                                    className="p-1 rounded hover:bg-blue-50"
-                                    aria-label="Add Subtheme"
+                                    className="p-1 hover:bg-blue-50"
                                   >
                                     <Plus className="w-4 h-4 text-blue-600" />
                                   </button>
@@ -377,11 +335,20 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                     onClick={() =>
                                       handleDeleteTheme(pillar.id, theme.id)
                                     }
-                                    disabled={loading === `theme:${theme.id}:del`}
-                                    className="p-1 rounded hover:bg-red-50"
-                                    aria-label="Delete Theme"
+                                    className="p-1 hover:bg-red-50"
                                   >
                                     <Trash2 className="w-4 h-4 text-red-600" />
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      setRowEdit((s) => ({
+                                        ...s,
+                                        [theme.id]: !s[theme.id],
+                                      }))
+                                    }
+                                    className="p-1 hover:bg-gray-100"
+                                  >
+                                    <Edit2 className="w-4 h-4 text-gray-600" />
                                   </button>
                                 </div>
                               )}
@@ -401,27 +368,39 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                   </div>
                                 </td>
                                 <td className="pl-8">
-                                  {renderNameDesc(sub, "subtheme", 8)}
+                                  {renderCell(sub, "name", 8)}
+                                  {renderCell(sub, "description", 8)}
                                 </td>
                                 <td className="text-center">
                                   {sub.sort_order}
                                 </td>
                                 <td className="text-center">
                                   {editMode && (
-                                    <button
-                                      onClick={() =>
-                                        handleDeleteSubtheme(
-                                          pillar.id,
-                                          theme.id,
-                                          sub.id
-                                        )
-                                      }
-                                      disabled={loading === `sub:${sub.id}:del`}
-                                      className="p-1 rounded hover:bg-red-50"
-                                      aria-label="Delete Subtheme"
-                                    >
-                                      <Trash2 className="w-4 h-4 text-red-600" />
-                                    </button>
+                                    <div className="flex gap-2 justify-center">
+                                      <button
+                                        onClick={() =>
+                                          handleDeleteSubtheme(
+                                            pillar.id,
+                                            theme.id,
+                                            sub.id
+                                          )
+                                        }
+                                        className="p-1 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="w-4 h-4 text-red-600" />
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          setRowEdit((s) => ({
+                                            ...s,
+                                            [sub.id]: !s[sub.id],
+                                          }))
+                                        }
+                                        className="p-1 hover:bg-gray-100"
+                                      >
+                                        <Edit2 className="w-4 h-4 text-gray-600" />
+                                      </button>
+                                    </div>
                                   )}
                                 </td>
                               </tr>
