@@ -1,28 +1,29 @@
 // lib/refCodes.ts
-import type {
-  NestedPillar,
-  NestedTheme,
-  NestedSubtheme,
-} from "@/lib/framework-client";
+import { NestedPillar } from "@/lib/framework-client";
 
 /**
- * Recalculate reference codes for the entire framework tree.
- * Format:
- *   Pillar → P1, P2, ...
- *   Theme → T{pillarIndex}.{themeIndex}
- *   Subtheme → ST{pillarIndex}.{themeIndex}.{subIndex}
+ * Generate ref_codes for all pillars, themes, and subthemes.
+ * Ref codes are recalculated sequentially (P1, P1-T1, P1-T1-S1, etc).
  */
-export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
-  return pillars.map((pillar, pIdx) => {
-    const pillarRef = `P${pillar.sort_order}`;
-    const themes = pillar.themes.map((theme, tIdx) => {
-      const themeRef = `T${pillar.sort_order}.${theme.sort_order}`;
-      const subthemes = theme.subthemes.map((sub, sIdx) => {
-        const subRef = `ST${pillar.sort_order}.${theme.sort_order}.${sub.sort_order}`;
-        return { ...sub, ref_code: subRef } as NestedSubtheme;
-      });
-      return { ...theme, ref_code: themeRef, subthemes } as NestedTheme;
-    });
-    return { ...pillar, ref_code: pillarRef, themes } as NestedPillar;
+export function generateRefCodes(pillars: NestedPillar[]): NestedPillar[] {
+  return pillars.map((pillar, pIndex) => {
+    const pillarRef = `P${pIndex + 1}`;
+    return {
+      ...pillar,
+      ref_code: pillarRef,
+      themes: pillar.themes.map((theme, tIndex) => {
+        const themeRef = `${pillarRef}-T${tIndex + 1}`;
+        return {
+          ...theme,
+          ref_code: themeRef,
+          subthemes: theme.subthemes.map((sub, sIndex) => {
+            return {
+              ...sub,
+              ref_code: `${themeRef}-S${sIndex + 1}`,
+            };
+          }),
+        };
+      }),
+    };
   });
 }
