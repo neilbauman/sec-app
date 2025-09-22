@@ -11,10 +11,10 @@ export function cloneFramework(pillars: NestedPillar[]): NestedPillar[] {
 
 /**
  * Recalculate all ref codes in the framework.
+ * Ensures consistency after add/remove/reorder.
  */
-export function normalizeFramework(pillars: NestedPillar[]): NestedPillar[] {
-  const cloned = cloneFramework(pillars);
-  return recalcRefCodes(cloned);
+export function regenerateFramework(pillars: NestedPillar[]): NestedPillar[] {
+  return recalcRefCodes(pillars);
 }
 
 /**
