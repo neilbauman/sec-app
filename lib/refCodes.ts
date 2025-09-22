@@ -1,23 +1,28 @@
 // lib/refCodes.ts
-import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+import type {
+  NestedPillar,
+  NestedTheme,
+  NestedSubtheme,
+} from "@/lib/framework-client";
 
 /**
- * Recalculate hierarchical ref codes:
- * - P1, P2, ...
- * - T1.1, T1.2, ...
- * - ST1.1.1, ST1.1.2, ...
+ * Recalculate reference codes for the entire framework tree.
+ * Format:
+ *   Pillar → P1, P2, ...
+ *   Theme → T{pillarIndex}.{themeIndex}
+ *   Subtheme → ST{pillarIndex}.{themeIndex}.{subIndex}
  */
 export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
   return pillars.map((pillar, pIdx) => {
-    const pillarCode = `P${pIdx + 1}`;
-    const newThemes: NestedTheme[] = pillar.themes.map((theme, tIdx) => {
-      const themeCode = `T${pIdx + 1}.${tIdx + 1}`;
-      const newSubs: NestedSubtheme[] = theme.subthemes.map((sub, sIdx) => ({
-        ...sub,
-        ref_code: `ST${pIdx + 1}.${tIdx + 1}.${sIdx + 1}`,
-      }));
-      return { ...theme, ref_code: themeCode, subthemes: newSubs };
+    const pillarRef = `P${pillar.sort_order}`;
+    const themes = pillar.themes.map((theme, tIdx) => {
+      const themeRef = `T${pillar.sort_order}.${theme.sort_order}`;
+      const subthemes = theme.subthemes.map((sub, sIdx) => {
+        const subRef = `ST${pillar.sort_order}.${theme.sort_order}.${sub.sort_order}`;
+        return { ...sub, ref_code: subRef } as NestedSubtheme;
+      });
+      return { ...theme, ref_code: themeRef, subthemes } as NestedTheme;
     });
-    return { ...pillar, ref_code: pillarCode, themes: newThemes };
+    return { ...pillar, ref_code: pillarRef, themes } as NestedPillar;
   });
 }
