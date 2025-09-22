@@ -5,65 +5,79 @@ import type {
   NestedTheme,
   NestedSubtheme,
 } from "@/lib/framework-client";
-import { recalcRefCodes } from "@/lib/refCodes";
+import { recalcRefCodes, cloneFramework } from "@/lib/framework-utils";
 
-// ---------- Add ----------
-export async function addPillar(
-  pillars: NestedPillar[]
-): Promise<NestedPillar[]> {
+/**
+ * Utility: normalize sort_order for siblings (pillars, themes, subthemes).
+ */
+function normalizeSort<T extends { sort_order: number }>(items: T[]): void {
+  items.forEach((item, idx) => {
+    item.sort_order = idx + 1;
+  });
+}
+
+/**
+ * Save helper: upsert to a table.
+ */
+async function upsertRow(
+  table: string,
+  values: Record<string, any>
+): Promise<void> {
   const supabase = getSupabaseClient();
-
-  const { data, error } = await supabase
-    .from("pillars")
-    .insert({
-      name: "Untitled Pillar",
-      description: "",
-      sort_order: pillars.length + 1,
-    })
-    .select("*")
-    .single();
-
+  const { error } = await supabase.from(table).upsert(values);
   if (error) throw error;
+}
 
+/**
+ * ---------- Add ----------
+ */
+export async function addPillar(pillars: NestedPillar[]): Promise<NestedPillar[]> {
+  const updated = cloneFramework(pillars);
   const newPillar: NestedPillar = {
-    ...data,
-    ref_code: "",
+    id: crypto.randomUUID(),
+    name: "Untitled Pillar",
+    description: "",
+    sort_order: updated.length + 1,
     themes: [],
   };
+  updated.push(newPillar);
+  normalizeSort(updated);
 
-  return recalcRefCodes([...pillars, newPillar]);
+  await upsertRow("pillars", {
+    id: newPillar.id,
+    name: newPillar.name,
+    description: newPillar.description,
+    sort_order: newPillar.sort_order,
+  });
+
+  return recalcRefCodes(updated);
 }
 
 export async function addTheme(
   pillars: NestedPillar[],
   pillarId: string
 ): Promise<NestedPillar[]> {
-  const supabase = getSupabaseClient();
-  const parent = pillars.find((p) => p.id === pillarId);
-  if (!parent) return pillars;
-
-  const { data, error } = await supabase
-    .from("themes")
-    .insert({
-      pillar_id: pillarId,
-      name: "Untitled Theme",
-      description: "",
-      sort_order: parent.themes.length + 1,
-    })
-    .select("*")
-    .single();
-
-  if (error) throw error;
+  const updated = cloneFramework(pillars);
+  const pillar = updated.find((p) => p.id === pillarId);
+  if (!pillar) return updated;
 
   const newTheme: NestedTheme = {
-    ...data,
-    ref_code: "",
+    id: crypto.randomUUID(),
+    name: "Untitled Theme",
+    description: "",
+    sort_order: pillar.themes.length + 1,
     subthemes: [],
   };
+  pillar.themes.push(newTheme);
+  normalizeSort(pillar.themes);
 
-  const updated = pillars.map((p) =>
-    p.id === pillarId ? { ...p, themes: [...p.themes, newTheme] } : p
-  );
+  await upsertRow("themes", {
+    id: newTheme.id,
+    pillar_id: pillarId,
+    name: newTheme.name,
+    description: newTheme.description,
+    sort_order: newTheme.sort_order,
+  });
 
   return recalcRefCodes(updated);
 }
@@ -73,57 +87,44 @@ export async function addSubtheme(
   pillarId: string,
   themeId: string
 ): Promise<NestedPillar[]> {
-  const supabase = getSupabaseClient();
-  const parentPillar = pillars.find((p) => p.id === pillarId);
-  if (!parentPillar) return pillars;
-
-  const parentTheme = parentPillar.themes.find((t) => t.id === themeId);
-  if (!parentTheme) return pillars;
-
-  const { data, error } = await supabase
-    .from("subthemes")
-    .insert({
-      theme_id: themeId,
-      name: "Untitled Subtheme",
-      description: "",
-      sort_order: parentTheme.subthemes.length + 1,
-    })
-    .select("*")
-    .single();
-
-  if (error) throw error;
+  const updated = cloneFramework(pillars);
+  const pillar = updated.find((p) => p.id === pillarId);
+  const theme = pillar?.themes.find((t) => t.id === themeId);
+  if (!pillar || !theme) return updated;
 
   const newSub: NestedSubtheme = {
-    ...data,
-    ref_code: "",
+    id: crypto.randomUUID(),
+    name: "Untitled Subtheme",
+    description: "",
+    sort_order: theme.subthemes.length + 1,
   };
+  theme.subthemes.push(newSub);
+  normalizeSort(theme.subthemes);
 
-  const updated = pillars.map((p) =>
-    p.id === pillarId
-      ? {
-          ...p,
-          themes: p.themes.map((t) =>
-            t.id === themeId
-              ? { ...t, subthemes: [...t.subthemes, newSub] }
-              : t
-          ),
-        }
-      : p
-  );
+  await upsertRow("subthemes", {
+    id: newSub.id,
+    theme_id: themeId,
+    name: newSub.name,
+    description: newSub.description,
+    sort_order: newSub.sort_order,
+  });
 
   return recalcRefCodes(updated);
 }
 
-// ---------- Remove ----------
+/**
+ * ---------- Remove ----------
+ */
 export async function removePillar(
   pillars: NestedPillar[],
   pillarId: string
 ): Promise<NestedPillar[]> {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.from("pillars").delete().eq("id", pillarId);
-  if (error) throw error;
+  const updated = cloneFramework(pillars).filter((p) => p.id !== pillarId);
+  normalizeSort(updated);
 
-  const updated = pillars.filter((p) => p.id !== pillarId);
+  const supabase = getSupabaseClient();
+  await supabase.from("pillars").delete().eq("id", pillarId);
+
   return recalcRefCodes(updated);
 }
 
@@ -132,15 +133,15 @@ export async function removeTheme(
   pillarId: string,
   themeId: string
 ): Promise<NestedPillar[]> {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.from("themes").delete().eq("id", themeId);
-  if (error) throw error;
+  const updated = cloneFramework(pillars);
+  const pillar = updated.find((p) => p.id === pillarId);
+  if (!pillar) return updated;
 
-  const updated = pillars.map((p) =>
-    p.id === pillarId
-      ? { ...p, themes: p.themes.filter((t) => t.id !== themeId) }
-      : p
-  );
+  pillar.themes = pillar.themes.filter((t) => t.id !== themeId);
+  normalizeSort(pillar.themes);
+
+  const supabase = getSupabaseClient();
+  await supabase.from("themes").delete().eq("id", themeId);
 
   return recalcRefCodes(updated);
 }
@@ -151,65 +152,32 @@ export async function removeSubtheme(
   themeId: string,
   subId: string
 ): Promise<NestedPillar[]> {
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.from("subthemes").delete().eq("id", subId);
-  if (error) throw error;
+  const updated = cloneFramework(pillars);
+  const pillar = updated.find((p) => p.id === pillarId);
+  const theme = pillar?.themes.find((t) => t.id === themeId);
+  if (!pillar || !theme) return updated;
 
-  const updated = pillars.map((p) =>
-    p.id === pillarId
-      ? {
-          ...p,
-          themes: p.themes.map((t) =>
-            t.id === themeId
-              ? { ...t, subthemes: t.subthemes.filter((s) => s.id !== subId) }
-              : t
-          ),
-        }
-      : p
-  );
+  theme.subthemes = theme.subthemes.filter((s) => s.id !== subId);
+  normalizeSort(theme.subthemes);
+
+  const supabase = getSupabaseClient();
+  await supabase.from("subthemes").delete().eq("id", subId);
 
   return recalcRefCodes(updated);
 }
 
-// ---------- Update ----------
+/**
+ * ---------- Update ----------
+ * Supports inline editing (name/description).
+ */
 export async function updateRow(
-  pillars: NestedPillar[],
   type: "pillar" | "theme" | "subtheme",
   id: string,
-  updates: Partial<{ name: string; description: string }>
-): Promise<NestedPillar[]> {
+  values: { name?: string; description?: string }
+): Promise<void> {
   const supabase = getSupabaseClient();
-
-  if (type === "pillar") {
-    const { error } = await supabase.from("pillars").update(updates).eq("id", id);
-    if (error) throw error;
-  }
-
-  if (type === "theme") {
-    const { error } = await supabase.from("themes").update(updates).eq("id", id);
-    if (error) throw error;
-  }
-
-  if (type === "subtheme") {
-    const { error } = await supabase.from("subthemes").update(updates).eq("id", id);
-    if (error) throw error;
-  }
-
-  const newPillars = pillars.map((pillar) => {
-    if (type === "pillar" && pillar.id === id) {
-      return { ...pillar, ...updates };
-    }
-    const updatedThemes = pillar.themes.map((theme) => {
-      if (type === "theme" && theme.id === id) {
-        return { ...theme, ...updates };
-      }
-      const updatedSubs = theme.subthemes.map((sub) =>
-        type === "subtheme" && sub.id === id ? { ...sub, ...updates } : sub
-      );
-      return { ...theme, subthemes: updatedSubs };
-    });
-    return { ...pillar, themes: updatedThemes };
-  });
-
-  return recalcRefCodes(newPillars);
+  const table =
+    type === "pillar" ? "pillars" : type === "theme" ? "themes" : "subthemes";
+  const { error } = await supabase.from(table).update(values).eq("id", id);
+  if (error) throw error;
 }
