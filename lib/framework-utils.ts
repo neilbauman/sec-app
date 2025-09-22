@@ -1,6 +1,6 @@
 // lib/framework-utils.ts
 import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
-import { generateRefCodes } from "@/lib/refCodes";
+import { recalcRefCodes } from "@/lib/refCodes";
 
 /**
  * Deep clone the framework tree so we don’t mutate state directly.
@@ -12,14 +12,17 @@ export function cloneFramework(pillars: NestedPillar[]): NestedPillar[] {
 /**
  * Recalculate all ref codes in the framework.
  */
-export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
-  return generateRefCodes(pillars);
+export function normalizeFramework(pillars: NestedPillar[]): NestedPillar[] {
+  const cloned = cloneFramework(pillars);
+  return recalcRefCodes(cloned);
 }
 
 /**
  * Flatten the framework into a simple array of all nodes.
  */
-export function flattenFramework(pillars: NestedPillar[]): Array<NestedPillar | NestedTheme | NestedSubtheme> {
+export function flattenFramework(
+  pillars: NestedPillar[]
+): Array<NestedPillar | NestedTheme | NestedSubtheme> {
   const result: Array<NestedPillar | NestedTheme | NestedSubtheme> = [];
 
   pillars.forEach((p) => {
@@ -38,14 +41,20 @@ export function flattenFramework(pillars: NestedPillar[]): Array<NestedPillar | 
 /**
  * Find a pillar by ID.
  */
-export function findPillar(pillars: NestedPillar[], pillarId: string): NestedPillar | undefined {
+export function findPillar(
+  pillars: NestedPillar[],
+  pillarId: string
+): NestedPillar | undefined {
   return pillars.find((p) => p.id === pillarId);
 }
 
 /**
  * Find a theme by ID.
  */
-export function findTheme(pillars: NestedPillar[], themeId: string): NestedTheme | undefined {
+export function findTheme(
+  pillars: NestedPillar[],
+  themeId: string
+): NestedTheme | undefined {
   for (const pillar of pillars) {
     const theme = pillar.themes.find((t) => t.id === themeId);
     if (theme) return theme;
@@ -56,7 +65,10 @@ export function findTheme(pillars: NestedPillar[], themeId: string): NestedTheme
 /**
  * Find a subtheme by ID.
  */
-export function findSubtheme(pillars: NestedPillar[], subthemeId: string): NestedSubtheme | undefined {
+export function findSubtheme(
+  pillars: NestedPillar[],
+  subthemeId: string
+): NestedSubtheme | undefined {
   for (const pillar of pillars) {
     for (const theme of pillar.themes) {
       const sub = theme.subthemes.find((s) => s.id === subthemeId);
