@@ -6,21 +6,12 @@ import { recalcRefCodes } from "@/lib/framework-utils";
 // ---------- Add ----------
 export async function addPillar(pillars: NestedPillar[]): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("pillars")
-    .insert({
-      name: "Untitled Pillar",
-      description: "",
-      sort_order: pillars.length + 1,
-    })
-    .select()
-    .single();
-
+  const { data, error } = await supabase.from("pillars").insert([{ name: "New Pillar" }]).select().single();
   if (error) throw error;
 
   const newPillar: NestedPillar = {
     id: data.id,
-    ref_code: "", // placeholder, recalculated below
+    ref_code: "",
     name: data.name,
     description: data.description,
     sort_order: data.sort_order,
@@ -32,24 +23,12 @@ export async function addPillar(pillars: NestedPillar[]): Promise<NestedPillar[]
 
 export async function addTheme(pillars: NestedPillar[], pillarId: string): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  const pillar = pillars.find((p) => p.id === pillarId);
-  if (!pillar) return pillars;
-
-  const { data, error } = await supabase
-    .from("themes")
-    .insert({
-      pillar_id: pillarId,
-      name: "Untitled Theme",
-      description: "",
-      sort_order: pillar.themes.length + 1,
-    })
-    .select()
-    .single();
-
+  const { data, error } = await supabase.from("themes").insert([{ name: "New Theme", pillar_id: pillarId }]).select().single();
   if (error) throw error;
 
   const newTheme: NestedTheme = {
     id: data.id,
+    pillar_id: pillarId, // ✅ ensure pillar_id exists
     ref_code: "",
     name: data.name,
     description: data.description,
@@ -57,76 +36,58 @@ export async function addTheme(pillars: NestedPillar[], pillarId: string): Promi
     subthemes: [],
   };
 
-  const updated = pillars.map((p) =>
-    p.id === pillarId ? { ...p, themes: [...p.themes, newTheme] } : p
+  return recalcRefCodes(
+    pillars.map((p) => (p.id === pillarId ? { ...p, themes: [...p.themes, newTheme] } : p))
   );
-  return recalcRefCodes(updated);
 }
 
-export async function addSubtheme(
-  pillars: NestedPillar[],
-  pillarId: string,
-  themeId: string
-): Promise<NestedPillar[]> {
+export async function addSubtheme(pillars: NestedPillar[], pillarId: string, themeId: string): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  const pillar = pillars.find((p) => p.id === pillarId);
-  if (!pillar) return pillars;
-  const theme = pillar.themes.find((t) => t.id === themeId);
-  if (!theme) return pillars;
-
-  const { data, error } = await supabase
-    .from("subthemes")
-    .insert({
-      theme_id: themeId,
-      name: "Untitled Subtheme",
-      description: "",
-      sort_order: theme.subthemes.length + 1,
-    })
-    .select()
-    .single();
-
+  const { data, error } = await supabase.from("subthemes").insert([{ name: "New Subtheme", theme_id: themeId }]).select().single();
   if (error) throw error;
 
   const newSub: NestedSubtheme = {
     id: data.id,
+    theme_id: themeId,
     ref_code: "",
     name: data.name,
     description: data.description,
     sort_order: data.sort_order,
   };
 
-  const updated = pillars.map((p) =>
-    p.id === pillarId
-      ? {
-          ...p,
-          themes: p.themes.map((t) =>
-            t.id === themeId ? { ...t, subthemes: [...t.subthemes, newSub] } : t
-          ),
-        }
-      : p
+  return recalcRefCodes(
+    pillars.map((p) =>
+      p.id === pillarId
+        ? {
+            ...p,
+            themes: p.themes.map((t) =>
+              t.id === themeId ? { ...t, subthemes: [...t.subthemes, newSub] } : t
+            ),
+          }
+        : p
+    )
   );
-  return recalcRefCodes(updated);
 }
 
 // ---------- Remove ----------
 export async function removePillar(pillars: NestedPillar[], pillarId: string): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  await supabase.from("pillars").delete().eq("id", pillarId);
-  const updated = pillars.filter((p) => p.id !== pillarId);
-  return recalcRefCodes(updated);
+  const { error } = await supabase.from("pillars").delete().eq("id", pillarId);
+  if (error) throw error;
+
+  return recalcRefCodes(pillars.filter((p) => p.id !== pillarId));
 }
 
-export async function removeTheme(
-  pillars: NestedPillar[],
-  pillarId: string,
-  themeId: string
-): Promise<NestedPillar[]> {
+export async function removeTheme(pillars: NestedPillar[], pillarId: string, themeId: string): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  await supabase.from("themes").delete().eq("id", themeId);
-  const updated = pillars.map((p) =>
-    p.id === pillarId ? { ...p, themes: p.themes.filter((t) => t.id !== themeId) } : p
+  const { error } = await supabase.from("themes").delete().eq("id", themeId);
+  if (error) throw error;
+
+  return recalcRefCodes(
+    pillars.map((p) =>
+      p.id === pillarId ? { ...p, themes: p.themes.filter((t) => t.id !== themeId) } : p
+    )
   );
-  return recalcRefCodes(updated);
 }
 
 export async function removeSubtheme(
@@ -136,67 +97,59 @@ export async function removeSubtheme(
   subId: string
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  await supabase.from("subthemes").delete().eq("id", subId);
-  const updated = pillars.map((p) =>
-    p.id === pillarId
-      ? {
-          ...p,
-          themes: p.themes.map((t) =>
-            t.id === themeId ? { ...t, subthemes: t.subthemes.filter((s) => s.id !== subId) } : t
-          ),
-        }
-      : p
+  const { error } = await supabase.from("subthemes").delete().eq("id", subId);
+  if (error) throw error;
+
+  return recalcRefCodes(
+    pillars.map((p) =>
+      p.id === pillarId
+        ? {
+            ...p,
+            themes: p.themes.map((t) =>
+              t.id === themeId ? { ...t, subthemes: t.subthemes.filter((s) => s.id !== subId) } : t
+            ),
+          }
+        : p
+    )
   );
-  return recalcRefCodes(updated);
 }
 
 // ---------- Update ----------
-export async function updateRow<T extends NestedPillar | NestedTheme | NestedSubtheme>(
+export async function updateRow(
   pillars: NestedPillar[],
-  updatedRow: T
+  type: "pillar" | "theme" | "subtheme",
+  id: string,
+  updates: Partial<NestedPillar | NestedTheme | NestedSubtheme>
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  let table: string = "";
-  let idField: string = "id";
+  let table = "";
+  if (type === "pillar") table = "pillars";
+  if (type === "theme") table = "themes";
+  if (type === "subtheme") table = "subthemes";
 
-  if ("themes" in updatedRow) {
-    table = "pillars";
-  } else if ("subthemes" in updatedRow) {
-    table = "themes";
-  } else {
-    table = "subthemes";
-  }
-
-  const { error } = await supabase.from(table).update({
-    name: updatedRow.name,
-    description: updatedRow.description,
-    sort_order: updatedRow.sort_order,
-  }).eq(idField, updatedRow.id);
-
+  const { error } = await supabase.from(table).update(updates).eq("id", id);
   if (error) throw error;
 
-  // Replace node in local state
-  function replaceNode(list: NestedPillar[]): NestedPillar[] {
-    return list.map((p) => {
-      if (p.id === updatedRow.id && "themes" in updatedRow) {
-        return { ...(updatedRow as NestedPillar) };
+  // update in memory
+  return recalcRefCodes(
+    pillars.map((p) => {
+      if (type === "pillar" && p.id === id) return { ...p, ...updates };
+      if (type === "theme") {
+        return {
+          ...p,
+          themes: p.themes.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        };
       }
-      return {
-        ...p,
-        themes: p.themes.map((t) => {
-          if (t.id === updatedRow.id && "subthemes" in updatedRow) {
-            return { ...(updatedRow as NestedTheme) };
-          }
-          return {
+      if (type === "subtheme") {
+        return {
+          ...p,
+          themes: p.themes.map((t) => ({
             ...t,
-            subthemes: t.subthemes.map((s) =>
-              s.id === updatedRow.id ? { ...(updatedRow as NestedSubtheme) } : s
-            ),
-          };
-        }),
-      };
-    });
-  }
-
-  return recalcRefCodes(replaceNode(pillars));
+            subthemes: t.subthemes.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+          })),
+        };
+      }
+      return p;
+    })
+  );
 }
