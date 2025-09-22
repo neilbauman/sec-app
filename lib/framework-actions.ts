@@ -12,6 +12,7 @@ export async function addPillar(
   pillars: NestedPillar[]
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
+
   const { data, error } = await supabase
     .from("pillars")
     .insert({
@@ -25,11 +26,8 @@ export async function addPillar(
   if (error) throw error;
 
   const newPillar: NestedPillar = {
-    id: data.id,
+    ...data,
     ref_code: "",
-    name: data.name,
-    description: data.description,
-    sort_order: data.sort_order,
     themes: [],
   };
 
@@ -41,8 +39,8 @@ export async function addTheme(
   pillarId: string
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  const pillar = pillars.find((p) => p.id === pillarId);
-  if (!pillar) return pillars;
+  const parent = pillars.find((p) => p.id === pillarId);
+  if (!parent) return pillars;
 
   const { data, error } = await supabase
     .from("themes")
@@ -50,7 +48,7 @@ export async function addTheme(
       pillar_id: pillarId,
       name: "Untitled Theme",
       description: "",
-      sort_order: pillar.themes.length + 1,
+      sort_order: parent.themes.length + 1,
     })
     .select("*")
     .single();
@@ -58,11 +56,8 @@ export async function addTheme(
   if (error) throw error;
 
   const newTheme: NestedTheme = {
-    id: data.id,
+    ...data,
     ref_code: "",
-    name: data.name,
-    description: data.description,
-    sort_order: data.sort_order,
     subthemes: [],
   };
 
@@ -79,11 +74,11 @@ export async function addSubtheme(
   themeId: string
 ): Promise<NestedPillar[]> {
   const supabase = getSupabaseClient();
-  const pillar = pillars.find((p) => p.id === pillarId);
-  if (!pillar) return pillars;
+  const parentPillar = pillars.find((p) => p.id === pillarId);
+  if (!parentPillar) return pillars;
 
-  const theme = pillar.themes.find((t) => t.id === themeId);
-  if (!theme) return pillars;
+  const parentTheme = parentPillar.themes.find((t) => t.id === themeId);
+  if (!parentTheme) return pillars;
 
   const { data, error } = await supabase
     .from("subthemes")
@@ -91,7 +86,7 @@ export async function addSubtheme(
       theme_id: themeId,
       name: "Untitled Subtheme",
       description: "",
-      sort_order: theme.subthemes.length + 1,
+      sort_order: parentTheme.subthemes.length + 1,
     })
     .select("*")
     .single();
@@ -99,11 +94,8 @@ export async function addSubtheme(
   if (error) throw error;
 
   const newSub: NestedSubtheme = {
-    id: data.id,
+    ...data,
     ref_code: "",
-    name: data.name,
-    description: data.description,
-    sort_order: data.sort_order,
   };
 
   const updated = pillars.map((p) =>
@@ -149,6 +141,7 @@ export async function removeTheme(
       ? { ...p, themes: p.themes.filter((t) => t.id !== themeId) }
       : p
   );
+
   return recalcRefCodes(updated);
 }
 
@@ -174,6 +167,7 @@ export async function removeSubtheme(
         }
       : p
   );
+
   return recalcRefCodes(updated);
 }
 
