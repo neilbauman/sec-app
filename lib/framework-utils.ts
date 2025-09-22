@@ -1,6 +1,6 @@
 // lib/framework-utils.ts
 import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
-import { recalcRefCodes } from "@/lib/refCodes";
+import { generateRefCodes } from "@/lib/refCodes";
 
 /**
  * Deep clone the framework tree so we don’t mutate state directly.
@@ -11,10 +11,9 @@ export function cloneFramework(pillars: NestedPillar[]): NestedPillar[] {
 
 /**
  * Recalculate all ref codes in the framework.
- * Ensures consistency after add/remove/reorder.
  */
-export function regenerateFramework(pillars: NestedPillar[]): NestedPillar[] {
-  return recalcRefCodes(pillars);
+export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
+  return generateRefCodes(pillars);
 }
 
 /**
@@ -41,20 +40,14 @@ export function flattenFramework(
 /**
  * Find a pillar by ID.
  */
-export function findPillar(
-  pillars: NestedPillar[],
-  pillarId: string
-): NestedPillar | undefined {
+export function findPillar(pillars: NestedPillar[], pillarId: string): NestedPillar | undefined {
   return pillars.find((p) => p.id === pillarId);
 }
 
 /**
  * Find a theme by ID.
  */
-export function findTheme(
-  pillars: NestedPillar[],
-  themeId: string
-): NestedTheme | undefined {
+export function findTheme(pillars: NestedPillar[], themeId: string): NestedTheme | undefined {
   for (const pillar of pillars) {
     const theme = pillar.themes.find((t) => t.id === themeId);
     if (theme) return theme;
