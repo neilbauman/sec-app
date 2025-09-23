@@ -8,6 +8,8 @@ import {
   Edit2,
   Plus,
   Trash2,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
@@ -22,7 +24,6 @@ import {
   movePillar,
   moveTheme,
   moveSubtheme,
-  updateRow,
 } from "@/lib/framework-actions";
 
 type FrameworkEditorProps = {
@@ -171,7 +172,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {pillars.map((pillar, pi) => {
+            {pillars.map((pillar) => {
               const pillarOpen = !!openPillars[pillar.id];
               return (
                 <>
@@ -190,16 +191,18 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                       <div className="font-medium">{pillar.name}</div>
                       {pillar.description && <div className="text-xs text-gray-600">{pillar.description}</div>}
                     </td>
-                    <td className="text-center">{pillar.sort_order}</td>
+                    <td className="text-center">
+                      {pillar.sort_order}
+                      <div className="flex justify-center gap-1">
+                        <button onClick={() => handleMovePillar(pillar.id, "up")}><ArrowUp className="w-4 h-4 text-gray-500" /></button>
+                        <button onClick={() => handleMovePillar(pillar.id, "down")}><ArrowDown className="w-4 h-4 text-gray-500" /></button>
+                      </div>
+                    </td>
                     <td className="text-center">
                       {editMode && (
                         <div className="flex gap-2 justify-center">
-                          <button onClick={() => handleAddTheme(pillar.id)} className="p-1 rounded hover:bg-blue-50">
-                            <Plus className="w-4 h-4 text-blue-600" />
-                          </button>
-                          <button onClick={() => handleDeletePillar(pillar.id)} className="p-1 rounded hover:bg-red-50">
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </button>
+                          <button onClick={() => handleAddTheme(pillar.id)}><Plus className="w-4 h-4 text-blue-600" /></button>
+                          <button onClick={() => handleDeletePillar(pillar.id)}><Trash2 className="w-4 h-4 text-red-600" /></button>
                         </div>
                       )}
                     </td>
@@ -224,16 +227,18 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                             <div className="font-medium">{theme.name}</div>
                             {theme.description && <div className="text-xs text-gray-600">{theme.description}</div>}
                           </td>
-                          <td className="text-center">{theme.sort_order}</td>
+                          <td className="text-center">
+                            {theme.sort_order}
+                            <div className="flex justify-center gap-1">
+                              <button onClick={() => handleMoveTheme(pillar.id, theme.id, "up")}><ArrowUp className="w-4 h-4 text-gray-500" /></button>
+                              <button onClick={() => handleMoveTheme(pillar.id, theme.id, "down")}><ArrowDown className="w-4 h-4 text-gray-500" /></button>
+                            </div>
+                          </td>
                           <td className="text-center">
                             {editMode && (
                               <div className="flex gap-2 justify-center">
-                                <button onClick={() => handleAddSubtheme(pillar.id, theme.id)} className="p-1 rounded hover:bg-blue-50">
-                                  <Plus className="w-4 h-4 text-blue-600" />
-                                </button>
-                                <button onClick={() => handleDeleteTheme(pillar.id, theme.id)} className="p-1 rounded hover:bg-red-50">
-                                  <Trash2 className="w-4 h-4 text-red-600" />
-                                </button>
+                                <button onClick={() => handleAddSubtheme(pillar.id, theme.id)}><Plus className="w-4 h-4 text-blue-600" /></button>
+                                <button onClick={() => handleDeleteTheme(pillar.id, theme.id)}><Trash2 className="w-4 h-4 text-red-600" /></button>
                               </div>
                             )}
                           </td>
@@ -252,12 +257,16 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                               <div className="font-medium">{sub.name}</div>
                               {sub.description && <div className="text-xs text-gray-600">{sub.description}</div>}
                             </td>
-                            <td className="text-center">{sub.sort_order}</td>
+                            <td className="text-center">
+                              {sub.sort_order}
+                              <div className="flex justify-center gap-1">
+                                <button onClick={() => handleMoveSubtheme(pillar.id, theme.id, sub.id, "up")}><ArrowUp className="w-4 h-4 text-gray-500" /></button>
+                                <button onClick={() => handleMoveSubtheme(pillar.id, theme.id, sub.id, "down")}><ArrowDown className="w-4 h-4 text-gray-500" /></button>
+                              </div>
+                            </td>
                             <td className="text-center">
                               {editMode && (
-                                <button onClick={() => handleDeleteSubtheme(pillar.id, theme.id, sub.id)} className="p-1 rounded hover:bg-red-50">
-                                  <Trash2 className="w-4 h-4 text-red-600" />
-                                </button>
+                                <button onClick={() => handleDeleteSubtheme(pillar.id, theme.id, sub.id)}><Trash2 className="w-4 h-4 text-red-600" /></button>
                               )}
                             </td>
                           </tr>
