@@ -14,220 +14,233 @@ import {
   moveSubtheme,
   saveFramework,
 } from "@/lib/framework-actions";
-import { buildRefCodeMap, RefMeta, cloneFramework } from "@/lib/framework-utils";
-import type { NestedPillar } from "@/lib/framework-client";
-import { Pencil, Trash2, Plus, ArrowUp, ArrowDown, Save, X, ChevronRight, ChevronDown } from "lucide-react";
+import {
+  recalcRefCodes,
+  buildRefCodeMap,
+  RefMeta,
+  cloneFramework,
+} from "@/lib/framework-utils";
+import type {
+  NestedPillar,
+  NestedTheme,
+  NestedSubtheme,
+} from "@/lib/framework-client";
+import { v4 as uuidv4 } from "uuid";
+import {
+  Pencil,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Plus,
+  Save,
+} from "lucide-react";
 
 type FrameworkEditorProps = {
   initialPillars: NestedPillar[];
 };
 
+type ExpandedState = Record<string, boolean>;
+
 export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps) {
   const [pillars, setPillars] = useState<NestedPillar[]>(initialPillars);
-  const [refMap, setRefMap] = useState<Record<string, RefMeta>>(() =>
-    buildRefCodeMap(initialPillars)
-  );
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [editing, setEditing] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<ExpandedState>({});
   const [dirty, setDirty] = useState(false);
 
-  const markDirty = (updated: NestedPillar[]) => {
-    setPillars(updated);
-    setRefMap(buildRefCodeMap(updated, refMap));
-    setDirty(true);
+  // Ref code recalculation (pending + saved)
+  const refMap: Record<string, RefMeta> = buildRefCodeMap(pillars);
+
+  const markDirty = () => setDirty(true);
+
+  const toggleExpand = (id: string) => {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // ---------- Handlers ----------
   const handleSave = async () => {
-    await saveFramework(pillars);
-    setRefMap(buildRefCodeMap(pillars)); // reset dirty
+    const withRefCodes = recalcRefCodes(cloneFramework(pillars));
+    await saveFramework(withRefCodes);
+    setPillars(withRefCodes);
     setDirty(false);
   };
 
-  const handleCancel = () => {
-    setPillars(cloneFramework(initialPillars));
-    setRefMap(buildRefCodeMap(initialPillars));
-    setDirty(false);
+  // Generic row renderer
+  const Row = ({
+    node,
+    type,
+    parentId,
+  }: {
+    node: NestedPillar | NestedTheme | NestedSubtheme;
+    type: "pillar" | "theme" | "subtheme";
+    parentId?: string;
+  }) => {
+    const refMeta = refMap[node.id];
+    const hasChildren =
+      type === "pillar"
+        ? (node as NestedPillar).themes.length > 0
+        : type === "theme"
+        ? (node as NestedTheme).subthemes.length > 0
+        : false;
+
+    return (
+      <>
+        <tr className="border-b">
+          {/* Expand / Collapse */}
+          <td className="py-2 px-2 w-6">
+            {hasChildren && (
+              <button onClick={() => toggleExpand(node.id)}>
+                {expanded[node.id] ? (
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <ChevronUp className="w-4 h-4 text-gray-500" />
+                )}
+              </button>
+            )}
+          </td>
+
+          {/* Name + Description */}
+          <td className="py-2 px-2">
+            <div className="font-medium">{node.name}</div>
+            {("description" in node && node.description) && (
+              <div className="text-sm text-gray-500">{node.description}</div>
+            )}
+          </td>
+
+          {/* Type + Ref Code */}
+          <td className="py-2 px-2">
+            <span className="inline-flex items-center gap-2">
+              <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 border">
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </span>
+              {refMeta && (
+                <span
+                  className={
+                    refMeta.dirty ? "text-xs text-red-500" : "text-xs text-gray-400"
+                  }
+                >
+                  {refMeta.code}
+                </span>
+              )}
+            </span>
+          </td>
+
+          {/* Actions */}
+          <td className="py-2 px-2 flex gap-2">
+            <button className="text-gray-500 hover:text-gray-700">
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => {
+                if (type === "pillar") {
+                  setPillars(removePillar(pillars, node.id));
+                } else if (type === "theme") {
+                  setPillars(removeTheme(pillars, parentId!, node.id));
+                } else {
+                  setPillars(removeSubtheme(pillars, parentId!, node.id));
+                }
+                markDirty();
+              }}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                if (type === "pillar") {
+                  setPillars(movePillar(pillars, node.id, "up"));
+                } else if (type === "theme") {
+                  setPillars(moveTheme(pillars, parentId!, node.id, "up"));
+                } else {
+                  setPillars(moveSubtheme(pillars, parentId!, node.id, "up"));
+                }
+                markDirty();
+              }}
+            >
+              <ChevronUp className="w-4 h-4 text-gray-500" />
+            </button>
+            <button
+              onClick={() => {
+                if (type === "pillar") {
+                  setPillars(movePillar(pillars, node.id, "down"));
+                } else if (type === "theme") {
+                  setPillars(moveTheme(pillars, parentId!, node.id, "down"));
+                } else {
+                  setPillars(moveSubtheme(pillars, parentId!, node.id, "down"));
+                }
+                markDirty();
+              }}
+            >
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            </button>
+            {type !== "subtheme" && (
+              <button
+                onClick={() => {
+                  if (type === "pillar") {
+                    setPillars(addTheme(pillars, node.id));
+                  } else {
+                    setPillars(addSubtheme(pillars, node.id));
+                  }
+                  markDirty();
+                }}
+              >
+                <Plus className="w-4 h-4 text-gray-500" />
+              </button>
+            )}
+          </td>
+        </tr>
+
+        {/* Children */}
+        {expanded[node.id] &&
+          type === "pillar" &&
+          (node as NestedPillar).themes.map((t: NestedTheme) => (
+            <Row key={t.id} node={t} type="theme" parentId={node.id} />
+          ))}
+        {expanded[node.id] &&
+          type === "theme" &&
+          (node as NestedTheme).subthemes.map((s: NestedSubtheme) => (
+            <Row key={s.id} node={s} type="subtheme" parentId={node.id} />
+          ))}
+      </>
+    );
   };
 
-  // ---------- Render ----------
   return (
     <div className="space-y-4">
       {dirty && (
-        <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-2 rounded-md">
+        <div className="bg-yellow-50 text-yellow-700 border border-yellow-200 px-3 py-2 rounded text-sm flex items-center justify-between">
           <span>Items in red will be regenerated on save.</span>
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-md"
-            >
-              <Save size={16} /> Save
-            </button>
-            <button
-              onClick={handleCancel}
-              className="flex items-center gap-1 px-3 py-1 bg-gray-200 text-gray-800 rounded-md"
-            >
-              <X size={16} /> Cancel
-            </button>
-          </div>
+          <button
+            onClick={handleSave}
+            className="inline-flex items-center gap-1 text-sm font-medium text-green-700 hover:text-green-900"
+          >
+            <Save className="w-4 h-4" /> Save Changes
+          </button>
         </div>
       )}
 
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-gray-100 text-left">
-            <th className="px-2 py-1">Type / Ref</th>
-            <th className="px-2 py-1">Name & Description</th>
-            <th className="px-2 py-1 w-32">Actions</th>
+      <table className="w-full text-sm border">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="py-2 px-2 text-left"></th>
+            <th className="py-2 px-2 text-left">Name</th>
+            <th className="py-2 px-2 text-left">Type / Ref Code</th>
+            <th className="py-2 px-2 text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {pillars.map((pillar) => (
-            <Row
-              key={pillar.id}
-              node={pillar}
-              refMap={refMap}
-              expanded={expanded}
-              setExpanded={setExpanded}
-              onChange={markDirty}
-              setEditing={setEditing}
-              editing={editing}
-              type="pillar"
-              parentId={null}
-              pillars={pillars}
-            />
+          {pillars.map((p) => (
+            <Row key={p.id} node={p} type="pillar" />
           ))}
         </tbody>
       </table>
 
       <button
-        onClick={() => markDirty(addPillar(pillars))}
-        className="flex items-center gap-1 text-blue-600 text-sm mt-2"
+        onClick={() => {
+          setPillars(addPillar(pillars));
+          markDirty();
+        }}
+        className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 border rounded text-sm bg-gray-50 hover:bg-gray-100"
       >
-        <Plus size={14} /> Add Pillar
+        <Plus className="w-4 h-4" /> Add Pillar
       </button>
     </div>
-  );
-}
-
-// ---------- Row Component ----------
-type RowProps = {
-  node: any;
-  refMap: Record<string, RefMeta>;
-  expanded: Record<string, boolean>;
-  setExpanded: (e: Record<string, boolean>) => void;
-  onChange: (p: NestedPillar[]) => void;
-  setEditing: (id: string | null) => void;
-  editing: string | null;
-  type: "pillar" | "theme" | "subtheme";
-  parentId: string | null;
-  pillars: NestedPillar[];
-};
-
-function Row({
-  node,
-  refMap,
-  expanded,
-  setExpanded,
-  onChange,
-  setEditing,
-  editing,
-  type,
-  parentId,
-  pillars,
-}: RowProps) {
-  const ref = refMap[node.id];
-
-  const toggle = () =>
-    setExpanded({ ...expanded, [node.id]: !expanded[node.id] });
-
-  const isEditing = editing === node.id;
-
-  return (
-    <>
-      <tr>
-        <td className="px-2 py-1 align-top">
-          <div className="flex items-center gap-1">
-            {type !== "subtheme" && (
-              <button onClick={toggle} className="text-gray-500">
-                {expanded[node.id] ? (
-                  <ChevronDown size={14} />
-                ) : (
-                  <ChevronRight size={14} />
-                )}
-              </button>
-            )}
-            <span className="text-xs font-medium text-gray-600">{type}</span>
-            <span
-              className={ref?.dirty ? "text-red-500 text-xs" : "text-gray-400 text-xs"}
-            >
-              {ref?.code}
-            </span>
-          </div>
-        </td>
-        <td className="px-2 py-1">
-          {isEditing ? (
-            <input
-              type="text"
-              defaultValue={node.name}
-              onBlur={(e) => {
-                node.name = e.target.value;
-                setEditing(null);
-              }}
-              className="border px-1 text-sm w-full"
-            />
-          ) : (
-            <div>
-              <div className="font-medium">{node.name}</div>
-              {node.description && (
-                <div className="text-xs text-gray-500">{node.description}</div>
-              )}
-            </div>
-          )}
-        </td>
-        <td className="px-2 py-1">
-          <div className="flex gap-2">
-            <button onClick={() => setEditing(node.id)}><Pencil size={14} /></button>
-            <button><Trash2 size={14} /></button>
-            <button><ArrowUp size={14} /></button>
-            <button><ArrowDown size={14} /></button>
-            {type !== "subtheme" && <button><Plus size={14} /></button>}
-          </div>
-        </td>
-      </tr>
-      {/* Expand children */}
-      {expanded[node.id] && type === "pillar" &&
-        node.themes.map((t: NestedTheme) => (
-          <Row
-            key={t.id}
-            node={t}
-            refMap={refMap}
-            expanded={expanded}
-            setExpanded={setExpanded}
-            onChange={onChange}
-            setEditing={setEditing}
-            editing={editing}
-            type="theme"
-            parentId={node.id}
-            pillars={pillars}
-          />
-        ))}
-      {expanded[node.id] && type === "theme" &&
-        node.subthemes.map((s: NestedSubtheme) => (
-          <Row
-            key={s.id}
-            node={s}
-            refMap={refMap}
-            expanded={expanded}
-            setExpanded={setExpanded}
-            onChange={onChange}
-            setEditing={setEditing}
-            editing={editing}
-            type="subtheme"
-            parentId={node.id}
-            pillars={pillars}
-          />
-        ))}
-    </>
   );
 }
