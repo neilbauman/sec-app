@@ -1,6 +1,6 @@
 // lib/framework-actions.ts
 import type { NestedPillar } from "@/lib/framework-client";
-import { cloneFramework, recalcRefCodes } from "@/lib/framework-utils";
+import { cloneFramework } from "@/lib/framework-utils";
 import { v4 as uuidv4 } from "uuid";
 
 // ---------- Add ----------
@@ -10,6 +10,8 @@ export function addPillar(pillars: NestedPillar[]): NestedPillar[] {
     id: uuidv4(),
     name: "Untitled Pillar",
     description: "",
+    sort_order: copy.length + 1,
+    ref_code: "", // will be recalculated later
     themes: [],
   });
   return copy;
@@ -27,6 +29,8 @@ export function addTheme(
       name: "Untitled Theme",
       description: "",
       pillar_id: pillar.id,
+      sort_order: pillar.themes.length + 1,
+      ref_code: "",
       subthemes: [],
     });
   }
@@ -47,6 +51,8 @@ export function addSubtheme(
       name: "Untitled Subtheme",
       description: "",
       theme_id: theme.id,
+      sort_order: theme.subthemes.length + 1,
+      ref_code: "",
     });
   }
   return copy;
