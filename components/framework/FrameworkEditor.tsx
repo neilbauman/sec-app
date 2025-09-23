@@ -8,8 +8,6 @@ import {
   Edit2,
   Plus,
   Trash2,
-  ArrowUp,
-  ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
@@ -21,10 +19,10 @@ import {
   removePillar,
   removeTheme,
   removeSubtheme,
-  updateRow,
   movePillar,
   moveTheme,
   moveSubtheme,
+  updateRow,
 } from "@/lib/framework-actions";
 
 type FrameworkEditorProps = {
@@ -39,7 +37,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // expand / collapse
+  // ---------- Expand/Collapse ----------
   const togglePillar = (id: string) =>
     setOpenPillars((s) => ({ ...s, [id]: !s[id] }));
   const toggleTheme = (id: string) =>
@@ -60,11 +58,8 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
     setOpenThemes({});
   };
 
-  // ---------- Async helper ----------
-  async function runAsync<T>(
-    key: string,
-    fn: () => Promise<T>
-  ): Promise<T | null> {
+  // ---------- Async Helper ----------
+  async function runAsync<T>(key: string, fn: () => Promise<T>): Promise<T | null> {
     setLoading(key);
     setErrorMsg(null);
     try {
@@ -114,11 +109,7 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       return updated;
     });
 
-  const handleDeleteSubtheme = (
-    pillarId: string,
-    themeId: string,
-    subId: string
-  ) =>
+  const handleDeleteSubtheme = (pillarId: string, themeId: string, subId: string) =>
     runAsync(`sub:${subId}:del`, async () => {
       const updated = await removeSubtheme(pillars, pillarId, themeId, subId);
       setPillars(updated);
@@ -127,17 +118,19 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
 
   // ---------- Move ----------
   const handleMovePillar = (pillarId: string, dir: "up" | "down") =>
-    setPillars((p) => movePillar(p, pillarId, dir));
+    setPillars(movePillar(pillars, pillarId, dir));
 
   const handleMoveTheme = (pillarId: string, themeId: string, dir: "up" | "down") =>
-    setPillars((p) => moveTheme(p, pillarId, themeId, dir));
+    setPillars(moveTheme(pillars, pillarId, themeId, dir));
 
-  const handleMoveSubtheme = (
-    pillarId: string,
-    themeId: string,
-    subId: string,
-    dir: "up" | "down"
-  ) => setPillars((p) => moveSubtheme(p, pillarId, themeId, subId, dir));
+  const handleMoveSubtheme = (pillarId: string, themeId: string, subId: string, dir: "up" | "down") =>
+    setPillars(moveSubtheme(pillars, pillarId, themeId, subId, dir));
+
+  // ---------- UI Helpers ----------
+  const renderRefCode = (ref?: string) =>
+    <span className={`text-xs ${ref ? "text-gray-500" : "text-red-500"}`}>
+      {ref || "⚠ missing"}
+    </span>;
 
   return (
     <div className="space-y-4">
@@ -151,31 +144,17 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       {/* Top controls */}
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={expandAll}>
-            Expand All
-          </Button>
-          <Button size="sm" variant="outline" onClick={collapseAll}>
-            Collapse All
-          </Button>
+          <Button size="sm" variant="outline" onClick={expandAll}>Expand All</Button>
+          <Button size="sm" variant="outline" onClick={collapseAll}>Collapse All</Button>
         </div>
         <div className="flex gap-2">
           {editMode && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleAddPillar}
-              disabled={loading === "pillar:add"}
-            >
+            <Button size="sm" variant="outline" onClick={handleAddPillar} disabled={loading === "pillar:add"}>
               <Plus className="w-4 h-4 mr-1" /> Add Pillar
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setEditMode((s) => !s)}
-          >
-            <Edit2 className="w-4 h-4 mr-1" />
-            {editMode ? "Editing" : "View Mode"}
+          <Button size="sm" variant="outline" onClick={() => setEditMode((s) => !s)}>
+            <Edit2 className="w-4 h-4 mr-1" /> {editMode ? "Editing" : "View Mode"}
           </Button>
         </div>
       </div>
@@ -200,63 +179,25 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                   <tr key={pillar.id} className="[&>td]:px-3 [&>td]:py-2">
                     <td>
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => togglePillar(pillar.id)}
-                          className="p-1 rounded hover:bg-gray-100"
-                          aria-label={pillarOpen ? "Collapse Pillar" : "Expand Pillar"}
-                        >
-                          {pillarOpen ? (
-                            <ChevronDown className="w-4 h-4 text-gray-600" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-gray-600" />
-                          )}
+                        <button onClick={() => togglePillar(pillar.id)} className="p-1 rounded hover:bg-gray-100">
+                          {pillarOpen ? <ChevronDown className="w-4 h-4 text-gray-600" /> : <ChevronRight className="w-4 h-4 text-gray-600" />}
                         </button>
                         <Badge>Pillar</Badge>
-                        <span className="text-xs text-gray-500">
-                          {pillar.sort_order}
-                        </span>
+                        {renderRefCode(pillar.ref_code)}
                       </div>
                     </td>
                     <td>
                       <div className="font-medium">{pillar.name}</div>
-                      {pillar.description && (
-                        <div className="text-xs text-gray-600">
-                          {pillar.description}
-                        </div>
-                      )}
+                      {pillar.description && <div className="text-xs text-gray-600">{pillar.description}</div>}
                     </td>
                     <td className="text-center">{pillar.sort_order}</td>
                     <td className="text-center">
                       {editMode && (
                         <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => handleMovePillar(pillar.id, "up")}
-                            className="p-1 rounded hover:bg-gray-100"
-                            aria-label="Move Up"
-                          >
-                            <ArrowUp className="w-4 h-4 text-gray-600" />
-                          </button>
-                          <button
-                            onClick={() => handleMovePillar(pillar.id, "down")}
-                            className="p-1 rounded hover:bg-gray-100"
-                            aria-label="Move Down"
-                          >
-                            <ArrowDown className="w-4 h-4 text-gray-600" />
-                          </button>
-                          <button
-                            onClick={() => handleAddTheme(pillar.id)}
-                            disabled={loading === `pillar:${pillar.id}:theme:add`}
-                            className="p-1 rounded hover:bg-blue-50"
-                            aria-label="Add Theme"
-                          >
+                          <button onClick={() => handleAddTheme(pillar.id)} className="p-1 rounded hover:bg-blue-50">
                             <Plus className="w-4 h-4 text-blue-600" />
                           </button>
-                          <button
-                            onClick={() => handleDeletePillar(pillar.id)}
-                            disabled={loading === `pillar:${pillar.id}:del`}
-                            className="p-1 rounded hover:bg-red-50"
-                            aria-label="Delete Pillar"
-                          >
+                          <button onClick={() => handleDeletePillar(pillar.id)} className="p-1 rounded hover:bg-red-50">
                             <Trash2 className="w-4 h-4 text-red-600" />
                           </button>
                         </div>
@@ -265,140 +206,65 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                   </tr>
 
                   {/* Themes */}
-                  {pillarOpen &&
-                    pillar.themes.map((theme) => {
-                      const themeOpen = !!openThemes[theme.id];
-                      return (
-                        <>
-                          <tr
-                            key={theme.id}
-                            className="[&>td]:px-3 [&>td]:py-2"
-                          >
-                            <td>
-                              <div className="flex items-center gap-2 pl-4">
-                                <button
-                                  onClick={() => toggleTheme(theme.id)}
-                                  className="p-1 rounded hover:bg-gray-100"
-                                  aria-label={themeOpen ? "Collapse Theme" : "Expand Theme"}
-                                >
-                                  {themeOpen ? (
-                                    <ChevronDown className="w-4 h-4 text-gray-600" />
-                                  ) : (
-                                    <ChevronRight className="w-4 h-4 text-gray-600" />
-                                  )}
+                  {pillarOpen && pillar.themes.map((theme) => {
+                    const themeOpen = !!openThemes[theme.id];
+                    return (
+                      <>
+                        <tr key={theme.id} className="[&>td]:px-3 [&>td]:py-2">
+                          <td>
+                            <div className="flex items-center gap-2 pl-4">
+                              <button onClick={() => toggleTheme(theme.id)} className="p-1 rounded hover:bg-gray-100">
+                                {themeOpen ? <ChevronDown className="w-4 h-4 text-gray-600" /> : <ChevronRight className="w-4 h-4 text-gray-600" />}
+                              </button>
+                              <Badge variant="success">Theme</Badge>
+                              {renderRefCode(theme.ref_code)}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="font-medium">{theme.name}</div>
+                            {theme.description && <div className="text-xs text-gray-600">{theme.description}</div>}
+                          </td>
+                          <td className="text-center">{theme.sort_order}</td>
+                          <td className="text-center">
+                            {editMode && (
+                              <div className="flex gap-2 justify-center">
+                                <button onClick={() => handleAddSubtheme(pillar.id, theme.id)} className="p-1 rounded hover:bg-blue-50">
+                                  <Plus className="w-4 h-4 text-blue-600" />
                                 </button>
-                                <Badge variant="success">Theme</Badge>
-                                <span className="text-xs text-gray-500">
-                                  {theme.sort_order}
-                                </span>
+                                <button onClick={() => handleDeleteTheme(pillar.id, theme.id)} className="p-1 rounded hover:bg-red-50">
+                                  <Trash2 className="w-4 h-4 text-red-600" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+
+                        {/* Subthemes */}
+                        {themeOpen && theme.subthemes.map((sub) => (
+                          <tr key={sub.id} className="[&>td]:px-3 [&>td]:py-2">
+                            <td>
+                              <div className="flex items-center gap-2 pl-8">
+                                <Badge variant="danger">Subtheme</Badge>
+                                {renderRefCode(sub.ref_code)}
                               </div>
                             </td>
-                            <td className="pl-4">
-                              <div className="font-medium">{theme.name}</div>
-                              {theme.description && (
-                                <div className="text-xs text-gray-600">
-                                  {theme.description}
-                                </div>
-                              )}
+                            <td>
+                              <div className="font-medium">{sub.name}</div>
+                              {sub.description && <div className="text-xs text-gray-600">{sub.description}</div>}
                             </td>
-                            <td className="text-center">{theme.sort_order}</td>
+                            <td className="text-center">{sub.sort_order}</td>
                             <td className="text-center">
                               {editMode && (
-                                <div className="flex gap-2 justify-center">
-                                  <button
-                                    onClick={() => handleMoveTheme(pillar.id, theme.id, "up")}
-                                    className="p-1 rounded hover:bg-gray-100"
-                                    aria-label="Move Up"
-                                  >
-                                    <ArrowUp className="w-4 h-4 text-gray-600" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleMoveTheme(pillar.id, theme.id, "down")}
-                                    className="p-1 rounded hover:bg-gray-100"
-                                    aria-label="Move Down"
-                                  >
-                                    <ArrowDown className="w-4 h-4 text-gray-600" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleAddSubtheme(pillar.id, theme.id)}
-                                    disabled={loading === `theme:${theme.id}:sub:add`}
-                                    className="p-1 rounded hover:bg-blue-50"
-                                    aria-label="Add Subtheme"
-                                  >
-                                    <Plus className="w-4 h-4 text-blue-600" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteTheme(pillar.id, theme.id)}
-                                    disabled={loading === `theme:${theme.id}:del`}
-                                    className="p-1 rounded hover:bg-red-50"
-                                    aria-label="Delete Theme"
-                                  >
-                                    <Trash2 className="w-4 h-4 text-red-600" />
-                                  </button>
-                                </div>
+                                <button onClick={() => handleDeleteSubtheme(pillar.id, theme.id, sub.id)} className="p-1 rounded hover:bg-red-50">
+                                  <Trash2 className="w-4 h-4 text-red-600" />
+                                </button>
                               )}
                             </td>
                           </tr>
-
-                          {/* Subthemes */}
-                          {themeOpen &&
-                            theme.subthemes.map((sub) => (
-                              <tr
-                                key={sub.id}
-                                className="[&>td]:px-3 [&>td]:py-2"
-                              >
-                                <td>
-                                  <div className="flex items-center gap-2 pl-8">
-                                    <Badge variant="danger">Subtheme</Badge>
-                                    <span className="text-xs text-gray-500">
-                                      {sub.sort_order}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="pl-8">
-                                  <div className="font-medium">{sub.name}</div>
-                                  {sub.description && (
-                                    <div className="text-xs text-gray-600">
-                                      {sub.description}
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="text-center">{sub.sort_order}</td>
-                                <td className="text-center">
-                                  {editMode && (
-                                    <div className="flex gap-2 justify-center">
-                                      <button
-                                        onClick={() => handleMoveSubtheme(pillar.id, theme.id, sub.id, "up")}
-                                        className="p-1 rounded hover:bg-gray-100"
-                                        aria-label="Move Up"
-                                      >
-                                        <ArrowUp className="w-4 h-4 text-gray-600" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleMoveSubtheme(pillar.id, theme.id, sub.id, "down")}
-                                        className="p-1 rounded hover:bg-gray-100"
-                                        aria-label="Move Down"
-                                      >
-                                        <ArrowDown className="w-4 h-4 text-gray-600" />
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          handleDeleteSubtheme(pillar.id, theme.id, sub.id)
-                                        }
-                                        disabled={loading === `sub:${sub.id}:del`}
-                                        className="p-1 rounded hover:bg-red-50"
-                                        aria-label="Delete Subtheme"
-                                      >
-                                        <Trash2 className="w-4 h-4 text-red-600" />
-                                      </button>
-                                    </div>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                        </>
-                      );
-                    })}
+                        ))}
+                      </>
+                    );
+                  })}
                 </>
               );
             })}
