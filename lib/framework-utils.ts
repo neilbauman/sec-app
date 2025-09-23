@@ -1,6 +1,5 @@
 // lib/framework-utils.ts
 import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
-import { recalcRefCodes } from "@/lib/refCodes";
 
 /**
  * Deep clone the framework tree so we don’t mutate state directly.
@@ -10,61 +9,188 @@ export function cloneFramework(pillars: NestedPillar[]): NestedPillar[] {
 }
 
 /**
- * Recalculate all ref codes in the framework.
+ * Renumber sort_order consistently across all levels.
  */
-export { recalcRefCodes };
+export function renumberAll(pillars: NestedPillar[]): NestedPillar[] {
+  return pillars.map((p, i) => ({
+    ...p,
+    sort_order: i + 1,
+    themes: p.themes.map((t, j) => ({
+      ...t,
+      sort_order: j + 1,
+      subthemes: t.subthemes.map((s, k) => ({
+        ...s,
+        sort_order: k + 1,
+      })),
+    })),
+  }));
+}
 
 /**
- * Flatten the framework into a simple array of all nodes.
+ * Build ref code map for display (Pillar#, Theme#, Subtheme#).
  */
-export function flattenFramework(
-  pillars: NestedPillar[]
-): Array<NestedPillar | NestedTheme | NestedSubtheme> {
-  const result: Array<NestedPillar | NestedTheme | NestedSubtheme> = [];
-
-  pillars.forEach((p) => {
-    result.push(p);
-    p.themes.forEach((t) => {
-      result.push(t);
-      t.subthemes.forEach((s) => {
-        result.push(s);
+export function buildRefCodeMap(pillars: NestedPillar[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  pillars.forEach((p, i) => {
+    const pRef = `P${i + 1}`;
+    map[p.id] = pRef;
+    p.themes.forEach((t, j) => {
+      const tRef = `${pRef}.${j + 1}`;
+      map[t.id] = tRef;
+      t.subthemes.forEach((s, k) => {
+        map[s.id] = `${tRef}.${k + 1}`;
       });
     });
   });
-
-  return result;
+  return map;
 }
 
-/**
- * Find a pillar by ID.
- */
-export function findPillar(pillars: NestedPillar[], pillarId: string): NestedPillar | undefined {
-  return pillars.find((p) => p.id === pillarId);
+// ---------- Local add/remove/move helpers (client-side only) ----------
+
+export function addPillarLocal(pillars: NestedPillar[]): NestedPillar[] {
+  const newPillar: NestedPillar = {
+    id: crypto.randomUUID(),
+    name: "New Pillar",
+    description: "",
+    sort_order: pillars.length + 1,
+    ref_code: "",
+    themes: [],
+  };
+  return renumberAll([...pillars, newPillar]);
 }
 
-/**
- * Find a theme by ID.
- */
-export function findTheme(pillars: NestedPillar[], themeId: string): NestedTheme | undefined {
-  for (const pillar of pillars) {
-    const theme = pillar.themes.find((t) => t.id === themeId);
-    if (theme) return theme;
-  }
-  return undefined;
+export function addThemeLocal(pillars: NestedPillar[], pillarId: string): NestedPillar[] {
+  return renumberAll(
+    pillars.map((p) =>
+      p.id !== pillarId
+        ? p
+        : {
+            ...p,
+            themes: [
+              ...p.themes,
+              {
+                id: crypto.randomUUID(),
+                pillar_id: p.id,
+                name: "New Theme",
+                description: "",
+                sort_order: p.themes.length + 1,
+                ref_code: "",
+                subthemes: [],
+              },
+            ],
+          }
+    )
+  );
 }
 
-/**
- * Find a subtheme by ID.
- */
-export function findSubtheme(
+export function addSubthemeLocal(pillars: NestedPillar[], pillarId: string, themeId: string): NestedPillar[] {
+  return renumberAll(
+    pillars.map((p) =>
+      p.id !== pillarId
+        ? p
+        : {
+            ...p,
+            themes: p.themes.map((t) =>
+              t.id !== themeId
+                ? t
+                : {
+                    ...t,
+                    subthemes: [
+                      ...t.subthemes,
+                      {
+                        id: crypto.randomUUID(),
+                        theme_id: t.id,
+                        name: "New Subtheme",
+                        description: "",
+                        sort_order: t.subthemes.length + 1,
+                        ref_code: "",
+                      },
+                    ],
+                  }
+            ),
+          }
+    )
+  );
+}
+
+export function removePillarLocal(pillars: NestedPillar[], pillarId: string): NestedPillar[] {
+  return renumberAll(pillars.filter((p) => p.id !== pillarId));
+}
+
+export function removeThemeLocal(pillars: NestedPillar[], pillarId: string, themeId: string): NestedPillar[] {
+  return renumberAll(
+    pillars.map((p) =>
+      p.id !== pillarId ? p : { ...p, themes: p.themes.filter((t) => t.id !== themeId) }
+    )
+  );
+}
+
+export function removeSubthemeLocal(pillars: NestedPillar[], pillarId: string, themeId: string, subId: string): NestedPillar[] {
+  return renumberAll(
+    pillars.map((p) =>
+      p.id !== pillarId
+        ? p
+        : {
+            ...p,
+            themes: p.themes.map((t) =>
+              t.id !== themeId ? t : { ...t, subthemes: t.subthemes.filter((s) => s.id !== subId) }
+            ),
+          }
+    )
+  );
+}
+
+export function movePillarLocal(pillars: NestedPillar[], pillarId: string, direction: "up" | "down"): NestedPillar[] {
+  const idx = pillars.findIndex((p) => p.id === pillarId);
+  if (idx === -1) return pillars;
+  const newIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (newIdx < 0 || newIdx >= pillars.length) return pillars;
+  const newArr = [...pillars];
+  const [moved] = newArr.splice(idx, 1);
+  newArr.splice(newIdx, 0, moved);
+  return renumberAll(newArr);
+}
+
+export function moveThemeLocal(pillars: NestedPillar[], pillarId: string, themeId: string, direction: "up" | "down"): NestedPillar[] {
+  return renumberAll(
+    pillars.map((p) => {
+      if (p.id !== pillarId) return p;
+      const idx = p.themes.findIndex((t) => t.id === themeId);
+      if (idx === -1) return p;
+      const newIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= p.themes.length) return p;
+      const newThemes = [...p.themes];
+      const [moved] = newThemes.splice(idx, 1);
+      newThemes.splice(newIdx, 0, moved);
+      return { ...p, themes: newThemes };
+    })
+  );
+}
+
+export function moveSubthemeLocal(
   pillars: NestedPillar[],
-  subthemeId: string
-): NestedSubtheme | undefined {
-  for (const pillar of pillars) {
-    for (const theme of pillar.themes) {
-      const sub = theme.subthemes.find((s) => s.id === subthemeId);
-      if (sub) return sub;
-    }
-  }
-  return undefined;
+  pillarId: string,
+  themeId: string,
+  subId: string,
+  direction: "up" | "down"
+): NestedPillar[] {
+  return renumberAll(
+    pillars.map((p) => {
+      if (p.id !== pillarId) return p;
+      return {
+        ...p,
+        themes: p.themes.map((t) => {
+          if (t.id !== themeId) return t;
+          const idx = t.subthemes.findIndex((s) => s.id === subId);
+          if (idx === -1) return t;
+          const newIdx = direction === "up" ? idx - 1 : idx + 1;
+          if (newIdx < 0 || newIdx >= t.subthemes.length) return t;
+          const newSubs = [...t.subthemes];
+          const [moved] = newSubs.splice(idx, 1);
+          newSubs.splice(newIdx, 0, moved);
+          return { ...t, subthemes: newSubs };
+        }),
+      };
+    })
+  );
 }
