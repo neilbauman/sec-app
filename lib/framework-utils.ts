@@ -1,68 +1,95 @@
 // lib/framework-utils.ts
-import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+import { v4 as uuidv4 } from "uuid";
 
-/**
- * Deep clone the framework tree so we don’t mutate state directly.
- */
-export function cloneFramework(pillars: NestedPillar[]): NestedPillar[] {
-  return JSON.parse(JSON.stringify(pillars)) as NestedPillar[];
-}
-
-/**
- * RefMeta describes a node’s ref code and whether it has been dirtied
- * by local reordering or editing since last save.
- */
 export type RefMeta = {
   code: string;
   dirty: boolean;
 };
 
-/**
- * Build a map of id -> {code, dirty} for all nodes.
- */
-export function buildRefCodeMap(
-  pillars: NestedPillar[],
-  previous?: Record<string, RefMeta>
-): Record<string, RefMeta> {
-  const map: Record<string, RefMeta> = {};
-  pillars.forEach((pillar, i) => {
-    const pillarCode = `P${i + 1}`;
-    map[pillar.id] = {
-      code: pillarCode,
-      dirty: previous?.[pillar.id]?.code !== pillarCode,
-    };
-    pillar.themes.forEach((theme, j) => {
-      const themeCode = `${pillarCode}.T${j + 1}`;
-      map[theme.id] = {
-        code: themeCode,
-        dirty: previous?.[theme.id]?.code !== themeCode,
+// ---------- Clone ----------
+export function cloneFramework(pillars: NestedPillar[]): NestedPillar[] {
+  return JSON.parse(JSON.stringify(pillars));
+}
+
+// ---------- Recalc Ref Codes ----------
+export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
+  return pillars.map((pillar, pIdx) => {
+    const pillarRef = `P${pIdx + 1}`;
+    const themes = pillar.themes.map((theme, tIdx) => {
+      const themeRef = `${pillarRef}.T${tIdx + 1}`;
+      const subthemes = theme.subthemes.map((sub, sIdx) => ({
+        ...sub,
+        ref_code: `${themeRef}.${sIdx + 1}`,
+        sort_order: sIdx + 1,
+      }));
+      return {
+        ...theme,
+        ref_code: themeRef,
+        sort_order: tIdx + 1,
+        subthemes,
       };
-      theme.subthemes.forEach((sub, k) => {
-        const subCode = `${themeCode}.${k + 1}`;
-        map[sub.id] = {
-          code: subCode,
-          dirty: previous?.[sub.id]?.code !== subCode,
-        };
+    });
+    return {
+      ...pillar,
+      ref_code: pillarRef,
+      sort_order: pIdx + 1,
+      themes,
+    };
+  });
+}
+
+// ---------- Build Ref Code Map ----------
+export function buildRefCodeMap(pillars: NestedPillar[]): Record<string, RefMeta> {
+  const map: Record<string, RefMeta> = {};
+  pillars.forEach((pillar, pIdx) => {
+    const pillarCode = `P${pIdx + 1}`;
+    map[pillar.id] = { code: pillarCode, dirty: pillar.ref_code !== pillarCode };
+
+    pillar.themes.forEach((theme, tIdx) => {
+      const themeCode = `${pillarCode}.T${tIdx + 1}`;
+      map[theme.id] = { code: themeCode, dirty: theme.ref_code !== themeCode };
+
+      theme.subthemes.forEach((sub, sIdx) => {
+        const subCode = `${themeCode}.${sIdx + 1}`;
+        map[sub.id] = { code: subCode, dirty: sub.ref_code !== subCode };
       });
     });
   });
   return map;
 }
 
-/**
- * Renumber all sort_order fields to be sequential (1-based).
- */
-export function renumberAll(pillars: NestedPillar[]): NestedPillar[] {
-  return pillars.map((p, i) => ({
-    ...p,
-    sort_order: i + 1,
-    themes: p.themes.map((t, j) => ({
-      ...t,
-      sort_order: j + 1,
-      subthemes: t.subthemes.map((s, k) => ({
-        ...s,
-        sort_order: k + 1,
-      })),
-    })),
-  }));
+// ---------- Factory Helpers ----------
+export function createPillar(): NestedPillar {
+  return {
+    id: uuidv4(),
+    name: "Untitled Pillar",
+    description: "",
+    sort_order: 0,
+    ref_code: "",
+    themes: [],
+  };
+}
+
+export function createTheme(pillarId: string): NestedTheme {
+  return {
+    id: uuidv4(),
+    pillar_id: pillarId,
+    name: "Untitled Theme",
+    description: "",
+    sort_order: 0,
+    ref_code: "",
+    subthemes: [],
+  };
+}
+
+export function createSubtheme(themeId: string): NestedSubtheme {
+  return {
+    id: uuidv4(),
+    theme_id: themeId,
+    name: "Untitled Subtheme",
+    description: "",
+    sort_order: 0,
+    ref_code: "",
+  };
 }
