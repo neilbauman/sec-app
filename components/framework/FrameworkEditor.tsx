@@ -10,7 +10,6 @@ import {
   Trash2,
   ArrowUp,
   ArrowDown,
-  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Badge from "@/components/ui/badge";
@@ -25,9 +24,7 @@ import {
   movePillar,
   moveTheme,
   moveSubtheme,
-  updateRow,
 } from "@/lib/framework-actions";
-import { recalcRefCodes } from "@/lib/framework-utils";
 
 type FrameworkEditorProps = {
   data: NestedPillar[];
@@ -35,36 +32,24 @@ type FrameworkEditorProps = {
 
 export default function FrameworkEditor({ data }: FrameworkEditorProps) {
   const [pillars, setPillars] = useState<NestedPillar[]>(data);
-  const [original, setOriginal] = useState<NestedPillar[]>(data);
+  const [original] = useState<NestedPillar[]>(data);
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
   const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // ---------- Expand / Collapse ----------
+  // expand / collapse
   const togglePillar = (id: string) =>
     setOpenPillars((s) => ({ ...s, [id]: !s[id] }));
   const toggleTheme = (id: string) =>
     setOpenThemes((s) => ({ ...s, [id]: !s[id] }));
 
-  const expandAll = () => {
-    const nextP: Record<string, boolean> = {};
-    const nextT: Record<string, boolean> = {};
-    pillars.forEach((p) => {
-      nextP[p.id] = true;
-      p.themes.forEach((t) => (nextT[t.id] = true));
-    });
-    setOpenPillars(nextP);
-    setOpenThemes(nextT);
-  };
-  const collapseAll = () => {
-    setOpenPillars({});
-    setOpenThemes({});
-  };
-
-  // ---------- Async Helper ----------
-  async function runAsync<T>(key: string, fn: () => Promise<T>): Promise<T | null> {
+  // ---------- Async helper ----------
+  async function runAsync<T>(
+    key: string,
+    fn: () => Promise<T>
+  ): Promise<T | null> {
     setLoading(key);
     setErrorMsg(null);
     try {
@@ -114,53 +99,86 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
       return updated;
     });
 
-  const handleDeleteSubtheme = (pillarId: string, themeId: string, subId: string) =>
+  const handleDeleteSubtheme = (
+    pillarId: string,
+    themeId: string,
+    subId: string
+  ) =>
     runAsync(`sub:${subId}:del`, async () => {
       const updated = await removeSubtheme(pillars, pillarId, themeId, subId);
       setPillars(updated);
       return updated;
     });
 
-  // ---------- Reorder ----------
+  // ---------- Move ----------
   const handleMovePillar = (pillarId: string, dir: "up" | "down") =>
-    setPillars((p) => movePillar(p, pillarId, dir));
-  const handleMoveTheme = (pillarId: string, themeId: string, dir: "up" | "down") =>
-    setPillars((p) => moveTheme(p, pillarId, themeId, dir));
-  const handleMoveSubtheme = (pillarId: string, themeId: string, subId: string, dir: "up" | "down") =>
-    setPillars((p) => moveSubtheme(p, pillarId, themeId, subId, dir));
-
-  // ---------- Save ----------
-  const handleSave = () =>
-    runAsync("save", async () => {
-      const recalculated = recalcRefCodes(pillars);
-      // TODO: send to API to persist in DB
-      setOriginal(recalculated);
-      setPillars(recalculated);
-      return recalculated;
+    runAsync(`pillar:${pillarId}:move:${dir}`, async () => {
+      const updated = movePillar(pillars, pillarId, dir);
+      setPillars(updated);
+      return updated;
     });
 
-  // ---------- Dirty Check ----------
-  const dirtyRefCodes = useMemo(() => {
-    const map: Record<string, string> = {};
-    const flatten = (nodes: NestedPillar[]) => {
-      nodes.forEach((p) => {
-        const orig = original.find((o) => o.id === p.id);
-        if (orig && orig.ref_code !== p.ref_code) map[p.id] = p.ref_code;
-        p.themes.forEach((t) => {
-          const origT = orig?.themes.find((ot) => ot.id === t.id);
-          if (origT && origT.ref_code !== t.ref_code) map[t.id] = t.ref_code;
-          t.subthemes.forEach((s) => {
-            const origS = origT?.subthemes.find((os) => os.id === s.id);
-            if (origS && origS.ref_code !== s.ref_code) map[s.id] = s.ref_code;
-          });
-        });
-      });
-    };
-    flatten(pillars);
-    return map;
-  }, [pillars, original]);
+  const handleMoveTheme = (pillarId: string, themeId: string, dir: "up" | "down") =>
+    runAsync(`theme:${themeId}:move:${dir}`, async () => {
+      const updated = moveTheme(pillars, pillarId, themeId, dir);
+      setPillars(updated);
+      return updated;
+    });
 
-  const hasDirty = Object.keys(dirtyRefCodes).length > 0;
+  const handleMoveSubtheme = (
+    pillarId: string,
+    themeId: string,
+    subId: string,
+    dir: "up" | "down"
+  ) =>
+    runAsync(`sub:${subId}:move:${dir}`, async () => {
+      const updated = moveSubtheme(pillars, pillarId, themeId, subId, dir);
+      setPillars(updated);
+      return updated;
+    });
+
+  // ---------- Helper to check pending changes ----------
+  const hasPendingSortChange = (id: string, type: "pillar" | "theme" | "subtheme"): boolean => {
+    const findOriginalSort = () => {
+      if (type === "pillar") return original.find(p => p.id === id)?.sort_order;
+      if (type === "theme") {
+        for (const p of original) {
+          const t = p.themes.find(t => t.id === id);
+          if (t) return t.sort_order;
+        }
+      }
+      if (type === "subtheme") {
+        for (const p of original) {
+          for (const t of p.themes) {
+            const s = t.subthemes.find(s => s.id === id);
+            if (s) return s.sort_order;
+          }
+        }
+      }
+      return undefined;
+    };
+
+    const findCurrentSort = () => {
+      if (type === "pillar") return pillars.find(p => p.id === id)?.sort_order;
+      if (type === "theme") {
+        for (const p of pillars) {
+          const t = p.themes.find(t => t.id === id);
+          if (t) return t.sort_order;
+        }
+      }
+      if (type === "subtheme") {
+        for (const p of pillars) {
+          for (const t of p.themes) {
+            const s = t.subthemes.find(s => s.id === id);
+            if (s) return s.sort_order;
+          }
+        }
+      }
+      return undefined;
+    };
+
+    return findOriginalSort() !== findCurrentSort();
+  };
 
   return (
     <div className="space-y-4">
@@ -171,44 +189,20 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
         </div>
       )}
 
-      {/* Dirty ref code banner */}
-      {hasDirty && (
-        <div className="rounded-md bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-2 text-sm">
-          Items with <span className="text-red-500 font-semibold">red ref codes</span> will be regenerated once you save changes.
-        </div>
-      )}
+      {/* Save banner */}
+      <div className="rounded-md bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2 text-sm">
+        Items with <span className="text-red-600 font-medium">red codes</span> will
+        be regenerated when you save.
+      </div>
 
       {/* Top controls */}
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={expandAll}>
-            Expand All
-          </Button>
-          <Button size="sm" variant="outline" onClick={collapseAll}>
-            Collapse All
+          <Button size="sm" variant="outline" onClick={handleAddPillar}>
+            <Plus className="w-4 h-4 mr-1" /> Add Pillar
           </Button>
         </div>
-        <div className="flex gap-2">
-          {editMode && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleAddPillar}
-                disabled={loading === "pillar:add"}
-              >
-                <Plus className="w-4 h-4 mr-1" /> Add Pillar
-              </Button>
-              <Button
-                size="sm"
-                variant="default"
-                onClick={handleSave}
-                disabled={loading === "save"}
-              >
-                <Save className="w-4 h-4 mr-1" /> Save Changes
-              </Button>
-            </>
-          )}
+        <div>
           <Button
             size="sm"
             variant="outline"
@@ -232,8 +226,9 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {pillars.map((pillar) => {
+            {pillars.map((pillar, pIdx) => {
               const pillarOpen = !!openPillars[pillar.id];
+              const pillarPending = hasPendingSortChange(pillar.id, "pillar");
               return (
                 <>
                   {/* Pillar row */}
@@ -254,10 +249,10 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                         <Badge>Pillar</Badge>
                         <span
                           className={`text-xs ${
-                            dirtyRefCodes[pillar.id] ? "text-red-500" : "text-gray-500"
+                            pillarPending ? "text-red-600 font-medium" : "text-gray-500"
                           }`}
                         >
-                          {pillar.ref_code}
+                          {pillar.sort_order}
                         </span>
                       </div>
                     </td>
@@ -273,15 +268,17 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                         <div className="flex gap-2 justify-center">
                           <button
                             onClick={() => handleMovePillar(pillar.id, "up")}
-                            className="p-1 rounded hover:bg-gray-50"
+                            disabled={pIdx === 0}
+                            className="p-1 rounded hover:bg-gray-100"
                           >
-                            <ArrowUp className="w-4 h-4 text-gray-500" />
+                            <ArrowUp className="w-4 h-4 text-gray-600" />
                           </button>
                           <button
                             onClick={() => handleMovePillar(pillar.id, "down")}
-                            className="p-1 rounded hover:bg-gray-50"
+                            disabled={pIdx === pillars.length - 1}
+                            className="p-1 rounded hover:bg-gray-100"
                           >
-                            <ArrowDown className="w-4 h-4 text-gray-500" />
+                            <ArrowDown className="w-4 h-4 text-gray-600" />
                           </button>
                           <button
                             onClick={() => handleAddTheme(pillar.id)}
@@ -302,8 +299,9 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
 
                   {/* Themes */}
                   {pillarOpen &&
-                    pillar.themes.map((theme) => {
+                    pillar.themes.map((theme, tIdx) => {
                       const themeOpen = !!openThemes[theme.id];
+                      const themePending = hasPendingSortChange(theme.id, "theme");
                       return (
                         <>
                           <tr key={theme.id} className="[&>td]:px-3 [&>td]:py-2">
@@ -322,17 +320,21 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                 <Badge variant="success">Theme</Badge>
                                 <span
                                   className={`text-xs ${
-                                    dirtyRefCodes[theme.id] ? "text-red-500" : "text-gray-500"
+                                    themePending
+                                      ? "text-red-600 font-medium"
+                                      : "text-gray-500"
                                   }`}
                                 >
-                                  {theme.ref_code}
+                                  {theme.sort_order}
                                 </span>
                               </div>
                             </td>
                             <td className="pl-4">
                               <div className="font-medium">{theme.name}</div>
                               {theme.description && (
-                                <div className="text-xs text-gray-600">{theme.description}</div>
+                                <div className="text-xs text-gray-600">
+                                  {theme.description}
+                                </div>
                               )}
                             </td>
                             <td className="text-center">{theme.sort_order}</td>
@@ -341,15 +343,19 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
                                 <div className="flex gap-2 justify-center">
                                   <button
                                     onClick={() => handleMoveTheme(pillar.id, theme.id, "up")}
-                                    className="p-1 rounded hover:bg-gray-50"
+                                    disabled={tIdx === 0}
+                                    className="p-1 rounded hover:bg-gray-100"
                                   >
-                                    <ArrowUp className="w-4 h-4 text-gray-500" />
+                                    <ArrowUp className="w-4 h-4 text-gray-600" />
                                   </button>
                                   <button
-                                    onClick={() => handleMoveTheme(pillar.id, theme.id, "down")}
-                                    className="p-1 rounded hover:bg-gray-50"
+                                    onClick={() =>
+                                      handleMoveTheme(pillar.id, theme.id, "down")
+                                    }
+                                    disabled={tIdx === pillar.themes.length - 1}
+                                    className="p-1 rounded hover:bg-gray-100"
                                   >
-                                    <ArrowDown className="w-4 h-4 text-gray-500" />
+                                    <ArrowDown className="w-4 h-4 text-gray-600" />
                                   </button>
                                   <button
                                     onClick={() => handleAddSubtheme(pillar.id, theme.id)}
@@ -370,59 +376,82 @@ export default function FrameworkEditor({ data }: FrameworkEditorProps) {
 
                           {/* Subthemes */}
                           {themeOpen &&
-                            theme.subthemes.map((sub) => (
-                              <tr key={sub.id} className="[&>td]:px-3 [&>td]:py-2">
-                                <td>
-                                  <div className="flex items-center gap-2 pl-8">
-                                    <Badge variant="danger">Subtheme</Badge>
-                                    <span
-                                      className={`text-xs ${
-                                        dirtyRefCodes[sub.id] ? "text-red-500" : "text-gray-500"
-                                      }`}
-                                    >
-                                      {sub.ref_code}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="pl-8">
-                                  <div className="font-medium">{sub.name}</div>
-                                  {sub.description && (
-                                    <div className="text-xs text-gray-600">{sub.description}</div>
-                                  )}
-                                </td>
-                                <td className="text-center">{sub.sort_order}</td>
-                                <td className="text-center">
-                                  {editMode && (
-                                    <div className="flex gap-2 justify-center">
-                                      <button
-                                        onClick={() =>
-                                          handleMoveSubtheme(pillar.id, theme.id, sub.id, "up")
-                                        }
-                                        className="p-1 rounded hover:bg-gray-50"
+                            theme.subthemes.map((sub, sIdx) => {
+                              const subPending = hasPendingSortChange(sub.id, "subtheme");
+                              return (
+                                <tr key={sub.id} className="[&>td]:px-3 [&>td]:py-2">
+                                  <td>
+                                    <div className="flex items-center gap-2 pl-8">
+                                      <Badge variant="danger">Subtheme</Badge>
+                                      <span
+                                        className={`text-xs ${
+                                          subPending
+                                            ? "text-red-600 font-medium"
+                                            : "text-gray-500"
+                                        }`}
                                       >
-                                        <ArrowUp className="w-4 h-4 text-gray-500" />
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          handleMoveSubtheme(pillar.id, theme.id, sub.id, "down")
-                                        }
-                                        className="p-1 rounded hover:bg-gray-50"
-                                      >
-                                        <ArrowDown className="w-4 h-4 text-gray-500" />
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          handleDeleteSubtheme(pillar.id, theme.id, sub.id)
-                                        }
-                                        className="p-1 rounded hover:bg-red-50"
-                                      >
-                                        <Trash2 className="w-4 h-4 text-red-600" />
-                                      </button>
+                                        {sub.sort_order}
+                                      </span>
                                     </div>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
+                                  </td>
+                                  <td className="pl-8">
+                                    <div className="font-medium">{sub.name}</div>
+                                    {sub.description && (
+                                      <div className="text-xs text-gray-600">
+                                        {sub.description}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="text-center">{sub.sort_order}</td>
+                                  <td className="text-center">
+                                    {editMode && (
+                                      <div className="flex gap-2 justify-center">
+                                        <button
+                                          onClick={() =>
+                                            handleMoveSubtheme(
+                                              pillar.id,
+                                              theme.id,
+                                              sub.id,
+                                              "up"
+                                            )
+                                          }
+                                          disabled={sIdx === 0}
+                                          className="p-1 rounded hover:bg-gray-100"
+                                        >
+                                          <ArrowUp className="w-4 h-4 text-gray-600" />
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            handleMoveSubtheme(
+                                              pillar.id,
+                                              theme.id,
+                                              sub.id,
+                                              "down"
+                                            )
+                                          }
+                                          disabled={sIdx === theme.subthemes.length - 1}
+                                          className="p-1 rounded hover:bg-gray-100"
+                                        >
+                                          <ArrowDown className="w-4 h-4 text-gray-600" />
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            handleDeleteSubtheme(
+                                              pillar.id,
+                                              theme.id,
+                                              sub.id
+                                            )
+                                          }
+                                          className="p-1 rounded hover:bg-red-50"
+                                        >
+                                          <Trash2 className="w-4 h-4 text-red-600" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                         </>
                       );
                     })}
