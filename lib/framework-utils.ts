@@ -1,4 +1,3 @@
-// lib/framework-utils.ts
 import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
 import { v4 as uuidv4 } from "uuid";
 
@@ -7,12 +6,12 @@ export type RefMeta = {
   dirty: boolean;
 };
 
-// ---------- Clone ----------
+// Clone framework deeply
 export function cloneFramework(pillars: NestedPillar[]): NestedPillar[] {
   return JSON.parse(JSON.stringify(pillars));
 }
 
-// ---------- Recalc Ref Codes ----------
+// Recalculate all ref codes + sort_orders
 export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
   return pillars.map((pillar, pIdx) => {
     const pillarRef = `P${pIdx + 1}`;
@@ -39,27 +38,27 @@ export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
   });
 }
 
-// ---------- Build Ref Code Map ----------
+// Build a lookup for ref codes (with dirty flag)
 export function buildRefCodeMap(pillars: NestedPillar[]): Record<string, RefMeta> {
   const map: Record<string, RefMeta> = {};
   pillars.forEach((pillar, pIdx) => {
-    const pillarCode = `P${pIdx + 1}`;
-    map[pillar.id] = { code: pillarCode, dirty: pillar.ref_code !== pillarCode };
+    const pCode = `P${pIdx + 1}`;
+    map[pillar.id] = { code: pCode, dirty: pillar.ref_code !== pCode };
 
     pillar.themes.forEach((theme, tIdx) => {
-      const themeCode = `${pillarCode}.T${tIdx + 1}`;
-      map[theme.id] = { code: themeCode, dirty: theme.ref_code !== themeCode };
+      const tCode = `${pCode}.T${tIdx + 1}`;
+      map[theme.id] = { code: tCode, dirty: theme.ref_code !== tCode };
 
       theme.subthemes.forEach((sub, sIdx) => {
-        const subCode = `${themeCode}.${sIdx + 1}`;
-        map[sub.id] = { code: subCode, dirty: sub.ref_code !== subCode };
+        const sCode = `${tCode}.${sIdx + 1}`;
+        map[sub.id] = { code: sCode, dirty: sub.ref_code !== sCode };
       });
     });
   });
   return map;
 }
 
-// ---------- Factory Helpers ----------
+// Factories
 export function createPillar(): NestedPillar {
   return {
     id: uuidv4(),
