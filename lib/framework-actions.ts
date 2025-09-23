@@ -21,14 +21,16 @@ export function addTheme(pillars: NestedPillar[], pillarId: string): NestedPilla
   const copy = cloneFramework(pillars);
   const pillar = copy.find(p => p.id === pillarId);
   if (pillar) {
-    pillar.themes.push({
+    const newTheme: NestedTheme = {
       id: uuidv4(),
+      pillar_id: pillarId, // ✅ required
       name: "Untitled Theme",
       description: "",
       subthemes: [],
       sort_order: pillar.themes.length,
       ref_code: "",
-    });
+    };
+    pillar.themes.push(newTheme);
   }
   return recalcRefCodes(copy);
 }
@@ -38,13 +40,15 @@ export function addSubtheme(pillars: NestedPillar[], pillarId: string, themeId: 
   const pillar = copy.find(p => p.id === pillarId);
   const theme = pillar?.themes.find(t => t.id === themeId);
   if (theme) {
-    theme.subthemes.push({
+    const newSub: NestedSubtheme = {
       id: uuidv4(),
+      theme_id: themeId, // ✅ required
       name: "Untitled Subtheme",
       description: "",
       sort_order: theme.subthemes.length,
       ref_code: "",
-    });
+    };
+    theme.subthemes.push(newSub);
   }
   return recalcRefCodes(copy);
 }
