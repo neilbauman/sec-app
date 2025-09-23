@@ -1,55 +1,40 @@
-// lib/framework-utils.ts
-import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+// lib/framework-client.ts
+import { getSupabaseClient } from "@/lib/supabase-client";
+import { recalcRefCodes } from "@/lib/framework-utils";
 
-export type RefMeta = { code: string; dirty: boolean };
+export type NestedSubtheme = {
+  id: string;
+  theme_id: string;
+  ref_code: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+};
 
-/**
- * Clone deeply to avoid state mutation
- */
-export function cloneFramework(pillars: NestedPillar[]): NestedPillar[] {
-  return JSON.parse(JSON.stringify(pillars));
-}
+export type NestedTheme = {
+  id: string;
+  pillar_id: string;
+  ref_code: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  subthemes: NestedSubtheme[];
+};
 
-/**
- * Recalculate ref codes consistently
- */
-export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
-  const newPillars = cloneFramework(pillars);
+export type NestedPillar = {
+  id: string;
+  ref_code: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  themes: NestedTheme[];
+};
 
-  newPillars.forEach((pillar, pIdx) => {
-    pillar.ref_code = `P${pIdx + 1}`;
-    pillar.themes.forEach((theme, tIdx) => {
-      theme.ref_code = `${pillar.ref_code}.${tIdx + 1}`;
-      theme.subthemes.forEach((sub, sIdx) => {
-        sub.ref_code = `${theme.ref_code}.${sIdx + 1}`;
-      });
-    });
-  });
+export async function fetchFramework(): Promise<NestedPillar[]> {
+  const client = getSupabaseClient();
 
-  return newPillars;
-}
+  const { data: pillars } = await client.from("pillars").select("*, themes(*, subthemes(*))").order("sort_order");
+  if (!pillars) return [];
 
-/**
- * Build map of id → ref code + dirty flag
- */
-export function buildRefCodeMap(
-  pillars: NestedPillar[],
-  dirtyIds: Set<string>
-): Record<string, RefMeta> {
-  const map: Record<string, RefMeta> = {};
-
-  const walk = (items: (NestedPillar | NestedTheme | NestedSubtheme)[]) => {
-    items.forEach((item) => {
-      map[item.id] = {
-        code: item.ref_code || "",
-        dirty: dirtyIds.has(item.id),
-      };
-
-      if ("themes" in item) walk(item.themes);
-      if ("subthemes" in item) walk(item.subthemes);
-    });
-  };
-
-  walk(pillars);
-  return map;
+  return recalcRefCodes(pillars as NestedPillar[]);
 }
