@@ -4,123 +4,149 @@ import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-
 import { cloneFramework, recalcRefCodes } from "@/lib/framework-utils";
 import { v4 as uuidv4 } from "uuid";
 
-// ---------- Local-only mutations (draft) ----------
-
-// Add
-export function addPillarLocal(pillars: NestedPillar[]): NestedPillar[] {
-  const copy = cloneFramework(pillars);
-  copy.push({
-    id: uuidv4(),
-    ref_code: "",
-    name: "New Pillar",
-    description: "",
-    sort_order: copy.length + 1,
-    themes: [],
-  });
-  return recalcRefCodes(copy);
-}
-
-export function addThemeLocal(pillars: NestedPillar[], pillarId: string): NestedPillar[] {
-  const copy = cloneFramework(pillars);
-  const pillar = copy.find((p) => p.id === pillarId);
-  if (pillar) {
-    pillar.themes.push({
-      id: uuidv4(),
-      pillar_id: pillar.id,
-      ref_code: "",
-      name: "New Theme",
-      description: "",
-      sort_order: pillar.themes.length + 1,
-      subthemes: [],
-    });
-  }
-  return recalcRefCodes(copy);
-}
-
-export function addSubthemeLocal(pillars: NestedPillar[], pillarId: string, themeId: string): NestedPillar[] {
-  const copy = cloneFramework(pillars);
-  const pillar = copy.find((p) => p.id === pillarId);
-  const theme = pillar?.themes.find((t) => t.id === themeId);
-  if (theme) {
-    theme.subthemes.push({
-      id: uuidv4(),
-      theme_id: theme.id,
-      ref_code: "",
-      name: "New Subtheme",
-      description: "",
-      sort_order: theme.subthemes.length + 1,
-    });
-  }
-  return recalcRefCodes(copy);
-}
-
-// Remove
-export function removePillarLocal(pillars: NestedPillar[], pillarId: string): NestedPillar[] {
-  let copy = cloneFramework(pillars).filter((p) => p.id !== pillarId);
-  return recalcRefCodes(copy);
-}
-
-export function removeThemeLocal(pillars: NestedPillar[], pillarId: string, themeId: string): NestedPillar[] {
-  const copy = cloneFramework(pillars);
-  const pillar = copy.find((p) => p.id === pillarId);
-  if (pillar) {
-    pillar.themes = pillar.themes.filter((t) => t.id !== themeId);
-  }
-  return recalcRefCodes(copy);
-}
-
-export function removeSubthemeLocal(pillars: NestedPillar[], pillarId: string, themeId: string, subthemeId: string): NestedPillar[] {
-  const copy = cloneFramework(pillars);
-  const pillar = copy.find((p) => p.id === pillarId);
-  const theme = pillar?.themes.find((t) => t.id === themeId);
-  if (theme) {
-    theme.subthemes = theme.subthemes.filter((s) => s.id !== subthemeId);
-  }
-  return recalcRefCodes(copy);
-}
-
-// Move
-function moveItem<T extends { sort_order: number }>(items: T[], idx: number, direction: "up" | "down") {
-  if (idx < 0) return;
-  const newIdx = direction === "up" ? idx - 1 : idx + 1;
-  if (newIdx < 0 || newIdx >= items.length) return;
-  const temp = items[idx];
-  items[idx] = items[newIdx];
-  items[newIdx] = temp;
-  items.forEach((item, i) => (item.sort_order = i + 1));
-}
-
-export function movePillarLocal(pillars: NestedPillar[], pillarId: string, direction: "up" | "down"): NestedPillar[] {
-  const copy = cloneFramework(pillars);
-  const idx = copy.findIndex((p) => p.id === pillarId);
-  moveItem(copy, idx, direction);
-  return recalcRefCodes(copy);
-}
-
-export function moveThemeLocal(pillars: NestedPillar[], pillarId: string, themeId: string, direction: "up" | "down"): NestedPillar[] {
-  const copy = cloneFramework(pillars);
-  const pillar = copy.find((p) => p.id === pillarId);
-  if (pillar) {
-    const idx = pillar.themes.findIndex((t) => t.id === themeId);
-    moveItem(pillar.themes, idx, direction);
-  }
-  return recalcRefCodes(copy);
-}
-
-export function moveSubthemeLocal(pillars: NestedPillar[], pillarId: string, themeId: string, subthemeId: string, direction: "up" | "down"): NestedPillar[] {
-  const copy = cloneFramework(pillars);
-  const theme = copy.find((p) => p.id === pillarId)?.themes.find((t) => t.id === themeId);
-  if (theme) {
-    const idx = theme.subthemes.findIndex((s) => s.id === subthemeId);
-    moveItem(theme.subthemes, idx, direction);
-  }
-  return recalcRefCodes(copy);
-}
-
-// ---------- Persist (save) ----------
-
-export async function saveFramework(pillars: NestedPillar[]): Promise<void> {
+// ---------- Add ----------
+export async function addPillar(pillars: NestedPillar[]): Promise<NestedPillar[]> {
   const client = getSupabaseClient();
-  const { error } = await client.from("framework").upsert({ data: pillars });
+  const { data, error } = await client.from("pillars").insert({ name: "New Pillar" }).select().single();
   if (error) throw error;
+
+  const newPillar: NestedPillar = {
+    id: data.id,
+    ref_code: "",
+    name: data.name,
+    description: data.description,
+    sort_order: data.sort_order,
+    themes: [],
+  };
+
+  return recalcRefCodes([...pillars, newPillar]);
+}
+
+export async function addTheme(pillars: NestedPillar[], pillarId: string): Promise<NestedPillar[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client.from("themes").insert({ name: "New Theme", pillar_id: pillarId }).select().single();
+  if (error) throw error;
+
+  const updated = cloneFramework(pillars).map((p) =>
+    p.id === pillarId
+      ? {
+          ...p,
+          themes: [
+            ...p.themes,
+            {
+              id: data.id,
+              ref_code: "",
+              pillar_id: pillarId,
+              name: data.name,
+              description: data.description,
+              sort_order: data.sort_order,
+              subthemes: [],
+            },
+          ],
+        }
+      : p
+  );
+
+  return recalcRefCodes(updated);
+}
+
+export async function addSubtheme(
+  pillars: NestedPillar[],
+  pillarId: string,
+  themeId: string
+): Promise<NestedPillar[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from("subthemes")
+    .insert({ name: "New Subtheme", theme_id: themeId })
+    .select()
+    .single();
+  if (error) throw error;
+
+  const updated = cloneFramework(pillars).map((p) =>
+    p.id === pillarId
+      ? {
+          ...p,
+          themes: p.themes.map((t) =>
+            t.id === themeId
+              ? {
+                  ...t,
+                  subthemes: [
+                    ...t.subthemes,
+                    {
+                      id: data.id,
+                      ref_code: "",
+                      theme_id: themeId,
+                      name: data.name,
+                      description: data.description,
+                      sort_order: data.sort_order,
+                    },
+                  ],
+                }
+              : t
+          ),
+        }
+      : p
+  );
+
+  return recalcRefCodes(updated);
+}
+
+// ---------- Remove ----------
+export async function removePillar(pillars: NestedPillar[], pillarId: string): Promise<NestedPillar[]> {
+  const client = getSupabaseClient();
+  await client.from("pillars").delete().eq("id", pillarId);
+  return recalcRefCodes(pillars.filter((p) => p.id !== pillarId));
+}
+
+export async function removeTheme(
+  pillars: NestedPillar[],
+  pillarId: string,
+  themeId: string
+): Promise<NestedPillar[]> {
+  const client = getSupabaseClient();
+  await client.from("themes").delete().eq("id", themeId);
+  const updated = cloneFramework(pillars).map((p) =>
+    p.id === pillarId ? { ...p, themes: p.themes.filter((t) => t.id !== themeId) } : p
+  );
+  return recalcRefCodes(updated);
+}
+
+export async function removeSubtheme(
+  pillars: NestedPillar[],
+  pillarId: string,
+  themeId: string,
+  subId: string
+): Promise<NestedPillar[]> {
+  const client = getSupabaseClient();
+  await client.from("subthemes").delete().eq("id", subId);
+  const updated = cloneFramework(pillars).map((p) =>
+    p.id === pillarId
+      ? {
+          ...p,
+          themes: p.themes.map((t) =>
+            t.id === themeId ? { ...t, subthemes: t.subthemes.filter((s) => s.id !== subId) } : t
+          ),
+        }
+      : p
+  );
+  return recalcRefCodes(updated);
+}
+
+// ---------- Save ----------
+export async function saveFramework(pillars: NestedPillar[]): Promise<NestedPillar[]> {
+  const client = getSupabaseClient();
+
+  // Flatten and persist to DB if needed (simplified for now)
+  for (const pillar of pillars) {
+    await client.from("pillars").update({ ref_code: pillar.ref_code }).eq("id", pillar.id);
+    for (const theme of pillar.themes) {
+      await client.from("themes").update({ ref_code: theme.ref_code }).eq("id", theme.id);
+      for (const sub of theme.subthemes) {
+        await client.from("subthemes").update({ ref_code: sub.ref_code }).eq("id", sub.id);
+      }
+    }
+  }
+
+  return recalcRefCodes(pillars);
 }
