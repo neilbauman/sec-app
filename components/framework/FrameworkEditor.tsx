@@ -1,497 +1,248 @@
 // components/framework/FrameworkEditor.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
-  ChevronDown,
-  ChevronRight,
-  Plus,
-  Trash2,
-  ArrowUp,
-  ArrowDown,
-} from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import Badge from "@/components/ui/badge";
-
+  addPillar,
+  addTheme,
+  addSubtheme,
+  removePillar,
+  removeTheme,
+  removeSubtheme,
+  movePillar,
+  moveTheme,
+  moveSubtheme,
+} from "@/lib/framework-actions";
+import { cloneFramework, recalcRefCodes } from "@/lib/framework-utils";
 import type {
   NestedPillar,
   NestedTheme,
   NestedSubtheme,
 } from "@/lib/framework-client";
-
-import {
-  cloneFramework,
-  renumberAll,
-  buildRefCodeMap,
-  addPillarLocal,
-  addThemeLocal,
-  addSubthemeLocal,
-  removePillarLocal,
-  removeThemeLocal,
-  removeSubthemeLocal,
-  movePillarLocal,
-  moveThemeLocal,
-  moveSubthemeLocal,
-} from "@/lib/framework-utils";
+import { Button } from "@/components/ui/button";
+import { ArrowUp, ArrowDown, Plus, Trash2 } from "lucide-react";
 
 type FrameworkEditorProps = {
-  data: NestedPillar[];
+  initialPillars: NestedPillar[];
 };
 
-type RowKind = "pillar" | "theme" | "sub";
+export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps) {
+  const [pillars, setPillars] = useState<NestedPillar[]>(recalcRefCodes(initialPillars));
+  const [dirty, setDirty] = useState(false);
 
-export default function FrameworkEditor({ data }: FrameworkEditorProps) {
-  // Baseline = original data at first render (renumbered for safety)
-  const baseline = useMemo(() => renumberAll(data), [data]);
-  const baselineRefMap = useMemo(() => buildRefCodeMap(baseline), [baseline]);
-
-  const [pillars, setPillars] = useState<NestedPillar[]>(baseline);
-  const [openPillars, setOpenPillars] = useState<Record<string, boolean>>({});
-  const [openThemes, setOpenThemes] = useState<Record<string, boolean>>({});
-  const [saving, setSaving] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [infoMsg, setInfoMsg] = useState<string | null>(null);
-
-  // Current ref view + whether anything differs from baseline
-  const currentRefMap = useMemo(() => buildRefCodeMap(pillars), [pillars]);
-  const hasPendingRefChanges = useMemo(() => {
-    const keys = new Set([
-      ...Object.keys(baselineRefMap),
-      ...Object.keys(currentRefMap),
-    ]);
-    for (const k of keys) {
-      if (baselineRefMap[k] !== currentRefMap[k]) return true;
-    }
-    return false;
-  }, [baselineRefMap, currentRefMap]);
-
-  const unsaved =
-    hasPendingRefChanges || JSON.stringify(pillars) !== JSON.stringify(baseline);
-
-  // expand / collapse
-  const togglePillar = (id: string) =>
-    setOpenPillars((s) => ({ ...s, [id]: !s[id] }));
-  const toggleTheme = (id: string) =>
-    setOpenThemes((s) => ({ ...s, [id]: !s[id] }));
-
-  const expandAll = () => {
-    const nextP: Record<string, boolean> = {};
-    const nextT: Record<string, boolean> = {};
-    pillars.forEach((p) => {
-      nextP[p.id] = true;
-      p.themes.forEach((t) => (nextT[t.id] = true));
-    });
-    setOpenPillars(nextP);
-    setOpenThemes(nextT);
-  };
-  const collapseAll = () => {
-    setOpenPillars({});
-    setOpenThemes({});
+  const handleAddPillar = async () => {
+    const updated = await addPillar(pillars);
+    setPillars(updated);
+    setDirty(true);
   };
 
-  // helpers
-  function withUpdate(updater: (cur: NestedPillar[]) => NestedPillar[]) {
-    setErrorMsg(null);
-    setInfoMsg(null);
-    setPillars((cur) => renumberAll(updater(cur)));
-  }
-
-  // add / remove
-  const handleAddPillar = () => withUpdate(addPillarLocal);
-  const handleAddTheme = (pillarId: string) =>
-    withUpdate((cur) => addThemeLocal(cur, pillarId));
-  const handleAddSubtheme = (themeId: string) =>
-    withUpdate((cur) => addSubthemeLocal(cur, themeId));
-
-  const handleDeletePillar = (pillarId: string) =>
-    withUpdate((cur) => removePillarLocal(cur, pillarId));
-  const handleDeleteTheme = (themeId: string) =>
-    withUpdate((cur) => removeThemeLocal(cur, themeId));
-  const handleDeleteSubtheme = (subId: string) =>
-    withUpdate((cur) => removeSubthemeLocal(cur, subId));
-
-  // move
-  const handleMovePillar = (pillarId: string, dir: "up" | "down") =>
-    withUpdate((cur) => movePillarLocal(cur, pillarId, dir));
-  const handleMoveTheme = (themeId: string, dir: "up" | "down") =>
-    withUpdate((cur) => moveThemeLocal(cur, themeId, dir));
-  const handleMoveSub = (subId: string, dir: "up" | "down") =>
-    withUpdate((cur) => moveSubthemeLocal(cur, subId, dir));
-
-  // save / cancel
-  const handleCancel = () => {
-    setPillars(baseline);
-    setErrorMsg(null);
-    setInfoMsg(null);
+  const handleAddTheme = async (pillarId: string) => {
+    const updated = await addTheme(pillars, pillarId);
+    setPillars(updated);
+    setDirty(true);
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    setErrorMsg(null);
-    setInfoMsg(null);
-    try {
-      const res = await fetch("/api/framework/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pillars }),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error || `Save failed (${res.status})`);
-      }
-      setInfoMsg("Saved. Ref codes and order are now locked in.");
-    } catch (err: any) {
-      setErrorMsg(err?.message || "Save failed.");
-    } finally {
-      setSaving(false);
-    }
+  const handleAddSubtheme = async (pillarId: string, themeId: string) => {
+    const updated = await addSubtheme(pillars, pillarId, themeId);
+    setPillars(updated);
+    setDirty(true);
   };
 
-  // UI bits
-  function RefCode({
-    id,
-    kind,
-  }: {
-    id: string;
-    kind: RowKind;
-  }): JSX.Element {
-    const base = baselineRefMap[id];
-    const cur = currentRefMap[id];
-    const changed = base !== cur;
+  const handleRemovePillar = async (pillarId: string) => {
+    const updated = await removePillar(pillars, pillarId);
+    setPillars(updated);
+    setDirty(true);
+  };
 
-    return (
-      <span
-        className={`text-xs ${
-          changed ? "text-red-600 font-medium" : "text-gray-500"
-        }`}
-        title={
-          changed
-            ? `${kind.toUpperCase()} ref code will change to ${cur} on Save`
-            : `${kind.toUpperCase()} ref code`
-        }
-      >
-        {base}
-      </span>
-    );
-  }
+  const handleRemoveTheme = async (pillarId: string, themeId: string) => {
+    const updated = await removeTheme(pillars, pillarId, themeId);
+    setPillars(updated);
+    setDirty(true);
+  };
+
+  const handleRemoveSubtheme = async (
+    pillarId: string,
+    themeId: string,
+    subthemeId: string
+  ) => {
+    const updated = await removeSubtheme(pillars, pillarId, themeId, subthemeId);
+    setPillars(updated);
+    setDirty(true);
+  };
+
+  const handleMovePillar = (pillarId: string, direction: "up" | "down") => {
+    const updated = movePillar(pillars, pillarId, direction);
+    setPillars(updated);
+    setDirty(true);
+  };
+
+  const handleMoveTheme = (pillarId: string, themeId: string, direction: "up" | "down") => {
+    const updated = moveTheme(pillars, pillarId, themeId, direction);
+    setPillars(updated);
+    setDirty(true);
+  };
+
+  const handleMoveSubtheme = (
+    pillarId: string,
+    themeId: string,
+    subthemeId: string,
+    direction: "up" | "down"
+  ) => {
+    const updated = moveSubtheme(pillars, pillarId, themeId, subthemeId, direction);
+    setPillars(updated);
+    setDirty(true);
+  };
+
+  const handleSave = () => {
+    const renumbered = recalcRefCodes(cloneFramework(pillars));
+    setPillars(renumbered);
+    setDirty(false);
+  };
 
   return (
     <div className="space-y-4">
-      {/* Subtle top note only when needed */}
-      {unsaved && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
-          Items with <span className="font-semibold text-red-600">red</span> ref
-          codes will get new codes when you click Save.
+      {dirty && (
+        <div className="bg-yellow-50 text-yellow-800 p-3 rounded-md border border-yellow-200 text-sm">
+          Items marked in <span className="text-red-600 font-semibold">red</span> will
+          have their ref codes regenerated upon save.
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleSave}
+            className="ml-4 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Save Changes
+          </Button>
         </div>
       )}
 
-      {/* Error / info */}
-      {errorMsg && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
-          {errorMsg}
-        </div>
-      )}
-      {infoMsg && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
-          {infoMsg}
-        </div>
-      )}
-
-      {/* Top controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={expandAll}>
-            Expand All
-          </Button>
-          <Button size="sm" variant="outline" onClick={collapseAll}>
-            Collapse All
-          </Button>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleAddPillar}>
-            <Plus className="mr-1 h-4 w-4" />
-            Add Pillar
-          </Button>
-          {unsaved && (
+      <table className="w-full border border-gray-200">
+        <thead className="bg-gray-50 text-left text-sm font-medium text-gray-700">
+          <tr>
+            <th className="p-2 w-1/6">Type / Ref</th>
+            <th className="p-2 w-1/3">Name</th>
+            <th className="p-2 w-1/3">Description</th>
+            <th className="p-2 w-1/6 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="text-sm text-gray-800">
+          {pillars.map((pillar) => (
             <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={saving}
-              >
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving}>
-                {saving ? "Saving…" : "Save"}
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+              {/* Pillar Row */}
+              <tr key={pillar.id} className="border-t border-gray-200">
+                <td className="p-2">
+                  <span className="text-xs font-semibold text-blue-700">Pillar</span>{" "}
+                  <span
+                    className={
+                      dirty ? "text-xs text-red-600" : "text-xs text-gray-500"
+                    }
+                  >
+                    {pillar.ref_code}
+                  </span>
+                </td>
+                <td className="p-2 font-medium">{pillar.name}</td>
+                <td className="p-2 text-gray-600">{pillar.description}</td>
+                <td className="p-2 flex justify-end gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => handleMovePillar(pillar.id, "up")}>
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleMovePillar(pillar.id, "down")}>
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleRemovePillar(pillar.id)}>
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleAddTheme(pillar.id)}>
+                    <Plus className="h-4 w-4 mr-1" /> Theme
+                  </Button>
+                </td>
+              </tr>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded border">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr className="[&>th]:px-3 [&>th]:py-2 text-left">
-              <th className="w-64">Type / Ref Code</th>
-              <th className="min-w-[22rem]">Name / Description</th>
-              <th className="w-16 text-center">Sort</th>
-              <th className="w-28 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {pillars.map((pillar) => {
-              const pOpen = !!openPillars[pillar.id];
-              return (
-                <tr key={pillar.id} className="align-top">
-                  {/* Pillar: Type / Ref */}
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => togglePillar(pillar.id)}
-                        className="rounded p-1 hover:bg-gray-100"
-                        aria-label={pOpen ? "Collapse Pillar" : "Expand Pillar"}
+              {/* Theme Rows */}
+              {pillar.themes.map((theme) => (
+                <>
+                  <tr key={theme.id} className="border-t border-gray-100 bg-gray-50">
+                    <td className="p-2 pl-6">
+                      <span className="text-xs font-semibold text-green-700">Theme</span>{" "}
+                      <span
+                        className={
+                          dirty ? "text-xs text-red-600" : "text-xs text-gray-500"
+                        }
                       >
-                        {pOpen ? (
-                          <ChevronDown className="h-4 w-4 text-gray-600" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-gray-600" />
-                        )}
-                      </button>
-                      <Badge>Pillar</Badge>
-                      <RefCode id={pillar.id} kind="pillar" />
-                    </div>
-
-                    {/* THEMES rows (rendered inside first cell to keep table layout tidy) */}
-                    {pOpen &&
-                      pillar.themes.map((theme) => {
-                        const tOpen = !!openThemes[theme.id];
-                        return (
-                          <div key={theme.id} className="mt-2 border-t pt-2">
-                            <div className="flex items-center gap-2 pl-4">
-                              <button
-                                onClick={() => toggleTheme(theme.id)}
-                                className="rounded p-1 hover:bg-gray-100"
-                                aria-label={
-                                  tOpen ? "Collapse Theme" : "Expand Theme"
-                                }
-                              >
-                                {tOpen ? (
-                                  <ChevronDown className="h-4 w-4 text-gray-600" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4 text-gray-600" />
-                                )}
-                              </button>
-                              <Badge variant="success">Theme</Badge>
-                              <RefCode id={theme.id} kind="theme" />
-                            </div>
-
-                            {/* SUBTHEMES list (type/ref cell only renders the badges; the other columns below mirror) */}
-                            {tOpen &&
-                              theme.subthemes.map((sub) => (
-                                <div
-                                  key={sub.id}
-                                  className="mt-2 flex items-start pl-8"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="danger">Subtheme</Badge>
-                                    <RefCode id={sub.id} kind="sub" />
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        );
-                      })}
-                  </td>
-
-                  {/* Pillar: Name / Description + nested rows */}
-                  <td className="px-3 py-2">
-                    <div className="font-medium">{pillar.name}</div>
-                    {pillar.description && (
-                      <div className="text-xs text-gray-600">
-                        {pillar.description}
-                      </div>
-                    )}
-
-                    {pOpen &&
-                      pillar.themes.map((theme) => {
-                        const tOpen = !!openThemes[theme.id];
-                        return (
-                          <div key={theme.id} className="mt-2 border-t pt-2">
-                            <div className="pl-4">
-                              <div className="font-medium">{theme.name}</div>
-                              {theme.description && (
-                                <div className="text-xs text-gray-600">
-                                  {theme.description}
-                                </div>
-                              )}
-                            </div>
-
-                            {tOpen &&
-                              theme.subthemes.map((sub) => (
-                                <div key={sub.id} className="mt-2 pl-8">
-                                  <div className="font-medium">{sub.name}</div>
-                                  {sub.description && (
-                                    <div className="text-xs text-gray-600">
-                                      {sub.description}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                          </div>
-                        );
-                      })}
-                  </td>
-
-                  {/* Pillar: Sort + nested sort cells */}
-                  <td className="px-3 py-2 text-center align-top">
-                    <div>{pillar.sort_order}</div>
-                    {pOpen &&
-                      pillar.themes.map((theme) => {
-                        const tOpen = !!openThemes[theme.id];
-                        return (
-                          <div key={theme.id} className="mt-2 border-t pt-2">
-                            <div className="pl-4 text-center">
-                              {theme.sort_order}
-                            </div>
-                            {tOpen &&
-                              theme.subthemes.map((sub) => (
-                                <div
-                                  key={sub.id}
-                                  className="mt-2 pl-8 text-center"
-                                >
-                                  {sub.sort_order}
-                                </div>
-                              ))}
-                          </div>
-                        );
-                      })}
-                  </td>
-
-                  {/* Pillar: Actions + nested actions, aligned across levels */}
-                  <td className="px-3 py-2 text-center align-top">
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => handleMovePillar(pillar.id, "up")}
-                        className="rounded p-1 hover:bg-gray-100"
-                        aria-label="Move Pillar Up"
-                      >
-                        <ArrowUp className="h-4 w-4 text-gray-700" />
-                      </button>
-                      <button
-                        onClick={() => handleMovePillar(pillar.id, "down")}
-                        className="rounded p-1 hover:bg-gray-100"
-                        aria-label="Move Pillar Down"
-                      >
-                        <ArrowDown className="h-4 w-4 text-gray-700" />
-                      </button>
-                      <button
-                        onClick={() => handleAddTheme(pillar.id)}
-                        className="rounded p-1 hover:bg-blue-50"
-                        aria-label="Add Theme"
-                      >
-                        <Plus className="h-4 w-4 text-blue-600" />
-                      </button>
-                      <button
-                        onClick={() => handleDeletePillar(pillar.id)}
-                        className="rounded p-1 hover:bg-red-50"
-                        aria-label="Delete Pillar"
-                      >
+                        {theme.ref_code}
+                      </span>
+                    </td>
+                    <td className="p-2 font-medium">{theme.name}</td>
+                    <td className="p-2 text-gray-600">{theme.description}</td>
+                    <td className="p-2 flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleMoveTheme(pillar.id, theme.id, "up")}>
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleMoveTheme(pillar.id, theme.id, "down")}>
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleRemoveTheme(pillar.id, theme.id)}>
                         <Trash2 className="h-4 w-4 text-red-600" />
-                      </button>
-                    </div>
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleAddSubtheme(pillar.id, theme.id)}>
+                        <Plus className="h-4 w-4 mr-1" /> Subtheme
+                      </Button>
+                    </td>
+                  </tr>
 
-                    {pOpen &&
-                      pillar.themes.map((theme) => {
-                        const tOpen = !!openThemes[theme.id];
-                        return (
-                          <div
-                            key={theme.id}
-                            className="mt-2 border-t pt-2 text-center"
-                          >
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => handleMoveTheme(theme.id, "up")}
-                                className="rounded p-1 hover:bg-gray-100"
-                                aria-label="Move Theme Up"
-                              >
-                                <ArrowUp className="h-4 w-4 text-gray-700" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  handleMoveTheme(theme.id, "down")
-                                }
-                                className="rounded p-1 hover:bg-gray-100"
-                                aria-label="Move Theme Down"
-                              >
-                                <ArrowDown className="h-4 w-4 text-gray-700" />
-                              </button>
-                              <button
-                                onClick={() => handleAddSubtheme(theme.id)}
-                                className="rounded p-1 hover:bg-blue-50"
-                                aria-label="Add Subtheme"
-                              >
-                                <Plus className="h-4 w-4 text-blue-600" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTheme(theme.id)}
-                                className="rounded p-1 hover:bg-red-50"
-                                aria-label="Delete Theme"
-                              >
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                              </button>
-                            </div>
+                  {/* Subtheme Rows */}
+                  {theme.subthemes.map((sub) => (
+                    <tr key={sub.id} className="border-t border-gray-100">
+                      <td className="p-2 pl-12">
+                        <span className="text-xs font-semibold text-purple-700">
+                          Subtheme
+                        </span>{" "}
+                        <span
+                          className={
+                            dirty ? "text-xs text-red-600" : "text-xs text-gray-500"
+                          }
+                        >
+                          {sub.ref_code}
+                        </span>
+                      </td>
+                      <td className="p-2 font-medium">{sub.name}</td>
+                      <td className="p-2 text-gray-600">{sub.description}</td>
+                      <td className="p-2 flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleMoveSubtheme(pillar.id, theme.id, sub.id, "up")}
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleMoveSubtheme(pillar.id, theme.id, sub.id, "down")}
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveSubtheme(pillar.id, theme.id, sub.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              ))}
+            </>
+          ))}
+        </tbody>
+      </table>
 
-                            {tOpen &&
-                              theme.subthemes.map((sub) => (
-                                <div
-                                  key={sub.id}
-                                  className="mt-2 pl-8 text-center"
-                                >
-                                  <div className="flex items-center justify-center gap-2">
-                                    <button
-                                      onClick={() =>
-                                        handleMoveSub(sub.id, "up")
-                                      }
-                                      className="rounded p-1 hover:bg-gray-100"
-                                      aria-label="Move Subtheme Up"
-                                    >
-                                      <ArrowUp className="h-4 w-4 text-gray-700" />
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        handleMoveSub(sub.id, "down")
-                                      }
-                                      className="rounded p-1 hover:bg-gray-100"
-                                      aria-label="Move Subtheme Down"
-                                    >
-                                      <ArrowDown className="h-4 w-4 text-gray-700" />
-                                    </button>
-                                    {/* No "Add" at subtheme level by design */}
-                                    <button
-                                      onClick={() =>
-                                        handleDeleteSubtheme(sub.id)
-                                      }
-                                      className="rounded p-1 hover:bg-red-50"
-                                      aria-label="Delete Subtheme"
-                                    >
-                                      <Trash2 className="h-4 w-4 text-red-600" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        );
-                      })}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="pt-4">
+        <Button onClick={handleAddPillar}>
+          <Plus className="h-4 w-4 mr-1" /> Add Pillar
+        </Button>
       </div>
     </div>
   );
