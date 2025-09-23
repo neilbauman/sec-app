@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { NestedPillar } from "@/types"; // adjust path to where NestedPillar is defined
 
 export type FrameworkItemType = "Pillar" | "Theme" | "Subtheme";
 
@@ -16,7 +17,7 @@ export type FrameworkItem = {
   children?: FrameworkItem[];
 };
 
-// Inline Badge component to avoid missing import
+// Inline Badge component
 const Badge = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${className}`}>
     {children}
@@ -67,8 +68,8 @@ const typeBadgeClass = (type: FrameworkItemType) => {
   }
 };
 
-export default function FrameworkEditor({ initialPillars = [] }: { initialPillars?: FrameworkItem[] }) {
-  const [data, setData] = useState<FrameworkItem[]>(initialPillars.length ? initialPillars : sampleData);
+export default function FrameworkEditor({ initialPillars = [] }: { initialPillars?: NestedPillar[] }) {
+  const [data, setData] = useState<FrameworkItem[]>(sampleData);
   const [editMode, setEditMode] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
