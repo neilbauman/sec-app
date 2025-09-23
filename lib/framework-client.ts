@@ -4,68 +4,61 @@ import { recalcRefCodes } from "@/lib/framework-utils";
 
 export type NestedSubtheme = {
   id: string;
-  ref_code: string;
+  theme_id: string;
   name: string;
   description: string | null;
   sort_order: number;
+  ref_code: string;
 };
 
 export type NestedTheme = {
   id: string;
-  ref_code: string;
+  pillar_id: string;
   name: string;
   description: string | null;
   sort_order: number;
+  ref_code: string;
   subthemes: NestedSubtheme[];
 };
 
 export type NestedPillar = {
   id: string;
-  ref_code: string;
   name: string;
   description: string | null;
   sort_order: number;
+  ref_code: string;
   themes: NestedTheme[];
 };
 
 /**
- * Fetch the full framework from Supabase and normalize with recalcRefCodes.
+ * Fetch framework from DB and normalize with ref codes.
  */
 export async function fetchFramework(): Promise<NestedPillar[]> {
-  const supabase = getSupabaseClient();
+  const client = getSupabaseClient();
 
-  // Fetch all pillars
-  const { data: pillars, error: pillarError } = await supabase
-    .from("pillars")
-    .select("*")
-    .order("sort_order", { ascending: true });
-  if (pillarError) throw pillarError;
+  const { data: pillars, error: pErr } = await client.from("pillars").select("*").order("sort_order");
+  if (pErr) throw pErr;
 
-  // Fetch all themes
-  const { data: themes, error: themeError } = await supabase
-    .from("themes")
-    .select("*")
-    .order("sort_order", { ascending: true });
-  if (themeError) throw themeError;
+  const { data: themes, error: tErr } = await client.from("themes").select("*").order("sort_order");
+  if (tErr) throw tErr;
 
-  // Fetch all subthemes
-  const { data: subs, error: subError } = await supabase
-    .from("subthemes")
-    .select("*")
-    .order("sort_order", { ascending: true });
-  if (subError) throw subError;
+  const { data: subs, error: sErr } = await client.from("subthemes").select("*").order("sort_order");
+  if (sErr) throw sErr;
 
-  // Build hierarchy
-  const nested: NestedPillar[] = (pillars || []).map((p) => ({
-    ...p,
-    themes: (themes || [])
-      .filter((t) => t.pillar_id === p.id)
-      .map((t) => ({
-        ...t,
-        subthemes: (subs || []).filter((s) => s.theme_id === t.id),
-      })),
-  }));
+  const pillarMap: Record<string, NestedPillar> = {};
+  (pillars || []).forEach((p) => {
+    pillarMap[p.id] = { ...p, ref_code: "", themes: [] };
+  });
 
-  // Recalculate ref codes
-  return recalcRefCodes(nested);
+  const themeMap: Record<string, NestedTheme> = {};
+  (themes || []).forEach((t) => {
+    themeMap[t.id] = { ...t, ref_code: "", subthemes: [] };
+    pillarMap[t.pillar_id]?.themes.push(themeMap[t.id]);
+  });
+
+  (subs || []).forEach((s) => {
+    themeMap[s.theme_id]?.subthemes.push({ ...s, ref_code: "" });
+  });
+
+  return recalcRefCodes(Object.values(pillarMap));
 }
