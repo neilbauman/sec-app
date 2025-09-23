@@ -21,7 +21,7 @@ export default async function PrimaryFrameworkEditorPage() {
 
       <div className="bg-white rounded-xl border shadow-sm p-6">
         {/* Framework Editor Table */}
-        <FrameworkEditor data={framework} />
+        <FrameworkEditor initialPillars={framework} />
       </div>
     </div>
   );
