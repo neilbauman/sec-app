@@ -2,14 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  ChevronDown,
-  ChevronRight,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 
 export type FrameworkItemType = "Pillar" | "Theme" | "Subtheme";
 
@@ -22,6 +15,13 @@ export type FrameworkItem = {
   sortOrder: number;
   children?: FrameworkItem[];
 };
+
+// Inline Badge component to avoid missing import
+const Badge = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${className}`}>
+    {children}
+  </span>
+);
 
 const sampleData: FrameworkItem[] = [
   {
@@ -67,8 +67,8 @@ const typeBadgeClass = (type: FrameworkItemType) => {
   }
 };
 
-export default function FrameworkEditor() {
-  const [data, setData] = useState<FrameworkItem[]>(sampleData);
+export default function FrameworkEditor({ initialPillars = [] }: { initialPillars?: FrameworkItem[] }) {
+  const [data, setData] = useState<FrameworkItem[]>(initialPillars.length ? initialPillars : sampleData);
   const [editMode, setEditMode] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
