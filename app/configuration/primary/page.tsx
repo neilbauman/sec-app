@@ -4,8 +4,8 @@ import FrameworkEditor from "@/components/framework/FrameworkEditor";
 import { fetchFramework, NestedPillar } from "@/lib/framework-client";
 
 export default async function PrimaryFrameworkEditorPage() {
-  // Fetch framework directly (already returns NestedPillar[] with ref_codes)
-  const framework: NestedPillar[] = await fetchFramework();
+  // Fetch framework directly (returns NestedPillar[] with ref_codes)
+  const initialPillars: NestedPillar[] = await fetchFramework();
 
   return (
     <div className="space-y-6">
@@ -21,7 +21,7 @@ export default async function PrimaryFrameworkEditorPage() {
 
       <div className="bg-white rounded-xl border shadow-sm p-6">
         {/* Framework Editor Table */}
-        <FrameworkEditor initialPillars={framework} />
+        <FrameworkEditor initialPillars={initialPillars} />
       </div>
     </div>
   );
