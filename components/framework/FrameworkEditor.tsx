@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
 import {
   addPillar,
   addTheme,
@@ -12,238 +13,195 @@ import {
   movePillar,
   moveTheme,
   moveSubtheme,
+  saveFramework,
 } from "@/lib/framework-actions";
-import { cloneFramework, recalcRefCodes } from "@/lib/framework-utils";
-import type {
-  NestedPillar,
-  NestedTheme,
-  NestedSubtheme,
-} from "@/lib/framework-client";
-import { Button } from "@/components/ui/button";
-import { ArrowUp, ArrowDown, Plus, Trash2 } from "lucide-react";
+import { cloneFramework, buildRefCodeMap } from "@/lib/framework-utils";
 
 type FrameworkEditorProps = {
   initialPillars: NestedPillar[];
 };
 
 export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps) {
-  const [pillars, setPillars] = useState<NestedPillar[]>(recalcRefCodes(initialPillars));
+  const [pillars, setPillars] = useState<NestedPillar[]>(cloneFramework(initialPillars));
   const [dirty, setDirty] = useState(false);
 
-  const handleAddPillar = async () => {
-    const updated = await addPillar(pillars);
+  // Build ref code map so we can highlight changes
+  const refCodeMap = buildRefCodeMap(initialPillars);
+
+  const markDirty = (updated: NestedPillar[]) => {
     setPillars(updated);
     setDirty(true);
   };
 
-  const handleAddTheme = async (pillarId: string) => {
-    const updated = await addTheme(pillars, pillarId);
-    setPillars(updated);
-    setDirty(true);
-  };
-
-  const handleAddSubtheme = async (pillarId: string, themeId: string) => {
-    const updated = await addSubtheme(pillars, pillarId, themeId);
-    setPillars(updated);
-    setDirty(true);
-  };
-
-  const handleRemovePillar = async (pillarId: string) => {
-    const updated = await removePillar(pillars, pillarId);
-    setPillars(updated);
-    setDirty(true);
-  };
-
-  const handleRemoveTheme = async (pillarId: string, themeId: string) => {
-    const updated = await removeTheme(pillars, pillarId, themeId);
-    setPillars(updated);
-    setDirty(true);
-  };
-
-  const handleRemoveSubtheme = async (
-    pillarId: string,
-    themeId: string,
-    subthemeId: string
-  ) => {
-    const updated = await removeSubtheme(pillars, pillarId, themeId, subthemeId);
-    setPillars(updated);
-    setDirty(true);
-  };
-
-  const handleMovePillar = (pillarId: string, direction: "up" | "down") => {
-    const updated = movePillar(pillars, pillarId, direction);
-    setPillars(updated);
-    setDirty(true);
-  };
-
-  const handleMoveTheme = (pillarId: string, themeId: string, direction: "up" | "down") => {
-    const updated = moveTheme(pillars, pillarId, themeId, direction);
-    setPillars(updated);
-    setDirty(true);
-  };
-
-  const handleMoveSubtheme = (
-    pillarId: string,
-    themeId: string,
-    subthemeId: string,
-    direction: "up" | "down"
-  ) => {
-    const updated = moveSubtheme(pillars, pillarId, themeId, subthemeId, direction);
-    setPillars(updated);
-    setDirty(true);
-  };
-
-  const handleSave = () => {
-    const renumbered = recalcRefCodes(cloneFramework(pillars));
-    setPillars(renumbered);
+  const handleSave = async () => {
+    const saved = await saveFramework(pillars);
+    setPillars(saved);
     setDirty(false);
+  };
+
+  const isChangedRef = (id: string, refCode: string) => {
+    return refCodeMap[id] && refCodeMap[id] !== refCode;
   };
 
   return (
     <div className="space-y-4">
       {dirty && (
-        <div className="bg-yellow-50 text-yellow-800 p-3 rounded-md border border-yellow-200 text-sm">
-          Items marked in <span className="text-red-600 font-semibold">red</span> will
-          have their ref codes regenerated upon save.
-          <Button
-            variant="default"
-            size="sm"
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm px-4 py-2 rounded-lg">
+          <strong>Pending changes:</strong> Items marked in <span className="text-red-600">red</span> will
+          have their ref codes updated on save.
+          <button
             onClick={handleSave}
-            className="ml-4 bg-blue-600 hover:bg-blue-700 text-white"
+            className="ml-4 px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
           >
             Save Changes
-          </Button>
+          </button>
         </div>
       )}
 
-      <table className="w-full border border-gray-200">
-        <thead className="bg-gray-50 text-left text-sm font-medium text-gray-700">
-          <tr>
-            <th className="p-2 w-1/6">Type / Ref</th>
-            <th className="p-2 w-1/3">Name</th>
-            <th className="p-2 w-1/3">Description</th>
-            <th className="p-2 w-1/6 text-right">Actions</th>
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="border-b text-left">
+            <th className="px-2 py-2 w-1/4">Name</th>
+            <th className="px-2 py-2">Description</th>
+            <th className="px-2 py-2 w-1/6">Type & Ref</th>
+            <th className="px-2 py-2 w-1/6 text-right">Actions</th>
           </tr>
         </thead>
-        <tbody className="text-sm text-gray-800">
-          {pillars.map((pillar) => (
-            <>
+        <tbody>
+          {pillars.map((pillar, pi) => (
+            <Fragment key={pillar.id}>
               {/* Pillar Row */}
-              <tr key={pillar.id} className="border-t border-gray-200">
-                <td className="p-2">
-                  <span className="text-xs font-semibold text-blue-700">Pillar</span>{" "}
+              <tr className="border-b align-top">
+                <td className="px-2 py-2 font-medium">
+                  {pillar.name}
+                  {pillar.description && (
+                    <div className="text-xs text-gray-500">{pillar.description}</div>
+                  )}
+                </td>
+                <td className="px-2 py-2" />
+                <td className="px-2 py-2">
+                  <span className="text-xs font-semibold text-indigo-600 mr-2">Pillar</span>
                   <span
-                    className={
-                      dirty ? "text-xs text-red-600" : "text-xs text-gray-500"
-                    }
+                    className={`text-xs ${
+                      isChangedRef(pillar.id, pillar.ref_code) ? "text-red-600" : "text-gray-500"
+                    }`}
                   >
                     {pillar.ref_code}
                   </span>
                 </td>
-                <td className="p-2 font-medium">{pillar.name}</td>
-                <td className="p-2 text-gray-600">{pillar.description}</td>
-                <td className="p-2 flex justify-end gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => handleMovePillar(pillar.id, "up")}>
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleMovePillar(pillar.id, "down")}>
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleRemovePillar(pillar.id)}>
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleAddTheme(pillar.id)}>
-                    <Plus className="h-4 w-4 mr-1" /> Theme
-                  </Button>
+                <td className="px-2 py-2 text-right space-x-2">
+                  <button onClick={() => markDirty(addTheme(pillars, pillar.id))} className="text-xs text-green-600 hover:underline">
+                    + Theme
+                  </button>
+                  <button onClick={() => markDirty(movePillar(pillars, pillar.id, "up"))} className="text-xs text-gray-600 hover:underline">
+                    ↑
+                  </button>
+                  <button onClick={() => markDirty(movePillar(pillars, pillar.id, "down"))} className="text-xs text-gray-600 hover:underline">
+                    ↓
+                  </button>
+                  <button onClick={() => markDirty(removePillar(pillars, pillar.id))} className="text-xs text-red-600 hover:underline">
+                    Delete
+                  </button>
                 </td>
               </tr>
 
               {/* Theme Rows */}
               {pillar.themes.map((theme) => (
-                <>
-                  <tr key={theme.id} className="border-t border-gray-100 bg-gray-50">
-                    <td className="p-2 pl-6">
-                      <span className="text-xs font-semibold text-green-700">Theme</span>{" "}
+                <Fragment key={theme.id}>
+                  <tr className="border-b align-top bg-gray-50">
+                    <td className="px-6 py-2">
+                      {theme.name}
+                      {theme.description && (
+                        <div className="text-xs text-gray-500">{theme.description}</div>
+                      )}
+                    </td>
+                    <td className="px-2 py-2" />
+                    <td className="px-2 py-2">
+                      <span className="text-xs font-semibold text-indigo-500 mr-2">Theme</span>
                       <span
-                        className={
-                          dirty ? "text-xs text-red-600" : "text-xs text-gray-500"
-                        }
+                        className={`text-xs ${
+                          isChangedRef(theme.id, theme.ref_code) ? "text-red-600" : "text-gray-500"
+                        }`}
                       >
                         {theme.ref_code}
                       </span>
                     </td>
-                    <td className="p-2 font-medium">{theme.name}</td>
-                    <td className="p-2 text-gray-600">{theme.description}</td>
-                    <td className="p-2 flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleMoveTheme(pillar.id, theme.id, "up")}>
-                        <ArrowUp className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleMoveTheme(pillar.id, theme.id, "down")}>
-                        <ArrowDown className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveTheme(pillar.id, theme.id)}>
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleAddSubtheme(pillar.id, theme.id)}>
-                        <Plus className="h-4 w-4 mr-1" /> Subtheme
-                      </Button>
+                    <td className="px-2 py-2 text-right space-x-2">
+                      <button
+                        onClick={() => markDirty(addSubtheme(pillars, pillar.id, theme.id))}
+                        className="text-xs text-green-600 hover:underline"
+                      >
+                        + Subtheme
+                      </button>
+                      <button
+                        onClick={() => markDirty(moveTheme(pillars, pillar.id, theme.id, "up"))}
+                        className="text-xs text-gray-600 hover:underline"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        onClick={() => markDirty(moveTheme(pillars, pillar.id, theme.id, "down"))}
+                        className="text-xs text-gray-600 hover:underline"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        onClick={() => markDirty(removeTheme(pillars, pillar.id, theme.id))}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
 
                   {/* Subtheme Rows */}
                   {theme.subthemes.map((sub) => (
-                    <tr key={sub.id} className="border-t border-gray-100">
-                      <td className="p-2 pl-12">
-                        <span className="text-xs font-semibold text-purple-700">
-                          Subtheme
-                        </span>{" "}
+                    <tr key={sub.id} className="border-b align-top">
+                      <td className="px-10 py-2">
+                        {sub.name}
+                        {sub.description && (
+                          <div className="text-xs text-gray-500">{sub.description}</div>
+                        )}
+                      </td>
+                      <td className="px-2 py-2" />
+                      <td className="px-2 py-2">
+                        <span className="text-xs font-semibold text-indigo-400 mr-2">Subtheme</span>
                         <span
-                          className={
-                            dirty ? "text-xs text-red-600" : "text-xs text-gray-500"
-                          }
+                          className={`text-xs ${
+                            isChangedRef(sub.id, sub.ref_code) ? "text-red-600" : "text-gray-500"
+                          }`}
                         >
                           {sub.ref_code}
                         </span>
                       </td>
-                      <td className="p-2 font-medium">{sub.name}</td>
-                      <td className="p-2 text-gray-600">{sub.description}</td>
-                      <td className="p-2 flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleMoveSubtheme(pillar.id, theme.id, sub.id, "up")}
+                      <td className="px-2 py-2 text-right space-x-2">
+                        <button
+                          onClick={() => markDirty(moveSubtheme(pillars, pillar.id, theme.id, sub.id, "up"))}
+                          className="text-xs text-gray-600 hover:underline"
                         >
-                          <ArrowUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleMoveSubtheme(pillar.id, theme.id, sub.id, "down")}
+                          ↑
+                        </button>
+                        <button
+                          onClick={() => markDirty(moveSubtheme(pillars, pillar.id, theme.id, sub.id, "down"))}
+                          className="text-xs text-gray-600 hover:underline"
                         >
-                          <ArrowDown className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveSubtheme(pillar.id, theme.id, sub.id)}
+                          ↓
+                        </button>
+                        <button
+                          onClick={() => markDirty(removeSubtheme(pillars, pillar.id, theme.id, sub.id))}
+                          className="text-xs text-red-600 hover:underline"
                         >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
+                          Delete
+                        </button>
                       </td>
                     </tr>
                   ))}
-                </>
+                </Fragment>
               ))}
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>
-
-      <div className="pt-4">
-        <Button onClick={handleAddPillar}>
-          <Plus className="h-4 w-4 mr-1" /> Add Pillar
-        </Button>
-      </div>
     </div>
   );
 }
