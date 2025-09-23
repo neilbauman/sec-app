@@ -1,63 +1,138 @@
 // lib/framework-utils.ts
-import type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
 
-/** Deep clone to avoid mutating state directly */
+/**
+ * Deep clone the framework tree so we don’t mutate state directly.
+ */
 export function cloneFramework(pillars: NestedPillar[]): NestedPillar[] {
   return JSON.parse(JSON.stringify(pillars)) as NestedPillar[];
 }
 
 /**
- * Compute display ref codes based on current sort_order positions:
- * Pillar:   P{p}
- * Theme:    T{p}.{t}
- * Subtheme: ST{p}.{t}.{s}
- * (1-based indices)
+ * Generate hierarchical ref codes (P#, T#.n, ST#.n.m).
  */
-export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
-  const copy = cloneFramework(pillars);
+export function generateRefCodes(pillars: NestedPillar[]): NestedPillar[] {
+  return pillars.map((pillar, pIndex) => {
+    const pillarCode = `P${pIndex + 1}`;
+    return {
+      ...pillar,
+      ref_code: pillarCode,
+      themes: pillar.themes.map((theme, tIndex) => {
+        const themeCode = `${pillarCode}.${tIndex + 1}`;
+        return {
+          ...theme,
+          ref_code: themeCode,
+          pillar_id: pillar.id,
+          subthemes: theme.subthemes.map((sub, sIndex) => {
+            const subCode = `${themeCode}.${sIndex + 1}`;
+            return {
+              ...sub,
+              ref_code: subCode,
+              theme_id: theme.id,
+            };
+          }),
+        };
+      }),
+    };
+  });
+}
 
-  // Sort each level just in case
-  copy.sort((a, b) => a.sort_order - b.sort_order);
-  copy.forEach((p) => p.themes.sort((a, b) => a.sort_order - b.sort_order));
-  copy.forEach((p) =>
-    p.themes.forEach((t) => t.subthemes.sort((a, b) => a.sort_order - b.sort_order))
-  );
+/**
+ * Compare old vs new ref codes and mark which items changed.
+ * Useful for UI to highlight pending changes before save.
+ */
+export function markChangedCodes(
+  original: NestedPillar[],
+  updated: NestedPillar[]
+): NestedPillar[] {
+  const mapCodes = (pillars: NestedPillar[]) => {
+    const codes = new Map<string, string>();
+    pillars.forEach((p) => {
+      codes.set(p.id, p.ref_code);
+      p.themes.forEach((t) => {
+        codes.set(t.id, t.ref_code);
+        t.subthemes.forEach((s) => codes.set(s.id, s.ref_code));
+      });
+    });
+    return codes;
+  };
 
-  // Assign codes using 1-based positions
-  copy.forEach((p, pi) => {
-    p.ref_code = `P${pi + 1}`;
-    p.themes.forEach((t, ti) => {
-      t.ref_code = `T${pi + 1}.${ti + 1}`;
-      t.subthemes.forEach((s, si) => {
-        s.ref_code = `ST${pi + 1}.${ti + 1}.${si + 1}`;
+  const originalCodes = mapCodes(original);
+
+  const walk = (pillars: NestedPillar[]): NestedPillar[] =>
+    pillars.map((p) => ({
+      ...p,
+      codeChanged: p.ref_code !== originalCodes.get(p.id),
+      themes: p.themes.map((t) => ({
+        ...t,
+        codeChanged: t.ref_code !== originalCodes.get(t.id),
+        subthemes: t.subthemes.map((s) => ({
+          ...s,
+          codeChanged: s.ref_code !== originalCodes.get(s.id),
+        })),
+      })),
+    }));
+
+  return walk(updated);
+}
+
+/**
+ * Flatten the framework into a simple array of all nodes.
+ */
+export function flattenFramework(
+  pillars: NestedPillar[]
+): Array<NestedPillar | NestedTheme | NestedSubtheme> {
+  const result: Array<NestedPillar | NestedTheme | NestedSubtheme> = [];
+
+  pillars.forEach((p) => {
+    result.push(p);
+    p.themes.forEach((t) => {
+      result.push(t);
+      t.subthemes.forEach((s) => {
+        result.push(s);
       });
     });
   });
 
-  return copy;
+  return result;
 }
 
-/** Utility used by delete operations to normalize contiguous sort orders per level */
-export function normalizeSortOrders(pillars: NestedPillar[]): NestedPillar[] {
-  const copy = cloneFramework(pillars);
+/**
+ * Find a pillar by ID.
+ */
+export function findPillar(
+  pillars: NestedPillar[],
+  pillarId: string
+): NestedPillar | undefined {
+  return pillars.find((p) => p.id === pillarId);
+}
 
-  copy
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .forEach((p, pi) => {
-      p.sort_order = pi + 1;
+/**
+ * Find a theme by ID.
+ */
+export function findTheme(
+  pillars: NestedPillar[],
+  themeId: string
+): NestedTheme | undefined {
+  for (const pillar of pillars) {
+    const theme = pillar.themes.find((t) => t.id === themeId);
+    if (theme) return theme;
+  }
+  return undefined;
+}
 
-      p.themes
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .forEach((t, ti) => {
-          t.sort_order = ti + 1;
-
-          t.subthemes
-            .sort((a, b) => a.sort_order - b.sort_order)
-            .forEach((s, si) => {
-              s.sort_order = si + 1;
-            });
-        });
-    });
-
-  return copy;
+/**
+ * Find a subtheme by ID.
+ */
+export function findSubtheme(
+  pillars: NestedPillar[],
+  subthemeId: string
+): NestedSubtheme | undefined {
+  for (const pillar of pillars) {
+    for (const theme of pillar.themes) {
+      const sub = theme.subthemes.find((s) => s.id === subthemeId);
+      if (sub) return sub;
+    }
+  }
+  return undefined;
 }
