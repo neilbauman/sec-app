@@ -2,211 +2,172 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
 
-// Local NestedPillar type definition
 export type NestedPillar = {
   id: string;
+  type: "Pillar" | "Theme" | "Subtheme";
+  refCode?: string;
   name: string;
   description?: string;
-  refCode?: string;
   sortOrder?: number;
-  type?: "Pillar" | "Theme" | "Subtheme";
   children?: NestedPillar[];
 };
 
-// Inline Badge component
-const Badge = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-  <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${className}`}>
-    {children}
-  </span>
-);
-
-const sampleData: NestedPillar[] = [
-  {
-    id: "1",
-    type: "Pillar",
-    refCode: "P1",
-    name: "The Shelter",
-    description: "People have a dwelling",
-    sortOrder: 1,
-    children: [
-      {
-        id: "1-1",
-        type: "Theme",
-        refCode: "T1.1",
-        name: "Physical Safety",
-        description: "Households live in safe and secure shelters",
-        sortOrder: 1,
-        children: [
-          {
-            id: "1-1-1",
-            type: "Subtheme",
-            refCode: "ST1.1.1",
-            name: "Secure structures",
-            description: "Safe against weather and hazards",
-            sortOrder: 1,
-          },
-        ],
-      },
-    ],
-  },
-];
-
-const typeBadgeClass = (type?: "Pillar" | "Theme" | "Subtheme") => {
-  switch (type) {
-    case "Pillar":
-      return "bg-indigo-100 text-indigo-700 border border-indigo-200";
-    case "Theme":
-      return "bg-emerald-100 text-emerald-700 border border-emerald-200";
-    case "Subtheme":
-      return "bg-amber-100 text-amber-800 border border-amber-200";
-    default:
-      return "bg-gray-100 text-gray-700 border border-gray-200";
-  }
+// Badge colors by type
+const badgeColors: Record<NestedPillar["type"], string> = {
+  Pillar: "bg-indigo-100 text-indigo-800",
+  Theme: "bg-emerald-100 text-emerald-800",
+  Subtheme: "bg-amber-100 text-amber-800",
 };
 
-export default function FrameworkEditor({ initialPillars = [] }: { initialPillars?: NestedPillar[] }) {
-  const [data, setData] = useState<NestedPillar[]>(initialPillars.length ? initialPillars : sampleData);
+type FrameworkEditorProps = {
+  initialPillars: NestedPillar[];
+};
+
+export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps) {
+  const [pillars] = useState<NestedPillar[]>(initialPillars);
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  const toggleExpand = (id: string) => {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const collectAllIds = (items: NestedPillar[], acc: Set<string>) => {
-    for (const item of items) {
-      acc.add(item.id);
-      if (item.children?.length) collectAllIds(item.children, acc);
-    }
+  // Toggle expand/collapse per row
+  const toggleRow = (id: string) => {
+    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const expandAll = () => {
-    const all = new Set<string>();
-    collectAllIds(data, all);
+    const all: Record<string, boolean> = {};
+    const collect = (nodes: NestedPillar[]) => {
+      for (const node of nodes) {
+        all[node.id] = true;
+        if (node.children) collect(node.children);
+      }
+    };
+    collect(pillars);
     setExpandedRows(all);
   };
 
-  const collapseAll = () => setExpandedRows(new Set());
+  const collapseAll = () => {
+    setExpandedRows({});
+  };
 
-  const handleAdd = (parentId: string) => console.log("Add", parentId);
-  const handleEdit = (id: string) => console.log("Edit", id);
-  const handleDelete = (id: string) => console.log("Delete", id);
-  const handleAddPillar = () => console.log("Add Pillar");
+  // Recursive renderer
+  const renderRows = (nodes: NestedPillar[], depth = 0) => {
+    return nodes.map((node) => {
+      const isExpanded = expandedRows[node.id];
+      const hasChildren = node.children && node.children.length > 0;
 
-  const renderRow = (item: NestedPillar, depth = 0): React.ReactNode => {
-    const isExpanded = expandedRows.has(item.id);
-    const hasChildren = !!item.children?.length;
-    const indentPx = depth * 16;
-
-    return (
-      <React.Fragment key={item.id}>
-        <tr className="border-b hover:bg-muted/40">
-          {/* Type / Ref Code */}
-          <td className="w-1/4 align-top py-3">
-            <div className="flex items-start">
-              {hasChildren ? (
-                <button
-                  type="button"
-                  onClick={() => toggleExpand(item.id)}
-                  className="mr-1 rounded p-1 hover:bg-muted"
-                >
-                  {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </button>
-              ) : (
-                <span className="w-6" />
-              )}
-              <div style={{ paddingLeft: indentPx }} className="flex items-center">
-                <Badge className={`mr-2 ${typeBadgeClass(item.type)}`}>{item.type ?? ""}</Badge>
-                <span className="text-sm text-muted-foreground">{item.refCode ?? ""}</span>
-              </div>
-            </div>
-          </td>
-
-          {/* Name / Description */}
-          <td className="align-top py-3">
-            <div style={{ paddingLeft: indentPx }}>
-              <div className="font-medium leading-6">{item.name}</div>
-              {item.description && (
-                <div className="text-sm text-muted-foreground leading-5">{item.description}</div>
-              )}
-            </div>
-          </td>
-
-          {/* Sort Order */}
-          <td className="w-24 align-top py-3">
-            <div className="text-sm tabular-nums">{item.sortOrder ?? ""}</div>
-          </td>
-
-          {/* Actions */}
-          <td className="w-36 align-top py-3">
-            {editMode && (
-              <div className="flex items-center gap-1">
-                {item.type !== "Subtheme" && (
-                  <Button size="sm" variant="ghost" className="p-1 h-8 w-8" onClick={() => handleAdd(item.id)}>
-                    <Plus size={16} />
-                  </Button>
+      return (
+        <React.Fragment key={node.id}>
+          <tr className="hover:bg-gray-50">
+            {/* Type / Ref Code */}
+            <td className="py-3 pl-4 pr-2">
+              <div className="flex items-center gap-2" style={{ paddingLeft: depth * 20 }}>
+                {hasChildren && (
+                  <button
+                    onClick={() => toggleRow(node.id)}
+                    className="p-1 rounded hover:bg-gray-100"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
                 )}
-                <Button size="sm" variant="ghost" className="p-1 h-8 w-8" onClick={() => handleEdit(item.id)}>
-                  <Pencil size={16} />
-                </Button>
-                <Button size="sm" variant="ghost" className="p-1 h-8 w-8" onClick={() => handleDelete(item.id)}>
-                  <Trash2 size={16} />
-                </Button>
+                <span
+                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${badgeColors[node.type]}`}
+                >
+                  {node.type}
+                </span>
+                {node.refCode && (
+                  <span className="text-sm text-gray-500">{node.refCode}</span>
+                )}
               </div>
-            )}
-          </td>
-        </tr>
-        {hasChildren && isExpanded && item.children!.map((c) => renderRow(c, depth + 1))}
-      </React.Fragment>
-    );
+            </td>
+
+            {/* Name / Description */}
+            <td className="py-3">
+              <div style={{ paddingLeft: depth * 20 }}>
+                <div className="font-medium">{node.name}</div>
+                {node.description && (
+                  <div className="text-sm text-gray-500">{node.description}</div>
+                )}
+              </div>
+            </td>
+
+            {/* Sort Order */}
+            <td className="py-3 text-right tabular-nums pr-4">
+              {node.sortOrder ?? ""}
+            </td>
+
+            {/* Actions */}
+            <td className="py-3 pr-4 text-right">
+              {editMode && (
+                <div className="flex justify-end gap-1">
+                  {node.type !== "Subtheme" && (
+                    <Button variant="ghost" size="sm" className="p-1 h-8 w-8">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="sm" className="p-1 h-8 w-8">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="p-1 h-8 w-8">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </td>
+          </tr>
+
+          {/* Render children if expanded */}
+          {hasChildren && isExpanded && renderRows(node.children, depth + 1)}
+        </React.Fragment>
+      );
+    });
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="border rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
         <div className="flex items-center gap-2">
           <Button
-            variant={editMode ? "default" : "outline"}
+            variant={editMode ? "secondary" : "outline"}
             size="sm"
-            onClick={() => setEditMode((v) => !v)}
+            onClick={() => setEditMode((m) => !m)}
           >
             {editMode ? "Exit Edit Mode" : "Edit Mode"}
           </Button>
           {editMode && (
-            <Button size="sm" onClick={handleAddPillar}>
+            <Button size="sm" variant="default">
+              <Plus className="h-4 w-4 mr-1" />
               Add Pillar
             </Button>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={expandAll}>
+          <Button size="sm" variant="ghost" onClick={expandAll}>
             Expand All
           </Button>
-          <Button size="sm" variant="outline" onClick={collapseAll}>
+          <Button size="sm" variant="ghost" onClick={collapseAll}>
             Collapse All
           </Button>
         </div>
       </div>
 
-      <table className="w-full caption-bottom text-sm border-collapse">
-        <thead className="[&_tr]:border-b bg-muted/30">
+      {/* Table */}
+      <table className="w-full text-sm">
+        <thead className="bg-gray-100">
           <tr>
-            <th className="h-10 px-2 text-left align-middle font-medium text-muted-foreground w-1/4">
-              Type / Ref Code
-            </th>
-            <th className="text-left">Name / Description</th>
-            <th className="w-24 text-left">Sort Order</th>
-            <th className="w-36 text-left">Actions</th>
+            <th className="text-left px-4 py-2">Type / Ref Code</th>
+            <th className="text-left py-2">Name / Description</th>
+            <th className="text-right px-4 py-2">Sort Order</th>
+            <th className="text-right px-4 py-2">Actions</th>
           </tr>
         </thead>
-        <tbody>{data.map((item) => renderRow(item))}</tbody>
+        <tbody>{renderRows(pillars)}</tbody>
       </table>
     </div>
   );
