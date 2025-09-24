@@ -4,14 +4,14 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 
-// Single source of truth type
+// Single type for all framework items
 export type NestedPillar = {
   id: string;
   name: string;
   description?: string;
   refCode?: string;
   sortOrder?: number;
-  type?: "Pillar" | "Theme" | "Subtheme";
+  type: "Pillar" | "Theme" | "Subtheme";
   children?: NestedPillar[];
 };
 
@@ -53,7 +53,7 @@ const sampleData: NestedPillar[] = [
   },
 ];
 
-const typeBadgeClass = (type?: "Pillar" | "Theme" | "Subtheme") => {
+const typeBadgeClass = (type: "Pillar" | "Theme" | "Subtheme") => {
   switch (type) {
     case "Pillar":
       return "bg-indigo-100 text-indigo-700 border border-indigo-200";
@@ -103,13 +103,13 @@ export default function FrameworkEditor({ initialPillars = [] }: { initialPillar
   const renderRow = (item: NestedPillar, depth = 0): React.ReactNode => {
     const isExpanded = expandedRows.has(item.id);
     const hasChildren = !!item.children?.length;
-    const indentPx = depth * 12;
+    const indentPx = depth * 16;
 
     return (
       <React.Fragment key={item.id}>
         <tr className="border-b hover:bg-muted/40">
           {/* Type / Ref Code */}
-          <td className="w-1/4 align-top">
+          <td className="w-1/4 align-top py-3">
             <div className="flex items-start">
               {hasChildren ? (
                 <button
@@ -123,14 +123,14 @@ export default function FrameworkEditor({ initialPillars = [] }: { initialPillar
                 <span className="w-6" />
               )}
               <div style={{ paddingLeft: indentPx }} className="flex items-center">
-                <Badge className={`mr-2 ${typeBadgeClass(item.type)}`}>{item.type ?? ""}</Badge>
+                <Badge className={`mr-2 ${typeBadgeClass(item.type)}`}>{item.type}</Badge>
                 <span className="text-sm text-muted-foreground">{item.refCode ?? ""}</span>
               </div>
             </div>
           </td>
 
           {/* Name / Description */}
-          <td className="align-top">
+          <td className="align-top py-3">
             <div style={{ paddingLeft: indentPx }}>
               <div className="font-medium leading-6">{item.name}</div>
               {item.description && (
@@ -140,12 +140,12 @@ export default function FrameworkEditor({ initialPillars = [] }: { initialPillar
           </td>
 
           {/* Sort Order */}
-          <td className="w-24 align-top">
+          <td className="w-24 align-top py-3">
             <div className="text-sm tabular-nums">{item.sortOrder ?? ""}</div>
           </td>
 
           {/* Actions */}
-          <td className="w-36 align-top">
+          <td className="w-36 align-top py-3">
             {editMode && (
               <div className="flex items-center gap-1">
                 {item.type !== "Subtheme" && (
@@ -196,7 +196,7 @@ export default function FrameworkEditor({ initialPillars = [] }: { initialPillar
       </div>
 
       <table className="w-full caption-bottom text-sm border-collapse">
-        <thead className="[&_tr]:border-b">
+        <thead className="[&_tr]:border-b bg-muted/30">
           <tr>
             <th className="h-10 px-2 text-left align-middle font-medium text-muted-foreground w-1/4">
               Type / Ref Code
