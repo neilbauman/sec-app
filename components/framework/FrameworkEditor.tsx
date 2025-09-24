@@ -3,7 +3,17 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
-import { NestedPillar } from "@/lib/types";
+
+// Local NestedPillar type definition
+export type NestedPillar = {
+  id: string;
+  name: string;
+  description?: string;
+  refCode?: string;
+  sortOrder?: number;
+  type?: "Pillar" | "Theme" | "Subtheme";
+  children?: NestedPillar[];
+};
 
 // Inline Badge component
 const Badge = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
