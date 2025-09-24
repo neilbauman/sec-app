@@ -1,6 +1,6 @@
 import { NestedPillar } from "@/lib/types";
 
-// Example: normalize raw data to include type field
+// Normalize backend data to ensure "type" field exists
 export function normalizePillars(raw: any[]): NestedPillar[] {
   return raw.map((p: any) => ({
     ...p,
@@ -16,9 +16,12 @@ export function normalizePillars(raw: any[]): NestedPillar[] {
   }));
 }
 
-// Example fetcher (adjust as per your API)
-export async function getPillarsFromApi(): Promise<NestedPillar[]> {
-  const res = await fetch("/api/framework"); // adjust API path
+// Fetcher used by pages (alias kept as fetchFramework for compatibility)
+export async function fetchFramework(): Promise<NestedPillar[]> {
+  const res = await fetch("/api/framework"); // adjust if you have another endpoint
   const raw = await res.json();
   return normalizePillars(raw);
 }
+
+// ✅ Optional: re-export type here for backward compatibility
+export type { NestedPillar } from "@/lib/types";
