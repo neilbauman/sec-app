@@ -1,27 +1,31 @@
-import { NestedPillar } from "@/lib/types";
+import {
+  NestedPillar,
+  NestedTheme,
+  NestedSubtheme,
+} from "@/lib/types";
 
-// Normalize backend data to ensure "type" field exists
+// Normalize raw data into typed structure
 export function normalizePillars(raw: any[]): NestedPillar[] {
   return raw.map((p: any) => ({
     ...p,
-    type: "Pillar",
+    type: "Pillar" as const,
     children: p.children?.map((t: any) => ({
       ...t,
-      type: "Theme",
+      type: "Theme" as const,
       children: t.children?.map((s: any) => ({
         ...s,
-        type: "Subtheme",
+        type: "Subtheme" as const,
       })),
     })),
   }));
 }
 
-// Fetcher used by pages (alias kept as fetchFramework for compatibility)
+// Fetch framework from API
 export async function fetchFramework(): Promise<NestedPillar[]> {
   const res = await fetch("/api/framework"); // adjust endpoint if needed
   const raw = await res.json();
   return normalizePillars(raw);
 }
 
-// ✅ Re-export type here for backward compatibility
-export type { NestedPillar } from "@/lib/types";
+// ✅ Re-export for compatibility with older imports
+export type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/types";
