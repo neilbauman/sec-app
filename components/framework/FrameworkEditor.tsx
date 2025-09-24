@@ -3,16 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
-
-export type NestedPillar = {
-  id: string;
-  type: "Pillar" | "Theme" | "Subtheme";
-  refCode?: string;
-  name: string;
-  description?: string;
-  sortOrder?: number;
-  children?: NestedPillar[];
-};
+import { NestedPillar } from "@/lib/types";  // ✅ shared type
 
 // Badge colors by type
 const badgeColors: Record<NestedPillar["type"], string> = {
@@ -30,7 +21,6 @@ export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [editMode, setEditMode] = useState(false);
 
-  // Toggle expand/collapse per row
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -51,9 +41,8 @@ export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps
     setExpandedRows({});
   };
 
-  // Recursive renderer
-  const renderRows = (nodes: NestedPillar[], depth = 0) => {
-    return nodes.map((node) => {
+  const renderRows = (nodes: NestedPillar[], depth = 0) =>
+    nodes.map((node) => {
       const isExpanded = expandedRows[node.id];
       const hasChildren = node.children && node.children.length > 0;
 
@@ -126,7 +115,6 @@ export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps
         </React.Fragment>
       );
     });
-  };
 
   return (
     <div className="border rounded-lg overflow-hidden">
