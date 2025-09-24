@@ -1,10 +1,12 @@
+// lib/framework-client.ts
 import {
   NestedPillar,
   NestedTheme,
   NestedSubtheme,
 } from "@/lib/types";
+import { getFrameworkFromDb } from "@/lib/framework-server";
 
-// Normalize raw data into typed structure
+// Normalize backend data into typed structure
 export function normalizePillars(raw: any[]): NestedPillar[] {
   return raw.map((p: any) => ({
     ...p,
@@ -20,12 +22,13 @@ export function normalizePillars(raw: any[]): NestedPillar[] {
   }));
 }
 
-// Fetch framework from API
+/**
+ * Framework fetcher used in pages
+ * ✅ Calls DB directly instead of fetching /api/framework
+ */
 export async function fetchFramework(): Promise<NestedPillar[]> {
-  const res = await fetch("/api/framework"); // adjust endpoint if needed
-  const raw = await res.json();
-  return normalizePillars(raw);
+  return getFrameworkFromDb();
 }
 
-// ✅ Re-export for compatibility with older imports
+// Re-export types for compatibility
 export type { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/types";
