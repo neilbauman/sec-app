@@ -3,10 +3,10 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
-import { NestedPillar } from "@/lib/types"; // ✅ shared type
+import { NestedPillar, FrameworkNodeType } from "@/lib/types"; // ✅ shared types
 
 // Badge colors by type
-const badgeColors: Record<NestedPillar["type"], string> = {
+const badgeColors: Record<FrameworkNodeType, string> = {
   Pillar: "bg-indigo-100 text-indigo-800",
   Theme: "bg-emerald-100 text-emerald-800",
   Subtheme: "bg-amber-100 text-amber-800",
@@ -122,7 +122,7 @@ export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps
       <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
         <div className="flex items-center gap-2">
           <Button
-            variant={editMode ? "primary" : "outline"} // ✅ fixed
+            variant={editMode ? "primary" : "outline"} // ✅ fixed variant
             size="sm"
             onClick={() => setEditMode((m) => !m)}
           >
