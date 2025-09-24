@@ -1,5 +1,7 @@
 // lib/types.ts
 
+export type FrameworkNodeType = "Pillar" | "Theme" | "Subtheme";
+
 export type NestedSubtheme = {
   id: string;
   name: string;
