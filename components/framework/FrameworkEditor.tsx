@@ -3,17 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
-
-// Single type for all framework items
-export type NestedPillar = {
-  id: string;
-  name: string;
-  description?: string;
-  refCode?: string;
-  sortOrder?: number;
-  type: "Pillar" | "Theme" | "Subtheme";
-  children?: NestedPillar[];
-};
+import { NestedPillar } from "@/lib/types";
 
 // Inline Badge component
 const Badge = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -53,7 +43,7 @@ const sampleData: NestedPillar[] = [
   },
 ];
 
-const typeBadgeClass = (type: "Pillar" | "Theme" | "Subtheme") => {
+const typeBadgeClass = (type?: "Pillar" | "Theme" | "Subtheme") => {
   switch (type) {
     case "Pillar":
       return "bg-indigo-100 text-indigo-700 border border-indigo-200";
@@ -123,7 +113,7 @@ export default function FrameworkEditor({ initialPillars = [] }: { initialPillar
                 <span className="w-6" />
               )}
               <div style={{ paddingLeft: indentPx }} className="flex items-center">
-                <Badge className={`mr-2 ${typeBadgeClass(item.type)}`}>{item.type}</Badge>
+                <Badge className={`mr-2 ${typeBadgeClass(item.type)}`}>{item.type ?? ""}</Badge>
                 <span className="text-sm text-muted-foreground">{item.refCode ?? ""}</span>
               </div>
             </div>
