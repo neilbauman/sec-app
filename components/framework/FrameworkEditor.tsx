@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
-import { NestedPillar } from "@/lib/types";  // ✅ shared type
+import { NestedPillar } from "@/lib/types"; // ✅ shared type
 
 // Badge colors by type
 const badgeColors: Record<NestedPillar["type"], string> = {
@@ -122,7 +122,7 @@ export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps
       <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
         <div className="flex items-center gap-2">
           <Button
-            variant={editMode ? "secondary" : "outline"}
+            variant={editMode ? "primary" : "outline"} // ✅ fixed
             size="sm"
             onClick={() => setEditMode((m) => !m)}
           >
