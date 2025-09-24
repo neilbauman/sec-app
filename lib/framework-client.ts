@@ -18,10 +18,10 @@ export function normalizePillars(raw: any[]): NestedPillar[] {
 
 // Fetcher used by pages (alias kept as fetchFramework for compatibility)
 export async function fetchFramework(): Promise<NestedPillar[]> {
-  const res = await fetch("/api/framework"); // adjust if you have another endpoint
+  const res = await fetch("/api/framework"); // adjust endpoint if needed
   const raw = await res.json();
   return normalizePillars(raw);
 }
 
-// ✅ Optional: re-export type here for backward compatibility
+// ✅ Re-export type here for backward compatibility
 export type { NestedPillar } from "@/lib/types";
