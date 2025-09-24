@@ -1,7 +1,8 @@
 // app/configuration/primary/page.tsx
 import PageHeader from "@/components/ui/PageHeader";
 import FrameworkEditor from "@/components/framework/FrameworkEditor";
-import { fetchFramework, NestedPillar } from "@/lib/framework-client";
+import { fetchFramework } from "@/lib/framework-client";
+import { NestedPillar } from "@/lib/types"; // ✅ correct source of truth
 
 export default async function PrimaryFrameworkEditorPage() {
   const initialPillars: NestedPillar[] = await fetchFramework();
