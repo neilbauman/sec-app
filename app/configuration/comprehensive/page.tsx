@@ -1,7 +1,7 @@
 // app/configuration/comprehensive/page.tsx
 import PageHeader from "@/components/ui/PageHeader";
 import { fetchFramework } from "@/lib/framework-client";
-import { NestedPillar } from "@/lib/types"; // ✅ shared type (ready for later use)
+import { NestedPillar } from "@/lib/types";
 
 export default async function ComprehensiveFrameworkEditorPage() {
   const framework: NestedPillar[] = await fetchFramework();
