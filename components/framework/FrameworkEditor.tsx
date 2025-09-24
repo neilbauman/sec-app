@@ -149,14 +149,14 @@ export default function FrameworkEditor({ initialPillars = [] }: { initialPillar
             {editMode && (
               <div className="flex items-center gap-1">
                 {item.type !== "Subtheme" && (
-                  <Button size="icon" variant="ghost" onClick={() => handleAdd(item.id)}>
+                  <Button size="sm" variant="ghost" className="p-1 h-8 w-8" onClick={() => handleAdd(item.id)}>
                     <Plus size={16} />
                   </Button>
                 )}
-                <Button size="icon" variant="ghost" onClick={() => handleEdit(item.id)}>
+                <Button size="sm" variant="ghost" className="p-1 h-8 w-8" onClick={() => handleEdit(item.id)}>
                   <Pencil size={16} />
                 </Button>
-                <Button size="icon" variant="ghost" onClick={() => handleDelete(item.id)}>
+                <Button size="sm" variant="ghost" className="p-1 h-8 w-8" onClick={() => handleDelete(item.id)}>
                   <Trash2 size={16} />
                 </Button>
               </div>
