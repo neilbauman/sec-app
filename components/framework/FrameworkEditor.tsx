@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 
-// Define NestedPillar locally to avoid missing import
+// Single source of truth type
 export type NestedPillar = {
   id: string;
   name: string;
@@ -15,18 +15,6 @@ export type NestedPillar = {
   children?: NestedPillar[];
 };
 
-export type FrameworkItemType = "Pillar" | "Theme" | "Subtheme";
-
-export type FrameworkItem = {
-  id: string;
-  type: FrameworkItemType;
-  refCode: string;
-  name: string;
-  description?: string;
-  sortOrder: number;
-  children?: FrameworkItem[];
-};
-
 // Inline Badge component
 const Badge = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${className}`}>
@@ -34,7 +22,7 @@ const Badge = ({ children, className = "" }: { children: React.ReactNode; classN
   </span>
 );
 
-const sampleData: FrameworkItem[] = [
+const sampleData: NestedPillar[] = [
   {
     id: "1",
     type: "Pillar",
@@ -65,7 +53,7 @@ const sampleData: FrameworkItem[] = [
   },
 ];
 
-const typeBadgeClass = (type: FrameworkItemType) => {
+const typeBadgeClass = (type?: "Pillar" | "Theme" | "Subtheme") => {
   switch (type) {
     case "Pillar":
       return "bg-indigo-100 text-indigo-700 border border-indigo-200";
@@ -74,12 +62,12 @@ const typeBadgeClass = (type: FrameworkItemType) => {
     case "Subtheme":
       return "bg-amber-100 text-amber-800 border border-amber-200";
     default:
-      return "";
+      return "bg-gray-100 text-gray-700 border border-gray-200";
   }
 };
 
 export default function FrameworkEditor({ initialPillars = [] }: { initialPillars?: NestedPillar[] }) {
-  const [data, setData] = useState<FrameworkItem[]>(sampleData);
+  const [data, setData] = useState<NestedPillar[]>(initialPillars.length ? initialPillars : sampleData);
   const [editMode, setEditMode] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
@@ -92,7 +80,7 @@ export default function FrameworkEditor({ initialPillars = [] }: { initialPillar
     });
   };
 
-  const collectAllIds = (items: FrameworkItem[], acc: Set<string>) => {
+  const collectAllIds = (items: NestedPillar[], acc: Set<string>) => {
     for (const item of items) {
       acc.add(item.id);
       if (item.children?.length) collectAllIds(item.children, acc);
@@ -112,7 +100,7 @@ export default function FrameworkEditor({ initialPillars = [] }: { initialPillar
   const handleDelete = (id: string) => console.log("Delete", id);
   const handleAddPillar = () => console.log("Add Pillar");
 
-  const renderRow = (item: FrameworkItem, depth = 0): React.ReactNode => {
+  const renderRow = (item: NestedPillar, depth = 0): React.ReactNode => {
     const isExpanded = expandedRows.has(item.id);
     const hasChildren = !!item.children?.length;
     const indentPx = depth * 12;
@@ -135,8 +123,8 @@ export default function FrameworkEditor({ initialPillars = [] }: { initialPillar
                 <span className="w-6" />
               )}
               <div style={{ paddingLeft: indentPx }} className="flex items-center">
-                <Badge className={`mr-2 ${typeBadgeClass(item.type)}`}>{item.type}</Badge>
-                <span className="text-sm text-muted-foreground">{item.refCode}</span>
+                <Badge className={`mr-2 ${typeBadgeClass(item.type)}`}>{item.type ?? ""}</Badge>
+                <span className="text-sm text-muted-foreground">{item.refCode ?? ""}</span>
               </div>
             </div>
           </td>
@@ -153,7 +141,7 @@ export default function FrameworkEditor({ initialPillars = [] }: { initialPillar
 
           {/* Sort Order */}
           <td className="w-24 align-top">
-            <div className="text-sm tabular-nums">{item.sortOrder}</div>
+            <div className="text-sm tabular-nums">{item.sortOrder ?? ""}</div>
           </td>
 
           {/* Actions */}
