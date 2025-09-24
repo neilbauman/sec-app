@@ -3,7 +3,17 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
-import { NestedPillar } from "@/types"; // adjust path to where NestedPillar is defined
+
+// Define NestedPillar locally to avoid missing import
+export type NestedPillar = {
+  id: string;
+  name: string;
+  description?: string;
+  refCode?: string;
+  sortOrder?: number;
+  type?: "Pillar" | "Theme" | "Subtheme";
+  children?: NestedPillar[];
+};
 
 export type FrameworkItemType = "Pillar" | "Theme" | "Subtheme";
 
