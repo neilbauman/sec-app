@@ -1,45 +1,40 @@
 // lib/refCodes.ts
-import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/framework-client";
+import { NestedPillar, NestedTheme, NestedSubtheme } from "@/lib/types";
 
 /**
- * Generate hierarchical reference codes for all pillars, themes, and subthemes.
- * Example:
- *   P1
- *   └─ T1.1
- *      └─ S1.1.1
+ * Assign reference codes (P#, T#, S#) to pillars, themes, subthemes.
  */
-export function generateRefCodes(pillars: NestedPillar[]): NestedPillar[] {
+export function assignRefCodes(pillars: NestedPillar[]): NestedPillar[] {
   return pillars.map((pillar, pIndex) => {
     const pillarCode = `P${pIndex + 1}`;
-    const themes = pillar.themes.map((theme, tIndex) => {
-      const themeCode = `T${pIndex + 1}.${tIndex + 1}`;
-      const subthemes = theme.subthemes.map((sub, sIndex) => {
-        const subCode = `S${pIndex + 1}.${tIndex + 1}.${sIndex + 1}`;
-        return {
-          ...sub,
-          ref_code: subCode,
-          sort_order: sIndex + 1,
-        } as NestedSubtheme;
-      });
+
+    const themes = (pillar.children ?? []).map((theme: NestedTheme, tIndex) => {
+      const themeCode = `${pillarCode}.T${tIndex + 1}`;
+
+      const subthemes = (theme.children ?? []).map(
+        (sub: NestedSubtheme, sIndex) => {
+          const subCode = `${themeCode}.S${sIndex + 1}`;
+          return {
+            ...sub,
+            refCode: subCode,
+            sortOrder: sIndex,
+          };
+        }
+      );
+
       return {
         ...theme,
-        ref_code: themeCode,
-        sort_order: tIndex + 1,
-        subthemes,
-      } as NestedTheme;
+        refCode: themeCode,
+        sortOrder: tIndex,
+        children: subthemes,
+      };
     });
+
     return {
       ...pillar,
-      ref_code: pillarCode,
-      sort_order: pIndex + 1,
-      themes,
-    } as NestedPillar;
+      refCode: pillarCode,
+      sortOrder: pIndex,
+      children: themes,
+    };
   });
-}
-
-/**
- * Wrapper for recalculating ref codes across the full tree.
- */
-export function recalcRefCodes(pillars: NestedPillar[]): NestedPillar[] {
-  return generateRefCodes(pillars);
 }
