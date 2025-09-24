@@ -34,7 +34,9 @@ export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps
     const collect = (nodes: FrameworkNode[]) => {
       for (const node of nodes) {
         all[node.id] = true;
-        if (node.children) collect(node.children as FrameworkNode[]);
+        if ("children" in node && node.children) {
+          collect(node.children as FrameworkNode[]);
+        }
       }
     };
     collect(pillars);
@@ -48,7 +50,8 @@ export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps
   const renderRows = (nodes: FrameworkNode[], depth = 0) =>
     nodes.map((node) => {
       const isExpanded = expandedRows[node.id];
-      const hasChildren = node.children && (node.children as FrameworkNode[]).length > 0;
+      const hasChildren =
+        "children" in node && node.children && node.children.length > 0;
 
       return (
         <React.Fragment key={node.id}>
@@ -115,7 +118,8 @@ export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps
           </tr>
 
           {/* Render children if expanded */}
-          {hasChildren && isExpanded && renderRows(node.children as FrameworkNode[], depth + 1)}
+          {hasChildren && isExpanded &&
+            renderRows(node.children as FrameworkNode[], depth + 1)}
         </React.Fragment>
       );
     });
@@ -126,7 +130,7 @@ export default function FrameworkEditor({ initialPillars }: FrameworkEditorProps
       <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
         <div className="flex items-center gap-2">
           <Button
-            variant={editMode ? "primary" : "outline"} // ✅ valid variants
+            variant={editMode ? "primary" : "outline"}
             size="sm"
             onClick={() => setEditMode((m) => !m)}
           >
