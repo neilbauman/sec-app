@@ -30,3 +30,6 @@ export type NestedPillar = {
   type: "Pillar";
   children?: NestedTheme[];
 };
+
+// ✅ Union type for recursion
+export type FrameworkNode = NestedPillar | NestedTheme | NestedSubtheme;
